@@ -24,7 +24,7 @@
     hyprsplit.url = "git+https://github.com/shezdy/hyprsplit.git?ref=refs/tags/v0.49.0";
     hyprsplit.inputs.hyprland.follows = "hyprland";
     ags.url = "github:aylur/ags"; ags.inputs.nixpkgs.follows = "nixpkgs-unstable";
-    agsShell.url = "github:leierx/AGS-dotfiles"; agsShell.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    agsShell.url = "github:leierx/ags-dotfiles"; agsShell.inputs.nixpkgs.follows = "nixpkgs-unstable";
   };
 }
 
