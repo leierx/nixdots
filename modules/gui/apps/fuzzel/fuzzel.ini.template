@@ -1,0 +1,69 @@
+[main]
+# include
+# output=--
+# namespace=launcher
+font=Hack:size=15
+# use-bold=no
+# dpi-aware=auto
+# gamma-correct=false
+# placeholder=--
+prompt = "> "
+icon-theme=Papirus-Dark
+icons-enabled=yes
+# hide-before-typing=no
+fields=name,generic,exec
+# password-character=*
+# match-mode=fzf
+# sort-result=yes
+match-counter=yes
+# filter-desktop=no
+# show-actions=no
+# terminal=$TERMINAL -e
+# list-executables-in-path=no
+# launch-prefix= # not set
+anchor=center
+# x-margin=0
+# y-margin=0
+lines=15
+# minimal-lines=no
+width=45
+tabs=0
+horizontal-pad=50
+vertical-pad=40
+inner-pad=10
+image-size-ratio=1
+# line-height=
+# letter-spacing=0
+# layer=overlay
+# keyboard-focus=exclusive
+# exit-on-keyboard-focus-loss=yes
+# render-workers= # number of logical CPUs
+# match-workers= # number of logical CPUs
+# delayed-filter-ms=300
+# delayed-filter-limit=20000
+# scaling-filter=box
+cache=/dev/null
+
+[colors]
+background=1C1C1Cff
+selection=2F2F2Fff
+text=eeeeeeff
+counter=eeeeeeff
+input=eeeeeeff
+selection-text=eeeeeeff
+selection-match=DC143Cff
+match=DC143Cff
+prompt=ffffffff
+placeholder=00000000
+border=002b36ff
+
+[border]
+width=2
+radius=20
+
+[dmenu]
+# mode=text
+# exit-immediately-if-empty=no
+
+[key-bindings]
+# these are very resonable
