@@ -3,7 +3,7 @@ local treesitter_parsers = {
   "html", "javascript", "jsdoc", "json", "jsonc",
   "lua", "luadoc", "luap", "markdown", "markdown_inline",
   "query", "regex", "toml", "tsx", "typescript",
-  "xml", "yaml", "nix",
+  "xml", "yaml", "nix", "terraform",
 }
 
 local mason_language_servers = {
@@ -19,6 +19,7 @@ local mason_language_servers = {
   "lemminx", -- XML
   "yamlls", -- yaml-language-server (Kubernetes schemas)
   "ansiblels", -- ansible-language-server (YAML/Ansible)
+  "tofu-ls", -- OpenTofu/Terraform Language Server
   -- "nil_ls", nil wont build unless nix binary is in path
 }
 

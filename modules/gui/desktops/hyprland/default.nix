@@ -41,15 +41,15 @@ in
       flakeInputs.ags.packages.${pkgs.system}.agsFull # ags/astal dev tools
     ];
 
-    dots.gui.apps.footTerminal.enable = true; # terminal of choice
+    dots.gui.apps.wezterm.enable = true; # terminal of choice
     dots.gui.apps.fuzzel.enable = true; # application launcher + dmenu
 
     home-manager.sharedModules = [
       ({
         wayland.windowManager.hyprland.settings = {
-          "$terminal" = "foot";
-          "$TERMINAL" = "foot";
-          "$TERM" = "foot"; 
+          "$terminal" = "wezterm";
+          "$TERMINAL" = "wezterm";
+          "$TERM" = "wezterm"; 
           "$browser" = "firefox";
           "$applicationLauncher" = "fuzzel";
         };

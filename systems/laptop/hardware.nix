@@ -22,6 +22,8 @@
 
   powerManagement.cpuFreqGovernor = "performance";
 
+  networking.networkmanager.wifi.backend = lib.mkForce "wpa_supplicant";
+
   hardware.bluetooth.enable = true;
   hardware.trackpoint.enable = true;
   hardware.trackpoint.emulateWheel = true;

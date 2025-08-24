@@ -4,6 +4,9 @@
   dots.core.privilegeEscalation.noPasswordForWheel = true;
   dots.gui.enable = true;
 
+  # DNS over TLS
+  dots.core.network.dnscryptProxy2.enable = true;
+
   # scaling - 1440p
   dots.gui.cursor.size = 32;
 
@@ -75,5 +78,6 @@
     pika-backup
     keymapp
     tree
+    opentofu
   ];
 }

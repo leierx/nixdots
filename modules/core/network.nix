@@ -23,7 +23,7 @@ in
           logLevel = "WARN";
 
           wifi = {
-            backend = "wpa_supplicant";
+            backend = "iwd";
             powersave = false;
             macAddress = "stable";
           };
@@ -60,10 +60,8 @@ in
           # might be useful for debugging
           #query_log.file = "/dev/stdout";
 
-          server_names = [
-            "quad9-dnscrypt-ip4-nofilter-pri"
-            "quad9-dnscrypt-ip4-nofilter-alt"
-          ];
+          server_names = [ "quad9-dnscrypt-ip4-nofilter-pri" "quad9-dnscrypt-ip4-nofilter-alt" ];
+          bootstrap_resolvers = ["9.9.9.9:53" "149.112.112.112:53"];
 
           sources."quad9-resolvers" = {
             urls = [

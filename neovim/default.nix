@@ -10,17 +10,18 @@ let
         # Dependencies
         git ripgrep fd tree-sitter gcc gnumake
         # language servers + linters
-        lua-language-server # lua_ls
-        nil alejandra # Nix + Nix formatter
-        vscode-langservers-extracted # html, cssls, jsonls
-        typescript-language-server # tsserver
+        ansible-language-server # ansiblels
         bash-language-server # bashls
         clang-tools # clangd
-        marksman # Markdown
-        taplo # TOML
         lemminx # XML
+        lua-language-server # lua_ls
+        marksman # Markdown
+        nil alejandra # Nix + Nix formatter
+        opentofu-ls # terraform/tofu
+        taplo # TOML
+        typescript-language-server # tsserver
+        vscode-langservers-extracted # html, cssls, jsonls
         yaml-language-server # yamlls
-        ansible-language-server # ansiblels
       ])
     }"'';
   };

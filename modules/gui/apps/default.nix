@@ -1,6 +1,6 @@
 {
   imports = [
     ./fuzzel
-    ./foot-terminal.nix
+    ./wezterm.nix
   ];
 }
