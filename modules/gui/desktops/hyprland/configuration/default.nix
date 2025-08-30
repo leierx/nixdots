@@ -14,7 +14,6 @@ in
 
           settings = {
             "$mod" = "SUPER";
-            "$screenshot" = "grimblast --freeze copy area";
 
             env = [
               "QT_QPA_PLATFORMTHEME,qt6ct" # use newer qt6 for decorations

@@ -34,7 +34,6 @@ in
       nautilus # file explorer
       sushi # file explorer addon
       file-roller # file explorer addon
-      grimblast # screenshot utility
       wl-clipboard # wayland clipboard utility
       firefox-bin # browser of choice currently
     ] ++ [
@@ -52,6 +51,7 @@ in
           "$TERM" = "wezterm"; 
           "$browser" = "firefox";
           "$applicationLauncher" = "fuzzel";
+          "$screenshot" = "${pkgs.hyprshot}/bin/hyprshot --mode region --freeze --silent --clipboard-only";
         };
       })
     ];

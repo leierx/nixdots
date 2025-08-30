@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, lib, pkgsUnstable, ... }:
 {
   dots.core.virtualization.docker.enable = true;
   dots.core.privilegeEscalation.noPasswordForWheel = true;
@@ -62,22 +62,11 @@
 
   # various packages
   environment.systemPackages = with pkgs; [
-    tmux
-    wireguard-tools
-    age
-    sops
-    pavucontrol
-    fzf
-    meld
-    obsidian
-    fastfetch
-    spotify
-    brave
-    vesktop
-    xfce.mousepad
-    pika-backup
-    keymapp
-    tree
-    opentofu
+    tmux wireguard-tools age
+    sops pavucontrol fzf
+    meld obsidian fastfetch
+    spotify brave vesktop
+    xfce.mousepad pika-backup keymapp
+    tree opentofu pkgsUnstable.logseq
   ];
 }
