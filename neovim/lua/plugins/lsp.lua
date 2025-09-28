@@ -57,18 +57,27 @@ return {
     config = function()
       -- Only do manual setup when the `nix` binary exists
       if vim.fn.executable("nix") == 1 then
-        local lspconfig = require("lspconfig")
-        local language_servers = {}
-        local capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities())
+        local ok_cmp, cmp_nvim_lsp = pcall(require, "cmp_nvim_lsp")
+        local capabilities = ok_cmp and cmp_nvim_lsp.default_capabilities() or nil
 
+        local per_server = {
+          lua_ls = {
+            settings = { Lua = { diagnostics = { globals = { "vim" } } } },
+          },
+        }
+
+        -- define configs
         for _, name in ipairs(mason_language_servers) do
-          language_servers[name] = { capabilities = capabilities }
+          local cfg = per_server[name] or {}
+          if capabilities then
+            cfg = vim.tbl_deep_extend("force", { capabilities = capabilities }, cfg)
+          end
+          vim.lsp.config(name, cfg)
         end
 
-        language_servers.lua_ls.settings = { Lua = { diagnostics = { globals = { "vim" } } } }
-
-        for name, opts in pairs(language_servers) do
-          lspconfig[name].setup(opts)
+        -- enable servers
+        for _, name in ipairs(mason_language_servers) do
+          vim.lsp.enable(name)
         end
       end
     end,
