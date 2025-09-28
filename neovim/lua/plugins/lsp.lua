@@ -19,7 +19,7 @@ local mason_language_servers = {
   "lemminx", -- XML
   "yamlls", -- yaml-language-server (Kubernetes schemas)
   "ansiblels", -- ansible-language-server (YAML/Ansible)
-  "tofu-ls", -- OpenTofu/Terraform Language Server
+  "tofu_ls", -- OpenTofu/Terraform Language Server
   -- "nil_ls", nil wont build unless nix binary is in path
 }
 
