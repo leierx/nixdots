@@ -1,12 +1,16 @@
 {
   outputs = { nixpkgs, home-manager, ... }@flakeInputs:
     let
-      mkSystem = (import ./lib/mk-system.nix { inherit flakeInputs; });
+      mkNixosSystem = (import ./lib/mk-nixos-system.nix { inherit flakeInputs; });
     in
       {
         nixosConfigurations = {
-          desktop = mkSystem { hostName = "desktop"; systemStateVersion = "25.05"; };
-          laptop = mkSystem { hostName = "laptop"; systemStateVersion = "25.05"; };
+          desktop = mkNixosSystem { hostName = "desktop"; systemStateVersion = "25.05"; };
+          surface-p5 = mkNixosSystem { hostName = "surface-p5"; systemStateVersion = "25.05"; };
+        };
+
+        homeManagerModules = {
+          neovim = import ./modules/home-manager/neovim; # neovim wrapper with config
         };
       };
 
@@ -16,15 +20,40 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
     # Home Manager
-    home-manager.url = "github:nix-community/home-manager/release-25.05";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+    home-manager = {
+      url = "github:nix-community/home-manager/release-25.05";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # Hyprland
-    hyprland.url = "git+https://github.com/hyprwm/Hyprland.git?ref=refs/tags/v0.49.0&submodules=1";
-    hyprsplit.url = "git+https://github.com/shezdy/hyprsplit.git?ref=refs/tags/v0.49.0";
-    hyprsplit.inputs.hyprland.follows = "hyprland";
-    ags.url = "github:aylur/ags"; ags.inputs.nixpkgs.follows = "nixpkgs-unstable";
-    agsShell.url = "github:leierx/ags-dotfiles"; agsShell.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    hyprland = {
+      url = "github:hyprwm/Hyprland?ref=v0.49.0"; # locked
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    hyprsplit = {
+      url = "github:shezdy/hyprsplit?ref=v0.49.0"; # locked
+      inputs.hyprland.follows = "hyprland";
+    };
+
+    ags = {
+      url = "github:aylur/ags?ref=v3.0.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    agsShell = {
+      url = "github:leierx/ags-dotfiles";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # disko
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    #nixos hardware
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   };
 }
 

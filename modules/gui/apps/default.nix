@@ -1,6 +1,0 @@
-{
-  imports = [
-    ./fuzzel
-    ./wezterm.nix
-  ];
-}
