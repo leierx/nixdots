@@ -75,7 +75,7 @@
           flakeInputs.self.homeManagerModules.neovim
           ../../modules/home-manager/desktops/hyprland
           ../../modules/home-manager/git.nix
-          ../../modules/home-manager/gui/base
+          ../../modules/home-manager/graphical
           ../../modules/home-manager/zsh.nix
         ];
       };
@@ -100,8 +100,7 @@
     ../../modules/nixos/core/privilege-escalation/doas.nix
     # desktop
     ../../modules/nixos/desktops/hyprland.nix
-    ../../modules/nixos/gui/audio.nix
-    ../../modules/nixos/gui/fonts.nix
+    ../../modules/nixos/graphical
     ../../modules/nixos/overlays/vesktop.nix
     ../../modules/nixos/services/display-manager.nix
     ./disko.nix
