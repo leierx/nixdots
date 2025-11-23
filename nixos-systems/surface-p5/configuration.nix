@@ -34,7 +34,7 @@
         home.stateVersion = config.system.stateVersion;
 
         # Scaling
-        dots.homeManager.gui.base.cursor.size = 32;
+        dots.homeManager.gui.base.cursor.size = 24;
 
         imports = [
           flakeInputs.self.homeManagerModules.neovim
