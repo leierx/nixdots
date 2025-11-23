@@ -8,7 +8,7 @@
     grub = {
       enable = true;
       efiSupport = true;
-      device = "nodev";
+      devices = [ "nodev" ];
 
       # GRUB theme
       theme = pkgs.stdenv.mkDerivation {
