@@ -37,6 +37,9 @@
   # clean /tmp on boot
   boot.tmp.cleanOnBoot = true;
 
+  # git has to be installed in global scope in order for nixos-rebuild to work
+  programs.git.enable = true;
+
   # syslog
   services.journald.extraConfig = "MaxRetentionSec=90day";
 }

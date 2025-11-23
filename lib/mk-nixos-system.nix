@@ -8,7 +8,6 @@ flakeInputs.nixpkgs.lib.nixosSystem {
   specialArgs = { inherit flakeInputs; inherit pkgsUnstable; };
   modules = [
     ../nixos-systems/${hostName}/configuration.nix
-    ../nixos-systems/${hostName}/disko.nix
 
     flakeInputs.home-manager.nixosModules.home-manager
     flakeInputs.disko.nixosModules.disko

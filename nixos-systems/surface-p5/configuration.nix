@@ -33,9 +33,11 @@
       users.${config.dots.nixos.core.primaryUser.username} = {
         home.stateVersion = config.system.stateVersion;
 
+        # Scaling
+        dots.homeManager.gui.base.cursor.size = 48;
+
         imports = [
           flakeInputs.self.homeManagerModules.neovim
-          ../../modules/home-manager/apps/wezterm.nix
           ../../modules/home-manager/git.nix
           ../../modules/home-manager/gui/base
           ../../modules/home-manager/zsh.nix
@@ -56,7 +58,7 @@
     ../../modules/nixos/core/boot/plymouth.nix
     ../../modules/nixos/core/locale.nix
     ../../modules/nixos/core/network/network-manager.nix
-    ../../modules/nixos/core/nixos-settings.nix
+    ../../modules/nixos/core/nixos.nix
     ../../modules/nixos/core/primary-user.nix
     ../../modules/nixos/core/privilege-escalation/doas.nix
     # desktop
@@ -65,5 +67,6 @@
     ../../modules/nixos/gui/fonts.nix
     ../../modules/nixos/overlays/vesktop.nix
     ../../modules/nixos/services/display-manager.nix
+    ./disko.nix
   ];
 }

@@ -103,6 +103,11 @@
           middle_click_paste = false; # I dont use it
         };
 
+        ecosystem = {
+          no_update_news = true;
+          no_donation_nag = true;
+        };
+
         # mouse binds
         bindm = [
           "$mod, mouse:272, movewindow"

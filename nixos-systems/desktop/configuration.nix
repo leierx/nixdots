@@ -36,6 +36,41 @@
       users.${config.dots.nixos.core.primaryUser.username} = {
         home.stateVersion = config.system.stateVersion;
 
+        programs.git.includes = [
+          {
+            condition = "hasconfig:remote.*.url:git@github.com:**/**";
+            contents = {
+              user = {
+                name = "leierx";
+                email = "larssmitheier@protonmail.com";
+              };
+            };
+          }
+        ];
+
+        # Scaling
+        dconf.settings."org/gnome/desktop/interface".text-scaling-factor = 1.1;
+        dots.homeManager.gui.base.cursor.size = 32;
+
+        wayland.windowManager.hyprland.settings = {
+          exec-once = [ "vesktop" ]; windowrulev2 = [ "monitor DP-2, class:^(vesktop)$" ];
+        };
+
+        programs.ssh = {
+          enable = true;
+          matchBlocks = {
+            "github.com" = {
+              hostname = "github.com";
+              user = "git";
+              identityFile = [ "~/.ssh/id_ed25519" ];
+            };
+            "*.rsync.net" = {
+              identityFile = [ "~/.ssh/id_rsync_net" ];
+              identitiesOnly = true;
+            };
+          };
+        };
+
         imports = [
           flakeInputs.self.homeManagerModules.neovim
           ../../modules/home-manager/desktops/hyprland
@@ -60,7 +95,7 @@
     ../../modules/nixos/core/boot/plymouth.nix
     ../../modules/nixos/core/locale.nix
     ../../modules/nixos/core/network/network-manager.nix
-    ../../modules/nixos/core/nixos-settings.nix
+    ../../modules/nixos/core/nixos.nix
     ../../modules/nixos/core/primary-user.nix
     ../../modules/nixos/core/privilege-escalation/doas.nix
     # desktop
@@ -69,6 +104,7 @@
     ../../modules/nixos/gui/fonts.nix
     ../../modules/nixos/overlays/vesktop.nix
     ../../modules/nixos/services/display-manager.nix
+    ./disko.nix
     ./monitors.nix
   ];
 }
