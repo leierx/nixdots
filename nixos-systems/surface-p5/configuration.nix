@@ -39,6 +39,7 @@
         imports = [
           flakeInputs.self.homeManagerModules.neovim
           ../../modules/home-manager/git.nix
+          ../../modules/home-manager/desktops/gnome.nix
           ../../modules/home-manager/graphical
           ../../modules/home-manager/zsh.nix
         ];
