@@ -1,6 +1,6 @@
 {
   imports = [
-    ../apps/wezterm.nix
+    ../wezterm.nix # terminal emulator of choice
   ];
 
   config = {

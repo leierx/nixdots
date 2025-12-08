@@ -73,9 +73,10 @@
 
         imports = [
           flakeInputs.self.homeManagerModules.neovim
+          ../../modules/home-manager/desktops/base
           ../../modules/home-manager/desktops/hyprland
           ../../modules/home-manager/git.nix
-          ../../modules/home-manager/graphical
+          ../../modules/home-manager/tmux.nix
           ../../modules/home-manager/zsh.nix
         ];
       };
@@ -102,7 +103,7 @@
     ../../modules/nixos/desktops/hyprland.nix
     ../../modules/nixos/graphical
     ../../modules/nixos/overlays/vesktop.nix
-    ../../modules/nixos/services/display-manager.nix
+    ../../modules/nixos/graphical/display-manager.nix
     ./disko.nix
     ./monitors.nix
   ];

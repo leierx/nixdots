@@ -10,8 +10,8 @@
     ./hypridle.nix
     ./hyprlock
     ./hyprpaper
-    ../../apps/wezterm.nix
-    ../../apps/fuzzel.nix
+    ../../wezterm.nix
+    ../../fuzzel.nix
   ];
 
   config = {

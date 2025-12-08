@@ -9,10 +9,11 @@ in
   programs.hyprland.package = flakeInputs.hyprland.packages.${pkgs.system}.hyprland;
   programs.hyprland.portalPackage = flakeInputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
 
-  # Nautilus fixes FUCK THIS IS LOOPING
-  # services.gvfs.enable = lib.elem pkgs.nautilus config.environment.systemPackages; # nautilus functionallity
-  # services.gnome.sushi.enable = lib.elem pkgs.nautilus config.environment.systemPackages; # nautilus previews
-  # programs.file-roller.enable = lib.elem pkgs.nautilus config.environment.systemPackages; # nautilus archive manager
+  # Nautilus file-manager
+  services.gvfs.enable = true;
+  services.gnome.sushi.enable = true;
+  programs.file-roller.enable = true;
+  environment.systemPackages = [ pkgs.nautilus ];
 
   # hyprlock fix
   security.pam.services.hyprlock = lib.mkIf hmHyprlockEnabled {};

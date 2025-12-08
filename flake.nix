@@ -19,11 +19,20 @@
     nixpkgs.url = "github:nixos/nixpkgs/release-25.05";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
+    # disko
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Home Manager
     home-manager = {
       url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    #nixos hardware
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
     # Hyprland
     hyprland = {
@@ -46,14 +55,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # disko
-    disko = {
-      url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs";
+    zjframes-wasm = {
+      url = "https://github.com/dj95/zjstatus/releases/latest/download/zjstatus.wasm";
+      flake = false;
     };
-
-    #nixos hardware
-    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   };
 }
 
