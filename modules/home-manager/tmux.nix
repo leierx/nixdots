@@ -4,9 +4,7 @@
   home.sessionVariables."TMUX_TMPDIR" = ''''${XDG_RUNTIME_DIR:-"/run/user/$(id -u)"}'';
 
   programs.zsh.initContent = ''
-    if [[ -z "$TMUX" ]]; then
-      tmux new-session -A -s "win-$$"
-    fi
+    if [[ -z "$TMUX" ]]; then tmux new-session -A -s "win-$$" fi
   '';
 
   xdg.configFile."tmux/tmux.conf".text = ''
