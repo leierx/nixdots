@@ -4,7 +4,7 @@
   home.sessionVariables."TMUX_TMPDIR" = ''''${XDG_RUNTIME_DIR:-"/run/user/$(id -u)"}'';
 
   programs.zsh.initContent = ''
-    if [[ -z "$TMUX" ]]; then tmux new-session -A -s "win-$$" fi
+    if [[ -z "$TMUX" ]]; then tmux new-session -A -s "win-$$"; fi
   '';
 
   xdg.configFile."tmux/tmux.conf".text = ''
@@ -13,7 +13,8 @@
     unbind-key -a -T copy-mode
 
     # terminal and colors
-    set -g default-terminal "tmux-256color"
+    set -g default-terminal "screen-256color"
+    set -ag terminal-overrides ",xterm-256color:Tc"
 
     # mouse off
     set -g mouse off
@@ -40,14 +41,20 @@
     # new window
     bind-key -T prefix c new-window
 
+    # reload config
+    bind-key -T prefix R source-file ~/.tmux.conf \; display-message "Config reloaded"
+
     # sync panes toggle
-    bind-key -T prefix y set-window-option synchronize-panes \; display-message "synchronize-panes: #{?pane_synchronized,on,off}"
+    bind-key -T prefix y set-window-option synchronize-panes
 
     # zoom pane
-    bind-key -T prefix z resize-pane -Z
+    bind-key -T prefix m resize-pane -Z
 
     # resize windows
     setw -g aggressive-resize on
+
+    # re-number windows automatically
+    set -g renumber-windows on
 
     # window rename
     setw -g allow-rename off
@@ -62,7 +69,6 @@
     # kill pane or window
     bind-key -T prefix x kill-pane
     bind-key -T prefix X kill-window
-    bind-key -n M-w kill-pane
 
     # tree picker
     bind-key -T prefix t choose-tree -Z
@@ -100,7 +106,7 @@
     bind-key -T prefix : command-prompt
 
     # resize mode table
-    bind-key -T prefix r switch-client -T resize
+    bind-key -T prefix r 'if-shell "[ #{window_panes} -gt 1 ]" "switch-client -T resize" '
     bind-key -T resize j resize-pane -L 5 \; switch-client -T resize
     bind-key -T resize k resize-pane -D 5 \; switch-client -T resize
     bind-key -T resize l resize-pane -U 5 \; switch-client -T resize
@@ -144,8 +150,8 @@
     set -g status-right ""
 
     # window status format
-    set -g window-status-format "#[bg=#313244,fg=#6C7086] #{window_index}#{?#{!=:#{window_name},}, #{window_name},}#{?pane_synchronized, ,}#{?window_zoomed_flag, ,} #[default] "
-    set -g window-status-current-format "#[bg=#45475a,fg=#ffffff,bold] #{window_index}#{?#{!=:#{window_name},}, #{window_name},}#{?pane_synchronized, ,}#{?window_zoomed_flag, ,} #[default] "
+    set -g window-status-format "#[bg=#313244,fg=#6C7086] #{window_index}#{?#{!=:#{window_name},}, #{window_name},}#{?pane_synchronized, ↻,}#{?window_zoomed_flag, ⬚,} #[default]"
+    set -g window-status-current-format "#[bg=#45475a,fg=#ffffff,bold] #{window_index}#{?#{!=:#{window_name},}, #{window_name},}#{?pane_synchronized, ↻,}#{?window_zoomed_flag, ⬚,} #[default]"
     set -g window-status-separator " "
 
     # status auto on multi window
