@@ -114,7 +114,7 @@
     bind-key -n M-J previous-window
     bind-key -n M-: next-window
     bind-key -n M-C last-window
-    bind-key -T prefix C-a next-window
+    bind-key -T prefix C-a last-window
 
     # tmux command prompt
     bind-key -T prefix : command-prompt
