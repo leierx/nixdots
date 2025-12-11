@@ -1,7 +1,7 @@
 {
   programs.git = {
     enable = true;
-    extraConfig = {
+    settings = {
       credential.helper = "cache --timeout=36000";
       safe.directory = "*";
     };

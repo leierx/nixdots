@@ -5,8 +5,8 @@
     in
       {
         nixosConfigurations = {
-          desktop = mkNixosSystem { hostName = "desktop"; systemStateVersion = "25.05"; };
-          surface-p5 = mkNixosSystem { hostName = "surface-p5"; systemStateVersion = "25.05"; };
+          desktop = mkNixosSystem { hostName = "desktop"; systemStateVersion = "25.11"; };
+          surface-p5 = mkNixosSystem { hostName = "surface-p5"; systemStateVersion = "25.11"; };
         };
 
         homeManagerModules = {
@@ -16,7 +16,7 @@
 
   inputs = {
     # Stable and Unstable Nixpkgs
-    nixpkgs.url = "github:nixos/nixpkgs/release-25.05";
+    nixpkgs.url = "github:nixos/nixpkgs/release-25.11";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
     # disko
@@ -27,7 +27,7 @@
 
     # Home Manager
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.05";
+      url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -36,28 +36,19 @@
 
     # Hyprland
     hyprland = {
-      url = "github:hyprwm/Hyprland?ref=v0.49.0"; # locked
+      url = "github:hyprwm/Hyprland?ref=v0.52.1"; # locked
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     hyprsplit = {
-      url = "github:shezdy/hyprsplit?ref=v0.49.0"; # locked
+      url = "github:shezdy/hyprsplit?ref=v0.52.1"; # locked
       inputs.hyprland.follows = "hyprland";
     };
 
-    ags = {
-      url = "github:aylur/ags?ref=v3.0.0";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
+    ags.url = "github:aylur/ags"; # have to create issue on ?ref=v3.1.0
     agsShell = {
       url = "github:leierx/ags-dotfiles";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    zjframes-wasm = {
-      url = "https://github.com/dj95/zjstatus/releases/latest/download/zjstatus.wasm";
-      flake = false;
+      inputs.ags.follows = "ags";
     };
   };
 }

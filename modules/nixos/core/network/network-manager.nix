@@ -8,9 +8,8 @@
       logLevel = "WARN";
 
       wifi = {
-        backend = "iwd";
         powersave = false;
-        macAddress = "stable";
+        macAddress = "stable-ssid";
       };
 
       settings = {

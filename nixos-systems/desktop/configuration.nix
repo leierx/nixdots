@@ -1,9 +1,10 @@
-{ flakeInputs, pkgs, config, ... }:
+{ flakeInputs, pkgsUnstable, pkgs, config, ... }:
 {
   config = {
     # hardware
     hardware.enableAllFirmware = true;
     hardware.keyboard.zsa.enable = true;
+    # boot.kernelModules = [ "mt7921e" ];
 
     # GAMING
     programs.steam.enable = true;
@@ -32,7 +33,7 @@
     home-manager = {
       useUserPackages = true;
       useGlobalPkgs = true;
-      extraSpecialArgs = { inherit flakeInputs; };
+      extraSpecialArgs = { inherit flakeInputs; inherit pkgsUnstable; };
       users.${config.dots.nixos.core.primaryUser.username} = {
         home.stateVersion = config.system.stateVersion;
 
@@ -76,7 +77,7 @@
           ../../modules/home-manager/desktops/base
           ../../modules/home-manager/desktops/hyprland
           ../../modules/home-manager/git.nix
-          ../../modules/home-manager/helix.nix
+          ../../modules/home-manager/helix
           ../../modules/home-manager/tmux.nix
           ../../modules/home-manager/zsh.nix
         ];

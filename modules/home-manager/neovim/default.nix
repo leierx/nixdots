@@ -9,14 +9,13 @@
       # Dependencies
       git ripgrep fd tree-sitter gcc gnumake
       # language servers + linters
-      ansible-language-server # ansiblels
       bash-language-server # bashls
       clang-tools # clangd
       lemminx # XML
       lua-language-server # lua_ls
       marksman # Markdown
       nil alejandra # Nix + formatter
-      opentofu-ls # terraform/tofu
+      tofu-ls # terraform/tofu
       taplo # TOML
       typescript-language-server
       vscode-langservers-extracted # html, cssls, jsonls

@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, pkgsUnstable, ... }:
 {
   programs.helix = {
     enable = true;
@@ -6,7 +6,6 @@
     languages = {};
     extraPackages = with pkgs; [
       # language servers
-      ansible-language-server # ansiblels
       bash-language-server # bashls
       clang-tools # clangd
       gopls # go ls
@@ -14,7 +13,7 @@
       lua-language-server # lua_ls
       marksman # Markdown
       nil # nix ls
-      opentofu-ls # terraform/tofu
+      tofu-ls # terraform/tofu
       pyright # python ls
       rust-analyzer # rust ls
       taplo # TOML
@@ -58,6 +57,8 @@
           mode.select = "SELECT";
         };
       };
+
+      #keys = (import ./keymaps.nix);
     };
   };
 }

@@ -9,9 +9,6 @@
     zramSwap.enable = true;
     zramSwap.memoryPercent = 25;
 
-    # iwd is tougher to work on surface
-    networking.networkmanager.wifi.backend = lib.mkForce "wpa_supplicant";
-
     # use GDM, since I'm gonna be using gnome
     dots.nixos.services.displayManager.implementation = "gdm";
 

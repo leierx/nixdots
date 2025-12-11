@@ -12,9 +12,15 @@ in
   # Nautilus file-manager
   services.gvfs.enable = true;
   services.gnome.sushi.enable = true;
-  programs.file-roller.enable = true;
   environment.systemPackages = [ pkgs.nautilus ];
 
   # hyprlock fix
   security.pam.services.hyprlock = lib.mkIf hmHyprlockEnabled {};
+
+  # cachix
+  nix.settings = {
+    substituters = ["https://hyprland.cachix.org"];
+    trusted-substituters = ["https://hyprland.cachix.org"];
+    trusted-public-keys = ["hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="];
+  };
 }

@@ -114,7 +114,7 @@
     bind-key -n M-J previous-window
     bind-key -n M-: next-window
     bind-key -n M-C last-window
-    bind-key -T prefix C-a last-window
+    bind-key -T prefix C-a next-window
 
     # tmux command prompt
     bind-key -T prefix : command-prompt
@@ -166,8 +166,8 @@
     set -g window-status-separator " "
 
     # show status only when >1 window
-    if-shell "[ #{session_windows} -gt 1 ]" "set -g status on" "set -g status off"
-    set-hook -g window-linked  'if-shell "[ #{session_windows} -gt 1 ]" "set -g status on" ""'
-    set-hook -g window-unlinked 'if-shell "[ #{session_windows} -le 1 ]" "set -g status off" ""'
+    if-shell "[ #{session_windows} -gt 1 ]" "set -g status on" "set status off"
+    set-hook -g window-linked  'if-shell "[ #{session_windows} -gt 1 ]" "set status on" ""'
+    set-hook -g window-unlinked 'if-shell "[ #{session_windows} -le 1 ]" "set status off" ""'
   '';
 }
