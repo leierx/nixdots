@@ -18,14 +18,14 @@
     # Must have's
     home.packages = [
       pkgs.wl-clipboard # wayland clipboard utility
-      flakeInputs.ags.packages.${pkgs.system}.agsFull
+      flakeInputs.ags.packages.${pkgs.stdenv.hostPlatform.system}.agsFull
     ];
 
     wayland.windowManager.hyprland = {
       enable = true;
       xwayland.enable = true;
       package = nixosConfig.programs.hyprland.package;
-      plugins = [ flakeInputs.hyprsplit.packages.${pkgs.system}.hyprsplit ];
+      plugins = [ flakeInputs.hyprsplit.packages.${pkgs.stdenv.hostPlatform.system}.hyprsplit ];
       settings = {
         "$mod" = "SUPER";
         "$terminal" = "wezterm";
@@ -43,7 +43,7 @@
 
         exec = [
           "pidof ${pkgs.hyprpolkitagent}/libexec/hyprpolkitagent || ${pkgs.hyprpolkitagent}/libexec/hyprpolkitagent"
-          "pidof ${flakeInputs.agsShell.packages.${pkgs.system}.default}/bin/ags-shell || ${flakeInputs.agsShell.packages.${pkgs.system}.default}/bin/ags-shell"
+          "pidof ${flakeInputs.agsShell.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/ags-shell || ${flakeInputs.agsShell.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/ags-shell"
         ] ++ lib.optionals nixosConfig.networking.networkmanager.enable [
             "pidof ${pkgs.networkmanagerapplet}/bin/nm-applet || ${pkgs.networkmanagerapplet}/bin/nm-applet"
           ];

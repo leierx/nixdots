@@ -108,5 +108,7 @@
     ../../modules/nixos/graphical/display-manager.nix
     ./disko.nix
     ./monitors.nix
+    # testing
+    ./scripts
   ];
 }

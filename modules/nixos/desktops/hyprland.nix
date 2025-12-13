@@ -6,8 +6,8 @@ in
 {
   # Install
   programs.hyprland.enable = true;
-  programs.hyprland.package = flakeInputs.hyprland.packages.${pkgs.system}.hyprland;
-  programs.hyprland.portalPackage = flakeInputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
+  programs.hyprland.package = flakeInputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+  programs.hyprland.portalPackage = flakeInputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
 
   # Nautilus file-manager
   services.gvfs.enable = true;

@@ -166,7 +166,7 @@
     set -g window-status-separator " "
 
     # show status only when >1 window
-    if-shell "[ #{session_windows} -gt 1 ]" "set -g status on" "set status off"
+    run-shell -b 'tmux if-shell "[ #{session_windows} -gt 1 ]" "set status on"'
     set-hook -g window-linked  'if-shell "[ #{session_windows} -gt 1 ]" "set status on" ""'
     set-hook -g window-unlinked 'if-shell "[ #{session_windows} -le 1 ]" "set status off" ""'
   '';
