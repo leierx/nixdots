@@ -46,7 +46,7 @@
         whitespace.render = { space = "all"; tab = "all"; nbsp = "all"; nnbsp = "all"; };
         indent-guides.render = true;
 
-        # soft-wrap = { }; # might configure later
+        soft-wrap.enable = true;
 
         statusline = {
           left = ["mode" "spacer" "version-control" "file-name" "read-only-indicator" "file-modification-indicator"];
@@ -58,7 +58,7 @@
         };
       };
 
-      #keys = (import ./keymaps.nix);
+      keys = (import ./keymaps.nix);
     };
   };
 }
