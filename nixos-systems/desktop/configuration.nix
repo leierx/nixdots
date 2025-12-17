@@ -78,6 +78,7 @@
           ../../modules/home-manager/desktops/hyprland
           ../../modules/home-manager/git.nix
           ../../modules/home-manager/helix
+          ../../modules/home-manager/yazi
           ../../modules/home-manager/tmux.nix
           ../../modules/home-manager/zsh.nix
         ];

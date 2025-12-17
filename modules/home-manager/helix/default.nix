@@ -1,4 +1,4 @@
-{ pkgs, pkgsUnstable, ... }:
+{ pkgs, ... }:
 {
   programs.helix = {
     enable = true;
@@ -21,6 +21,7 @@
       vscode-langservers-extracted # html, cssls, jsonls
       yaml-language-server # yamlls
     ];
+
     settings = {
       # theme
       theme = "kanagawa";
@@ -32,9 +33,7 @@
         cursorline = true;
         auto-format = false;
         trim-trailing-whitespace = true;
-
-        auto-info = true; # default, may remove later
-
+        auto-info = true;
         bufferline = "multiple"; # sounds cool
         line-number = "relative"; # enables relative J,K jumping
         color-modes = true;
@@ -42,19 +41,31 @@
 
         gutters = [ "diff" "diagnostics" "line-numbers" "spacer" ];
 
-        cursor-shape.insert = "bar"; # block for everything else
-        whitespace.render = { space = "all"; tab = "all"; nbsp = "all"; nnbsp = "all"; };
+        cursor-shape = {
+          insert = "bar";
+          select = "underline";
+        };
+
+        whitespace.render = {
+          space = "all";
+          tab = "all";
+          nbsp = "all";
+          nnbsp = "all";
+        };
+
         indent-guides.render = true;
 
         soft-wrap.enable = true;
 
         statusline = {
-          left = ["mode" "spacer" "version-control" "file-name" "read-only-indicator" "file-modification-indicator"];
+          left = ["mode" "file-name" "read-only-indicator" "file-modification-indicator"];
           center = [];
-          right = ["spinner" "diagnostics" "file-type" "position"];
-          mode.normal = "NORMAL";
-          mode.insert = "INSERT";
-          mode.select = "SELECT";
+          right = ["version-control" "spinner" "diagnostics" "file-type" "position"];
+          mode = {
+            normal = "NORMAL";
+            insert = "INSERT";
+            select = "SELECT";
+          };
         };
       };
 

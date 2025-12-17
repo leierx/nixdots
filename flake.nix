@@ -45,7 +45,7 @@
       inputs.hyprland.follows = "hyprland";
     };
 
-    ags.url = "github:aylur/ags"; # have to create issue on ?ref=v3.1.0
+    ags.url = "github:aylur/ags?ref=v3.1.1";
     agsShell = {
       url = "github:leierx/ags-dotfiles";
       inputs.ags.follows = "ags";
