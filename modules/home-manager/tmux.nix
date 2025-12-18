@@ -45,11 +45,11 @@
     bind-key C-a send-prefix
 
     # splits
-    bind-key -T prefix v split-window -h
-    bind-key -T prefix s split-window -v
+    bind-key -T prefix v split-window -h -c "#{pane_current_path}"
+    bind-key -T prefix s split-window -v -c "#{pane_current_path}"
 
     # new window
-    bind-key -T prefix c new-window
+    bind-key -T prefix c new-window -c "#{pane_current_path}"
 
     # reload config
     bind-key -T prefix R \
@@ -68,13 +68,6 @@
     # auto renumber
     set -g renumber-windows on
 
-    # no auto rename
-    setw -g allow-rename off
-    setw -g automatic-rename off
-    set-hook -g after-new-window 'rename-window ""'
-    set-hook -g session-created 'rename-window ""'
-    bind-key , command-prompt "rename-window '%%'"
-
     # detach
     bind-key -T prefix d detach-client
 
@@ -86,17 +79,10 @@
     bind-key -T prefix t choose-tree -Z
 
     # pane movement (prefix)
-    bind-key -T prefix j select-pane -L
-    bind-key -T prefix k select-pane -D
-    bind-key -T prefix l select-pane -U
-    bind-key -T prefix ø select-pane -R
-
-    # pane movement (alt)
-    bind-key -n M-j select-pane -L
-    bind-key -n M-k select-pane -D
-    bind-key -n M-l select-pane -U
-    bind-key -n M-\; select-pane -R
-    bind-key -n M-c select-pane -t :.+
+    bind-key -T prefix h select-pane -L
+    bind-key -T prefix j select-pane -D
+    bind-key -T prefix k select-pane -U
+    bind-key -T prefix l select-pane -R
 
     # jump to window
     bind-key -T prefix 0 select-window -t 0
@@ -109,11 +95,6 @@
     bind-key -T prefix 7 select-window -t 7
     bind-key -T prefix 8 select-window -t 8
     bind-key -T prefix 9 select-window -t 9
-
-    # window movement (alt)
-    bind-key -n M-J previous-window
-    bind-key -n M-: next-window
-    bind-key -n M-C last-window
     bind-key -T prefix C-a next-window
 
     # tmux command prompt
@@ -123,52 +104,61 @@
     bind-key -T prefix r 'if-shell "[ #{window_panes} -gt 1 ]" "switch-client -T resize"'
 
     # resize-mode keys
-    bind-key -T resize j resize-pane -L 5 \; switch-client -T resize
-    bind-key -T resize k resize-pane -D 5 \; switch-client -T resize
-    bind-key -T resize l resize-pane -U 5 \; switch-client -T resize
-    bind-key -T resize ø resize-pane -R 5 \; switch-client -T resize
-    bind-key -T resize Space select-layout tiled
-    bind-key -T resize Escape switch-client -T prefix
+    bind-key -T resize h resize-pane -L 5 \; switch-client -T resize
+    bind-key -T resize j resize-pane -D 5 \; switch-client -T resize
+    bind-key -T resize k resize-pane -U 5 \; switch-client -T resize
+    bind-key -T resize l resize-pane -R 5 \; switch-client -T resize
 
     # enter copy-mode
     bind-key -T prefix p copy-mode
 
-    # remove unwanted vi binds
-    unbind-key -T copy-mode-vi h
-    unbind-key -T copy-mode-vi H
-
-    # copy-mode movement
-    bind-key -T copy-mode-vi j send-keys -X cursor-left
-    bind-key -T copy-mode-vi k send-keys -X cursor-down
-    bind-key -T copy-mode-vi l send-keys -X cursor-up
-    bind-key -T copy-mode-vi ø send-keys -X cursor-right
+    bind-key -T copy-mode-vi h send-keys -X cursor-left
+    bind-key -T copy-mode-vi j send-keys -X cursor-down
+    bind-key -T copy-mode-vi k send-keys -X cursor-up
+    bind-key -T copy-mode-vi l send-keys -X cursor-right
 
     # copy-mode scroll
-    bind-key -T copy-mode-vi J send-keys -X top-line
-    bind-key -T copy-mode-vi K send-keys -X scroll-down
-    bind-key -T copy-mode-vi L send-keys -X scroll-up
-    bind-key -T copy-mode-vi Ø send-keys -X bottom-line
+    bind-key -T copy-mode-vi H send-keys -X top-line
+    bind-key -T copy-mode-vi J send-keys -X scroll-down
+    bind-key -T copy-mode-vi K send-keys -X scroll-up
+    bind-key -T copy-mode-vi L send-keys -X bottom-line
 
     # copy + selection
     bind-key -T copy-mode-vi v send-keys -X begin-selection
     bind-key -T copy-mode-vi y send-keys -X copy-selection-and-cancel
     bind-key -T copy-mode-vi Escape send-keys -X cancel
 
-    # status styling
-    set -g status-style "bg=default,fg=#6C7086"
-    set -g status-position top
-    set -g status-left ""
-    set -g status-right "%H:%M"
-
-    # window style
-    set -g window-status-format "#[bg=#313244,fg=#6C7086] #{window_index}#{?#{!=:#{window_name},}, #{window_name},}#{?pane_synchronized, ↻,}#{?window_zoomed_flag, ⬚,} #[default]"
-    set -g window-status-current-format "#[bg=#45475a,fg=#ffffff,bold] #{window_index}#{?#{!=:#{window_name},}, #{window_name},}#{?pane_synchronized, ↻,}#{?window_zoomed_flag, ⬚,} #[default]"
-    set -g window-status-separator " "
-
     # show status only when >1 window
     set -g status off
     run-shell -b 'tmux if-shell "[ #{session_windows} -gt 1 ]" "set status on"'
     set-hook -g window-linked  'if-shell "[ #{session_windows} -gt 1 ]" "set status on" ""'
     set-hook -g window-unlinked 'if-shell "[ #{session_windows} -le 1 ]" "set status off" ""'
+
+    # Kanagawa palette
+    set -g @kg_fg "#dcd7ba"
+    set -g @kg_muted "#727169"
+    set -g @kg_blue "#7e9cd8"
+    set -g @kg_red "#e82424"
+    set -g @kg_sel "#223249"
+
+    set -g pane-border-style        "fg=#{@kg_muted},bg=default"
+    set -g pane-active-border-style "fg=#{?pane_synchronized,#{@kg_red},#{@kg_blue}},bg=default"
+
+    set -g message-style "fg=#{@kg_fg},bg=default"
+    set -g message-command-style "fg=#{@kg_fg},bg=default"
+    set -g mode-style "fg=#{@kg_fg},bg=#{@kg_sel}"
+
+    set -g status-position top
+    set -g status-justify centre
+    set -g status-left ""
+    set -g status-right ""
+    set -g status-left-length 0
+    set -g status-right-length 0
+
+    set -g status-style "bg=default,fg=#{@kg_muted}"
+    set -g window-status-separator "#[fg=#{@kg_muted}] • "
+
+    set -g window-status-format "#[fg=#{@kg_muted}]#I #W#{?pane_synchronized, #[fg=#{@kg_red}]⇄#[fg=#{@kg_muted}],}#{?window_zoomed_flag, #[fg=#{@kg_blue}]⛶#[fg=#{@kg_muted}],}"
+    set -g window-status-current-format "#[fg=#{@kg_fg}]#I #W#{?pane_synchronized, #[fg=#{@kg_red}]⇄#[fg=#{@kg_fg}],}#{?window_zoomed_flag, #[fg=#{@kg_blue}]⛶#[fg=#{@kg_fg}],}"
   '';
 }

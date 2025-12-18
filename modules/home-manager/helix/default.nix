@@ -3,7 +3,7 @@
   programs.helix = {
     enable = true;
     defaultEditor = false;
-    languages = {};
+    languages = (import ./languages.nix);
     extraPackages = with pkgs; [
       # language servers
       bash-language-server # bashls
@@ -12,7 +12,7 @@
       lemminx # XML
       lua-language-server # lua_ls
       marksman # Markdown
-      nil # nix ls
+      nil nixfmt-rfc-style # nix ls & formatter
       tofu-ls # terraform/tofu
       pyright # python ls
       rust-analyzer # rust ls
@@ -25,13 +25,14 @@
     settings = {
       # theme
       theme = "kanagawa";
+      keys = (import ./keymaps.nix);
 
       editor = {
         mouse = false; # disable mouse input
         middle-click-paste = false; # I dont use it
         default-yank-register = "+"; # primary
         cursorline = true;
-        auto-format = false;
+        auto-format = true;
         trim-trailing-whitespace = true;
         auto-info = true;
         bufferline = "multiple"; # sounds cool
@@ -42,6 +43,7 @@
         gutters = [ "diff" "diagnostics" "line-numbers" "spacer" ];
 
         cursor-shape = {
+          normal = "block";
           insert = "bar";
           select = "underline";
         };
@@ -68,8 +70,6 @@
           };
         };
       };
-
-      keys = (import ./keymaps.nix);
     };
   };
 }

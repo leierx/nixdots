@@ -31,10 +31,21 @@
     pageup = "no_op";
     pagedown = "no_op";
 
-    g = {
-      e = "no_op"; # default: goto_last_line
-      G = "goto_last_line";
+    m = {
+      # mimic Vim-style vi( https://github.com/helix-editor/helix/pull/11695
+      "\""  = "@f\";vmmc\"";
+      "'"  = "@f';vmmc'";
+      "["  = "@f[;vmmc[";
+      "("  = "@f(;vmmc(";
+      "{"  = "@f{;vmmc{";
+    };
 
+    space = {
+      w = ":w";
+      q = ":bc";
+    };
+
+    g = {
       # staying on the homerow baby -> jklø
       # h = "no_op"; # default: goto_line_start
       # j = "goto_line_start";
