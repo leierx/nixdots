@@ -32,17 +32,19 @@
     pagedown = "no_op";
 
     m = {
-      # mimic Vim-style vi( https://github.com/helix-editor/helix/pull/11695
-      "\""  = "@f\";vmmc\"";
-      "'"  = "@f';vmmc'";
-      "["  = "@f[;vmmc[";
-      "("  = "@f(;vmmc(";
-      "{"  = "@f{;vmmc{";
+      # mimic Vim-style ci{ - https://github.com/helix-editor/helix/pull/11695
+      "\"" = "@f\";vmmc\"";
+      "'" = "@f';vmmc'";
+      "[" = "@f[;vmmc[";
+      "(" = "@f(;vmmc(";
+      "{" = "@f{;vmmc{";
     };
 
+    # save & close
+    "C-q" = ":bc";
     space = {
       w = ":w";
-      q = ":bc";
+      q = ":qa";
     };
 
     g = {
@@ -95,6 +97,10 @@
   };
 
   insert = {
+    left = "no_op";
+    down = "no_op";
+    up = "no_op";
+    right = "no_op";
     pageup = "no_op";
     pagedown = "no_op";
     home = "no_op";
