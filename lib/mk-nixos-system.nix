@@ -1,20 +1,34 @@
 { flakeInputs }:
-{ hostName, systemStateVersion, system ? "x86_64-linux" }:
-let
-  pkgsUnstable = import flakeInputs."nixpkgs-unstable" { inherit system; config.allowUnfree = true; };
-in
+{
+  hostName,
+  systemStateVersion,
+  system ? "x86_64-linux",
+}:
 flakeInputs.nixpkgs.lib.nixosSystem {
   inherit system;
-  specialArgs = { inherit flakeInputs; inherit pkgsUnstable; };
+  specialArgs = { inherit flakeInputs; };
   modules = [
     ../nixos-systems/${hostName}/configuration.nix
 
     flakeInputs.home-manager.nixosModules.home-manager
     flakeInputs.disko.nixosModules.disko
 
-    {
-      system.stateVersion = systemStateVersion;
-      networking.hostName = hostName;
-    }
+    (
+      { config, pkgs, ... }:
+      let
+        unstableOverlay = final: prev: {
+          unstable = import flakeInputs.nixpkgs-unstable {
+            inherit system;
+            config = config.nixpkgs.config;
+            overlays = config.nixpkgs.overlays;
+          };
+        };
+      in
+      {
+        system.stateVersion = systemStateVersion;
+        networking.hostName = hostName;
+        nixpkgs.overlays = [ unstableOverlay ];
+      }
+    )
   ];
 }
