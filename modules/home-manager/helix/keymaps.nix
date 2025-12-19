@@ -12,6 +12,15 @@
     D = "delete_selection";
     c = "change_selection_noyank";
 
+    # bind up grabbing lines above
+    X = "extend_line_above"; # was: extend_to_line_bounds
+
+    # escape in normal mode resets everything
+    "Escape" = [
+      "keep_primary_selection"
+      "collapse_selection"
+    ];
+
     # increment (because tmux uses ctrl+a)
     "C-a" = "no_op";
     "C-b" = "increment";
@@ -114,6 +123,11 @@
     # k = "move_visual_line_down"; # was j
     # l = "move_visual_line_up"; # was k
     # "ø" = "move_char_right"; # was l
+
+    # delete + change non yanking, plus cut
+    d = "delete_selection_noyank";
+    D = "delete_selection";
+    c = "change_selection_noyank";
 
     # disable noob keys + old hjkl movements
     left = "no_op";

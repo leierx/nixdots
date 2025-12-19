@@ -1,13 +1,20 @@
 { config, lib, ... }:
+let
+  cfg = config.nixdots;
+in
 {
-  options.nixdots.enableCore = lib.mkEnableOption "enable core modules";
+  options.nixdots = {
+    enableCore = lib.mkEnableOption "enable core modules";
+    enableGraphicalSystem = lib.mkEnableOption "enable graphical system (sound, fonts, display-manager, etc.)";
+  };
 
   imports = [
     ./core
+    ./graphical
   ];
 
-  # auto-enable *all* nixdots.core.<name>.enable
-  config.nixdots.core = lib.mapAttrs (_name: _value: {
-    enable = lib.mkDefault config.nixdots.enableCore;
-  }) config.nixdots.core;
+  config = {
+    nixdots.core = lib.mapAttrs (_: v: v // { enable = lib.mkDefault cfg.enableCore; }) cfg.core;
+    nixdots.graphical.base = lib.mapAttrs (_: v: v // { enable = lib.mkDefault cfg.enableGraphicalSystem; }) cfg.graphical.base;
+  };
 }

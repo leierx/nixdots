@@ -1,7 +1,6 @@
 { flakeInputs }:
 {
   hostName,
-  systemStateVersion,
   system ? "x86_64-linux",
 }:
 flakeInputs.nixpkgs.lib.nixosSystem {
@@ -15,19 +14,19 @@ flakeInputs.nixpkgs.lib.nixosSystem {
 
     (
       { config, pkgs, ... }:
-      let
-        unstableOverlay = final: prev: {
-          unstable = import flakeInputs.nixpkgs-unstable {
-            inherit system;
-            config = config.nixpkgs.config;
-            overlays = config.nixpkgs.overlays;
-          };
-        };
-      in
       {
-        system.stateVersion = systemStateVersion;
+        system.stateVersion = (flakeInputs.nixpkgs.lib.versions.majorMinor flakeInputs.nixpkgs.lib.version);
         networking.hostName = hostName;
-        nixpkgs.overlays = [ unstableOverlay ];
+        # import nixpkgs-unstable as an overlay
+        nixpkgs.overlays = [
+          (final: prev: {
+            unstable = import flakeInputs.nixpkgs-unstable {
+              inherit system;
+              config = config.nixpkgs.config;
+              overlays = config.nixpkgs.overlays;
+            };
+          })
+        ];
       }
     )
   ];

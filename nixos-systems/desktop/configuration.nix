@@ -1,10 +1,15 @@
-{ flakeInputs, pkgsUnstable, pkgs, config, ... }:
+{
+  flakeInputs,
+  pkgs,
+  config,
+  ...
+}:
 {
   config = {
     # hardware
     hardware.enableAllFirmware = true;
     hardware.keyboard.zsa.enable = true;
-    # boot.kernelModules = [ "mt7921e" ];
+    # boot.kernelModules = [ "mt7921e" ]; #wifi card
 
     # GAMING
     programs.steam.enable = true;
@@ -13,27 +18,38 @@
     # wireguard
     networking.firewall.checkReversePath = false;
 
-    environment.systemPackages = with pkgs; [
-      kubectl kubie kubectl-df-pv # kubernetes utils
-      xfce.mousepad # notepad
-      spotify # music
-      pavucontrol # settings gui apps
-      brave firefox-bin # browsers
-      pika-backup # home directory file backup
-      keymapp # zsa keyboard mapper
-      wireguard-tools age opentofu sops # server dev
-      tree fzf fastfetch # cli tools
-      vesktop signal-desktop # communication apps
-      meld # compare text files
-      obsidian  # note taking
-      valent # KDE-connect implementation in GTK
-    ];
+    environment.systemPackages =
+      (with pkgs; [
+        kubectl
+        kubie
+        kubectl-df-pv # kubernetes utils
+        xfce.mousepad # notepad
+        spotify # music
+        pavucontrol # settings gui apps
+        brave
+        firefox-bin # browsers
+        pika-backup # home directory file backup
+        keymapp # zsa keyboard mapper
+        wireguard-tools
+        age
+        opentofu
+        sops # server dev
+        tree
+        fzf
+        fastfetch # cli tools
+        vesktop
+        signal-desktop # communication apps
+        meld # compare text files
+        obsidian # note taking
+        valent # KDE-connect implementation in GTK
+      ])
+      ++ builtins.attrValues flakeInputs.self.packages.${pkgs.stdenv.hostPlatform.system};
 
     # home-manager
     home-manager = {
       useUserPackages = true;
       useGlobalPkgs = true;
-      extraSpecialArgs = { inherit flakeInputs; inherit pkgsUnstable; };
+      extraSpecialArgs = { inherit flakeInputs; };
       users.${config.dots.nixos.core.primaryUser.username} = {
         home.stateVersion = config.system.stateVersion;
 
@@ -54,7 +70,8 @@
         dots.homeManager.gui.base.cursor.size = 32;
 
         wayland.windowManager.hyprland.settings = {
-          exec-once = [ "vesktop" ]; windowrulev2 = [ "monitor DP-2, class:^(vesktop)$" ];
+          exec-once = [ "vesktop" ];
+          windowrulev2 = [ "monitor DP-2, class:^(vesktop)$" ];
         };
 
         programs.ssh = {
@@ -109,7 +126,5 @@
     ../../modules/nixos/graphical/display-manager.nix
     ./disko.nix
     ./monitors.nix
-    # testing
-    ./scripts
   ];
 }
