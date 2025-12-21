@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  options,
+  ...
+}:
 let
   cfg = config.nixdots;
 in
@@ -10,11 +15,14 @@ in
 
   imports = [
     ./core
+    ./overlays
+    ./services
     ./graphical
+    ./programs
   ];
 
   config = {
-    nixdots.core = lib.mapAttrs (_: v: v // { enable = lib.mkDefault cfg.enableCore; }) cfg.core;
-    nixdots.graphical.base = lib.mapAttrs (_: v: v // { enable = lib.mkDefault cfg.enableGraphicalSystem; }) cfg.graphical.base;
+    nixdots.core = lib.mapAttrs (_: _: { enable = lib.mkDefault cfg.enableCore; }) options.nixdots.core;
+    nixdots.graphical.base = lib.mapAttrs (_: _: { enable = lib.mkDefault cfg.enableGraphicalSystem; }) options.nixdots.graphical.base;
   };
 }

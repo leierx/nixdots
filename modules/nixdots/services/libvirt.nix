@@ -1,25 +1,30 @@
-{ pkgs, ... }:
 {
-  virtualisation.libvirtd = {
-    enable = true;
-    onBoot = "ignore";
-    onShutdown = "shutdown";
-    allowedBridges = [ "virbr0" ];
-    qemu = {
-      package = pkgs.qemu_kvm;
-      runAsRoot = true;
-      swtpm.enable = true;
-      ovmf = {
-        enable = true;
-        packages = [
-          (pkgs.OVMF.override {
-            secureBoot = true;
-            tpmSupport = true;
-          }).fd
-        ];
-      };
-    };
+  lib,
+  config,
+  pkgs,
+  ...
+}:
+let
+  cfg = config.nixdots.services.libvirt;
+in
+{
+  options.nixdots.services.libvirt = {
+    enable = lib.mkEnableOption "Enable libvirt / KVM virtualisation";
   };
 
-  networking.firewall.trustedInterfaces = [ "virbr0" ];
+  config = lib.mkIf cfg.enable {
+    virtualisation.libvirtd = {
+      enable = true;
+      onBoot = "ignore";
+      onShutdown = "shutdown";
+      allowedBridges = [ "virbr0" ];
+
+      qemu = {
+        runAsRoot = true;
+        swtpm.enable = true;
+      };
+    };
+
+    networking.firewall.trustedInterfaces = [ "virbr0" ];
+  };
 }

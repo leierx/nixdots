@@ -8,7 +8,7 @@ let
   cfg = config.nixdots.core.bootloader;
 in
 {
-  options.nixdots.core.bootLoader = {
+  options.nixdots.core.bootloader = {
     enable = lib.mkEnableOption "Enable bootloader";
 
     implementation = lib.mkOption {
@@ -47,7 +47,6 @@ in
           efiSupport = true;
           devices = [ "nodev" ];
 
-          # GRUB theme
           theme = pkgs.stdenv.mkDerivation {
             name = "grub_theme";
             src = pkgs.fetchFromGitHub {

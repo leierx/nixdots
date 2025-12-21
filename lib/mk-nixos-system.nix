@@ -11,6 +11,7 @@ flakeInputs.nixpkgs.lib.nixosSystem {
 
     flakeInputs.home-manager.nixosModules.home-manager
     flakeInputs.disko.nixosModules.disko
+    ../modules/nixdots # nixdots module with my scaffold
 
     (
       { config, pkgs, ... }:

@@ -1,12 +1,24 @@
-{ pkgs, ... }:
 {
-  services.locate = {
-    enable = true;
-    package = pkgs.plocate;
-    interval = "daily";
-    output = "/var/cache/locatedb";
+  lib,
+  config,
+  ...
+}:
+let
+  cfg = config.nixdots.services.locate;
+in
+{
+  options.nixdots.services.locate = {
+    enable = lib.mkEnableOption "Enable locate command";
   };
 
-  # hack to avoid running straigh after booting the system
-  systemd.timers.update-locatedb.timerConfig.OnBootSec = "30m";
+  config = lib.mkIf cfg.enable {
+    services.locate = {
+      enable = true;
+      interval = "daily";
+      output = "/var/cache/locatedb";
+    };
+
+    # avoid running immediately after boot
+    systemd.timers.update-locatedb.timerConfig.OnBootSec = "10m";
+  };
 }

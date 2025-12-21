@@ -1,11 +1,13 @@
 { lib, config, ... }:
 let
-  cfg = config.nixdots.dots.plymouth;
+  cfg = config.nixdots.core.plymouth;
 in
 {
-  options.nixdots.dots.plymouth.enable = lib.mkEnableOption "Enable";
+  options.nixdots.core.plymouth = {
+    enable = lib.mkEnableOption "Enable plymouth";
+  };
 
-  config = cfg.enable {
+  config = lib.mkIf cfg.enable {
     boot = {
       plymouth.enable = true;
 
@@ -14,10 +16,10 @@ in
       initrd.verbose = false;
 
       kernelParams = [
-        "quiet" # less kernel output
-        "splash" # hint for plymouth
-        "systemd.show_status=false" # quiet systemd during boot
-        "rd.systemd.show_status=false" # quiet initrd systemd during boot
+        "quiet"
+        "splash"
+        "systemd.show_status=false"
+        "rd.systemd.show_status=false"
       ];
     };
   };

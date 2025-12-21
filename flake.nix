@@ -13,7 +13,7 @@
       packages = (import ./packages { inherit nixpkgs; });
 
       homeManagerModules = {
-        neovim = import ./modules/home-manager/neovim; # neovim wrapper with config
+        neovim = import ./modules/home-manager/neovim;
       };
     };
 
