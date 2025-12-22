@@ -20,7 +20,8 @@
     nixdots.enableCore = true;
     nixdots.enableGraphicalSystem = true;
     nixdots.overlays.vesktopDiscordAlias.enable = true;
-    nixdots.programs.helix.enable = true;
+    nixdots.programs.neovim.enable = true;
+    config.nixdots.programs.tmux = true;
     nixdots.graphical.desktops.hyprland.enable = true;
     nixdots.core.network.dot.enable = true; # DNS over TLS
     nixdots.graphical.base.cursor.size = 32; # Scaling
@@ -64,10 +65,6 @@
       ++ builtins.attrValues flakeInputs.self.packages.${pkgs.stdenv.hostPlatform.system};
 
     home-manager.users.${config.nixdots.core.primaryUser.username} = {
-      imports = [
-        flakeInputs.self.homeManagerModules.neovim
-      ];
-
       programs.git.includes = [
         {
           condition = "hasconfig:remote.*.url:git@github.com:**/**";

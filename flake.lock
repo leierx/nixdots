@@ -512,6 +512,22 @@
         "type": "github"
       }
     },
+    "neovim-dotfiles": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1766433267,
+        "narHash": "sha256-w+CxgW/JmnWFJn/tDu360zv208gshtd1SoHCvbxpnbs=",
+        "owner": "leierx",
+        "repo": "neovim-dotfiles",
+        "rev": "1ee4fcb0ee44af3d4b31e64614f72fb33818b4d5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "leierx",
+        "repo": "neovim-dotfiles",
+        "type": "github"
+      }
+    },
     "nixos-hardware": {
       "locked": {
         "lastModified": 1764440730,
@@ -606,6 +622,7 @@
         "home-manager": "home-manager",
         "hyprland": "hyprland",
         "hyprsplit": "hyprsplit",
+        "neovim-dotfiles": "neovim-dotfiles",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-unstable": "nixpkgs-unstable"
