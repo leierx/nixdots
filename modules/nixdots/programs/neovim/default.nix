@@ -1,7 +1,6 @@
 {
   lib,
   config,
-  pkgs,
   flakeInputs,
   ...
 }:
@@ -14,6 +13,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.users.${config.nixdots.core.primaryUser.username}.xdg.configFile."nvim".source = flakeInputs.neovim-dotfiles;
+    home-manager.users.${config.nixdots.core.primaryUser.username}.imports = [ flakeInputs.neovim-dotfiles.homeManagerModules.default ];
   };
 }

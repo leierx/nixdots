@@ -11,10 +11,6 @@
       };
 
       packages = (import ./packages { inherit nixpkgs; });
-
-      homeManagerModules = {
-        neovim = import ./modules/home-manager/neovim;
-      };
     };
 
   inputs = {
@@ -35,7 +31,6 @@
 
     # neovim configuration
     neovim-dotfiles.url = "github:leierx/neovim-dotfiles";
-    neovim-dotfiles.flake = false;
 
     # hyprland
     hyprland.url = "github:hyprwm/Hyprland?ref=v0.52.1";

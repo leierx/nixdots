@@ -17,7 +17,7 @@ in
       home.packages = [ pkgs.tmux ];
 
       # ephemeral & per-user socket
-      home.sessionVariables."TMUX_TMPDIR" = ''${XDG_RUNTIME_DIR: -"/run/user/$(id -u)"}'';
+      home.sessionVariables."TMUX_TMPDIR" = ''''${XDG_RUNTIME_DIR:-/run/user/''$UID}'';
 
       # autostart tmux
       programs.zsh.initContent = ''if [[ -z "$TMUX" ]]; then tmux new-session -A -s "win-$$"; fi'';

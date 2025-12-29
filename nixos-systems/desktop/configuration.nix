@@ -21,7 +21,7 @@
     nixdots.enableGraphicalSystem = true;
     nixdots.overlays.vesktopDiscordAlias.enable = true;
     nixdots.programs.neovim.enable = true;
-    config.nixdots.programs.tmux = true;
+    nixdots.programs.tmux.enable = true;
     nixdots.graphical.desktops.hyprland.enable = true;
     nixdots.core.network.dot.enable = true; # DNS over TLS
     nixdots.graphical.base.cursor.size = 32; # Scaling
