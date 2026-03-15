@@ -35,25 +35,7 @@ in
     };
 
     # locale
-    i18n.defaultLocale = "en_US.UTF-8";
-    i18n.extraLocaleSettings = {
-      # US English for wording and text
-      LC_MESSAGES = "en_US.UTF-8";
-      LC_RESPONSE = "en_US.UTF-8";
-      LC_CTYPE = "en_US.UTF-8";
-      LC_COLLATE = "en_US.UTF-8";
-      LC_NAME = "en_US.UTF-8";
-
-      # Norwegian for numeric, date, and measurement formatting
-      LC_NUMERIC = "nb_NO.UTF-8";
-      LC_TIME = "nb_NO.UTF-8";
-      LC_MONETARY = "nb_NO.UTF-8";
-      LC_MEASUREMENT = "nb_NO.UTF-8";
-      LC_PAPER = "nb_NO.UTF-8";
-      LC_ADDRESS = "nb_NO.UTF-8";
-      LC_TELEPHONE = "nb_NO.UTF-8";
-      LC_IDENTIFICATION = "nb_NO.UTF-8";
-    };
+    i18n.defaultLocale = "en_DK.UTF-8";
 
     # xserver defaults
     services.xserver.xkb.variant = "nodeadkeys";

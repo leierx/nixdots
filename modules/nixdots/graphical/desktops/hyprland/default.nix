@@ -218,6 +218,16 @@ in
             "size 45% 45%, tag:tempfloat"
           ];
 
+          # not available yet :(
+          # windowrule = [
+          #   {
+          #     name = "steam main window";
+          #     "match:class" = "steam";
+          #     "match:title" = "Steam";
+          #     tile = "on";
+          #   }
+          # ];
+
           workspace = [
             "w[t1], gapsout:0"
           ];

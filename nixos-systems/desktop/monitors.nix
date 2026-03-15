@@ -1,55 +1,55 @@
 { lib, pkgs, ... }:
 {
-  systemd.tmpfiles.rules =
-    let
-      gdmMonitorConfigMultiline = ''
-        <monitors version="2">
-          <configuration>
-            <logicalmonitor>
-              <x>0</x>
-              <y>0</y>
-              <scale>1</scale>
-              <monitor>
-                <monitorspec>
-                  <connector>DP-1</connector>
-                  <vendor>AOC</vendor>
-                  <product>Q27G2G4</product>
-                  <serial>0x000023bd</serial>
-                </monitorspec>
-                <mode>
-                  <width>2560</width>
-                  <height>1440</height>
-                  <rate>143.912</rate>
-                </mode>
-              </monitor>
-            </logicalmonitor>
-            <logicalmonitor>
-              <x>2560</x>
-              <y>0</y>
-              <scale>1</scale>
-              <primary>yes</primary>
-              <monitor>
-                <monitorspec>
-                  <connector>DP-2</connector>
-                  <vendor>AOC</vendor>
-                  <product>Q27G2G4</product>
-                  <serial>0x000021bd</serial>
-                </monitorspec>
-                <mode>
-                  <width>2560</width>
-                  <height>1440</height>
-                  <rate>143.912</rate>
-                </mode>
-              </monitor>
-            </logicalmonitor>
-          </configuration>
-        </monitors>
-      '';
-
-      # Trimming
-      gdmMonitorConfig = builtins.replaceStrings [ "\n" "  " ] [ " " "" ] gdmMonitorConfigMultiline;
-    in
-      [ "f+ /run/gdm/.config/monitors.xml - gdm gdm - ${gdmMonitorConfig}" ];
+  # systemd.tmpfiles.rules =
+  #   let
+  #     gdmMonitorConfigMultiline = ''
+  #       <monitors version="2">
+  #         <configuration>
+  #           <logicalmonitor>
+  #             <x>0</x>
+  #             <y>0</y>
+  #             <scale>1</scale>
+  #             <monitor>
+  #               <monitorspec>
+  #                 <connector>DP-1</connector>
+  #                 <vendor>AOC</vendor>
+  #                 <product>Q27G2G4</product>
+  #                 <serial>0x000023bd</serial>
+  #               </monitorspec>
+  #               <mode>
+  #                 <width>2560</width>
+  #                 <height>1440</height>
+  #                 <rate>143.912</rate>
+  #               </mode>
+  #             </monitor>
+  #           </logicalmonitor>
+  #           <logicalmonitor>
+  #             <x>2560</x>
+  #             <y>0</y>
+  #             <scale>1</scale>
+  #             <primary>yes</primary>
+  #             <monitor>
+  #               <monitorspec>
+  #                 <connector>DP-2</connector>
+  #                 <vendor>AOC</vendor>
+  #                 <product>Q27G2G4</product>
+  #                 <serial>0x000021bd</serial>
+  #               </monitorspec>
+  #               <mode>
+  #                 <width>2560</width>
+  #                 <height>1440</height>
+  #                 <rate>143.912</rate>
+  #               </mode>
+  #             </monitor>
+  #           </logicalmonitor>
+  #         </configuration>
+  #       </monitors>
+  #     '';
+  #
+  #     # Trimming
+  #     gdmMonitorConfig = builtins.replaceStrings [ "\n" "  " ] [ " " "" ] gdmMonitorConfigMultiline;
+  #   in
+  #     [ "f+ /run/gdm/.config/monitors.xml - gdm gdm - ${gdmMonitorConfig}" ];
 
   services.xserver.xrandrHeads = [
     {
@@ -75,7 +75,7 @@
 
   home-manager.sharedModules = [
     ({
-      systemd.user.services.kanshi = lib.mkForce {}; # disable the systemd service.
+      systemd.user.services.kanshi = lib.mkForce { }; # disable the systemd service.
       services.kanshi = {
         enable = true;
         settings = [

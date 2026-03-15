@@ -22,6 +22,7 @@
     nixdots.overlays.vesktopDiscordAlias.enable = true;
     nixdots.programs.neovim.enable = true;
     nixdots.programs.tmux.enable = true;
+    nixdots.services.podman.enable = true;
     nixdots.graphical.desktops.hyprland.enable = true;
     nixdots.core.network.dot.enable = true; # DNS over TLS
     nixdots.graphical.base.cursor.size = 32; # Scaling
@@ -60,9 +61,14 @@
         signal-desktop # communication apps
         meld # compare text files
         obsidian # note taking
-        valent # KDE-connect implementation in GTK
+        gimp
+        gthumb
+        dolphin-emu
+        opencode
       ])
       ++ builtins.attrValues flakeInputs.self.packages.${pkgs.stdenv.hostPlatform.system};
+
+    services.udev.packages = with pkgs; [ dolphin-emu ];
 
     home-manager.users.${config.nixdots.core.primaryUser.username} = {
       programs.git.includes = [

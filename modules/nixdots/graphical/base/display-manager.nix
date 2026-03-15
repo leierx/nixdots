@@ -27,7 +27,9 @@ in
         services.displayManager.ly = {
           enable = true;
           settings = {
-            hide_borders = true;
+            allow_empty_password = false;
+            clear_password = true;
+            session_log = "null";
           };
         };
       })

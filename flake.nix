@@ -7,7 +7,6 @@
     {
       nixosConfigurations = {
         desktop = mkNixosSystem { hostName = "desktop"; };
-        surface-p5 = mkNixosSystem { hostName = "surface-p5"; };
       };
 
       packages = (import ./packages { inherit nixpkgs; });
