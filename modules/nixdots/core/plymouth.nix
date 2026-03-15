@@ -4,7 +4,11 @@ let
 in
 {
   options.nixdots.core.plymouth = {
-    enable = lib.mkEnableOption "Enable plymouth";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to enable nixdots.core.plymouth";
+    };
   };
 
   config = lib.mkIf cfg.enable {

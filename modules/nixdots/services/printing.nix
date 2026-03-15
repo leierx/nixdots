@@ -8,7 +8,9 @@ let
   cfg = config.nixdots.services.printing;
 in
 {
-  options.nixdots.services.printing.enable = lib.mkEnableOption "Enable Printing Related Services";
+  options.nixdots.services.printing = {
+    enable = lib.mkEnableOption "nixdots.services.printing";
+  };
 
   config = lib.mkIf cfg.enable {
     services.printing = {

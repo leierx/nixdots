@@ -1,15 +1,17 @@
 {
   outputs =
-    { nixpkgs, ... }@flakeInputs:
+    { ... }@inputs:
     let
-      mkNixosSystem = (import ./lib/mk-nixos-system.nix { inherit flakeInputs; });
+      mkNixosSystem = (import ./lib/mk-nixos-system.nix { inherit inputs; });
+      neovimModule = (import ./modules/home-manager/neovim/flake.nix).outputs { };
     in
     {
+      homeManagerModules.neovim = neovimModule.homeManagerModules.default;
+
       nixosConfigurations = {
         desktop = mkNixosSystem { hostName = "desktop"; };
+        # thonkpad = mkNixosSystem { hostName = "thonkpad"; };
       };
-
-      packages = (import ./packages { inherit nixpkgs; });
     };
 
   inputs = {
@@ -27,9 +29,6 @@
 
     # hardware helper
     nixos-hardware.url = "github:NixOS/nixos-hardware";
-
-    # neovim configuration
-    neovim-dotfiles.url = "github:leierx/neovim-dotfiles";
 
     # hyprland
     hyprland.url = "github:hyprwm/Hyprland?ref=v0.52.1";

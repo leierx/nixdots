@@ -9,7 +9,11 @@ let
 in
 {
   options.nixdots.core.bootloader = {
-    enable = lib.mkEnableOption "Enable bootloader";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to enable nixdots.core.bootloader";
+    };
 
     implementation = lib.mkOption {
       type = lib.types.enum [

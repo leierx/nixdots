@@ -1,15 +1,14 @@
-{
-  pkgs,
-  lib,
-  config,
-  ...
-}:
+{ lib, config, ... }:
 let
-  cfg = config.nixdots.overlays.vesktopDiscordAlias;
+  cfg = config.nixdots.overlays.vesktop;
 in
 {
-  options.nixdots.overlays.vesktopDiscordAlias = {
-    enable = lib.mkEnableOption "Enable Vesktop overlay that adds a Discord desktop entry and uses electron-bin";
+  options.nixdots.overlays.vesktop = {
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to enable nixdots.overlays.vesktop";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -46,6 +45,5 @@ in
         }
       )
     ];
-    home-manager.users.${config.nixdots.core.primaryUser.username}.home.packages = [ pkgs.vesktop ];
   };
 }

@@ -9,7 +9,7 @@ let
 in
 {
   options.nixdots.services.podman = {
-    enable = lib.mkEnableOption "Enable Podman";
+    enable = lib.mkEnableOption "nixdots.services.podman";
   };
 
   config = lib.mkIf cfg.enable {
@@ -18,7 +18,7 @@ in
       dockerCompat = true; # docker alias
       autoPrune.enable = true;
 
-      # Required for containers under podman-compose to be able to talk to each other.
+      # Required for containers under podman-compose to be able to talk to each other
       defaultNetwork.settings.dns_enabled = true;
     };
 

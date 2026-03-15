@@ -1,8 +1,13 @@
-# todo
+# notes to self
+- formating the project: `nixfmt --width=6900 $(rg --files -g '*.nix')` Check: `nixfmt --check --width=6900 $(rg --files -g '*.nix')`
+- cool command to get default enabled/disabled sub-modules within the "nixdots" module:
 
-- [x] V6 where my scaffold system "nixdots" is one self contained module
-- [ ] Yazi config
-- [x] Expose scripts through flake in one fell swoop
-- [x] remove systemStateVersion from mkNixosSystem as a parameter
-- [ ] "neovim" should probably not be its own hm module
-- [ ] get surface-p5 system up to speed
+```bash
+nix eval --json .#nixosConfigurations.desktop.config.nixdots.core.privilegeEscalation.enable
+
+# independent of GIT
+nix eval --impure --json path:$PWD#nixosConfigurations.desktop.config.nixdots.core.privilegeEscalation.enable
+```
+
+# Notes on coding style:
+- I generally don’t like trailing punctuation

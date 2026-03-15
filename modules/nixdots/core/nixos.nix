@@ -10,7 +10,11 @@ let
 in
 {
   options.nixdots.core.nixos = {
-    enable = lib.mkEnableOption "Enable Nix + system defaults";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to enable nixdots.core.nixos";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -32,8 +36,8 @@ in
       };
 
       # Thanks to: https://nixos-and-flakes.thiscute.world/best-practices/nix-path-and-flake-registry#custom-nix-path-and-flake-registry
-      registry.nixpkgs.flake = flakeInputs.nixpkgs; # make `nix run nixpkgs#nixpkgs` use the same nixpkgs as the one used by this flake.
-      channel.enable = false; # remove nix-channel related tools & configs, we use flakes instead.
+      registry.nixpkgs.flake = flakeInputs.nixpkgs; # make `nix run nixpkgs#nixpkgs` use the same nixpkgs as the one used by this flake
+      channel.enable = false; # remove nix-channel related tools & configs, we use flakes instead
       nixPath = [ "nixpkgs=${flakeInputs.nixpkgs.outPath}" ];
     };
 
@@ -57,10 +61,9 @@ in
 
     # git has to be installed in global scope in order for nixos-rebuild to work properly
     programs.git.enable = true;
-    home-manager.users.${config.nixdots.core.primaryUser.username} = {
+    home-manager.users.leier = {
       programs.git = {
         enable = true;
-
         settings = {
           credential.helper = "cache --timeout=36000";
           safe.directory = "*";

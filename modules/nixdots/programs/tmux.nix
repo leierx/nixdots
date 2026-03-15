@@ -9,15 +9,15 @@ let
 in
 {
   options.nixdots.programs.tmux = {
-    enable = lib.mkEnableOption "Enable tmux for the primary user";
+    enable = lib.mkEnableOption "nixdots.programs.tmux";
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.users.${config.nixdots.core.primaryUser.username} = {
+    home-manager.users.leier = {
       home.packages = [ pkgs.tmux ];
 
       # ephemeral & per-user socket
-      home.sessionVariables."TMUX_TMPDIR" = ''''${XDG_RUNTIME_DIR:-/run/user/''$UID}'';
+      home.sessionVariables."TMUX_TMPDIR" = "\${XDG_RUNTIME_DIR:-/run/user/\$UID}";
 
       # autostart tmux
       programs.zsh.initContent = ''if [[ -z "$TMUX" ]]; then tmux new-session -A -s "win-$$"; fi'';

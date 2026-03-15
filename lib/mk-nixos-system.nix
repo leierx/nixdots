@@ -1,27 +1,22 @@
-{ flakeInputs }:
+{ inputs }:
 {
   hostName,
   system ? "x86_64-linux",
 }:
-flakeInputs.nixpkgs.lib.nixosSystem {
+inputs.nixpkgs.lib.nixosSystem {
   inherit system;
-  specialArgs = { inherit flakeInputs; };
+  specialArgs = { inherit inputs; };
   modules = [
-    ../nixos-systems/${hostName}/configuration.nix
-
-    flakeInputs.home-manager.nixosModules.home-manager
-    flakeInputs.disko.nixosModules.disko
-    ../modules/nixdots # nixdots module with my scaffold
-
+    ../hosts/${hostName}/configuration.nix
     (
-      { config, pkgs, ... }:
+      { config, ... }:
       {
-        system.stateVersion = (flakeInputs.nixpkgs.lib.versions.majorMinor flakeInputs.nixpkgs.lib.version);
+        system.stateVersion = (inputs.nixpkgs.lib.versions.majorMinor inputs.nixpkgs.lib.version);
         networking.hostName = hostName;
         # import nixpkgs-unstable as an overlay
         nixpkgs.overlays = [
           (final: prev: {
-            unstable = import flakeInputs.nixpkgs-unstable {
+            unstable = import inputs.nixpkgs-unstable {
               inherit system;
               config = config.nixpkgs.config;
               overlays = config.nixpkgs.overlays;

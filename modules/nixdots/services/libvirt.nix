@@ -1,7 +1,6 @@
 {
   lib,
   config,
-  pkgs,
   ...
 }:
 let
@@ -9,7 +8,7 @@ let
 in
 {
   options.nixdots.services.libvirt = {
-    enable = lib.mkEnableOption "Enable libvirt / KVM virtualisation";
+    enable = lib.mkEnableOption "nixdots.services.libvirt";
   };
 
   config = lib.mkIf cfg.enable {

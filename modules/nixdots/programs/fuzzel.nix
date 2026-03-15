@@ -9,11 +9,11 @@ let
 in
 {
   options.nixdots.programs.fuzzel = {
-    enable = lib.mkEnableOption "Enable fuzzel";
+    enable = lib.mkEnableOption "nixdots.programs.fuzzel";
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.users.${config.nixdots.core.primaryUser.username} = {
+    home-manager.users.leier = {
       # dependencies
       home.packages = [
         pkgs.hack-font

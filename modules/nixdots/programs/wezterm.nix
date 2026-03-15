@@ -9,11 +9,11 @@ let
 in
 {
   options.nixdots.programs.wezterm = {
-    enable = lib.mkEnableOption "Enable wezterm";
+    enable = lib.mkEnableOption "nixdots.programs.wezterm";
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.users.${config.nixdots.core.primaryUser.username} = {
+    home-manager.users.leier = {
       # dependency
       home.packages = [ pkgs.hack-font ];
 

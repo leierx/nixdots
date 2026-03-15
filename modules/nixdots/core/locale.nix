@@ -9,7 +9,11 @@ let
 in
 {
   options.nixdots.core.locale = {
-    enable = lib.mkEnableOption "Enable locale + console + time defaults";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to enable nixdots.core.locale";
+    };
   };
 
   config = lib.mkIf cfg.enable {
