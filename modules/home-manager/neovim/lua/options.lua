@@ -14,6 +14,8 @@ o.signcolumn = "yes" -- avoid text shifting when signs appear
 o.termguicolors = true -- 24-bit colors
 o.winborder = "rounded" -- default border style for floating windows
 o.completeopt = { "menuone", "noselect" }
+o.list = true -- show invisible characters
+o.listchars = { trail = "·" } -- show trailing spaces
 
 -- Indentation & tabs
 o.expandtab = true -- insert spaces instead of literal tabs

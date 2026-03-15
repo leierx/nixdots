@@ -28,8 +28,7 @@
           };
 
           config = {
-            xdg.configFile."nvim".source =
-              if cfg.useOutOfStore then config.lib.file.mkOutOfStoreSymlink cfg.outOfStorePath else ./.;
+            xdg.configFile."nvim".source = if cfg.useOutOfStore then config.lib.file.mkOutOfStoreSymlink cfg.outOfStorePath else ./.;
 
             home.packages = with pkgs; [
               ripgrep
