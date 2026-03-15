@@ -9,7 +9,11 @@
     inputs.nixos-hardware.nixosModules.common-cpu-amd-pstate
     inputs.nixos-hardware.nixosModules.common-gpu-amd
     inputs.nixos-hardware.nixosModules.common-pc-ssd
-    #
+    # nixdots custom module
+    "${inputs.self}/modules/nixdots"
+    # home-manager
+    inputs.home-manager.nixosModules.home-manager
+    # extra config files
     ./disko.nix
     ./monitors.nix
   ];
@@ -17,7 +21,7 @@
   config = {
     # nixdots
     nixdots.core.network.dot.enable = true;
-    nixdots.gui.base.cursor.size = true;
+    nixdots.gui.base.cursor.size = 32;
     nixdots.gui.desktops.hyprland.enable = true;
     nixdots.gui.enable = true;
     nixdots.programs.tmux.enable = true;

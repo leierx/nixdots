@@ -28,7 +28,7 @@ in
         settings = {
           background = {
             monitor = "";
-            path = "${./assets/hyprlock-wallpaper.png}";
+            path = "${./assets/hyprlock-background.jpg}";
           };
 
           general = {

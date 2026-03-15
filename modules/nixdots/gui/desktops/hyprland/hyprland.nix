@@ -2,7 +2,7 @@
   lib,
   config,
   pkgs,
-  flakeInputs,
+  inputs,
   ...
 }:
 let
@@ -12,12 +12,6 @@ in
   options.nixdots.gui.desktops.hyprland = {
     enable = lib.mkEnableOption "nixdots.gui.desktops.hyprland";
   };
-
-  imports = [
-    ./hypridle.nix
-    ./hyprlock.nix
-    ./hyprpaper.nix
-  ];
 
   config = lib.mkIf cfg.enable {
     # enable hyprland submodules
@@ -37,8 +31,9 @@ in
     # Hyprland install (from flake)
     programs.hyprland = {
       enable = true;
-      package = flakeInputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-      portalPackage = flakeInputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+      package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+      portalPackage =
+        inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
     };
 
     # cachix to speed up build times
@@ -54,7 +49,7 @@ in
     home-manager.users.leier = {
       home.packages = [
         pkgs.wl-clipboard
-        flakeInputs.ags.packages.${pkgs.stdenv.hostPlatform.system}.agsFull
+        inputs.ags.packages.${pkgs.stdenv.hostPlatform.system}.agsFull
       ];
 
       wayland.windowManager.hyprland = {
@@ -63,7 +58,7 @@ in
 
         package = config.programs.hyprland.package;
 
-        plugins = [ flakeInputs.hyprsplit.packages.${pkgs.stdenv.hostPlatform.system}.hyprsplit ];
+        plugins = [ inputs.hyprsplit.packages.${pkgs.stdenv.hostPlatform.system}.hyprsplit ];
 
         settings = {
           "$mod" = "SUPER";
@@ -82,7 +77,9 @@ in
 
           exec = [
             "pidof ${pkgs.hyprpolkitagent}/libexec/hyprpolkitagent || ${pkgs.hyprpolkitagent}/libexec/hyprpolkitagent"
-            "pidof ${flakeInputs.agsShell.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/ags-shell || ${flakeInputs.agsShell.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/ags-shell"
+            "pidof ${inputs.agsShell.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/ags-shell || ${
+              inputs.agsShell.packages.${pkgs.stdenv.hostPlatform.system}.default
+            }/bin/ags-shell"
           ]
           ++ lib.optionals config.networking.networkmanager.enable [
             "pidof ${pkgs.networkmanagerapplet}/bin/nm-applet || ${pkgs.networkmanagerapplet}/bin/nm-applet"
@@ -96,7 +93,8 @@ in
           general = {
             border_size = 2;
             "col.inactive_border" = "rgb(595959)";
-            "col.active_border" = "rgb(2bbf3e) rgb(2bbf3e) rgb(2bbf3e) rgb(0e66d0) rgb(0e66d0) rgb(0e66d0) 30deg";
+            "col.active_border" =
+              "rgb(2bbf3e) rgb(2bbf3e) rgb(2bbf3e) rgb(0e66d0) rgb(0e66d0) rgb(0e66d0) 30deg";
             gaps_in = 10;
             gaps_out = 20;
             layout = "dwindle";
