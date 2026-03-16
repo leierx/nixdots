@@ -20,7 +20,7 @@
 
   config = {
     # nixdots
-    nixdots.core.network.dot.enable = true;
+    nixdots.base.network.dot.enable = true;
     nixdots.gui.base.cursor.size = 32;
     nixdots.gui.desktops.hyprland.enable = true;
     nixdots.gui.enable = true;
@@ -53,9 +53,6 @@
       age
       opentofu
       sops # server dev
-      tree
-      fzf
-      fastfetch # cli tools
       signal-desktop # communication apps
       meld # compare text files
       obsidian # note taking

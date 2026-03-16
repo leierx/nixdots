@@ -5,14 +5,14 @@
   ...
 }:
 let
-  cfg = config.nixdots.core.locale;
+  cfg = config.nixdots.base.locale;
 in
 {
-  options.nixdots.core.locale = {
+  options.nixdots.base.locale = {
     enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Whether to enable nixdots.core.locale";
+      description = "Whether to enable nixdots.base.locale";
     };
   };
 

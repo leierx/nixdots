@@ -6,14 +6,14 @@
   ...
 }:
 let
-  cfg = config.nixdots.core.nixos;
+  cfg = config.nixdots.base.nixos;
 in
 {
-  options.nixdots.core.nixos = {
+  options.nixdots.base.nixos = {
     enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Whether to enable nixdots.core.nixos";
+      description = "Whether to enable nixdots.base.nixos";
     };
   };
 
@@ -55,6 +55,14 @@ in
       enable = true;
       defaultEditor = true;
     };
+
+    # basic terminal utilities IMO
+    environment.systemPackages = [
+      pkgs.jq
+      pkgs.fzf
+      pkgs.fastfetch
+      pkgs.tree
+    ];
 
     # clean /tmp on boot
     boot.tmp.cleanOnBoot = true;

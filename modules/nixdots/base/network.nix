@@ -1,6 +1,6 @@
 { lib, config, ... }:
 let
-  cfg = config.nixdots.core.network;
+  cfg = config.nixdots.base.network;
 
   quad9Plain = [
     "9.9.9.9"
@@ -13,14 +13,14 @@ let
   ];
 in
 {
-  options.nixdots.core.network = {
+  options.nixdots.base.network = {
     enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Whether to enable nixdots.core.network";
+      description = "Whether to enable nixdots.base.network";
     };
 
-    dot.enable = lib.mkEnableOption "nixdots.core.network.dot";
+    dot.enable = lib.mkEnableOption "nixdots.base.network.dot";
 
     implementation = lib.mkOption {
       type = lib.types.enum [

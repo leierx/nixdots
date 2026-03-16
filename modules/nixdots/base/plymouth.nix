@@ -1,13 +1,13 @@
 { lib, config, ... }:
 let
-  cfg = config.nixdots.core.plymouth;
+  cfg = config.nixdots.base.plymouth;
 in
 {
-  options.nixdots.core.plymouth = {
+  options.nixdots.base.plymouth = {
     enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Whether to enable nixdots.core.plymouth";
+      description = "Whether to enable nixdots.base.plymouth";
     };
   };
 

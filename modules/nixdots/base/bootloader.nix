@@ -5,14 +5,14 @@
   ...
 }:
 let
-  cfg = config.nixdots.core.bootloader;
+  cfg = config.nixdots.base.bootloader;
 in
 {
-  options.nixdots.core.bootloader = {
+  options.nixdots.base.bootloader = {
     enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Whether to enable nixdots.core.bootloader";
+      description = "Whether to enable nixdots.base.bootloader";
     };
 
     implementation = lib.mkOption {

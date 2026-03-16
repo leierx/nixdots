@@ -1,13 +1,18 @@
-{ lib, config, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 let
-  cfg = config.nixdots.core.privilegeEscalation;
+  cfg = config.nixdots.base.privilegeEscalation;
 in
 {
-  options.nixdots.core.privilegeEscalation = {
+  options.nixdots.base.privilegeEscalation = {
     enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Whether to enable nixdots.core.privilegeEscalation";
+      description = "Whether to enable nixdots.base.privilegeEscalation";
     };
 
     implementation = lib.mkOption {
@@ -42,6 +47,10 @@ in
         };
 
         security.sudo.enable = false;
+
+        # alias + shim
+        environment.interactiveShellInit = "alias sudo=\"doas\"";
+        environment.systemPackages = [ pkgs.doas-sudo-shim ];
       })
 
       (lib.mkIf (cfg.implementation == "sudo") {

@@ -5,14 +5,14 @@
   ...
 }:
 let
-  cfg = config.nixdots.core.user;
+  cfg = config.nixdots.base.user;
 in
 {
-  options.nixdots.core.user = {
+  options.nixdots.base.user = {
     enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Whether to enable nixdots.core.user";
+      description = "Whether to enable nixdots.base.user";
     };
   };
 

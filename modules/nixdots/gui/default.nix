@@ -7,6 +7,11 @@ let
   cfg = config.nixdots.gui;
 in
 {
+  imports = [
+    ./base
+    ./desktops
+  ];
+
   options.nixdots.gui = {
     enable = lib.mkEnableOption "nixdots.gui";
 

@@ -1,1 +1,10 @@
-{ inputs, ... }: (import "${inputs.self}/lib/recursive-import.nix") ./.
+{ inputs, ... }:
+{
+  imports = [
+    ./base
+    ./gui
+    ./overlays
+    ./programs
+    ./services
+  ];
+}
