@@ -10,7 +10,7 @@
 
       nixosConfigurations = {
         desktop = mkNixosSystem { hostName = "desktop"; };
-        # thonkpad = mkNixosSystem { hostName = "thonkpad"; };
+        thonkpad = mkNixosSystem { hostName = "thonkpad"; };
       };
     };
 
