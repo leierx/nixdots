@@ -11,11 +11,8 @@
     inputs.nixos-hardware.nixosModules.common-pc-ssd
     # nixdots custom module
     "${inputs.self}/modules/nixdots"
-    # home-manager
-    inputs.home-manager.nixosModules.home-manager
     # extra config files
     ./disko.nix
-    ./monitors.nix
   ];
 
   config = {
@@ -23,7 +20,27 @@
     nixdots.base.network.dot.enable = true;
     nixdots.gui.base.cursor.size = 32;
     nixdots.gui.desktops.hyprland.enable = true;
+    nixdots.gui.desktops.hyprland.hyprdynamicmonitors = {
+      profiles."dual_monitor.go.tmpl" = ''
+        {{- $right := index .MonitorsByTag "right" -}}
+        {{- $left := index .MonitorsByTag "left" -}}
+        monitor = {{$right.Name}},2560x1440@144,auto-right,1
+        monitor = {{$left.Name}},2560x1440@144,auto-left,1
+      '';
+      extraConfig = ''
+        [profiles.dual_monitor]
+        config_file = "hyprconfigs/dual_monitor.go.tmpl"
+        config_file_type = "template"
+        [[profiles.dual_monitor.conditions.required_monitors]]
+        description = "AOC Q27G2G4 0x000021BD"
+        monitor_tag = "right"
+        [[profiles.dual_monitor.conditions.required_monitors]]
+        description = "AOC Q27G2G4 0x000023BD"
+        monitor_tag = "left"
+      '';
+    };
     nixdots.gui.enable = true;
+    nixdots.programs.git.enableDefaultConfig = true;
     nixdots.programs.tmux.enable = true;
     nixdots.services.podman.enable = true;
 
@@ -41,23 +58,23 @@
 
     environment.systemPackages = with pkgs; [
       kubectl
-      kubectl-df-pv # kubernetes utils
-      xfce.mousepad # notepad
-      spotify # music
-      pavucontrol # settings gui apps
+      kubectl-df-pv
+      xfce.mousepad
+      spotify
+      pavucontrol
       brave
-      firefox-bin # browsers
-      pika-backup # home directory file backup
-      keymapp # zsa keyboard mapper
+      firefox-bin
+      pika-backup
+      keymapp
       wireguard-tools
       age
       opentofu
-      sops # server dev
-      signal-desktop # communication apps
-      meld # compare text files
-      obsidian # note taking
+      sops
+      signal-desktop
+      meld
+      obsidian
       gimp
-      vesktop # discord client
+      vesktop
       gthumb
       dolphin-emu
       opencode
@@ -72,21 +89,6 @@
         useOutOfStore = true;
         outOfStorePath = "/home/leier/Projects/nixdots/modules/home-manager/neovim";
       };
-
-      programs.git.includes = [
-        {
-          condition = "hasconfig:remote.*.url:git@github.com:**/**";
-          contents = {
-            user = {
-              name = "leierx";
-              email = "larssmitheier@protonmail.com";
-            };
-          };
-        }
-      ];
-
-      # Scaling
-      dconf.settings."org/gnome/desktop/interface".text-scaling-factor = 1.1;
 
       wayland.windowManager.hyprland.settings = {
         exec-once = [ "vesktop" ];

@@ -1,4 +1,5 @@
 {
+  inputs,
   lib,
   config,
   pkgs,
@@ -8,6 +9,8 @@ let
   cfg = config.nixdots.base.user;
 in
 {
+  imports = [ inputs.home-manager.nixosModules.home-manager ];
+
   options.nixdots.base.user = {
     enable = lib.mkOption {
       type = lib.types.bool;
@@ -55,7 +58,7 @@ in
       initialHashedPassword = "$6$IwGp276/71CzyoDG$RHOfZSCTLXN2NGk7T8QcYTx815KNhEx42ECUrNxYcdjAga0JD4EVzSgUus.WR2U44Epk8fpcnMdXTIJmYB4dd0";
     };
 
-    # home-manager
+    # setup home-manager
     home-manager = {
       useUserPackages = true;
       useGlobalPkgs = true;

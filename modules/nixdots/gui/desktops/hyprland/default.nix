@@ -10,6 +10,7 @@ let
 in
 {
   imports = [
+    ./hyprdynamicmonitors.nix
     ./hypridle.nix
     ./hyprlock.nix
     ./hyprpaper.nix
@@ -21,6 +22,7 @@ in
 
   config = lib.mkIf cfg.enable {
     # enable hyprland submodules
+    nixdots.gui.desktops.hyprland.hyprdynamicmonitors.enable = true;
     nixdots.gui.desktops.hyprland.hypridle.enable = true;
     nixdots.gui.desktops.hyprland.hyprlock.enable = true;
     nixdots.gui.desktops.hyprland.hyprpaper.enable = true;

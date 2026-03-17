@@ -12,8 +12,5 @@ nix eval --impure --json ".#nixosConfigurations.desktop.options.nixdots"
 # Todo
 
 # Todo - neovim
-- [x] more lsp's
-- [x] autocomplete
-- [x] popup terminal
 - [ ] fix paste binding
 
