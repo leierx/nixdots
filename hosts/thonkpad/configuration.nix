@@ -1,6 +1,7 @@
 {
   inputs,
   pkgs,
+  lib,
   ...
 }:
 {
@@ -21,6 +22,10 @@
     nixdots.programs.git.enableDefaultConfig = true;
     nixdots.programs.tmux.enable = true;
     nixdots.services.podman.enable = true;
+
+    # fast as fuck boot
+    boot.loader.timeout = lib.mkForce 0;
+    nixdots.base.bootloader.implementation = "systemd-boot";
 
     # hardware
     hardware.enableAllFirmware = true;

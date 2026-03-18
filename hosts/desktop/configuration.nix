@@ -42,6 +42,7 @@
     nixdots.gui.enable = true;
     nixdots.programs.git.enableDefaultConfig = true;
     nixdots.programs.tmux.enable = true;
+    nixdots.services.libvirt.enable = true;
     nixdots.services.podman.enable = true;
 
     # hardware
@@ -78,6 +79,7 @@
       gthumb
       dolphin-emu
       opencode
+      virt-manager
     ];
 
     services.udev.packages = with pkgs; [ dolphin-emu ];

@@ -39,7 +39,6 @@ in
       (lib.mkIf (cfg.implementation == "systemd-boot") {
         boot.loader.systemd-boot = {
           enable = true;
-          netbootxyz.enable = true; # looks awesome
           configurationLimit = 5;
         };
       })

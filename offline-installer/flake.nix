@@ -5,20 +5,49 @@
   };
 
   outputs =
-    { nixpkgs, target, ... }:
+    {
+      self,
+      nixpkgs,
+      target,
+      ...
+    }:
     let
-      # impure, but makes it easy to pass a custom variable
+      lib = nixpkgs.lib;
       targetHost = builtins.getEnv "TARGET_HOST";
     in
     {
-      nixosConfigurations.offlineInstaller = nixpkgs.lib.nixosSystem {
+      nixosConfigurations.offlineInstaller = lib.nixosSystem {
         system = "x86_64-linux";
+        specialArgs = { inherit self target targetHost; };
         modules = [
           "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
           (
-            { pkgs, ... }:
             {
-              # locale/keymap/ntp
+              lib,
+              pkgs,
+              target,
+              targetHost,
+              ...
+            }:
+            let
+              flakeOutPaths =
+                let
+                  collector = parent: map (child: [ child.outPath ] ++ (if child ? inputs && child.inputs != { } then collector child else [ ])) (lib.attrValues parent.inputs);
+                in
+                lib.unique (lib.flatten (collector target));
+
+              offlineDeps = [
+                target.nixosConfigurations.${targetHost}.config.system.build.toplevel
+                target.nixosConfigurations.${targetHost}.config.system.build.diskoScript
+                target.nixosConfigurations.${targetHost}.config.system.build.diskoScript.drvPath
+                target.nixosConfigurations.${targetHost}.pkgs.stdenv.drvPath
+                target.nixosConfigurations.${targetHost}.pkgs.perlPackages.ConfigIniFiles
+                target.nixosConfigurations.${targetHost}.pkgs.perlPackages.FileSlurp
+                (target.nixosConfigurations.${targetHost}.pkgs.closureInfo { rootPaths = [ ]; }).drvPath
+              ]
+              ++ flakeOutPaths;
+            in
+            {
               console.keyMap = "no";
               i18n.defaultLocale = "en_DK.UTF-8";
               time.timeZone = "Europe/Oslo";
@@ -30,21 +59,27 @@
                 "3.no.pool.ntp.org"
               ];
 
-              # system to be offline installed.
-              environment.etc."offline-target".source = target.outPath;
-              isoImage.storeContents = [ target.nixosConfigurations.${targetHost}.config.system.build.toplevel ];
+              # no need to aaaalways run "sudo -i"
+              services.getty.autologinUser = lib.mkForce "root";
 
-              # networking
+              # bloat
+              documentation.nixos.enable = false;
+
               networking.hostName = "offline-installer";
               networking.dhcpcd.enable = false;
 
-              # cut down on build time
+              # tightest compression
               isoImage.squashfsCompression = "xz";
 
-              # install script + disko
+              isoImage.storeContents = offlineDeps;
+
               environment.systemPackages = [
                 (pkgs.writeShellScriptBin "offline-installer" ''
-                  ${pkgs.disko}/bin/disko-install --mode format --write-efi-boot-entries --flake "/etc/offline-target#${targetHost}"
+                  umount -R /mnt 2>/dev/null
+                  ${pkgs.disko}/bin/disko --mode "destroy,format,mount" --root-mountpoint /mnt --yes-wipe-all-disks --flake ${target}#${targetHost}
+                  mountpoint /mnt
+                  mountpoint /mnt/boot
+                  nixos-install --root /mnt --no-root-password --flake ${target}#${targetHost}
                 '')
               ];
             }
