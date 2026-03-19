@@ -35,6 +35,6 @@
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
     hyprsplit.url = "github:shezdy/hyprsplit?ref=v0.52.1";
     hyprsplit.inputs.hyprland.follows = "hyprland";
-    ags-shell.url = "path:./modules/packages/ags";
+    ags-shell.url = "path:./packages/ags";
   };
 }

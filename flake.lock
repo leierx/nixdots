@@ -30,11 +30,11 @@
         ]
       },
       "locked": {
-        "path": "./modules/packages/ags",
+        "path": "./packages/ags",
         "type": "path"
       },
       "original": {
-        "path": "./modules/packages/ags",
+        "path": "./packages/ags",
         "type": "path"
       },
       "parent": []
