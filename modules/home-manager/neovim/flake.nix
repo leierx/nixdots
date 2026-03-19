@@ -22,7 +22,6 @@
 
             outOfStorePath = lib.mkOption {
               type = lib.types.path;
-              default = "/home/leier/Projects/nixdots/modules/home-manager/neovim";
               description = "Path to an out-of-store Neovim config";
             };
           };

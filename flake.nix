@@ -3,11 +3,8 @@
     { ... }@inputs:
     let
       mkNixosSystem = (import ./lib/mk-nixos-system.nix { inherit inputs; });
-      neovimModule = (import ./modules/home-manager/neovim/flake.nix).outputs { };
     in
     {
-      homeManagerModules.neovim = neovimModule.homeManagerModules.default;
-
       nixosConfigurations = {
         desktop = mkNixosSystem { hostName = "desktop"; };
         thonkpad = mkNixosSystem { hostName = "thonkpad"; };
@@ -27,6 +24,9 @@
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
 
+    # neovim config
+    neovim-config.url = "path:./modules/home-manager/neovim";
+
     # hardware helper
     nixos-hardware.url = "github:NixOS/nixos-hardware";
 
@@ -35,8 +35,6 @@
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
     hyprsplit.url = "github:shezdy/hyprsplit?ref=v0.52.1";
     hyprsplit.inputs.hyprland.follows = "hyprland";
-    ags.url = "github:aylur/ags?ref=v3.1.1";
-    agsShell.url = "github:leierx/ags-dotfiles";
-    agsShell.inputs.ags.follows = "ags";
+    ags-shell.url = "path:./modules/packages/ags";
   };
 }

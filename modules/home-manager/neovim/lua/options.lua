@@ -20,7 +20,8 @@ o.listchars = { trail = "·" } -- show trailing spaces
 -- Indentation & tabs
 o.expandtab = true -- insert spaces instead of literal tabs
 o.shiftwidth = 2 -- indent size for << and >>, autoindent, etc.
-o.smartindent = true -- basic smart autoindent
+o.autoindent = true -- keep indentation from previous line
+o.smartindent = false -- avoid weird language guesses
 o.softtabstop = 2 -- <Tab>/<BS> behave like 2-space indent steps
 o.tabstop = 2 -- visual width of a tab character
 

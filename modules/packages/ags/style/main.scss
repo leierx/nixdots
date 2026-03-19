@@ -1,0 +1,8 @@
+@use 'nix_theme' as *;
+@use 'topbar';
+
+* {
+  font-family: 'Adwaita Sans';
+  font-size: 12pt;
+  color: $fg;
+}

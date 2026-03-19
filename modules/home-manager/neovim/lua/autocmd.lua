@@ -8,7 +8,7 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 -- no auto-continue comments
 vim.api.nvim_create_autocmd({ "FileType" }, {
   callback = function()
-    vim.opt.formatoptions:remove({"c", "r", "o"})
+    vim.opt.formatoptions:remove({"r", "o"})
   end
 })
 

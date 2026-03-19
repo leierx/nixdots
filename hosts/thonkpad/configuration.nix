@@ -42,7 +42,7 @@
     ];
 
     home-manager.users.leier = {
-      imports = [ inputs.self.homeManagerModules.neovim ];
+      imports = [ inputs.neovim-config.homeManagerModules.default ];
 
       wayland.windowManager.hyprland.settings = {
         exec-once = [ "vesktop" ];

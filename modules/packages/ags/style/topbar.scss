@@ -1,0 +1,57 @@
+@use 'sass:color';
+@use 'nix_theme' as *;
+
+$bar_maxheight: 24pt;
+
+window.topbar {
+  background-color: #000; color: #000;
+  // border around topbar
+  > box { margin: 4pt; }
+  // spacing between widgets calculated in PT
+  > box > * > *:not(:last-child) { margin-right: 2pt; }
+
+  .distrologo, .workspaces, .datetime {
+    all: unset;
+    * { all: unset; }
+  }
+
+  .distrologo {
+    min-width: $bar_maxheight;
+    min-height: $bar_maxheight;
+    -gtk-icon-size: $bar_maxheight * 0.8;
+  }
+
+  .workspaces {
+    > button {
+      min-height: $bar_maxheight;
+      min-width: $bar_maxheight;
+      font-weight: bold;
+      border-radius: $bar_maxheight * .1;
+      > label { color: rgba($fg, 0.4); }
+
+      &.occupied > label { color: $fg; }
+      &.focused { background-color: color.scale(#fff, $alpha: -75%); }
+      &:hover { background-color: color.scale(#fff, $alpha: -85%); }
+      &:hover:active { background-color: color.scale(#fff, $alpha: -75%); }
+    }
+  }
+
+  .datetime {
+    min-height: $bar_maxheight;
+    border-radius: $bar_maxheight * .1;
+    padding: 0 8pt;
+
+    &:hover { background-color: color.scale(#fff, $alpha: -85%); }
+    &:hover:active { background-color: color.scale(#fff, $alpha: -75%); }
+    > label { font-weight: 500; }
+  }
+
+  .systray {
+    min-height: $bar_maxheight;
+    padding: 0 4pt;
+    background-color: color.scale(#fff, $alpha: -95%);
+    border-radius: $bar_maxheight * 0.2;
+    > box { all: unset; min-width: $bar_maxheight * 0.8; }
+    image { all: unset; -gtk-icon-size: $bar_maxheight * 0.6; }
+  }
+}

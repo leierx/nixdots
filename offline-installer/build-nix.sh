@@ -2,14 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-
-TARGET_HOST="$(
-  nix shell nixpkgs#jq nixpkgs#fzf --command bash -c "
-    nix flake show --json '$SCRIPT_DIR/..' |
-      jq -r '.nixosConfigurations | keys[]' |
-      fzf
-  "
-)"
+export TARGET_HOST="$(nix shell 'nixpkgs#jq' 'nixpkgs#fzf' --command bash -c "nix flake show --json $SCRIPT_DIR/.. | jq -r '.nixosConfigurations | keys[]' | fzf" )"
 
 [ -n "${TARGET_HOST:-}" ] || {
   echo "No host selected" >&2

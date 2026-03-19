@@ -40,8 +40,7 @@ in
     programs.hyprland = {
       enable = true;
       package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-      portalPackage =
-        inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+      portalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
     };
 
     # cachix to speed up build times
@@ -55,10 +54,7 @@ in
 
     # Hyprland config
     home-manager.users.leier = {
-      home.packages = [
-        pkgs.wl-clipboard
-        inputs.ags.packages.${pkgs.stdenv.hostPlatform.system}.agsFull
-      ];
+      home.packages = [ pkgs.wl-clipboard ];
 
       wayland.windowManager.hyprland = {
         enable = true;
@@ -85,9 +81,7 @@ in
 
           exec = [
             "pidof ${pkgs.hyprpolkitagent}/libexec/hyprpolkitagent || ${pkgs.hyprpolkitagent}/libexec/hyprpolkitagent"
-            "pidof ${inputs.agsShell.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/ags-shell || ${
-              inputs.agsShell.packages.${pkgs.stdenv.hostPlatform.system}.default
-            }/bin/ags-shell"
+            "pidof ${inputs.ags-shell.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/ags-shell || ${inputs.ags-shell.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/ags-shell"
           ]
           ++ lib.optionals config.networking.networkmanager.enable [
             "pidof ${pkgs.networkmanagerapplet}/bin/nm-applet || ${pkgs.networkmanagerapplet}/bin/nm-applet"
@@ -101,8 +95,7 @@ in
           general = {
             border_size = 2;
             "col.inactive_border" = "rgb(595959)";
-            "col.active_border" =
-              "rgb(2bbf3e) rgb(2bbf3e) rgb(2bbf3e) rgb(0e66d0) rgb(0e66d0) rgb(0e66d0) 30deg";
+            "col.active_border" = "rgb(2bbf3e) rgb(2bbf3e) rgb(2bbf3e) rgb(0e66d0) rgb(0e66d0) rgb(0e66d0) 30deg";
             gaps_in = 10;
             gaps_out = 20;
             layout = "dwindle";

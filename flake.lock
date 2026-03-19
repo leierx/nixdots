@@ -20,30 +20,24 @@
         "type": "github"
       }
     },
-    "agsShell": {
+    "ags-shell": {
       "inputs": {
-        "ags": [
-          "ags"
-        ],
+        "ags": "ags",
         "nixpkgs": [
-          "agsShell",
+          "ags-shell",
           "ags",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1765455259,
-        "narHash": "sha256-G8SkIBxW1eiuR/QLnOVaDuQVBkxCZUWS55/HxtaYR+8=",
-        "owner": "leierx",
-        "repo": "ags-dotfiles",
-        "rev": "33177f3b303be16ec002d5611235c3956bb75ed6",
-        "type": "github"
+        "path": "./modules/packages/ags",
+        "type": "path"
       },
       "original": {
-        "owner": "leierx",
-        "repo": "ags-dotfiles",
-        "type": "github"
-      }
+        "path": "./modules/packages/ags",
+        "type": "path"
+      },
+      "parent": []
     },
     "aquamarine": {
       "inputs": {
@@ -81,6 +75,7 @@
     "astal": {
       "inputs": {
         "nixpkgs": [
+          "ags-shell",
           "ags",
           "nixpkgs"
         ]
@@ -106,11 +101,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1773506317,
-        "narHash": "sha256-qWKbLUJpavIpvOdX1fhHYm0WGerytFHRoh9lVck6Bh0=",
+        "lastModified": 1773889306,
+        "narHash": "sha256-PAqwnsBSI9SVC2QugvQ3xeYCB0otOwCacB1ueQj2tgw=",
         "owner": "nix-community",
         "repo": "disko",
-        "rev": "878ec37d6a8f52c6c801d0e2a2ad554c75b9353c",
+        "rev": "5ad85c82cc52264f4beddc934ba57f3789f28347",
         "type": "github"
       },
       "original": {
@@ -512,6 +507,17 @@
         "type": "github"
       }
     },
+    "neovim-config": {
+      "locked": {
+        "path": "./modules/home-manager/neovim",
+        "type": "path"
+      },
+      "original": {
+        "path": "./modules/home-manager/neovim",
+        "type": "path"
+      },
+      "parent": []
+    },
     "nixos-hardware": {
       "locked": {
         "lastModified": 1773533765,
@@ -545,11 +551,11 @@
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1773734432,
-        "narHash": "sha256-IF5ppUWh6gHGHYDbtVUyhwy/i7D261P7fWD1bPefOsw=",
+        "lastModified": 1773821835,
+        "narHash": "sha256-TJ3lSQtW0E2JrznGVm8hOQGVpXjJyXY2guAxku2O9A4=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "cda48547b432e8d3b18b4180ba07473762ec8558",
+        "rev": "b40629efe5d6ec48dd1efba650c797ddbd39ace0",
         "type": "github"
       },
       "original": {
@@ -561,11 +567,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1773705440,
-        "narHash": "sha256-xB30bbAp0e7ogSEYyc126mAJMt4FRFh8wtm6ADE1xuM=",
+        "lastModified": 1773814637,
+        "narHash": "sha256-GNU+ooRmrHLfjlMsKdn0prEKVa0faVanm0jrgu1J/gY=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "48652e9d5aea46e555b3df87354280d4f29cd3a3",
+        "rev": "fea3b367d61c1a6592bc47c72f40a9f3e6a53e96",
         "type": "github"
       },
       "original": {
@@ -600,12 +606,12 @@
     },
     "root": {
       "inputs": {
-        "ags": "ags",
-        "agsShell": "agsShell",
+        "ags-shell": "ags-shell",
         "disko": "disko",
         "home-manager": "home-manager",
         "hyprland": "hyprland",
         "hyprsplit": "hyprsplit",
+        "neovim-config": "neovim-config",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-unstable": "nixpkgs-unstable"

@@ -85,7 +85,7 @@
     services.udev.packages = with pkgs; [ dolphin-emu ];
 
     home-manager.users.leier = {
-      imports = [ inputs.self.homeManagerModules.neovim ];
+      imports = [ inputs.neovim-config.homeManagerModules.default ];
 
       neovimDots = {
         useOutOfStore = true;

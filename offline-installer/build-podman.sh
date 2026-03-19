@@ -9,12 +9,15 @@ podman run --rm -it \
   -e NIX_CONFIG="experimental-features = nix-command flakes" \
   "docker.io/nixos/nix" \
   bash -euo pipefail -c '
-    export TARGET_HOST="$(nix flake show --json /work | nix run "nixpkgs#jq" -- -r ".nixosConfigurations | keys[]" | nix run "nixpkgs#fzf")"
+    SCRIPT_DIR="/work/offline-installer"
+    export TARGET_HOST="$(nix shell "nixpkgs#jq" "nixpkgs#fzf" --command bash -c "nix flake show --json $SCRIPT_DIR/.. | jq -r \".nixosConfigurations | keys[]\" | fzf")"
 
     [ -n "${TARGET_HOST:-}" ] || {
       echo "No host selected" >&2
       exit 1
     }
 
-    nix build --impure --no-link --print-out-paths --no-write-lock-file "/work/installer#nixosConfigurations.offlineInstaller.config.system.build.isoImage"
+    ISO_BUILD_PATH="$(nix build --impure --no-link --print-out-paths --no-write-lock-file "$SCRIPT_DIR#nixosConfigurations.offlineInstaller.config.system.build.isoImage")"
+
+    cp "$ISO_BUILD_PATH/iso/"*.iso "$SCRIPT_DIR/"
   '
