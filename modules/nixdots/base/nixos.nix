@@ -36,7 +36,8 @@ in
       };
 
       # Thanks to: https://nixos-and-flakes.thiscute.world/best-practices/nix-path-and-flake-registry#custom-nix-path-and-flake-registry
-      registry.nixpkgs.flake = inputs.nixpkgs; # make `nix run nixpkgs#nixpkgs` use the same nixpkgs as the one used by this flake
+      # make `nix run nixpkgs#nixpkgs` use the same nixpkgs as the one used by this flake
+      registry.nixpkgs.flake = inputs.nixpkgs;
       channel.enable = false; # remove nix-channel related tools & configs, we use flakes instead
       nixPath = [ "nixpkgs=${inputs.nixpkgs.outPath}" ];
     };
@@ -67,9 +68,9 @@ in
     # clean /tmp on boot
     boot.tmp.cleanOnBoot = true;
 
-    # git has to be installed in global scope in order for nixos-rebuild to work properly
     programs.git.enable = true;
     home-manager.users.leier = {
+      # git has to be installed in global scope in order for nixos-rebuild to work properly
       programs.git = {
         enable = true;
         settings = {
@@ -77,6 +78,13 @@ in
           safe.directory = "*";
         };
       };
+
+      # allowUnfree for "nix run" command
+      xdg.configFile."nixpkgs/config.nix".text = ''
+        {
+          allowUnfree = true;
+        }
+      '';
     };
 
     # syslog
