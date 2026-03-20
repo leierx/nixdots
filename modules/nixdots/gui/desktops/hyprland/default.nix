@@ -56,6 +56,20 @@ in
     home-manager.users.leier = {
       home.packages = [ pkgs.wl-clipboard ];
 
+      xdg.portal = {
+        enable = true;
+        xdgOpenUsePortal = true;
+        config = {
+          hyprland.default = [
+            "hyprland"
+            "gtk"
+          ];
+        };
+        extraPortals = [
+          pkgs.xdg-desktop-portal-gtk
+        ];
+      };
+
       wayland.windowManager.hyprland = {
         enable = true;
         xwayland.enable = true;

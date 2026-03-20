@@ -79,7 +79,6 @@
       gthumb
       dolphin-emu
       opencode
-      virt-manager
     ];
 
     services.udev.packages = with pkgs; [ dolphin-emu ];
