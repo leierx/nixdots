@@ -49,8 +49,8 @@
 
       wayland.windowManager.hyprland.settings = {
         exec-once = [
-          "vesktop, [workspace 1 silent]"
-          "$terminal, [workspace 2 silent]"
+          "vesktop [workspace 1 silent]"
+          "$terminal [workspace 2 silent]"
         ];
       };
     };

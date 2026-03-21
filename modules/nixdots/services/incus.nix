@@ -39,7 +39,7 @@ in
               root = {
                 path = "/";
                 pool = "default";
-                size = "35GiB";
+                size = "25GiB";
                 type = "disk";
               };
             };
