@@ -30,6 +30,7 @@
 
     # hardware
     hardware.enableAllFirmware = true;
+    services.upower.enable = true;
 
     environment.systemPackages = with pkgs; [
       xfce.mousepad

@@ -21,10 +21,6 @@ in
           {
             name = "incusbr0";
             type = "bridge";
-            config = {
-              "ipv4.address" = "172.16.0.1/24";
-              "ipv4.nat" = "true";
-            };
           }
         ];
         profiles = [

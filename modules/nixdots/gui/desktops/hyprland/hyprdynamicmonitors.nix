@@ -26,6 +26,12 @@ in
       description = "Hyprdynamicmonitors profile configs written as .conf or .go.tmpl files in hyprconfigs";
     };
 
+    extraArgs = lib.mkOption {
+      type = lib.types.singleLineStr;
+      default = "--disable-power-events"; # to stop it from crashing on a laptop by default...
+      description = "Extra arguments passed to hyprdynamicmonitors run";
+    };
+
     extraConfig = lib.mkOption {
       type = lib.types.lines;
       default = "";
@@ -63,7 +69,7 @@ in
         '';
 
         settings.exec = [
-          "pidof ${pkgs.unstable.hyprdynamicmonitors}/bin/hyprdynamicmonitors || ${pkgs.unstable.hyprdynamicmonitors}/bin/hyprdynamicmonitors run"
+          "pidof ${pkgs.unstable.hyprdynamicmonitors}/bin/hyprdynamicmonitors || ${pkgs.unstable.hyprdynamicmonitors}/bin/hyprdynamicmonitors run ${cfg.extraArgs}"
         ];
       };
 

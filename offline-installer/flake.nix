@@ -21,6 +21,7 @@
         specialArgs = { inherit self target targetHost; };
         modules = [
           "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+
           (
             {
               lib,
@@ -30,28 +31,29 @@
               ...
             }:
             let
-              flakeOutPaths =
-                let
-                  collector = parent: map (child: [ child.outPath ] ++ (if child ? inputs && child.inputs != { } then collector child else [ ])) (lib.attrValues parent.inputs);
-                in
-                lib.unique (lib.flatten (collector target));
+              targetSystem = target.nixosConfigurations.${targetHost};
+
+              # Recursively include the flake source and all flake input sources.
+              recurseFlakeSources = flk: if (flk._type or "") == "flake" then [ flk.outPath ] ++ lib.concatMap recurseFlakeSources (builtins.attrValues flk.inputs) else [ flk.outPath ];
+
+              flakeSources = lib.unique (recurseFlakeSources target);
+
+              diskoScript = if targetSystem.config.system.build ? diskoScript then [ targetSystem.config.system.build.diskoScript ] else [ ];
 
               offlineDeps = [
-                target.nixosConfigurations.${targetHost}.config.system.build.toplevel
-                target.nixosConfigurations.${targetHost}.config.system.build.diskoScript
-                target.nixosConfigurations.${targetHost}.config.system.build.diskoScript.drvPath
-                target.nixosConfigurations.${targetHost}.pkgs.stdenv.drvPath
-                target.nixosConfigurations.${targetHost}.pkgs.perlPackages.ConfigIniFiles
-                target.nixosConfigurations.${targetHost}.pkgs.perlPackages.FileSlurp
-                (target.nixosConfigurations.${targetHost}.pkgs.closureInfo { rootPaths = [ ]; }).drvPath
+                target.outPath
+                targetSystem.config.system.build.toplevel
               ]
-              ++ flakeOutPaths;
+              ++ flakeSources
+              ++ diskoScript;
+
             in
             {
               # locale
               console.keyMap = "no";
               i18n.defaultLocale = "en_DK.UTF-8";
               time.timeZone = "Europe/Oslo";
+
               services.timesyncd.enable = true;
               services.timesyncd.servers = [
                 "0.no.pool.ntp.org"
@@ -60,22 +62,45 @@
                 "3.no.pool.ntp.org"
               ];
 
-              # bloat
-              documentation.nixos.enable = false;
-
               networking.hostName = "offline-installer";
 
-              # tightest compression
-              isoImage.squashfsCompression = "xz";
+              # Smaller/faster ISO
+              isoImage.squashfsCompression = lib.mkForce "zstd -Xcompression-level 15";
+              networking.wireless.enable = lib.mkForce false;
+              documentation.enable = lib.mkForce false;
+              documentation.nixos.enable = lib.mkForce false;
+              documentation.man.man-db.enable = lib.mkForce false;
+
+              # Make the target system + flake sources available offline
               isoImage.storeContents = offlineDeps;
+
+              # Avoid registry/network surprises during flake evaluation
+              nix.settings.experimental-features = [
+                "nix-command"
+                "flakes"
+              ];
+              nix.settings.flake-registry = "";
+              nix.registry = lib.mkForce { };
 
               environment.systemPackages = [
                 (pkgs.writeShellScriptBin "offline-installer" ''
-                  umount -R /mnt 2>/dev/null
-                  ${pkgs.disko}/bin/disko --mode "destroy,format,mount" --root-mountpoint /mnt --yes-wipe-all-disks --flake ${target}#${targetHost}
-                  mountpoint /mnt
-                  mountpoint /mnt/boot
-                  nixos-install --root /mnt --no-root-password --flake ${target}#${targetHost}
+                  set -euo pipefail
+
+                  echo "Installing host: ${targetHost}"
+
+                  ${lib.optionalString (targetSystem.config.system.build ? diskoScript) ''
+                    echo "Running disko script..."
+                    ${targetSystem.config.system.build.diskoScript}
+                  ''}
+
+                  echo "Running nixos-install..."
+                  nixos-install \
+                    --root /mnt \
+                    --no-root-password \
+                    --no-channel-copy \
+                    --flake ${target.outPath}#${targetHost} \
+                    --offline \
+                    --option flake-registry ""
                 '')
               ];
             }
