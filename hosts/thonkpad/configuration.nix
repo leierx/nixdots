@@ -22,6 +22,7 @@
     nixdots.programs.git.enableDefaultConfig = true;
     nixdots.programs.tmux.enable = true;
     nixdots.services.podman.enable = true;
+    nixdots.services.incus.enable = true;
 
     # fast as fuck boot
     boot.loader.timeout = lib.mkForce 0;
@@ -39,14 +40,18 @@
       obsidian
       vesktop # discord client
       opencode
+      treefmt
+      bitwarden-cli
     ];
 
     home-manager.users.leier = {
       imports = [ inputs.neovim-config.homeManagerModules.default ];
 
       wayland.windowManager.hyprland.settings = {
-        exec-once = [ "vesktop" ];
-        windowrulev2 = [ "monitor DP-2, class:^(vesktop)$" ];
+        exec-once = [
+          "vesktop, [workspace 1 silent]"
+          "$terminal, [workspace 2 silent]"
+        ];
       };
     };
   };

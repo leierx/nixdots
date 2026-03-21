@@ -92,8 +92,7 @@
       };
 
       wayland.windowManager.hyprland.settings = {
-        exec-once = [ "vesktop" ];
-        windowrulev2 = [ "monitor DP-2, class:^(vesktop)$" ];
+        exec-once = [ "vesktop, [monitor DP-2]" ];
       };
 
       programs.ssh = {

@@ -48,6 +48,7 @@
               ++ flakeOutPaths;
             in
             {
+              # locale
               console.keyMap = "no";
               i18n.defaultLocale = "en_DK.UTF-8";
               time.timeZone = "Europe/Oslo";
@@ -59,18 +60,13 @@
                 "3.no.pool.ntp.org"
               ];
 
-              # no need to aaaalways run "sudo -i"
-              services.getty.autologinUser = lib.mkForce "root";
-
               # bloat
               documentation.nixos.enable = false;
 
               networking.hostName = "offline-installer";
-              networking.dhcpcd.enable = false;
 
               # tightest compression
               isoImage.squashfsCompression = "xz";
-
               isoImage.storeContents = offlineDeps;
 
               environment.systemPackages = [

@@ -20,7 +20,11 @@ in
       description = "Whether to enable nixdots.base.network";
     };
 
-    dot.enable = lib.mkEnableOption "nixdots.base.network.dot";
+    dot.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "nixdots.base.network.dot";
+    };
 
     implementation = lib.mkOption {
       type = lib.types.enum [
@@ -53,6 +57,8 @@ in
             logRefusedConnections = true;
             # allowedTCPPorts = [ 80 443 ];
           };
+
+          nftables.enable = true;
         };
       }
 
