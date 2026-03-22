@@ -26,6 +26,10 @@ in
         profiles = [
           {
             name = "default";
+            config = {
+              "limits.cpu" = "2";
+              "limits.memory" = "4GiB";
+            };
             devices = {
               eth0 = {
                 name = "eth0";
