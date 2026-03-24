@@ -22,29 +22,30 @@ let
   ++ flakeOutPaths;
 in
 {
+  # locale
   console.keyMap = "no";
   i18n.defaultLocale = "en_DK.UTF-8";
   time.timeZone = "Europe/Oslo";
-
+  #
+  isoImage.storeContents = dependencies;
   isoImage.squashfsCompression = "zstd -Xcompression-level 15";
   documentation.enable = false;
   documentation.nixos.enable = false;
   documentation.man.man-db.enable = false;
-
-  isoImage.storeContents = dependencies;
-
   # Stop installing nixpkgs registry/NIX_PATH glue
   nixpkgs.flake.setNixPath = false;
   nixpkgs.flake.setFlakeRegistry = false;
-  # Disable the global flake registry entirely
+  # Disable the global flake registry
   nix.settings.flake-registry = "";
   nix.settings.experimental-features = [ "nix-command flakes" ];
-
+  # Disable all binary caches (e.g. cache.nixos.org)
+  nix.settings.substituters = lib.mkForce [ ];
+  nix.settings.trusted-public-keys = lib.mkForce [ ];
   # Avoid a few extra nix command nags
   nix.channel.enable = false;
-
+  # I run "sudo -i" either way
   services.getty.autologinUser = lib.mkForce "root";
-
+  # Packages + install script
   environment.systemPackages = [
     (pkgs.writeShellScriptBin "offline-installer" ''
       set -euo pipefail

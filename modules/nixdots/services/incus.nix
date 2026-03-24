@@ -57,6 +57,8 @@ in
       };
     };
 
+    networking.firewall.trustedInterfaces = [ "incusbr0" ];
+
     users.users.leier.extraGroups = [ "incus-admin" ];
   };
 }

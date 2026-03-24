@@ -10,14 +10,14 @@ podman run --rm -it \
   "docker.io/nixos/nix" \
   bash -euo pipefail -c '
     SCRIPT_DIR="/work/offline-installer"
-    export TARGET_HOST="$(nix shell "nixpkgs#jq" "nixpkgs#fzf" --command bash -c "nix flake show --json $SCRIPT_DIR/.. | jq -r \".nixosConfigurations | keys[]\" | fzf")"
+    TARGET_HOST="$(nix shell "nixpkgs#jq" "nixpkgs#fzf" --command bash -c "nix flake show --json $SCRIPT_DIR/.. | jq -r \".nixosConfigurations | keys[]\" | fzf")"
 
     [ -n "${TARGET_HOST:-}" ] || {
       echo "No host selected" >&2
       exit 1
     }
 
-    ISO_BUILD_PATH="$(nix build --impure --no-link --print-out-paths --no-write-lock-file "$SCRIPT_DIR#nixosConfigurations.offlineInstaller.config.system.build.isoImage")"
+    ISO_BUILD_PATH="$(nix build --impure --no-link --print-out-paths --no-write-lock-file "${SCRIPT_DIR}#nixosConfigurations.offlineInstaller-${TARGET_HOST}.config.system.build.isoImage")"
 
     cp "$ISO_BUILD_PATH/iso/"*.iso "$SCRIPT_DIR/"
   '

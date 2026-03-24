@@ -10,7 +10,6 @@ o.breakindentopt = "shift:2"
 o.cmdheight = 0 -- use the cmdline only when needed (experimental)
 o.laststatus = 3 -- global statusline
 o.showcmd = false -- redundant/noisy with cmdheight=0
-o.signcolumn = "yes" -- avoid text shifting when signs appear
 o.termguicolors = true -- 24-bit colors
 o.winborder = "rounded" -- default border style for floating windows
 o.completeopt = { "menuone", "noselect" }

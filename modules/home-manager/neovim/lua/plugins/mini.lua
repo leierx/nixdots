@@ -21,6 +21,7 @@ return {
   {
     "nvim-mini/mini.diff",
     version = "*",
+    lazy = false, -- does not load without this...
     opts = {
       view = { style = "number" },
       mappings = { apply = "", reset = "", textobject = "", goto_first = "", goto_last = "", goto_next = "", goto_prev = "" },

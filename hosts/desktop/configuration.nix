@@ -42,7 +42,7 @@
     nixdots.gui.enable = true;
     nixdots.programs.git.enableDefaultConfig = true;
     nixdots.programs.tmux.enable = true;
-    nixdots.services.libvirt.enable = true;
+    nixdots.services.incus.enable = true;
     nixdots.services.podman.enable = true;
 
     # hardware

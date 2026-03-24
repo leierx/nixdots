@@ -8,6 +8,7 @@ return {
     },
 
     sections = {
+      lualine_c = {{ 'filename', path = 4 }},
       lualine_x = { "filetype", "lsp_status" },
     },
   },
