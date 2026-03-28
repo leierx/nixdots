@@ -1,7 +1,7 @@
 { self, ... }:
 {
   flake.modules.nixos.doas =
-    { config, pkgs, ... }:
+    { pkgs, ... }:
     {
       security = {
         enable = true;
@@ -20,12 +20,5 @@
         interactiveShellInit = ''alias sudo="doas"'';
         systemPackages = [ pkgs.doas-sudo-shim ];
       };
-
-      assertions = [
-        {
-          assertion = !(config.security.sudo.enable or false);
-          message = "flake.modules.nixos.doas requires security.sudo.enable = false";
-        }
-      ];
     };
 }
