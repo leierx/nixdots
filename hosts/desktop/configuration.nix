@@ -86,11 +86,6 @@
     home-manager.users.leier = {
       imports = [ inputs.neovim-config.homeManagerModules.default ];
 
-      neovimDots = {
-        useOutOfStore = true;
-        outOfStorePath = "/home/leier/Projects/nixdots/modules/home-manager/neovim";
-      };
-
       wayland.windowManager.hyprland.settings = {
         exec-once = [ "vesktop [monitor DP-2]" ];
       };
