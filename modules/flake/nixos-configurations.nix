@@ -17,7 +17,7 @@ in
     lib.nixosSystem {
       modules = [
         {
-          imports = [ inputs.home-manager.nixosModules.home-manager ];
+          imports = [ inputs.home-manager.modules.nixos.home-manager ];
           #
           home-manager = {
             backupFileExtension = "backup";

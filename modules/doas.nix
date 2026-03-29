@@ -1,4 +1,4 @@
-{ self, ... }:
+{ config, ... }:
 {
   flake.modules.nixos.doas =
     { pkgs, ... }:
@@ -9,8 +9,8 @@
           {
             groups = [ "wheel" ];
             keepEnv = true;
-            noPass = !self.settings.security.wheelNeedsPassword;
-            persist = self.settings.security.wheelNeedsPassword;
+            noPass = !config.settings.security.wheelNeedsPassword;
+            persist = config.settings.security.wheelNeedsPassword;
           }
         ];
         sudo.enable = false;

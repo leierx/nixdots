@@ -1,5 +1,9 @@
 {
-  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (import ./import-tree.nix inputs.nixpkgs.lib ./modules);
+  outputs =
+    inputs:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+      imports = import ./import-tree.nix ./modules;
+    };
 
   inputs = {
     # nixpkgs

@@ -466,17 +466,6 @@
         "type": "github"
       }
     },
-    "import-tree": {
-      "locked": {
-        "path": "./import-tree",
-        "type": "path"
-      },
-      "original": {
-        "path": "./import-tree",
-        "type": "path"
-      },
-      "parent": []
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1774388614,
@@ -539,7 +528,6 @@
         "home-manager": "home-manager",
         "hyprland": "hyprland",
         "hyprsplit": "hyprsplit",
-        "import-tree": "import-tree",
         "nixpkgs": "nixpkgs",
         "nixpkgs-unstable": "nixpkgs-unstable"
       }
