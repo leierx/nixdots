@@ -6,6 +6,7 @@
       implementation = config.flake.settings.bootloader.implementation;
     in
     {
+      boot.tmp.cleanOnBoot = true;
       boot.loader = lib.mkMerge [
         {
           efi.canTouchEfiVariables = true;

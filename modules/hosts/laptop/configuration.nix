@@ -3,8 +3,8 @@
   configurations.nixos.laptop =
     { ... }:
     {
-      imports = [
-        self.modules.profiles.base
+      imports = with self.modules; [
+        profiles.nixos.minimal
       ];
     };
 }

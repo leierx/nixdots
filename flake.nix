@@ -14,6 +14,11 @@
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
+    # images etc.
+    assets = {
+      url = "path:./assets";
+      flake = false;
+    };
     # home-manager
     home-manager = {
       url = "github:nix-community/home-manager/release-25.11";

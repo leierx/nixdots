@@ -1,3 +1,4 @@
+{ config, self, ... }:
 {
   flake.modules.nixos.locale =
     { pkgs, ... }:
@@ -26,5 +27,18 @@
         layout = "no";
         variant = "nodeadkeys";
       };
+
+      home-manager.users.${config.flake.settings.user.username}.imports = [ self.modules.homeManager.locale ];
     };
+
+  flake.modules.homeManager.locale = {
+    wayland.windowManager.hyprland = {
+      settings = {
+        input = {
+          kb_layout = "no";
+          kb_variant = "nodeadkeys";
+        };
+      };
+    };
+  };
 }
