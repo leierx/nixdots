@@ -1,20 +1,20 @@
-{ self, ... }:
+{ inputs, ... }:
 {
   flake.modules.profiles.nixos.minimal = {
-    imports = with self.modules; [
+    imports = with inputs.self.modules; [
       nixos.bootloader
+      nixos.defaults
       nixos.doas
       nixos.git
       nixos.journald
       nixos.locale
-      nixos.networkManager
+      nixos.network
       nixos.nixConfig
       nixos.plymouth
-      nixos.editor
-      nixos.debloat
-      nixos.user
       nixos.shell
-      nixos.overlays.vesktop
+      nixos.tmux
+      nixos.user
+      nixos.xdg
       #
       overlays.vesktop
     ];

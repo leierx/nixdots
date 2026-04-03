@@ -1,4 +1,4 @@
-{ config, self, ... }:
+{ self, ... }:
 {
   flake.modules.nixos.locale =
     { pkgs, ... }:
@@ -28,7 +28,7 @@
         variant = "nodeadkeys";
       };
 
-      home-manager.users.${config.flake.settings.user.username}.imports = [ self.modules.homeManager.locale ];
+      home-manager.sharedModules = [ self.modules.homeManager.locale ];
     };
 
   flake.modules.homeManager.locale = {

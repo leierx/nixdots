@@ -7,7 +7,7 @@ let
         name:
         let
           type = (builtins.readDir dir).${name};
-          path = "${toString dir}/${name}";
+          path = dir + "/${name}";
         in
         if builtins.match "^_.*" name != null then
           [ ]
@@ -20,4 +20,6 @@ let
       ) (builtins.attrNames (builtins.readDir dir))
     );
 in
-recurse modulesPath
+{
+  imports = recurse modulesPath;
+}

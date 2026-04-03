@@ -1,24 +1,29 @@
 { config, ... }:
+let
+  wheelNeedsPassword = config.flake.meta.security.wheelNeedsPassword;
+in
 {
   flake.modules.nixos.doas =
-    { pkgs, ... }:
+    { lib, pkgs, ... }:
     {
-      security = {
-        enable = true;
-        extraRules = [
-          {
-            groups = [ "wheel" ];
-            keepEnv = true;
-            noPass = !config.settings.security.wheelNeedsPassword;
-            persist = config.settings.security.wheelNeedsPassword;
-          }
-        ];
-        sudo.enable = false;
-      };
+      config = {
+        security.doas = {
+          enable = true;
+          extraRules = [
+            {
+              groups = [ "wheel" ];
+              keepEnv = true;
+              noPass = lib.mkDefault (!wheelNeedsPassword);
+              persist = lib.mkDefault wheelNeedsPassword;
+            }
+          ];
+        };
+        security.sudo.enable = false;
 
-      environment = {
-        interactiveShellInit = ''alias sudo="doas"'';
-        systemPackages = [ pkgs.doas-sudo-shim ];
+        environment = {
+          interactiveShellInit = ''alias sudo="doas"'';
+          systemPackages = [ pkgs.doas-sudo-shim ];
+        };
       };
     };
 }

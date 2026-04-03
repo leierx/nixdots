@@ -1,20 +1,20 @@
-{
-  config,
-  self,
-  inputs,
-  ...
-}:
+{ config, inputs, ... }:
 {
   flake.modules.nixos.hyprland =
-    { pkgs, lib, ... }:
     {
-      # Hyprland install
+      config,
+      pkgs,
+      lib,
+      ...
+    }:
+    {
       programs.hyprland = {
         enable = true;
         package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-        portalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+        portalPackage =
+          inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
       };
-      # cache
+
       nix.settings = {
         substituters = lib.mkAfter [ "https://hyprland.cachix.org" ];
         trusted-substituters = lib.mkAfter [ "https://hyprland.cachix.org" ];
@@ -23,23 +23,27 @@
         ];
       };
 
-      # file-manager
       services.gvfs.enable = true;
       services.gnome.sushi.enable = true;
       environment.systemPackages = [ pkgs.nautilus ];
 
-      home-manager.users.${config.flake.settings.user.username}.imports = [ self.modules.homeManager.hyprland ];
+      home-manager.sharedModules = [ inputs.self.modules.homeManager.hyprland ];
     };
 
   flake.modules.homeManager.hyprland =
-    { pkgs, osConfig, ... }:
+    {
+      config,
+      pkgs,
+      osConfig,
+      lib,
+      ...
+    }:
     {
       imports = [
-        self.modules.homeManager.wezterm # terminal of choice
-        self.modules.homeManager.fuzzel # app launcher
+        inputs.self.modules.homeManager.wezterm
+        inputs.self.modules.homeManager.fuzzel
       ];
 
-      # extra packages
       home.packages = [ pkgs.wl-clipboard ];
 
       wayland.windowManager.hyprland = {
@@ -50,7 +54,8 @@
           "$mod" = "SUPER";
           "$terminal" = "wezterm";
           "$applicationLauncher" = "fuzzel";
-          "$screenshot" = "${pkgs.hyprshot}/bin/hyprshot --mode region --freeze --silent --clipboard-only";
+          "$screenshot" = "${lib.getExe pkgs.hyprshot} --mode region --freeze --silent --clipboard-only";
+          "$user" = config.flake.meta.user.username;
         };
       };
     };

@@ -33,6 +33,18 @@
         "type": "github"
       }
     },
+    "assets": {
+      "flake": false,
+      "locked": {
+        "path": "./assets",
+        "type": "path"
+      },
+      "original": {
+        "path": "./assets",
+        "type": "path"
+      },
+      "parent": []
+    },
     "disko": {
       "inputs": {
         "nixpkgs": [
@@ -523,6 +535,7 @@
     },
     "root": {
       "inputs": {
+        "assets": "assets",
         "disko": "disko",
         "flake-parts": "flake-parts",
         "home-manager": "home-manager",

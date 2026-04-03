@@ -22,7 +22,6 @@
           ];
           substituters = [ "https://nix-community.cachix.org" ];
           trusted-public-keys = [ "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=" ];
-          trusted-users = [ "@wheel" ];
         };
 
         # Thanks to: https://nixos-and-flakes.thiscute.world/best-practices/nix-path-and-flake-registry#custom-nix-path-and-flake-registry
