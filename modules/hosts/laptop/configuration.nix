@@ -1,12 +1,10 @@
-{ config, ... }:
+{ self, ... }:
 {
   configurations.nixos.laptop =
     { pkgs, ... }:
     {
-      imports = with config.flake.modules; [
-        # profiles.nixos.graphical
-        # nixos.hyprland
-        nixos.bootloader
+      imports = [
+        self.modules.nixos.profileMinimal
       ];
 
       environment.systemPackages = with pkgs; [
@@ -21,11 +19,5 @@
         treefmt
         bitwarden-cli
       ];
-
-      home-manager.users.${config.flake.settings.user.username} = {
-        imports = [
-          # inputs.self.modules.homeManager.neovim
-        ];
-      };
     };
 }

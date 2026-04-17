@@ -34,8 +34,8 @@ k.set("n", "<leader>q", vim.cmd.quitall, { desc = "Quit all" })
 k.set("n", "<C-q>", function() vim.api.nvim_buf_delete(0, {}) end, { desc = "Close buffer" })
 
 -- buffer navigation
-vim.keymap.set("n", "<leader><Tab>", "<C-^>", { desc = "Toggle last buffer" })
-vim.keymap.set("n", "<C-^>", "<Nop>")
+k.set("n", "<leader><Tab>", "<C-^>", { desc = "Toggle last buffer" })
+k.set("n", "<C-^>", "<Nop>")
 
 -- Alt-t: toggle in both normal + terminal mode
 k.set("n", "<A-t>", function() require("floaterminal").toggle_terminal() end, { desc = "Terminal: toggle" })

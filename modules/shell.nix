@@ -1,20 +1,12 @@
-{ self, config, ... }:
-let
-  user = config.flake.meta.user;
-in
 {
-  flake.modules.nixos.shell =
-    { lib, pkgs, ... }:
+  flake.factories.nixos.shell =
+    username:
+    { pkgs, ... }:
     {
-      config = {
-        users.defaultUserShell = pkgs.bashInteractive;
-        users.users.${user.username}.shell = lib.mkDefault pkgs.zsh;
+      users.users.${username}.shell = pkgs.zsh;
 
-        programs.zsh.enable = true;
-        programs.starship.enable = true;
-
-        home-manager.sharedModules = [ self.modules.homeManager.shell ];
-      };
+      programs.zsh.enable = true;
+      programs.starship.enable = true;
     };
 
   flake.modules.homeManager.shell = {

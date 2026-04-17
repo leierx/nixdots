@@ -1,0 +1,9 @@
+#custom-launcher{
+  min-width: 1em;
+  min-height: 1em;
+  margin: 0 1em 0 1em;
+  background-image: url('file:///home/leier/.config/waybar/nixos.svg');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}

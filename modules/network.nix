@@ -1,20 +1,18 @@
-{ config, ... }:
-let
-  dotEnabled = config.flake.meta.network.dot.enable;
-in
 {
-
-  flake.modules.nixos.network = {
-    config = {
+  flake.factories.nixos.network =
+    {
+      dnsOverTls ? true,
+    }:
+    {
       services.resolved = {
         enable = true;
         dnssec = "true";
-        dnsovertls = if dotEnabled then "true" else "false";
+        dnsovertls = if dnsOverTls then "true" else "false";
       };
 
       networking = {
         nameservers =
-          if dotEnabled then
+          if dnsOverTls then
             [
               "9.9.9.9#dns.quad9.net"
               "149.112.112.112#dns.quad9.net"
@@ -50,5 +48,4 @@ in
         };
       };
     };
-  };
 }

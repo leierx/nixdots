@@ -1,6 +1,3 @@
 {
-  flake.modules.nixos.root = {
-    # disable root account
-    users.root.hashedPassword = "!";
-  };
+  flake.modules.nixos.root.users.users.root.hashedPassword = "!";
 }

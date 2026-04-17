@@ -1,10 +1,7 @@
-{ self, ... }:
 {
   flake.modules.nixos.gnome =
     { pkgs, ... }:
     {
-      imports = [ self.modules.homeManager.wezterm ];
-
       services.desktopManager.gnome.enable = true;
       services.gnome.core-apps.enable = false;
       services.gnome.core-developer-tools.enable = false;
@@ -15,8 +12,6 @@
         gnome-tour
         gnome-user-docs
       ];
-
-      home-manager.sharedModules = [ self.modules.homeManager.gnome ];
     };
 
   flake.modules.homeManager.gnome = {

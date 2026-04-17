@@ -1,10 +1,5 @@
-{ self, ... }:
 {
-  flake.modules.nixos.gtk =
-    { ... }:
-    {
-      home-manager.sharedModules = [ self.modules.homeManager.gtk ];
-    };
+  flake.modules.nixos.gtk.programs.dconf.enable = true;
 
   flake.modules.homeManager.gtk =
     { pkgs, ... }:

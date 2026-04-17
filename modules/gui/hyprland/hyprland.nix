@@ -1,12 +1,7 @@
-{ config, inputs, ... }:
+{ inputs, ... }:
 {
   flake.modules.nixos.hyprland =
-    {
-      config,
-      pkgs,
-      lib,
-      ...
-    }:
+    { pkgs, lib, ... }:
     {
       programs.hyprland = {
         enable = true;
@@ -32,7 +27,6 @@
 
   flake.modules.homeManager.hyprland =
     {
-      config,
       pkgs,
       osConfig,
       lib,
@@ -55,7 +49,6 @@
           "$terminal" = "wezterm";
           "$applicationLauncher" = "fuzzel";
           "$screenshot" = "${lib.getExe pkgs.hyprshot} --mode region --freeze --silent --clipboard-only";
-          "$user" = config.flake.meta.user.username;
         };
       };
     };

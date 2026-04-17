@@ -1,4 +1,3 @@
-{ self, ... }:
 {
   flake.modules.nixos.locale =
     { pkgs, ... }:
@@ -27,18 +26,12 @@
         layout = "no";
         variant = "nodeadkeys";
       };
-
-      home-manager.sharedModules = [ self.modules.homeManager.locale ];
     };
 
   flake.modules.homeManager.locale = {
-    wayland.windowManager.hyprland = {
-      settings = {
-        input = {
-          kb_layout = "no";
-          kb_variant = "nodeadkeys";
-        };
-      };
+    wayland.windowManager.hyprland.settings.input = {
+      kb_layout = "no";
+      kb_variant = "nodeadkeys";
     };
   };
 }

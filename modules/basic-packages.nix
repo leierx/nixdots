@@ -1,6 +1,6 @@
 {
   flake.modules.nixos.basicPackages =
-    { pkgs }:
+    { pkgs, ... }:
     {
       environment.systemPackages = with pkgs; [
         jq

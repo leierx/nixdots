@@ -1,17 +1,13 @@
-{ config, ... }:
-let
-  user = config.flake.meta.user;
-in
 {
-  flake.modules.nixos.user = {
-    users.groups.${user.username} = { };
+  flake.factories.nixos.user = username: {
+    users.groups.${username} = { };
 
-    users.users.${user.username} = {
+    users.users.${username} = {
       isNormalUser = true;
-      home = user.homeDirectory;
+      home = "/home/${username}";
       createHome = true;
       homeMode = "0770";
-      group = user.username;
+      group = username;
 
       extraGroups = [
         "wheel"

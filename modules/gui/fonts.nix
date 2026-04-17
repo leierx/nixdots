@@ -1,7 +1,6 @@
-{ lib, ... }:
 {
   flake.modules.nixos.fonts =
-    { pkgs, ... }:
+    { pkgs, lib, ... }:
     {
       fonts.enableDefaultPackages = true;
 
