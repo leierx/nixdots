@@ -1,9 +1,72 @@
-#custom-launcher{
-  min-width: 1em;
-  min-height: 1em;
-  margin: 0 1em 0 1em;
+@define-color fg #f1f1f1;
+@define-color focusedBorderColor #0E66D0;
+@define-color bg1 #1C1C1C;
+@define-color bg2 #2F2F2F;
+@define-color bg3 #3A3A3A;
+@define-color bg4 #474747;
+@define-color bg5 #515151;
+@define-color black #1e1e1e;
+@define-color blackLight #323232;
+@define-color blue #0E66D0;
+@define-color blueLight #0875F6;
+@define-color cyan #4BB0E3;
+@define-color cyanLight #4FC0F7;
+@define-color gray #818589;
+@define-color grayLight #A3A6AA;
+@define-color green #2BBF3E;
+@define-color greenLight #2DD042;
+@define-color magenta #9C48CC;
+@define-color magentaLight #B24FEA;
+@define-color primaryColor #0E66D0;
+@define-color red #F13A31;
+@define-color redLight #FE3C33;
+@define-color unfocusedBorderColor #595959;
+@define-color white #F1F1F1;
+@define-color whiteLight #FEFEFE;
+@define-color yellow #F1C50F;
+@define-color yellowLight #FECF0F;
+
+* {
+  font-family: 'Adwaita Sans';
+  font-size: 12pt;
+  color: @fg;
+}
+
+window#waybar.topbar {
+    all: unset;
+    background-color: #000;
+}
+
+window#waybar.topbar > box { margin: 2pt; }
+
+#custom-os-logo * { all: unset; }
+#custom-os-logo {
   background-image: url('file:///home/leier/.config/waybar/nixos.svg');
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
+  min-width: 20pt;
+  margin: 0 6pt;
+}
+
+#workspaces * { all: unset; }
+#workspaces {
+  font-weight: bold;
+  color: @fg;
+}
+
+#workspaces button {
+  border-radius: 3pt;
+  min-width: 24pt;
+}
+
+#workspaces button.empty label { color: rgba(241, 241, 241, 0.4); }
+#workspaces button.active { background-color: rgba(255, 255, 255, 0.25); }
+#workspaces button:hover { background-color: rgba(255, 255, 255, 0.15); }
+#workspaces button:hover:active { background-color: rgba(255, 255, 255, 0.25); }
+
+#clock { font-weight: 500; }
+
+#tray {
+  padding: 0 6pt;
 }

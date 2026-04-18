@@ -1,9 +1,11 @@
 [
   {
     "name": "topbar",
-    "height": 40,
+    "height": 36,
+    "spacing": 0,
+    "reload_style_on_change": true,
     "modules-left": [
-      "custom/launcher",
+      "custom/os-logo",
       "hyprland/workspaces"
     ],
     "modules-center": [
@@ -13,7 +15,7 @@
       "battery",
       "tray"
     ],
-    "custom/launcher": {
+    "custom/os-logo": {
       "format": " ",
       "tooltip": false
     },
@@ -44,16 +46,18 @@
       }
     },
     "clock": {
-      "format": "{:%a %d %B - %H:%M}",
+      "format": "{:%a %d %B ‧ %H:%M}",
       "tooltip-format": "<tt><small>{calendar}</small></tt>",
       "calendar": {
-        "mode": "month",
-        "on-scroll": 1,
+        "mode": "year",
+        "mode-mon-col": 4,
+        "weeks-pos": "right",
         "format": {
-          "months": "<span color='#ffead3'><b>{}</b></span>",
-          "days": "<span color='#ecc6d9'><b>{}</b></span>",
-          "weekdays": "<span color='#ffcc66'><b>{}</b></span>",
-          "today": "<span color='#ff6699'><b><u>{}</u></b></span>"
+          "months": "<span color='#0875F6'><b>{}</b></span>",
+          "days": "<span color='#f1f1f1'><b>{}</b></span>",
+          "weeks": "<span color='#4FC0F7'><b>{}</b></span>",
+          "weekdays": "<span color='#F1C50F'><b>{}</b></span>",
+          "today": "<span color='#FE3C33'><b><u>{}</u></b></span>"
         }
       }
     },
@@ -66,9 +70,6 @@
       "format-charging": "{capacity}% ",
       "format-plugged": "{capacity}% "
     },
-    "tray": {
-      "icon-size": 16,
-      "spacing": 10
-    }
+    "tray": {}
   }
 ]
