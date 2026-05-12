@@ -4,7 +4,7 @@ let
   }) { };
 
   wofiConfig = pkgs.writeTextDir "share/wofi/config" ''
-    width=40%
+    width=30%
     lines=7
     prompt=
     no_actions=true
