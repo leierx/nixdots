@@ -26,7 +26,6 @@
         # hardware.bolt.enable = true; # thunderbolt dock
         power-profiles-daemon.enable = false; # Gnome/KDE default, conflicts with TLP
         thermald.enable = true; # Thermal management
-        upower.enable = true; # Battery monitoring
 
         tlp = {
           enable = true;

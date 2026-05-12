@@ -38,5 +38,5 @@
 | `flake.modules.homeManager.qt` | - | graphical | Qt theming |
 | `flake.modules.homeManager.shell` | - | minimal | Zsh + oh-my-zsh |
 | `flake.modules.homeManager.tmux` | - | minimal | Tmux configuration |
-| `flake.modules.homeManager.wezterm` | - | - | Terminal (imported by hyprland) |
+| `flake.modules.homeManager.wezterm` | - | - | Terminal (imported by hyprland; also used as terminal command in homeManager.gnome) |
 | `flake.modules.homeManager.xdgUserDirs` | - | minimal | XDG directories |

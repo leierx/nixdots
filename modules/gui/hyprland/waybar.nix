@@ -1,3 +1,4 @@
+{ inputs, ... }:
 {
   flake.modules.homeManager.hyprland =
     { pkgs, lib, ... }:
@@ -7,9 +8,8 @@
         systemd.enable = false;
         settings = {
           topbar = {
-            layer = "top";
-            position = "top";
-            height = 30;
+            height = 36;
+            spacing = 0;
 
             modules-left = [
               "custom/os-logo"
@@ -26,7 +26,7 @@
             ];
 
             "custom/os-logo" = {
-              format = "";
+              format = " ";
               tooltip = false;
             };
 
@@ -58,50 +58,115 @@
             };
 
             clock = {
-              format = "{:%a %d %B - %H:%M}";
+              format = "{:%a %d %B ‧ %H:%M}";
               tooltip-format = "<tt><small>{calendar}</small></tt>";
               calendar = {
-                mode = "month";
-                on-scroll = 1;
+                mode = "year";
+                mode-mon-col = 4;
+                weeks-pos = "right";
                 format = {
-                  months = "<span color='#ffead3'><b>{}</b></span>";
-                  days = "<span color='#ecc6d9'><b>{}</b></span>";
-                  weekdays = "<span color='#ffcc66'><b>{}</b></span>";
-                  today = "<span color='#ff6699'><b><u>{}</u></b></span>";
+                  months = "<span color='#0875F6'><b>{}</b></span>";
+                  days = "<span color='#f1f1f1'><b>{}</b></span>";
+                  weeks = "<span color='#4FC0F7'><b>{}</b></span>";
+                  weekdays = "<span color='#F1C50F'><b>{}</b></span>";
+                  today = "<span color='#FE3C33'><b><u>{}</u></b></span>";
                 };
               };
             };
 
             battery = {
+              full-at = 95;
               states = {
-                warning = 30;
-                critical = 15;
+                warning = 25;
+                critical = 10;
               };
-              format = "{capacity}% {icon}";
-              format-charging = "{capacity}% ";
-              format-plugged = "{capacity}% ";
+              format = "{capacity}%";
             };
 
-            tray = {
-              icon-size = 16;
-              spacing = 10;
-            };
+            tray = { };
           };
         };
         style = ''
-          #custom-os-logo {
-            /* Size relative to font — change this one value to scale on any monitor */
-            min-width:  2em;
-            min-height: 2em;
+          @define-color fg #f1f1f1;
+          @define-color focusedBorderColor #0E66D0;
+          @define-color bg1 #1C1C1C;
+          @define-color bg2 #2F2F2F;
+          @define-color bg3 #3A3A3A;
+          @define-color bg4 #474747;
+          @define-color bg5 #515151;
+          @define-color black #1e1e1e;
+          @define-color blackLight #323232;
+          @define-color blue #0E66D0;
+          @define-color blueLight #0875F6;
+          @define-color cyan #4BB0E3;
+          @define-color cyanLight #4FC0F7;
+          @define-color gray #818589;
+          @define-color grayLight #A3A6AA;
+          @define-color green #2BBF3E;
+          @define-color greenLight #2DD042;
+          @define-color magenta #9C48CC;
+          @define-color magentaLight #B24FEA;
+          @define-color primaryColor #0E66D0;
+          @define-color red #F13A31;
+          @define-color redLight #FE3C33;
+          @define-color unfocusedBorderColor #595959;
+          @define-color white #F1F1F1;
+          @define-color whiteLight #FEFEFE;
+          @define-color yellow #F1C50F;
+          @define-color yellowLight #FECF0F;
 
-            background-image:    url("/home/leier/.config/waybar/nixos.svg");
-            background-repeat:   no-repeat;
-            background-position: center;
-            background-size:     contain;
-
-            /* Remove default label padding so the image fills the space cleanly */
-            padding: 0 0.4em;
+          * {
+            font-family: 'Adwaita Sans';
+            font-size: 12pt;
+            color: @fg;
           }
+
+          window#waybar.topbar {
+              all: unset;
+              background-color: #000;
+          }
+
+          window#waybar.topbar > box { margin: 2pt; }
+
+          #custom-os-logo * { all: unset; }
+          #custom-os-logo {
+            background-image: url('${inputs.assets}/nixos.svg');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: contain;
+            min-width: 20pt;
+            margin: 0 6pt;
+          }
+
+          #workspaces * { all: unset; }
+          #workspaces {
+            font-weight: bold;
+            color: @fg;
+          }
+
+          #workspaces button {
+            border-radius: 3pt;
+            min-width: 24pt;
+          }
+
+          #workspaces button.empty label { color: rgba(241, 241, 241, 0.4); }
+          #workspaces button.active { background-color: rgba(255, 255, 255, 0.25); }
+          #workspaces button:hover { background-color: rgba(255, 255, 255, 0.15); }
+          #workspaces button:hover:active { background-color: rgba(255, 255, 255, 0.25); }
+
+          #clock { font-weight: 500; }
+
+          #battery { font-weight: bold; color: @fg; padding: 0 10px; }
+          #battery.full { color: @green; }
+          #battery.warning { color: @yellow; }
+          #battery.critical { color: @red; animation: pulse 1s ease-in-out infinite alternate; }
+          #battery.charging, #battery.plugged { animation: charging 1.5s ease-in-out infinite alternate; }
+          @keyframes charging { 0% { color: @blue; opacity: 0.8; } 100% { color: @blueLight; opacity: 1; } }
+          @keyframes pulse { from { color: @red; } to { opacity: 0.4; } }
+
+          #tray { padding: 0 6pt; }
+          #tray > .passive { -gtk-icon-effect: dim; }
+          #tray > .needs-attention { -gtk-icon-effect: highlight; }
         '';
       };
 
