@@ -7,19 +7,19 @@
         config.flake.modules.nixos.profileMinimal
       ];
 
-      nixdots.bootloader.implementation = "systemdBoot";
+      dot.bootloader.implementation = "systemdBoot";
 
       environment.systemPackages = with pkgs; [
-        xfce.mousepad
-        spotify
-        pavucontrol
-        brave
-        firefox-bin
-        obsidian
-        vesktop # discord client
-        opencode
-        treefmt
-        bitwarden-cli
+        # xfce.mousepad
+        # spotify
+        # pavucontrol
+        # brave
+        # firefox-bin
+        # obsidian
+        # vesktop # discord client
+        # opencode
+        # treefmt
+        # bitwarden-cli
       ];
     };
 }

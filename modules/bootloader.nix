@@ -7,10 +7,10 @@
       ...
     }:
     let
-      cfg = config.nixdots.bootloader;
+      cfg = config.dot.bootloader;
     in
     {
-      options.nixdots.bootloader = {
+      options.dot.bootloader = {
         implementation = lib.mkOption {
           type = lib.types.enum [
             "grub"

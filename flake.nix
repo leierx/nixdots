@@ -4,7 +4,7 @@
     (inputs.nixpkgs.lib.evalModules {
       specialArgs.inputs = inputs;
       modules = [ (import ./import-tree.nix ./modules) ];
-    }).config;
+    }).config.flake;
 
   inputs = {
     # nixpkgs
