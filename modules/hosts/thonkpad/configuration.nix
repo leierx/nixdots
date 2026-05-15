@@ -8,8 +8,6 @@
         config.flake.modules.nixos.graphical
       ];
 
-      dot.bootloader.implementation = "systemdBoot";
-
       environment.systemPackages = with pkgs; [
         xfce.mousepad
         spotify
