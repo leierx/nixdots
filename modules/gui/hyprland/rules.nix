@@ -8,6 +8,10 @@
           "center 1, initialClass:^(nm-openconnect-auth-dialog)$"
           "size 640 510, initialClass:^(nm-openconnect-auth-dialog)$"
 
+          "noborder, onworkspace:w[t1], floating:0"
+          "rounding 0, onworkspace:w[t1], floating:0"
+          "noshadow, onworkspace:w[t1], floating:0"
+
           "suppressevent maximize, class:^(.*)$"
 
           # smart gaps / no gaps when only

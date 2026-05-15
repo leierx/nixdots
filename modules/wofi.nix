@@ -8,7 +8,7 @@
         enable = true;
 
         settings = {
-          width = "30%";
+          width = "40%";
           lines = 7;
           prompt = "";
           no_actions = true;

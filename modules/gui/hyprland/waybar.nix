@@ -8,6 +8,7 @@
         systemd.enable = false;
         settings = {
           topbar = {
+            name = "topbar";
             height = 36;
             spacing = 0;
 
@@ -123,7 +124,7 @@
 
           window#waybar.topbar {
               all: unset;
-              background-color: #000;
+              background: #000;
           }
 
           window#waybar.topbar > box { margin: 2pt; }
