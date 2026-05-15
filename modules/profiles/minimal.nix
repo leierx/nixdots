@@ -3,54 +3,31 @@ let
   outerConfig = config;
 in
 {
-  flake.modules.nixos.profileMinimal =
+  flake.modules.nixos.minimal =
+    { config, ... }:
     {
-      config,
-      lib,
-      ...
-    }:
-    let
-      cfg = config.dot.profile.minimal;
-    in
-    {
-      options.dot.profile.minimal = {
-        username = lib.mkOption {
-          type = lib.types.singleLineStr;
-          default = "leier";
-          description = "Primary user account name";
-        };
-        fullName = lib.mkOption {
-          type = lib.types.singleLineStr;
-          default = "Lars Smith Eier";
-          description = "Full name for the primary user";
-        };
-        email = lib.mkOption {
-          type = lib.types.singleLineStr;
-          default = "larssmitheier@protonmail.com";
-          description = "Email for the primary user";
-        };
-      };
-
       imports = [
         outerConfig.flake.modules.nixos.bootloader
-        outerConfig.flake.modules.nixos.basicPackages
+        outerConfig.flake.modules.nixos.basePackages
         outerConfig.flake.modules.nixos.nixosConfig
         outerConfig.flake.modules.nixos.doas
         outerConfig.flake.modules.nixos.git
+        outerConfig.flake.modules.nixos.homeManager
         outerConfig.flake.modules.nixos.journald
         outerConfig.flake.modules.nixos.locale
+        outerConfig.flake.modules.nixos.network
         outerConfig.flake.modules.nixos.root
-        (outerConfig.flake.factories.nixos.user cfg.username)
-        (outerConfig.flake.factories.nixos.homeManager cfg.username)
+        outerConfig.flake.modules.nixos.shell
+        outerConfig.flake.modules.nixos.user
       ];
 
       config = {
-        home-manager.users.${cfg.username}.imports = [
+        home-manager.users.${config.dot.user.name}.imports = [
+          outerConfig.flake.modules.homeManager.git
           outerConfig.flake.modules.homeManager.locale
-          (outerConfig.flake.factories.homeManager.git {
-            username = cfg.fullName;
-            email = cfg.email;
-          })
+          outerConfig.flake.modules.homeManager.shell
+          outerConfig.flake.modules.homeManager.tmux
+          outerConfig.flake.modules.homeManager.xdgUserDirs
         ];
       };
     };

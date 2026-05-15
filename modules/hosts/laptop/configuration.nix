@@ -4,7 +4,7 @@
     { pkgs, ... }:
     {
       imports = [
-        config.flake.modules.nixos.profileMinimal
+        config.flake.modules.nixos.graphical
       ];
 
       dot.bootloader.implementation = "systemdBoot";

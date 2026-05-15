@@ -26,17 +26,10 @@
       description = "Reusable Home Manager modules";
     };
 
-    factories = {
-      nixos = lib.mkOption {
-        type = lib.types.lazyAttrsOf lib.types.raw;
-        default = { };
-        description = "Factory functions that produce NixOS modules";
-      };
-      homeManager = lib.mkOption {
-        type = lib.types.lazyAttrsOf lib.types.raw;
-        default = { };
-        description = "Factory functions that produce Home Manager modules";
-      };
+    modules.overlays = lib.mkOption {
+      type = lib.types.attrsOf lib.types.deferredModule;
+      default = { };
+      description = "Overlay modules (each sets nixpkgs.overlays)";
     };
   };
 }
