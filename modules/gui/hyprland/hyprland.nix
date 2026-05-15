@@ -38,6 +38,7 @@ in
     {
       imports = [
         outerConfig.flake.modules.homeManager.wezterm
+        outerConfig.flake.modules.homeManager.wofi
       ];
 
       home.packages = [ pkgs.wl-clipboard ];
@@ -49,7 +50,7 @@ in
         settings = {
           "$mod" = "SUPER";
           "$terminal" = "wezterm";
-          "$applicationLauncher" = "fuzzel";
+          "$applicationLauncher" = "wofi --show drun";
           "$screenshot" = "${lib.getExe pkgs.hyprshot} --mode region --freeze --silent --clipboard-only";
         };
       };

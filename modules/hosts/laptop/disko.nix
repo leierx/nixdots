@@ -3,27 +3,35 @@
   flake.modules.nixos.hosts.laptop = {
     imports = [ inputs.disko.nixosModules.disko ];
 
-    disko.devices.disk.main = {
-      device = "/dev/nvme0n1";
-      type = "disk";
-      content = {
-        type = "gpt";
-        partitions = {
-          ESP = {
-            size = "512M";
-            type = "EF00";
-            content = {
-              type = "filesystem";
-              format = "vfat";
-              mountpoint = "/boot";
+    disko.devices.disk = {
+      nvme1 = {
+        device = "/dev/disk/by-id/nvme-SKHynix_HFS512GEJ9X164N_4YC6N036115206S22";
+        type = "disk";
+        content = {
+          type = "gpt";
+          partitions = {
+            ESP = {
+              type = "EF00"; # EFI System
+              size = "500M";
+              content = {
+                type = "filesystem";
+                format = "vfat";
+                mountpoint = "/boot";
+                mountOptions = [
+                  "umask=0077"
+                  "iocharset=utf8"
+                  "noatime"
+                ];
+              };
             };
-          };
-          root = {
-            size = "100%";
-            content = {
-              type = "filesystem";
-              format = "ext4";
-              mountpoint = "/";
+            root = {
+              type = "8300"; # Linux Filesystem
+              size = "100%";
+              content = {
+                type = "filesystem";
+                format = "ext4";
+                mountpoint = "/";
+              };
             };
           };
         };
