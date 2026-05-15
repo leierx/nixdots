@@ -1,4 +1,4 @@
-{ inputs, config, ... }:
+{ config, ... }:
 let
   outerConfig = config;
 in
@@ -6,11 +6,7 @@ in
   flake.modules.nixos.hyprland =
     { pkgs, lib, ... }:
     {
-      programs.hyprland = {
-        enable = true;
-        package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-        portalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
-      };
+      programs.hyprland.enable = true;
 
       nix.settings = {
         substituters = lib.mkAfter [ "https://hyprland.cachix.org" ];
@@ -37,7 +33,7 @@ in
     {
       imports = [
         outerConfig.flake.modules.homeManager.wezterm
-        outerConfig.flake.modules.homeManager.wofi
+        outerConfig.flake.modules.homeManager.tofi
       ];
 
       home.packages = [ pkgs.wl-clipboard ];
@@ -51,7 +47,7 @@ in
         settings = {
           "$mod" = "SUPER";
           "$terminal" = "wezterm";
-          "$applicationLauncher" = "wofi --show drun";
+          "$applicationLauncher" = "tofi-drun";
           "$screenshot" = "${lib.getExe pkgs.hyprshot} --mode region --freeze --silent --clipboard-only";
           # autostart
           exec-once = lib.optional osConfig.networking.networkmanager.enable "${lib.getExe pkgs.networkmanagerapplet}";

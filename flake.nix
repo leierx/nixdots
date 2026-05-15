@@ -25,8 +25,5 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # hyprland
-    hyprland.url = "github:hyprwm/Hyprland?ref=v0.52.1";
-    hyprsplit.url = "github:shezdy/hyprsplit?ref=v0.52.1";
   };
 }
