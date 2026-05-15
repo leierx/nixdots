@@ -4,10 +4,9 @@
     { pkgs, ... }:
     {
       imports = [
+        config.flake.modules.nixos.minimal
         config.flake.modules.nixos.graphical
       ];
-
-      dot.bootloader.implementation = "systemdBoot";
 
       environment.systemPackages = with pkgs; [
         xfce.mousepad

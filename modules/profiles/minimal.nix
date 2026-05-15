@@ -19,6 +19,7 @@ in
         outerConfig.flake.modules.nixos.root
         outerConfig.flake.modules.nixos.shell
         outerConfig.flake.modules.nixos.user
+        outerConfig.flake.modules.overlays.unstable
       ];
 
       config = {

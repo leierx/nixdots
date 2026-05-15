@@ -15,7 +15,7 @@
           pictures = "${config.home.homeDirectory}/Pictures";
           videos = "${config.home.homeDirectory}/Videos";
           documents = "${config.home.homeDirectory}/Documents";
-          publicShare = "";
+          publicShare = lib.mkForce null;
         };
       };
 
