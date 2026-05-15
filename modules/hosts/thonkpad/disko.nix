@@ -1,6 +1,6 @@
 { inputs, ... }:
 {
-  flake.modules.nixos.hosts.laptop = {
+  flake.modules.nixos.hosts.thonkpad = {
     imports = [ inputs.disko.nixosModules.disko ];
 
     disko.devices.disk = {

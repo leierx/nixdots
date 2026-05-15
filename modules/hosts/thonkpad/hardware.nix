@@ -1,5 +1,5 @@
 {
-  flake.modules.nixos.hosts.laptop =
+  flake.modules.nixos.hosts.thonkpad =
     { pkgs, ... }:
     {
       hardware = {
