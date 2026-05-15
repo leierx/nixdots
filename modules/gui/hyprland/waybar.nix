@@ -127,7 +127,7 @@
               background: #000;
           }
 
-          window#waybar.topbar > box { margin: 2pt; }
+          window#waybar.topbar > box { margin: 2pt 1pt; }
 
           #custom-os-logo * { all: unset; }
           #custom-os-logo {
@@ -136,7 +136,7 @@
             background-repeat: no-repeat;
             background-size: contain;
             min-width: 20pt;
-            margin: 0 6pt;
+            margin: 0 4pt;
           }
 
           #workspaces * { all: unset; }
@@ -157,7 +157,7 @@
 
           #clock { font-weight: 500; }
 
-          #battery { font-weight: bold; color: @fg; padding: 0 10px; }
+          #battery { font-weight: 500; color: @fg; padding: 0 10px; }
           #battery.full { color: @green; }
           #battery.warning { color: @yellow; }
           #battery.critical { color: @red; animation: pulse 1s ease-in-out infinite alternate; }

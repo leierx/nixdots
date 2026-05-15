@@ -9,8 +9,7 @@ in
       programs.hyprland = {
         enable = true;
         package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-        portalPackage =
-          inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+        portalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
       };
 
       nix.settings = {
@@ -46,12 +45,16 @@ in
       wayland.windowManager.hyprland = {
         enable = true;
         xwayland.enable = true;
-        package = osConfig.programs.hyprland.package;
+        package = null;
+        portalPackage = null;
+        systemd.variables = [ "--all" ];
         settings = {
           "$mod" = "SUPER";
           "$terminal" = "wezterm";
           "$applicationLauncher" = "wofi --show drun";
           "$screenshot" = "${lib.getExe pkgs.hyprshot} --mode region --freeze --silent --clipboard-only";
+          # autostart
+          exec-once = lib.optional osConfig.networking.networkmanager.enable "${lib.getExe pkgs.networkmanagerapplet}";
         };
       };
     };

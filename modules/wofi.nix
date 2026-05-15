@@ -4,6 +4,8 @@
     {
       home.packages = [ pkgs.wofi ];
 
+      wayland.windowManager.hyprland.settings.layerrule = [ "dimaround, launcher" ];
+
       programs.wofi = {
         enable = true;
 

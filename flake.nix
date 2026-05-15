@@ -26,13 +26,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     # hyprland
-    hyprland = {
-      url = "github:hyprwm/Hyprland?ref=v0.52.1";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    hyprsplit = {
-      url = "github:shezdy/hyprsplit?ref=v0.52.1";
-      inputs.hyprland.follows = "hyprland";
-    };
+    hyprland.url = "github:hyprwm/Hyprland?ref=v0.52.1";
+    hyprsplit.url = "github:shezdy/hyprsplit?ref=v0.52.1";
   };
 }
