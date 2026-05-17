@@ -13,6 +13,7 @@
         settings = {
           auto-optimise-store = true;
           flake-registry = lib.mkForce ""; # Disable global registry
+          warn-dirty = false;
           cores = 0;
           max-jobs = "auto";
           builders-use-substitutes = true;

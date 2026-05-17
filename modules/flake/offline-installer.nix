@@ -6,7 +6,10 @@
 }:
 let
   # Static list of hosts to export as `offlineInstaller-<host>` x86_64-linux package.
-  installerHosts = [ "thonkpad" ];
+  installerHosts = [
+    "thonkpad"
+    "desktop"
+  ];
 
   flakeOutPaths =
     let
