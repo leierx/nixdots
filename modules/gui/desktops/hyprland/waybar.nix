@@ -84,7 +84,9 @@
               format = "{capacity}%";
             };
 
-            tray = { };
+            tray = {
+              icon-size = 20;
+            };
           };
         };
         style = ''
@@ -165,6 +167,7 @@
           @keyframes pulse { from { color: @red; } to { opacity: 0.4; } }
 
           #tray { padding: 0 6pt; }
+          #tray widget>image { margin: 0 2pt; }
           #tray > .passive { -gtk-icon-effect: dim; }
           #tray > .needs-attention { -gtk-icon-effect: highlight; }
         '';
