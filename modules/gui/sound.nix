@@ -1,5 +1,5 @@
 {
-  flake.modules.nixos.sound = {
+  modules.nixos.sound = {
     services.pipewire = {
       enable = true;
       alsa.enable = true;

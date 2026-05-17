@@ -1,5 +1,5 @@
 {
-  flake.modules.homeManager.wezterm =
+  modules.homeManager.wezterm =
     { pkgs, ... }:
     {
       home.packages = [ pkgs.hack-font ];

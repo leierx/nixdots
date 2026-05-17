@@ -4,13 +4,13 @@
     (inputs.nixpkgs.lib.evalModules {
       specialArgs.inputs = inputs;
       modules = [ (import ./import-tree.nix ./modules) ];
-    }).config.flake;
+    }).config;
 
   inputs = {
     # nixpkgs
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # images etc.
+    # images, raw config, files, etc.
     assets = {
       url = "path:./assets";
       flake = false;

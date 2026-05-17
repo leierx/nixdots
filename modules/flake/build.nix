@@ -16,5 +16,5 @@ let
     };
 in
 {
-  flake.nixosConfigurations = lib.mapAttrs mknixosConfiguration config.flake.modules.nixos.hosts;
+  nixosConfigurations = lib.mapAttrs mknixosConfiguration config.modules.nixos.hosts;
 }

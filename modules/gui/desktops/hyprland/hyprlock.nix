@@ -1,8 +1,8 @@
 { inputs, ... }:
 {
-  flake.modules.nixos.hyprland.security.pam.services.hyprlock = { };
+  modules.nixos.hyprland.security.pam.services.hyprlock = { };
 
-  flake.modules.homeManager.hyprland =
+  modules.homeManager.hyprland =
     { pkgs, lib, ... }:
     {
       wayland.windowManager.hyprland.settings."$lockscreen" = "${lib.getExe pkgs.hyprlock}";

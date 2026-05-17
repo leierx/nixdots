@@ -1,3 +1,3 @@
 {
-  flake.modules.nixos.root.users.users.root.hashedPassword = "!";
+  modules.nixos.root.users.users.root.hashedPassword = "!";
 }

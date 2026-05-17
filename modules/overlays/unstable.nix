@@ -1,6 +1,6 @@
 { inputs, ... }:
 {
-  flake.modules.overlays.unstable =
+  modules.overlays.unstable =
     { config, pkgs, ... }:
     {
       nixpkgs.overlays = [

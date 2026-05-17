@@ -1,11 +1,9 @@
 {
-  flake.modules.overlays.vesktop = {
+  modules.overlays.vesktop = {
     nixpkgs.overlays = [
       (
         final: prev:
         let
-          electronBin = prev.electron-bin;
-
           discordDesktopItem = final.makeDesktopItem {
             name = "discord";
             exec = "vesktop %U";
@@ -18,18 +16,11 @@
             ];
             mimeTypes = [ "x-scheme-handler/discord" ];
           };
-
-          vesktopWithElectronBin = prev.vesktop.override {
-            # don't build electron every rebuild
-            electron = electronBin;
-          };
-
-          vesktopWithDiscordAlias = vesktopWithElectronBin.overrideAttrs (old: {
-            desktopItems = (old.desktopItems or [ ]) ++ [ discordDesktopItem ];
-          });
         in
         {
-          vesktop = vesktopWithDiscordAlias;
+          vesktop = prev.vesktop.overrideAttrs (old: {
+            desktopItems = (old.desktopItems or [ ]) ++ [ discordDesktopItem ];
+          });
         }
       )
     ];

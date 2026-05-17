@@ -1,5 +1,5 @@
 {
-  flake.modules.nixos.podman =
+  modules.nixos.podman =
     { pkgs, ... }:
     {
       virtualisation.podman = {

@@ -3,26 +3,36 @@ let
   outerConfig = config;
 in
 {
-  flake.modules.nixos.graphical =
-    { config, ... }:
+  modules.nixos.profiles.graphical =
+    { config, lib, ... }:
+    let
+      cfg = config.flakeModules.graphical;
+    in
     {
       imports = [
-        outerConfig.flake.modules.nixos.profileOptions
-        outerConfig.flake.modules.nixos.displayManager
-        outerConfig.flake.modules.nixos.sound
-        outerConfig.flake.modules.nixos.plymouth
-        outerConfig.flake.modules.nixos.gtk
-        outerConfig.flake.modules.nixos.fonts
-        outerConfig.flake.modules.nixos.hyprland
-        outerConfig.flake.modules.overlays.vesktop
+        outerConfig.modules.nixos.displayManager
+        outerConfig.modules.nixos.sound
+        outerConfig.modules.nixos.plymouth
+        outerConfig.modules.nixos.gtk
+        outerConfig.modules.nixos.fonts
+        outerConfig.modules.nixos.hyprland
+        outerConfig.modules.overlays.vesktop
       ];
 
+      options.flakeModules.graphical = {
+        user = lib.mkOption {
+          type = lib.types.singleLineStr;
+          default = "leier";
+          description = "Home Manager user that the graphical profile configures.";
+        };
+      };
+
       config = {
-        home-manager.users.${config.flakeModules.profile.user}.imports = [
-          outerConfig.flake.modules.homeManager.cursor
-          outerConfig.flake.modules.homeManager.gtk
-          outerConfig.flake.modules.homeManager.neovim
-          outerConfig.flake.modules.homeManager.qt
+        home-manager.users.${cfg.user}.imports = [
+          outerConfig.modules.homeManager.cursor
+          outerConfig.modules.homeManager.gtk
+          outerConfig.modules.homeManager.neovim
+          outerConfig.modules.homeManager.qt
         ];
       };
     };

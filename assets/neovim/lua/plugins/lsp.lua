@@ -43,7 +43,7 @@ return {
     },
     config = function(_, opts)
       require("conform").setup(opts)
-      require("conform").formatters.nixfmt = { append_args = { "--width", "6900" } }
+      require("conform").formatters.nixfmt = {}
     end,
   },
 }

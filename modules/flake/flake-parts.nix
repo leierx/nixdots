@@ -1,6 +1,6 @@
 { lib, ... }:
 {
-  options.flake = {
+  options = {
     nixosConfigurations = lib.mkOption {
       type = lib.types.lazyAttrsOf lib.types.raw;
       default = { };
@@ -14,6 +14,16 @@
           type = lib.types.attrsOf lib.types.deferredModule;
           default = { };
           description = "Per-host NixOS module definitions";
+        };
+        options.factories = lib.mkOption {
+          type = lib.types.lazyAttrsOf (lib.types.functionTo lib.types.deferredModule);
+          default = { };
+          description = "Functions that produce NixOS modules from arguments";
+        };
+        options.profiles = lib.mkOption {
+          type = lib.types.attrsOf lib.types.deferredModule;
+          default = { };
+          description = "Composable bundles of NixOS modules";
         };
       };
       default = { };
@@ -30,6 +40,12 @@
       type = lib.types.attrsOf lib.types.deferredModule;
       default = { };
       description = "Overlay modules (each sets nixpkgs.overlays)";
+    };
+
+    packages = lib.mkOption {
+      type = lib.types.lazyAttrsOf (lib.types.lazyAttrsOf lib.types.raw);
+      default = { };
+      description = "Flake packages output, keyed by system then name";
     };
   };
 }

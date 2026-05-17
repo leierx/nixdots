@@ -1,7 +1,7 @@
 {
-  flake.modules.nixos.gtk.programs.dconf.enable = true;
+  modules.nixos.gtk.programs.dconf.enable = true;
 
-  flake.modules.homeManager.gtk =
+  modules.homeManager.gtk =
     { pkgs, ... }:
     {
       dconf.enable = true;

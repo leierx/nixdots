@@ -1,5 +1,5 @@
 {
-  flake.modules.nixos.displayManager =
+  modules.nixos.displayManager =
     { lib, config, ... }:
     let
       cfg = config.flakeModules.displayManager;

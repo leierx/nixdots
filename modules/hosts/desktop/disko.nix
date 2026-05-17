@@ -1,11 +1,11 @@
 { inputs, ... }:
 {
-  modules.nixos.hosts.thonkpad = {
+  modules.nixos.hosts.desktop = {
     imports = [ inputs.disko.nixosModules.disko ];
 
     disko.devices.disk = {
       nvme1 = {
-        device = "/dev/disk/by-id/nvme-SKHynix_HFS512GEJ9X164N_4YC6N036115206S22";
+        device = "/dev/disk/by-id/nvme-Samsung_SSD_980_PRO_1TB_S5GXNF0W216969K";
         type = "disk";
         content = {
           type = "gpt";

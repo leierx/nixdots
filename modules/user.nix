@@ -1,5 +1,5 @@
 {
-  flake.modules.nixos.user =
+  modules.nixos.user =
     {
       config,
       lib,
@@ -52,7 +52,7 @@
       };
     };
 
-  flake.modules.homeManager.user = {
+  modules.homeManager.user = {
     programs.zsh = {
       enable = true;
 

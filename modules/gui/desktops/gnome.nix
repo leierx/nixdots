@@ -1,5 +1,5 @@
 {
-  flake.modules.nixos.gnome =
+  modules.nixos.gnome =
     { pkgs, ... }:
     {
       services.desktopManager.gnome.enable = true;
@@ -14,7 +14,7 @@
       ];
     };
 
-  flake.modules.homeManager.gnome = {
+  modules.homeManager.gnome = {
     dconf.settings = {
       "org/gnome/desktop/interface" = {
         show-battery-percentage = true;

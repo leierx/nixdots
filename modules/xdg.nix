@@ -1,5 +1,5 @@
 {
-  flake.modules.homeManager.xdgUserDirs =
+  modules.homeManager.xdgUserDirs =
     { config, lib, ... }:
     {
       xdg = {

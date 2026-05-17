@@ -5,12 +5,12 @@ Personal NixOS configuration. Flake-parts-free, loosely dendritic.
 ## How it works
 
 `flake.nix` runs `lib.evalModules` on every `.nix` file under `modules/`
-(via `import-tree.nix`). The result's `config.flake` becomes the flake's
+(via `import-tree.nix`). The result's `config` becomes the flake's
 output.
 
 Each file is a small module that contributes one thing under
-`flake.modules.{nixos,homeManager,overlays}.<name>`. `flake/build.nix`
-turns each entry in `flake.modules.nixos.hosts.*` into a real
+`modules.{nixos,homeManager,overlays}.<name>`. `flake/build.nix`
+turns each entry in `modules.nixos.hosts.*` into a real
 `nixosConfiguration`.
 
 ## Layout
@@ -38,12 +38,12 @@ modules/
   another file by path (`./foo.nix`, `../assets/x`). Static files live
   in the `assets` flake input and are accessed via `inputs.assets`.
   Cross-module composition happens only through option values and
-  `config.flake.modules.*`.
+  `config.modules.*`.
 
 ## Adding a host
 
 1. Create `modules/hosts/<name>/configuration.nix` defining
-   `flake.modules.nixos.hosts.<name>`.
+   `modules.nixos.hosts.<name>`.
 2. Import the profiles or individual modules you want.
 3. Build: `sudo nixos-rebuild switch --flake .#<name>`.
 

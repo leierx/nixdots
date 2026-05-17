@@ -1,6 +1,6 @@
 { inputs, ... }:
 {
-  flake.modules.homeManager.neovim =
+  modules.homeManager.neovim =
     {
       config,
       lib,

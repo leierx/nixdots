@@ -1,5 +1,5 @@
 {
-  flake.modules.nixos.incus =
+  modules.nixos.incus =
     { lib, ... }:
     {
       virtualisation.incus = {

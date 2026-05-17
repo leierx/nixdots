@@ -1,15 +1,13 @@
 { config, ... }:
 {
-  flake.modules.nixos.hosts.thonkpad =
+  modules.nixos.hosts.thonkpad =
     { pkgs, ... }:
     {
       imports = [
-        config.flake.modules.nixos.minimal
-        config.flake.modules.nixos.graphical
+        config.modules.nixos.profiles.minimal
+        config.modules.nixos.profiles.graphical
+        config.modules.nixos.gaming
       ];
-
-      # GAMING
-      programs.steam.enable = true;
 
       environment.systemPackages = with pkgs; [
         xfce.mousepad
@@ -18,7 +16,7 @@
         brave
         firefox-bin
         obsidian
-        # vesktop # discord client
+        vesktop
         opencode
         treefmt
         bitwarden-cli

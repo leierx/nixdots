@@ -3,7 +3,7 @@ let
   outerConfig = config;
 in
 {
-  flake.modules.nixos.hyprland =
+  modules.nixos.hyprland =
     { pkgs, lib, ... }:
     {
       programs.hyprland.enable = true;
@@ -20,10 +20,10 @@ in
       services.gnome.sushi.enable = true;
       environment.systemPackages = [ pkgs.nautilus ];
 
-      home-manager.sharedModules = [ outerConfig.flake.modules.homeManager.hyprland ];
+      home-manager.sharedModules = [ outerConfig.modules.homeManager.hyprland ];
     };
 
-  flake.modules.homeManager.hyprland =
+  modules.homeManager.hyprland =
     {
       pkgs,
       osConfig,
@@ -32,8 +32,8 @@ in
     }:
     {
       imports = [
-        outerConfig.flake.modules.homeManager.wezterm
-        outerConfig.flake.modules.homeManager.tofi
+        outerConfig.modules.homeManager.wezterm
+        outerConfig.modules.homeManager.tofi
       ];
 
       home.packages = [ pkgs.wl-clipboard ];

@@ -3,32 +3,42 @@ let
   outerConfig = config;
 in
 {
-  flake.modules.nixos.minimal =
-    { config, ... }:
+  modules.nixos.profiles.minimal =
+    { config, lib, ... }:
+    let
+      cfg = config.flakeModules.minimal;
+    in
     {
       imports = [
-        outerConfig.flake.modules.nixos.profileOptions
-        outerConfig.flake.modules.nixos.bootloader
-        outerConfig.flake.modules.nixos.basePackages
-        outerConfig.flake.modules.nixos.nixosConfig
-        outerConfig.flake.modules.nixos.doas
-        outerConfig.flake.modules.nixos.git
-        outerConfig.flake.modules.nixos.homeManager
-        outerConfig.flake.modules.nixos.journald
-        outerConfig.flake.modules.nixos.locale
-        outerConfig.flake.modules.nixos.network
-        outerConfig.flake.modules.nixos.root
-        outerConfig.flake.modules.nixos.user
-        outerConfig.flake.modules.overlays.unstable
+        (outerConfig.modules.nixos.factories.homeManager cfg.user)
+        outerConfig.modules.nixos.bootloader
+        outerConfig.modules.nixos.basePackages
+        outerConfig.modules.nixos.nixosConfig
+        outerConfig.modules.nixos.doas
+        outerConfig.modules.nixos.git
+        outerConfig.modules.nixos.journald
+        outerConfig.modules.nixos.locale
+        outerConfig.modules.nixos.network
+        outerConfig.modules.nixos.root
+        outerConfig.modules.nixos.user
+        outerConfig.modules.overlays.unstable
       ];
 
+      options.flakeModules.minimal = {
+        user = lib.mkOption {
+          type = lib.types.singleLineStr;
+          default = "leier";
+          description = "Home Manager user that the minimal profile configures.";
+        };
+      };
+
       config = {
-        home-manager.users.${config.flakeModules.profile.user}.imports = [
-          outerConfig.flake.modules.homeManager.git
-          outerConfig.flake.modules.homeManager.locale
-          outerConfig.flake.modules.homeManager.tmux
-          outerConfig.flake.modules.homeManager.user
-          outerConfig.flake.modules.homeManager.xdgUserDirs
+        home-manager.users.${cfg.user}.imports = [
+          outerConfig.modules.homeManager.git
+          outerConfig.modules.homeManager.locale
+          outerConfig.modules.homeManager.tmux
+          outerConfig.modules.homeManager.user
+          outerConfig.modules.homeManager.xdgUserDirs
         ];
       };
     };

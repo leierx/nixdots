@@ -1,5 +1,5 @@
 {
-  flake.modules.nixos.network = {
+  modules.nixos.network = {
     services.resolved = {
       enable = true;
       dnssec = "true";
