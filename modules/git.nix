@@ -1,25 +1,21 @@
-{ config, ... }:
-let
-  outerConfig = config;
-in
 {
   flake.modules.nixos.git.programs.git.enable = true;
 
   flake.modules.homeManager.git =
     { config, lib, ... }:
     let
-      cfg = config.dot.git;
+      cfg = config.flakeModules.git;
     in
     {
-      options.dot.git = {
+      options.flakeModules.git = {
         userName = lib.mkOption {
           type = lib.types.singleLineStr;
-          default = outerConfig.flake.defaults.fullName;
+          default = "Lars Smith Eier";
           description = "Full name for git commits (user.name)";
         };
         userEmail = lib.mkOption {
           type = lib.types.singleLineStr;
-          default = outerConfig.flake.defaults.email;
+          default = "larssmitheier@protonmail.com";
           description = "Email for git commits (user.email)";
         };
       };

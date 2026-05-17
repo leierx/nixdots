@@ -2,10 +2,10 @@
   flake.modules.nixos.displayManager =
     { lib, config, ... }:
     let
-      cfg = config.dot.displayManager;
+      cfg = config.flakeModules.displayManager;
     in
     {
-      options.dot.displayManager = {
+      options.flakeModules.displayManager = {
         implementation = lib.mkOption {
           type = lib.types.enum [
             "ly"

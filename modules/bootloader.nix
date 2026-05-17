@@ -7,10 +7,10 @@
       ...
     }:
     let
-      cfg = config.dot.bootloader;
+      cfg = config.flakeModules.bootloader;
     in
     {
-      options.dot.bootloader = {
+      options.flakeModules.bootloader = {
         implementation = lib.mkOption {
           type = lib.types.enum [
             "grub"

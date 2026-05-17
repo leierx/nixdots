@@ -1,3 +1,4 @@
+{ inputs, ... }:
 {
   flake.modules.homeManager.neovim =
     {
@@ -7,10 +8,10 @@
       ...
     }:
     let
-      cfg = config.dot.neovim;
+      cfg = config.flakeModules.neovim;
     in
     {
-      options.dot.neovim = {
+      options.flakeModules.neovim = {
         outOfStorePath = lib.mkOption {
           type = lib.types.nullOr lib.types.path;
           default = null;
@@ -18,7 +19,11 @@
       };
 
       config = {
-        xdg.configFile."nvim".source = if cfg.outOfStorePath != null then config.lib.file.mkOutOfStoreSymlink cfg.outOfStorePath else ./.;
+        xdg.configFile."nvim".source =
+          if cfg.outOfStorePath != null then
+            config.lib.file.mkOutOfStoreSymlink cfg.outOfStorePath
+          else
+            "${inputs.assets}/neovim";
 
         home.packages = with pkgs; [
           ripgrep

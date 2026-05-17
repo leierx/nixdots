@@ -1,20 +1,17 @@
-{ inputs, config, ... }:
-let
-  outerConfig = config;
-in
+{ inputs, ... }:
 {
   flake.modules.nixos.homeManager =
     { config, lib, ... }:
     let
-      cfg = config.dot.homeManager;
+      cfg = config.flakeModules.homeManager;
     in
     {
       imports = [ inputs.home-manager.nixosModules.home-manager ];
 
-      options.dot.homeManager = {
+      options.flakeModules.homeManager = {
         user = lib.mkOption {
           type = lib.types.singleLineStr;
-          default = outerConfig.flake.defaults.username;
+          default = "leier";
           description = "User to set up home-manager for";
         };
       };

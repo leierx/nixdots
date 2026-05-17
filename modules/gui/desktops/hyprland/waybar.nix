@@ -9,7 +9,7 @@
         settings = {
           topbar = {
             name = "topbar";
-            height = 36;
+            height = 42;
             spacing = 0;
 
             modules-left = [
@@ -127,7 +127,7 @@
               background: #000;
           }
 
-          window#waybar.topbar > box { margin: 2pt 1pt; }
+          window#waybar.topbar > box { margin: 4pt 2pt; }
 
           #custom-os-logo * { all: unset; }
           #custom-os-logo {
@@ -158,7 +158,6 @@
           #clock { font-weight: 500; }
 
           #battery { font-weight: 500; color: @fg; padding: 0 10px; }
-          #battery.full { color: @green; }
           #battery.warning { color: @yellow; }
           #battery.critical { color: @red; animation: pulse 1s ease-in-out infinite alternate; }
           #battery.charging, #battery.plugged { animation: charging 1.5s ease-in-out infinite alternate; }

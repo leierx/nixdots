@@ -7,6 +7,7 @@ in
     { config, ... }:
     {
       imports = [
+        outerConfig.flake.modules.nixos.profileOptions
         outerConfig.flake.modules.nixos.bootloader
         outerConfig.flake.modules.nixos.basePackages
         outerConfig.flake.modules.nixos.nixosConfig
@@ -17,17 +18,16 @@ in
         outerConfig.flake.modules.nixos.locale
         outerConfig.flake.modules.nixos.network
         outerConfig.flake.modules.nixos.root
-        outerConfig.flake.modules.nixos.shell
         outerConfig.flake.modules.nixos.user
         outerConfig.flake.modules.overlays.unstable
       ];
 
       config = {
-        home-manager.users.${config.dot.user.name}.imports = [
+        home-manager.users.${config.flakeModules.profile.user}.imports = [
           outerConfig.flake.modules.homeManager.git
           outerConfig.flake.modules.homeManager.locale
-          outerConfig.flake.modules.homeManager.shell
           outerConfig.flake.modules.homeManager.tmux
+          outerConfig.flake.modules.homeManager.user
           outerConfig.flake.modules.homeManager.xdgUserDirs
         ];
       };

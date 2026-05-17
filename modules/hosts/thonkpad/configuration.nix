@@ -8,6 +8,9 @@
         config.flake.modules.nixos.graphical
       ];
 
+      # GAMING
+      programs.steam.enable = true;
+
       environment.systemPackages = with pkgs; [
         xfce.mousepad
         spotify
@@ -15,7 +18,7 @@
         brave
         firefox-bin
         obsidian
-        vesktop # discord client
+        # vesktop # discord client
         opencode
         treefmt
         bitwarden-cli
