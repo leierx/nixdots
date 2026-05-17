@@ -1,41 +1,29 @@
 {
   outputs =
-    { ... }@inputs:
-    let
-      mkNixosSystem = (import ./lib/mk-nixos-system.nix { inherit inputs; });
-    in
-    {
-      nixosConfigurations = {
-        desktop = mkNixosSystem { hostName = "desktop"; };
-        test-vm = mkNixosSystem { hostName = "test-vm"; };
-        thonkpad = mkNixosSystem { hostName = "thonkpad"; };
-      };
-    };
+    inputs:
+    (inputs.nixpkgs.lib.evalModules {
+      specialArgs.inputs = inputs;
+      modules = [ (import ./import-tree.nix ./modules) ];
+    }).config;
 
   inputs = {
     # nixpkgs
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-
+    # images, raw config, files, etc.
+    assets = {
+      url = "path:./assets";
+      flake = false;
+    };
     # home-manager
-    home-manager.url = "github:nix-community/home-manager/release-25.11";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
-
+    home-manager = {
+      url = "github:nix-community/home-manager/release-25.11";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # deterministic disk setup
-    disko.url = "github:nix-community/disko";
-    disko.inputs.nixpkgs.follows = "nixpkgs";
-
-    # neovim config
-    neovim-config.url = "path:./modules/home-manager/neovim";
-
-    # hardware helper
-    nixos-hardware.url = "github:NixOS/nixos-hardware";
-
-    # hyprland
-    hyprland.url = "github:hyprwm/Hyprland?ref=v0.52.1";
-    hyprland.inputs.nixpkgs.follows = "nixpkgs";
-    hyprsplit.url = "github:shezdy/hyprsplit?ref=v0.52.1";
-    hyprsplit.inputs.hyprland.follows = "hyprland";
-    ags-shell.url = "path:./packages/ags";
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 }
