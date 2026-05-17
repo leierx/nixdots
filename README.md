@@ -25,6 +25,7 @@ modules/
 
 ## TODO
 
-- [ ] move from tofi -> rofi-wayland eventually
+- [ ] move from fuzzel -> rofi-wayland eventually
 - [ ] look into https://github.com/nix-community/impermanence
+- [ ] setup formatter for flake
 

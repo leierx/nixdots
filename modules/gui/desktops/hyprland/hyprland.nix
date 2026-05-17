@@ -33,7 +33,7 @@ in
     {
       imports = [
         outerConfig.modules.homeManager.wezterm
-        outerConfig.modules.homeManager.tofi
+        outerConfig.modules.homeManager.fuzzel
       ];
 
       home.packages = [ pkgs.wl-clipboard ];
@@ -47,7 +47,7 @@ in
         settings = {
           "$mod" = "SUPER";
           "$terminal" = "wezterm";
-          "$applicationLauncher" = "tofi-drun";
+          "$applicationLauncher" = "fuzzel";
           "$screenshot" = "${lib.getExe pkgs.hyprshot} --mode region --freeze --silent --clipboard-only";
           # autostart
           exec-once = lib.optional osConfig.networking.networkmanager.enable "${lib.getExe pkgs.networkmanagerapplet}";
