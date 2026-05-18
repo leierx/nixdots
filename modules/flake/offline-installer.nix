@@ -13,7 +13,11 @@ let
 
   flakeOutPaths =
     let
-      collect = parent: map (child: [ child.outPath ] ++ lib.optionals (child ? inputs && child.inputs != { }) (collect child)) (lib.attrValues parent.inputs);
+      collect =
+        parent:
+        map (
+          child: [ child.outPath ] ++ lib.optionals (child ? inputs && child.inputs != { }) (collect child)
+        ) (lib.attrValues parent.inputs);
     in
     lib.unique (lib.flatten (collect inputs.self));
 
@@ -75,5 +79,9 @@ let
     };
 in
 {
-  packages.x86_64-linux = lib.listToAttrs (map (host: lib.nameValuePair "installer-${host}" (mkInstaller host).config.system.build.isoImage) installerHosts);
+  packages.x86_64-linux = lib.listToAttrs (
+    map (
+      host: lib.nameValuePair "installer-${host}" (mkInstaller host).config.system.build.isoImage
+    ) installerHosts
+  );
 }
