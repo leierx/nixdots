@@ -32,6 +32,7 @@ let
               targetSystem.config.system.build.toplevel
               targetSystem.config.system.build.diskoScript
             ];
+            nixpkgs.hostPlatform = "x86_64-linux";
             nix.channel.enable = false;
             nix.settings.substituters = lib.mkForce [ ];
             nix.settings.experimental-features = [
