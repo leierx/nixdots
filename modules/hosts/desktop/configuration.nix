@@ -7,6 +7,7 @@
         config.modules.nixos.profiles.minimal
         config.modules.nixos.profiles.graphical
         config.modules.nixos.gaming
+        config.modules.nixos.podman
       ];
 
       # wireguard

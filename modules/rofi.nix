@@ -31,7 +31,6 @@
         cycle = false;
         terminal = "wezterm";
         extraConfig = {
-          normalize-match = true;
           show-icons = true;
           drun-match-fields = "name,exec,generic,categories,keywords";
           drun-display-format = "{name}";
@@ -100,7 +99,7 @@
               border: 0.1em;
               border-color: #000;
               border-radius: 0.5em;
-              width: 30em;
+              width: 25em;
           }
 
           mainbox {
@@ -198,7 +197,7 @@
           }
 
           element {
-              padding: 1em;
+              padding: 0.75em;
               cursor: pointer;
               border-radius: 0.5em;
               border: 0;
@@ -256,11 +255,12 @@
               cursor: inherit;
               highlight: inherit;
               text-color: inherit;
+              vertical-align: 0.50;
           }
 
           element-icon {
               background-color: transparent;
-              size: 1em ;
+              size: 1.25em ;
               cursor: inherit;
               text-color: inherit;
           }

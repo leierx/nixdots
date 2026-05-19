@@ -23,9 +23,13 @@ modules/
 - Modules are independent — no cross-module option references.
 - Filenames are kebab-case; Nix attributes are camelCase.
 
+## Building the installer ISO
+
+# FIX
+
 ## TODO
 
-- [x] move from fuzzel -> rofi-wayland eventually
+- [x] move from fuzzel -> rofi-wayland
 - [x] setup formatter for flake
 - [ ] look into https://github.com/nix-community/impermanence
 - [ ] notifications for hyprland... probably gonna be https://github.com/emersion/mako
