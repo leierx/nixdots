@@ -13,18 +13,6 @@ let
     "desktop"
   ];
 
-  # Every transitive flake input store path, bundled into the ISO so the
-  # system can be rebuilt offline from the embedded flake.
-  flakeOutPaths =
-    let
-      collect =
-        parent:
-        map (
-          child: [ child.outPath ] ++ lib.optionals (child ? inputs && child.inputs != { }) (collect child)
-        ) (lib.attrValues parent.inputs);
-    in
-    lib.unique (lib.flatten (collect inputs.self));
-
   mkInstaller =
     targetHost:
     let
@@ -39,40 +27,26 @@ let
             console.keyMap = "no";
             i18n.defaultLocale = "en_DK.UTF-8";
             time.timeZone = "Europe/Oslo";
-
+            isoImage.squashfsCompression = "zstd -Xcompression-level 22";
             isoImage.storeContents = [
-              inputs.self.outPath
               targetSystem.config.system.build.toplevel
               targetSystem.config.system.build.diskoScript
-            ]
-            ++ flakeOutPaths;
-            isoImage.squashfsCompression = "zstd -Xcompression-level 22";
-
-            documentation.enable = false;
-            documentation.nixos.enable = false;
-            documentation.man.man-db.enable = false;
-
-            nixpkgs.flake.setNixPath = false;
-            nixpkgs.flake.setFlakeRegistry = false;
-            nixpkgs.hostPlatform = "x86_64-linux";
-
-            nix.settings.flake-registry = "";
-            nix.settings.experimental-features = [ "nix-command flakes" ];
-            nix.settings.substituters = lib.mkForce [ ];
-            nix.settings.trusted-public-keys = lib.mkForce [ ];
+            ];
             nix.channel.enable = false;
-
+            nix.settings.substituters = lib.mkForce [ ];
+            nix.settings.experimental-features = [
+              "nix-command"
+              "flakes"
+            ];
             services.getty.autologinUser = lib.mkForce "root";
-
+            networking.wireless.enable = lib.mkForce false;
+            environment.defaultPackages = lib.mkForce [ ];
             environment.systemPackages = [
               (pkgs.writeShellScriptBin "offline-installer" ''
-                set -euo pipefail
-
                 ${targetSystem.config.system.build.diskoScript}
-
                 ${lib.getExe pkgs.nixos-install} \
                   --root /mnt \
-                  --no-root-password \
+                  --no-root-passwd \
                   --no-channel-copy \
                   --system ${targetSystem.config.system.build.toplevel}
               '')

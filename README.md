@@ -25,7 +25,9 @@ modules/
 
 ## Building the installer ISO
 
-# FIX
+```sh
+nix build --no-link --quiet --print-out-paths .#nixosConfigurations.desktop.config.system.build.offlineInstallerIso
+```
 
 ## TODO
 
