@@ -25,7 +25,8 @@ modules/
 
 ## TODO
 
-- [ ] move from fuzzel -> rofi-wayland eventually
 - [ ] look into https://github.com/nix-community/impermanence
+- [ ] notifications for hyprland... probably gonna be https://github.com/emersion/mako
+- [x] move from fuzzel -> rofi-wayland eventually
 - [x] setup formatter for flake
 

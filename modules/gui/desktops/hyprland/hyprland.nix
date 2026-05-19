@@ -33,7 +33,7 @@ in
     {
       imports = [
         outerConfig.modules.homeManager.wezterm
-        outerConfig.modules.homeManager.fuzzel
+        outerConfig.modules.homeManager.rofi
       ];
 
       home.packages = [ pkgs.wl-clipboard ];
@@ -47,7 +47,7 @@ in
         settings = {
           "$mod" = "SUPER";
           "$terminal" = "wezterm";
-          "$applicationLauncher" = "fuzzel";
+          "$applicationLauncher" = "rofi -modes drun -show drun";
           "$screenshot" = "${lib.getExe pkgs.hyprshot} --mode region --freeze --silent --clipboard-only";
           # autostart
           exec-once = lib.optional osConfig.networking.networkmanager.enable "${lib.getExe pkgs.networkmanagerapplet}";
