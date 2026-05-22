@@ -13,7 +13,7 @@
         settings = {
           background = {
             monitor = "";
-            path = ./assets/lockscreen-background.jpg;
+            path = "${./assets/lockscreen-background.jpg}";
           };
 
           general = {

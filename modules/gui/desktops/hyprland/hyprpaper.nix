@@ -7,7 +7,7 @@
         settings = {
           ipc = false;
           splash = false;
-          preload = ./assets/wallpaper.png;
+          preload = "${./assets/wallpaper.png}";
           wallpaper = ",${./assets/wallpaper.png}";
         };
       };
