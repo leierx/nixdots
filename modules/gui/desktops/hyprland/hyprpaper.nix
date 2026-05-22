@@ -1,4 +1,3 @@
-{ inputs, ... }:
 {
   modules.homeManager.hyprland =
     { pkgs, lib, ... }:
@@ -8,8 +7,8 @@
         settings = {
           ipc = false;
           splash = false;
-          preload = "${inputs.assets}/wallpaper.png";
-          wallpaper = ",${inputs.assets}/wallpaper.png";
+          preload = ./assets/wallpaper.png;
+          wallpaper = ",${./assets/wallpaper.png}";
         };
       };
 

@@ -1,4 +1,3 @@
-{ inputs, ... }:
 {
   modules.homeManager.neovim =
     {
@@ -23,7 +22,7 @@
           if cfg.outOfStorePath != null then
             config.lib.file.mkOutOfStoreSymlink cfg.outOfStorePath
           else
-            "${inputs.assets}/neovim";
+            ./assets;
 
         home.packages = with pkgs; [
           ripgrep

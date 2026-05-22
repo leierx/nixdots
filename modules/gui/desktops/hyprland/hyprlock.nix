@@ -1,4 +1,3 @@
-{ inputs, ... }:
 {
   modules.nixos.hyprland.security.pam.services.hyprlock = { };
 
@@ -14,7 +13,7 @@
         settings = {
           background = {
             monitor = "";
-            path = "${inputs.assets}/lockscreen-background.jpg";
+            path = ./assets/lockscreen-background.jpg;
           };
 
           general = {

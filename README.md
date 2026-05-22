@@ -7,7 +7,6 @@ Personal NixOS configuration. Flake-parts-free, loosely dendritic.
 ```
 flake.nix                Inputs + outputs glue
 import-tree.nix          Recursively imports every .nix under modules/
-assets/                  Static files (wallpapers, neovim config, etc.)
 modules/
   flake/                 Internal plumbing: option declarations + build
   hosts/<name>/          Per-host modules (configuration, hardware, disko, ...)
@@ -33,6 +32,8 @@ nix build --no-link --quiet --print-out-paths .#nixosConfigurations.desktop.conf
 
 - [x] move from fuzzel -> rofi-wayland
 - [x] setup formatter for flake
+- [x] notifications for hyprland... probably gonna be https://github.com/emersion/mako - ble mako.
 - [ ] look into https://github.com/nix-community/impermanence
-- [ ] notifications for hyprland... probably gonna be https://github.com/emersion/mako
+- [ ] create a tiny framework that basicly just keeps my themes in one place in a bunch of diffrent formats. RGB RGBA RRGGBBAA etc.
+  - [ ] port mako, rofi, waybar, wezterm etc etc over to using said framework
 

@@ -10,11 +10,6 @@
     # nixpkgs
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # images, raw config, files, etc.
-    assets = {
-      url = "path:./assets";
-      flake = false;
-    };
     # home-manager
     home-manager = {
       url = "github:nix-community/home-manager/release-25.11";

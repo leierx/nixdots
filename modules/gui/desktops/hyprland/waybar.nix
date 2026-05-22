@@ -1,4 +1,3 @@
-{ inputs, ... }:
 {
   modules.homeManager.hyprland =
     { pkgs, lib, ... }:
@@ -133,7 +132,7 @@
 
           #custom-os-logo * { all: unset; }
           #custom-os-logo {
-            background-image: url('${inputs.assets}/nixos.svg');
+            background-image: url('${./assets/nixos.svg}');
             background-position: center;
             background-repeat: no-repeat;
             background-size: contain;
