@@ -8,9 +8,6 @@
         pkgs.papirus-icon-theme
       ];
 
-      # dimaround for hyprland
-      wayland.windowManager.hyprland.settings.layerrule = [ "dimaround, rofi" ];
-
       # config
       programs.rofi = {
         enable = true;
@@ -34,6 +31,8 @@
           show-icons = true;
           drun-match-fields = "name,exec,generic,categories,keywords";
           drun-display-format = "{name}";
+          disable-history = true;
+          sort = true;
           sorting-method = "fzf";
         };
         theme = builtins.toFile "rofi-theme.rasi" ''

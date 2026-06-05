@@ -15,7 +15,7 @@ in
         outerConfig.modules.nixos.plymouth
         outerConfig.modules.nixos.gtk
         outerConfig.modules.nixos.fonts
-        outerConfig.modules.nixos.hyprland
+        outerConfig.modules.nixos.mango
         outerConfig.modules.overlays.vesktop
       ];
 

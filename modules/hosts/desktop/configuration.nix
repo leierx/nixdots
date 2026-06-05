@@ -7,7 +7,6 @@
         config.modules.nixos.profiles.minimal
         config.modules.nixos.profiles.graphical
         config.modules.nixos.gaming
-        config.modules.nixos.podman
       ];
 
       # wireguard
@@ -15,11 +14,6 @@
 
       home-manager.sharedModules = [
         {
-          wayland.windowManager.hyprland.settings = {
-            exec-once = [ "vesktop" ];
-            windowrulev2 = [ "workspace 6 silent, class:^([Vv]esktop)$" ];
-          };
-
           programs.ssh = {
             enable = true;
             matchBlocks = {
@@ -40,7 +34,7 @@
       environment.systemPackages = with pkgs; [
         kubectl
         kubectl-df-pv
-        xfce.mousepad
+        mousepad
         spotify
         pavucontrol
         brave

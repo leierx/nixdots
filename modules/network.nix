@@ -2,8 +2,10 @@
   modules.nixos.network = {
     services.resolved = {
       enable = true;
-      dnssec = "true";
-      dnsovertls = "true";
+      settings.Resolve = {
+        DNSSEC = "true";
+        DNSOverTLS = "true";
+      };
     };
 
     networking = {

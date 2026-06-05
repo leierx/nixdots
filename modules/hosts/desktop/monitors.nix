@@ -4,7 +4,6 @@
     {
       home-manager.sharedModules = [
         {
-          # disable the home-manager systemd service; we manage kanshi via hyprland exec
           systemd.user.services.kanshi = lib.mkForce { };
 
           services.kanshi = {
@@ -30,10 +29,8 @@
             ];
           };
 
-          wayland.windowManager.hyprland.settings = {
-            exec-once = [ "${lib.getExe pkgs.kanshi}" ];
-            exec = [ "${pkgs.kanshi}/bin/kanshictl reload" ];
-          };
+          wayland.windowManager.mango.settings.exec-once = [ "${lib.getExe pkgs.kanshi}" ];
+          wayland.windowManager.mango.settings.exec = [ "${pkgs.kanshi}/bin/kanshictl reload" ];
         }
       ];
     };

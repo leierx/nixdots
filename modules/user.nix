@@ -28,7 +28,6 @@
           homeMode = "0770";
           group = cfg.name;
           shell = pkgs.zsh;
-
           extraGroups = [
             "wheel"
             "networkmanager"

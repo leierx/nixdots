@@ -10,7 +10,7 @@
       ];
 
       environment.systemPackages = with pkgs; [
-        xfce.mousepad
+        mousepad
         spotify
         pavucontrol
         brave
