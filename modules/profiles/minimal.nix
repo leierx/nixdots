@@ -4,9 +4,9 @@ let
 in
 {
   modules.nixos.profiles.minimal =
-    { config, lib, ... }:
+    { config, ... }:
     let
-      cfg = config.flakeModules.minimal;
+      cfg = config.profileConfig;
     in
     {
       imports = [
@@ -21,16 +21,8 @@ in
         outerConfig.modules.nixos.network
         outerConfig.modules.nixos.root
         outerConfig.modules.nixos.user
-        outerConfig.modules.overlays.unstable
+        outerConfig.modules.overlays.unstableNixpkgs
       ];
-
-      options.flakeModules.minimal = {
-        user = lib.mkOption {
-          type = lib.types.singleLineStr;
-          default = "leier";
-          description = "Home Manager user that the minimal profile configures.";
-        };
-      };
 
       config = {
         home-manager.users.${cfg.user}.imports = [

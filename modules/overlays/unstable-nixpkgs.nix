@@ -1,6 +1,6 @@
 { inputs, ... }:
 {
-  modules.overlays.unstable =
+  modules.overlays.unstableNixpkgs =
     { config, pkgs, ... }:
     {
       nixpkgs.overlays = [

@@ -4,9 +4,9 @@ let
 in
 {
   modules.nixos.profiles.graphical =
-    { config, lib, ... }:
+    { config, ... }:
     let
-      cfg = config.flakeModules.graphical;
+      cfg = config.profileConfig;
     in
     {
       imports = [
@@ -18,14 +18,6 @@ in
         outerConfig.modules.nixos.mango
         outerConfig.modules.overlays.vesktop
       ];
-
-      options.flakeModules.graphical = {
-        user = lib.mkOption {
-          type = lib.types.singleLineStr;
-          default = "leier";
-          description = "Home Manager user that the graphical profile configures.";
-        };
-      };
 
       config = {
         home-manager.users.${cfg.user}.imports = [

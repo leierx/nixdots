@@ -28,5 +28,10 @@
       };
     };
 
-  modules.homeManager.locale = { };
+  modules.homeManager.locale = {
+    wayland.windowManager.hyprland.settings.input = {
+      kb_layout = "no";
+      kb_variant = "nodeadkeys";
+    };
+  };
 }
