@@ -20,7 +20,7 @@
       };
 
       home.activation.createProjectsDir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        mkdir -p "$HOME/Projects"
+        mkdir -p "$HOME/Dev"
       '';
     };
 }

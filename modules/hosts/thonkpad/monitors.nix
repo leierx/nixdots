@@ -24,8 +24,10 @@
             ];
           };
 
-          wayland.windowManager.mango.settings.exec-once = [ "${lib.getExe pkgs.kanshi}" ];
-          wayland.windowManager.mango.settings.exec = [ "${pkgs.kanshi}/bin/kanshictl reload" ];
+          wayland.windowManager.hyprland.settings = {
+            exec-once = [ "${lib.getExe pkgs.kanshi}" ];
+            exec = [ "${pkgs.kanshi}/bin/kanshictl reload" ];
+          };
         }
       ];
     };

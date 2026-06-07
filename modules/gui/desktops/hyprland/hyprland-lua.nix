@@ -85,13 +85,6 @@ in
 
           animations.enabled = true;
 
-          input = {
-            touchpad = { }; # default
-            touchdevice = { }; # default
-            virtualkeyboard = { }; # default
-            tablet = { }; # default
-          };
-
           gestures = {
             workspace_swipe_create_new = false;
             workspace_swipe_use_r = true;
@@ -127,11 +120,18 @@ in
             # "swww init"
           ];
 
-          # Programs to launch ONCE at session startup.
           exec-once = [
-            # "waybar"
-            # "dunst"
-            # "hyprpaper"
+            "${lib.getExe pkgs.wbg} ${./assets/wallpaper.png}" # wallpaper
+            "vesktop"
+            "firefox --new-window"
+          ];
+          on._args = [
+            "hyprland.start"
+            (lib.generators.mkLuaInline ''
+              function()
+                hl.exec_cmd("uwsm finalize")
+              end
+            '')
           ];
 
           # Run a raw command (no shell wrapper) every reload.
