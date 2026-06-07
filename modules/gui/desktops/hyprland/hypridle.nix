@@ -1,3 +1,4 @@
+# systemctl --user cat hypridle.service
 {
   modules.homeManager.hyprland =
     { pkgs, lib, ... }:
@@ -25,11 +26,5 @@
           ];
         };
       };
-
-      # disable the home-manager systemd service
-      systemd.user.services.hypridle = lib.mkForce { };
-
-      # autostart
-      wayland.windowManager.hyprland.settings.exec-once = [ "${lib.getExe pkgs.hypridle}" ];
     };
 }

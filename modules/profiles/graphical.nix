@@ -4,18 +4,23 @@ let
 in
 {
   modules.nixos.profiles.graphical =
-    { config, ... }:
+    { config, lib, ... }:
     let
-      cfg = config.profileConfig;
+      cfg = config.profileConfig.graphical;
     in
     {
+      options.profileConfig.graphical.user = lib.mkOption {
+        type = lib.types.singleLineStr;
+        default = "leier";
+      };
+
       imports = [
         outerConfig.modules.nixos.displayManager
         outerConfig.modules.nixos.sound
         outerConfig.modules.nixos.plymouth
         outerConfig.modules.nixos.gtk
         outerConfig.modules.nixos.fonts
-        outerConfig.modules.nixos.mango
+        outerConfig.modules.nixos.hyprland
         outerConfig.modules.overlays.vesktop
       ];
 

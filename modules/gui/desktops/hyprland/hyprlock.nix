@@ -4,62 +4,45 @@
   modules.homeManager.hyprland =
     { pkgs, lib, ... }:
     {
-      wayland.windowManager.hyprland.settings."$lockscreen" = "${lib.getExe pkgs.hyprlock}";
-
-      home.packages = [ pkgs.hack-font ];
+      wayland.windowManager.hyprland.settings.lockscreen_cmd._var = "${lib.getExe pkgs.hyprlock}";
 
       programs.hyprlock = {
         enable = true;
         settings = {
-          background = {
-            monitor = "";
-            path = "${./assets/lockscreen-background.jpg}";
-          };
-
           general = {
-            no_fade_in = true;
-            no_fade_out = true;
             disable_loading_bar = true;
+            grace = 0;
             hide_cursor = true;
+            no_fade_in = false;
           };
 
-          label = [
+          background = [
             {
-              monitor = "";
-              text = "$TIME";
-              color = "rgba(216, 222, 233, .75)";
-              font_size = 50;
-              font_family = "Hack";
-              position = "0, 200";
-              halign = "center";
-              valign = "center";
-            }
-            {
-              monitor = "";
-              text = ''cmd[update:1000] echo -e "$(date +'%A, %B %d')"'';
-              color = "rgba(216, 222, 233, .75)";
-              font_size = 30;
-              font_family = "Hack";
-              position = "0, 100";
-              halign = "center";
-              valign = "center";
+              path = "screenshot";
+              blur_passes = 3;
+              blur_size = 8;
             }
           ];
 
-          input-field = {
-            monitor = "";
-            size = "320, 55";
-            dots_center = true;
-            dots_size = 0.2;
-            dots_spacing = 0.2;
-            outer_color = "rgba(255, 255, 255, 0)";
-            inner_color = "rgba(255, 255, 255, 0.1)";
-            font_color = "rgb(200, 200, 200)";
-            placeholder_text = "<i><span foreground=\"##ffffff99\">Enter Pass</span></i>";
-            hide_input = false;
-            position = "0, -100";
-            halign = "center";
-            valign = "center";
+          input-field = [
+            {
+              size = "200, 50";
+              position = "0, -80";
+              monitor = "";
+              dots_center = true;
+              fade_on_empty = false;
+              font_color = "rgb(202, 211, 245)";
+              inner_color = "rgb(91, 96, 120)";
+              outer_color = "rgb(24, 25, 38)";
+              outline_thickness = 5;
+              placeholder_text = "Password...";
+              shadow_passes = 2;
+            }
+          ];
+
+          auth = {
+            "pam:enabled" = true;
+            "pam:module" = "hyprlock";
           };
         };
       };

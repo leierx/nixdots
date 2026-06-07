@@ -1,82 +1,162 @@
 {
-  modules.homeManager.hyprland = {
+  modules.homeManager.hyprland = { pkgs, lib, ... }: {
     wayland.windowManager.hyprland = {
       settings = {
-        bindm = [
-          "$mod, mouse:272, movewindow"
-          "$mod, mouse:273, resizewindow"
-        ];
+        bind =
+          let
+            inherit (lib.generators) mkLuaInline;
 
-        bind = [
-          "$mod, Return, exec, $terminal"
-          "$mod, D, exec, $applicationLauncher"
-          "$mod, Q, exec, $screenshot"
-
-          "$mod, w, killactive"
-          "$mod, s, togglefloating"
-          "$mod, f, fullscreen"
-          "$mod, m, fullscreen, 1"
-
-          "$mod, 1, split:workspace, 1"
-          "$mod, 2, split:workspace, 2"
-          "$mod, 3, split:workspace, 3"
-          "$mod, 4, split:workspace, 4"
-          "$mod, 5, split:workspace, 5"
-          "$mod, 6, split:workspace, 6"
-
-          "$mod SHIFT, 1, split:movetoworkspacesilent, 1"
-          "$mod SHIFT, 2, split:movetoworkspacesilent, 2"
-          "$mod SHIFT, 3, split:movetoworkspacesilent, 3"
-          "$mod SHIFT, 4, split:movetoworkspacesilent, 4"
-          "$mod SHIFT, 5, split:movetoworkspacesilent, 5"
-          "$mod SHIFT, 6, split:movetoworkspacesilent, 6"
-
-          "$mod, O, focusmonitor, +1"
-          "$mod SHIFT, O, movewindow, mon:+1"
-
-          "$mod, C, cyclenext"
-          "$mod SHIFT, C, swapnext"
-
-          "$mod, h, movefocus, l"
-          "$mod, l, movefocus, r"
-          "$mod, k, movefocus, u"
-          "$mod, j, movefocus, d"
-
-          "$mod SHIFT, h, movewindow, l"
-          "$mod SHIFT, l, movewindow, r"
-          "$mod SHIFT, k, movewindow, u"
-          "$mod SHIFT, j, movewindow, d"
-        ];
+            mkBind = key: dispatcher: {
+              _args = [
+                (mkLuaInline ''mod .. " + ${key}"'')
+                (mkLuaInline dispatcher)
+              ];
+            };
+          in
+          [
+            # MOUSE BINDINGS #
+            {
+              _args = [
+                (mkLuaInline ''mod .. "+ mouse:272"'')
+                (mkLuaInline "hl.dsp.window.drag(), { mouse = true }")
+              ];
+            }
+            {
+              _args = [
+                (mkLuaInline ''mod .. "+ mouse:273"'')
+                (mkLuaInline "hl.dsp.window.resize(), { mouse = true }")
+              ];
+            }
+            # launchers
+            (mkBind "Return" "hl.dsp.exec_cmd(terminal_cmd)")
+            (mkBind "d" "hl.dsp.exec_cmd(applicationLauncher_cmd)")
+            # window control
+            (mkBind "w" "hl.dsp.window.close()")
+            (mkBind "s" ''hl.dsp.window.float({ action = "toggle" })'')
+            (mkBind "f" "hl.dsp.window.fullscreen()")
+            (mkBind "m" "hl.dsp.window.fullscreen({ mode = 1 })")
+            # monitors
+            (mkBind "o" ''hl.dsp.focus({ monitor = "+1" })'')
+            (mkBind "SHIFT + o" ''hl.dsp.window.move({ monitor = "+1" })'')
+            # cycling
+            (mkBind "c" "hl.dsp.window.cycle_next()")
+            (mkBind "SHIFT + c" "hl.dsp.window.swap_next()")
+            # focus workspaces
+            (mkBind "1" ''hl.dsp.focus({ workspace = "r~1" })'')
+            (mkBind "2" ''hl.dsp.focus({ workspace = "r~2" })'')
+            (mkBind "3" ''hl.dsp.focus({ workspace = "r~3" })'')
+            (mkBind "4" ''hl.dsp.focus({ workspace = "r~4" })'')
+            (mkBind "5" ''hl.dsp.focus({ workspace = "r~5" })'')
+            # focus directions
+            (mkBind "h" ''hl.dsp.focus({ direction = "l" })'')
+            (mkBind "l" ''hl.dsp.focus({ direction = "r" })'')
+            (mkBind "k" ''hl.dsp.focus({ direction = "u" })'')
+            (mkBind "j" ''hl.dsp.focus({ direction = "d" })'')
+            # move window to workspaces on monitor
+            (mkBind "SHIFT + 1" ''hl.dsp.window.move({ workspace = "r~1" })'')
+            (mkBind "SHIFT + 2" ''hl.dsp.window.move({ workspace = "r~2" })'')
+            (mkBind "SHIFT + 3" ''hl.dsp.window.move({ workspace = "r~3" })'')
+            (mkBind "SHIFT + 4" ''hl.dsp.window.move({ workspace = "r~4" })'')
+            (mkBind "SHIFT + 5" ''hl.dsp.window.move({ workspace = "r~5" })'')
+            # move window in directions
+            (mkBind "SHIFT + h" ''hl.dsp.window.move({ direction = "l" })'')
+            (mkBind "SHIFT + l" ''hl.dsp.window.move({ direction = "r" })'')
+            (mkBind "SHIFT + k" ''hl.dsp.window.move({ direction = "u" })'')
+            (mkBind "SHIFT + j" ''hl.dsp.window.move({ direction = "d" })'')
+            # screenshot — freeze, slurp region, copy PNG to clipboard
+            {
+              _args = [
+                (mkLuaInline ''mod .. " + Q"'')
+                (mkLuaInline ''hl.dsp.exec_cmd("${pkgs.writeShellScript "freeze-region-copy" ''
+                  p=$(mktemp -u).fifo
+                  mkfifo "$p"
+                  ${pkgs.wayfreeze}/bin/wayfreeze --after-freeze-timeout 100 --hide-cursor --after-freeze-cmd "echo > $p" & wp=$!
+                  read -r < "$p"
+                  g=$(${pkgs.slurp}/bin/slurp -d)
+                  if [ -z "$g" ]; then kill "$wp" 2>/dev/null; rm -f "$p"; exit 1; fi
+                  ${pkgs.grim}/bin/grim -g "$g" - | ${pkgs.wl-clipboard}/bin/wl-copy --type image/png
+                  kill "$wp" 2>/dev/null; rm -f "$p"
+                ''}")'')
+              ];
+            }
+            # screenshot — same, but save to ~/Pictures/screenshots/
+            {
+              _args = [
+                (mkLuaInline ''mod .. " SHIFT + Q"'')
+                (mkLuaInline ''hl.dsp.exec_cmd("${pkgs.writeShellScript "freeze-region-save" ''
+                  filepath="$HOME/Pictures/screenshots/$(date +%Y%m%d-%H%M%S).png"
+                  mkdir -p "$(dirname "$filepath")"
+                  p=$(mktemp -u).fifo
+                  mkfifo "$p"
+                  ${pkgs.wayfreeze}/bin/wayfreeze --after-freeze-timeout 100 --hide-cursor --after-freeze-cmd "echo > $p" & wp=$!
+                  read -r < "$p"
+                  g=$(${pkgs.slurp}/bin/slurp -d)
+                  if [ -z "$g" ]; then kill "$wp" 2>/dev/null; rm -f "$p"; exit 1; fi
+                  ${pkgs.grim}/bin/grim -g "$g" "$filepath"
+                  kill "$wp" 2>/dev/null; rm -f "$p"
+                ''}")'')
+              ];
+            }
+            # SUBMAPS
+            {
+              _args = [
+                (mkLuaInline ''mod .. " + X"'')
+                (mkLuaInline ''
+                  function()
+                           hl.dispatch(hl.dsp.submap("system_control"))
+                           hl.timer(function() hl.dispatch(hl.dsp.submap("reset")) end,
+                                    { timeout = 2000, type = "oneshot" })
+                         end'')
+              ];
+            }
+          ];
       };
+      submaps.system_control = {
+        onDispatch = "reset"; # auto-exits the submap after any dispatch
+        settings.bind =
+          let
+            inherit (lib.generators) mkLuaInline;
+          in
+          [
+            # shut down
+            {
+              _args = [
+                "ESCAPE"
+                (mkLuaInline ''hl.dsp.exec_cmd("systemctl poweroff")'')
+              ];
+            }
 
-      extraConfig = ''
-        # WM control center submap
-        bind = $mod, X, exec, sleep 2 && hyprctl dispatch submap reset
-        bind = $mod, X, submap, system_control
-        submap = system_control
+            # exit hyprland
+            {
+              _args = [
+                "Q"
+                (mkLuaInline "hl.dsp.exit()")
+              ];
+            }
 
-        # shut down computer
-        bind = , ESCAPE, exec, systemctl poweroff
-        bind = , ESCAPE, submap, reset
+            # reload config-only (R alone) and full reload (mod+R)
+            {
+              _args = [
+                "R"
+                (mkLuaInline ''hl.dsp.exec_cmd("hyprctl reload config-only")'')
+              ];
+            }
+            {
+              _args = [
+                (mkLuaInline ''mod .. " + R"'')
+                (mkLuaInline ''hl.dsp.exec_cmd("hyprctl reload")'')
+              ];
+            }
 
-        # exit hyprland
-        bind = , Q, exit
-        bind = , Q, submap, reset
-
-        # reload hyprland
-        bind = , R, exec, hyprctl reload config-only
-        bind = , R, submap, reset
-        bind = $mod, R, exec, hyprctl reload
-        bind = $mod, R, submap, reset
-
-        # lockscreen
-        bind = , L, exec, $lockscreen
-        bind = , L, submap, reset
-
-        bind = , catchall, submap, reset
-
-        submap = reset
-      '';
+            # lockscreen
+            {
+              _args = [
+                "L"
+                (mkLuaInline "hl.dsp.exec_cmd(lockscreen_cmd)")
+              ];
+            }
+          ];
+      };
     };
   };
 }

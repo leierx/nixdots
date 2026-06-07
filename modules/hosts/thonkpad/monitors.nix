@@ -25,8 +25,15 @@
           };
 
           wayland.windowManager.hyprland.settings = {
-            exec-once = [ "${lib.getExe pkgs.kanshi}" ];
-            exec = [ "${pkgs.kanshi}/bin/kanshictl reload" ];
+            on = [
+              {
+                _args = [
+                  "hyprland.start"
+                  (lib.generators.mkLuaInline ''function() hl.exec_cmd("${lib.getExe pkgs.kanshi}") end'')
+                ];
+              }
+            ];
+            exec_cmd = "${pkgs.kanshi}/bin/kanshictl reload";
           };
         }
       ];

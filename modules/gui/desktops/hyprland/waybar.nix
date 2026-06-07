@@ -172,7 +172,13 @@
         '';
       };
 
-      # autostart
-      wayland.windowManager.hyprland.settings.exec-once = [ "${lib.getExe pkgs.waybar}" ];
+      wayland.windowManager.hyprland.settings.on = [
+        {
+          _args = [
+            "hyprland.start"
+            (lib.generators.mkLuaInline ''function() hl.exec_cmd("${lib.getExe pkgs.waybar}") end'')
+          ];
+        }
+      ];
     };
 }

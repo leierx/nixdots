@@ -22,12 +22,10 @@
     };
     # Hyprland v0.55.2
     hyprland = {
-      url = "github:hyprwm/Hyprland";
-      ref = "v0.55.2";
+      url = "github:hyprwm/Hyprland/v0.55.2";
     };
     hyprsplit = {
-      url = "github:shezdy/hyprsplit";
-      ref = "v0.54.3";
+      url = "github:shezdy/hyprsplit/v0.54.3";
       inputs.hyprland.follows = "hyprland";
     };
   };

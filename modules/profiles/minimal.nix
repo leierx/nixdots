@@ -4,11 +4,16 @@ let
 in
 {
   modules.nixos.profiles.minimal =
-    { config, ... }:
+    { config, lib, ... }:
     let
-      cfg = config.profileConfig;
+      cfg = config.profileConfig.minimal;
     in
     {
+      options.profileConfig.minimal.user = lib.mkOption {
+        type = lib.types.singleLineStr;
+        default = "leier";
+      };
+
       imports = [
         (outerConfig.modules.nixos.factories.homeManager cfg.user)
         outerConfig.modules.nixos.bootloader
