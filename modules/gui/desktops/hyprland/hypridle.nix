@@ -1,10 +1,10 @@
-# systemctl --user cat hypridle.service
 {
   modules.homeManager.hyprland =
     { pkgs, lib, ... }:
     {
       services.hypridle = {
         enable = true;
+        systemdTarget = "hyprland-session.target";
         settings = {
           general = {
             before_sleep_cmd = "loginctl lock-session";

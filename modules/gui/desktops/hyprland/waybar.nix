@@ -4,7 +4,8 @@
     {
       programs.waybar = {
         enable = true;
-        systemd.enable = false;
+        systemd.enable = true;
+        systemd.targets = [ "hyprland-session.target" ];
         settings = {
           topbar = {
             name = "topbar";

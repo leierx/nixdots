@@ -5,10 +5,8 @@
     {
       wayland.windowManager.hyprland = {
         extraConfig = ''
-          hl.on("hyprland.start", function()
-            local hs = require("hyprsplit")
-            hs.config({ num_workspaces = 5, persistent_workspaces = true })
-          end)
+          local hs = require("hyprsplit")
+          hs.config({ num_workspaces = 5, persistent_workspaces = true })
         '';
       };
       xdg.configFile = {
