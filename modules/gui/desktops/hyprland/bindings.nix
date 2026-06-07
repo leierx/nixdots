@@ -17,14 +17,16 @@
             # MOUSE BINDINGS #
             {
               _args = [
-                (mkLuaInline ''mod .. "+ mouse:272"'')
-                (mkLuaInline "hl.dsp.window.drag(), { mouse = true }")
+                (mkLuaInline ''mod .. " + mouse:272"'')
+                (mkLuaInline "hl.dsp.window.drag()")
+                { mouse = true; }
               ];
             }
             {
               _args = [
-                (mkLuaInline ''mod .. "+ mouse:273"'')
-                (mkLuaInline "hl.dsp.window.resize(), { mouse = true }")
+                (mkLuaInline ''mod .. " + mouse:273"'')
+                (mkLuaInline "hl.dsp.window.resize()")
+                { mouse = true; }
               ];
             }
             # launchers
@@ -39,25 +41,29 @@
             (mkBind "o" ''hl.dsp.focus({ monitor = "+1" })'')
             (mkBind "SHIFT + o" ''hl.dsp.window.move({ monitor = "+1" })'')
             # cycling
-            (mkBind "c" "hl.dsp.window.cycle_next()")
-            (mkBind "SHIFT + c" "hl.dsp.window.swap_next()")
+            (mkBind "c" ''
+              function()
+                hl.dispatch(hl.dsp.window.cycle_next())
+                hl.dispatch(hl.dsp.window.bring_to_top())
+              end'')
+            (mkBind "SHIFT + c" ''hl.dsp.layout("swapsplit")'')
             # focus workspaces
             (mkBind "1" ''hl.dsp.focus({ workspace = "r~1" })'')
             (mkBind "2" ''hl.dsp.focus({ workspace = "r~2" })'')
             (mkBind "3" ''hl.dsp.focus({ workspace = "r~3" })'')
             (mkBind "4" ''hl.dsp.focus({ workspace = "r~4" })'')
             (mkBind "5" ''hl.dsp.focus({ workspace = "r~5" })'')
+            # move window to workspaces on monitor
+            (mkBind "SHIFT + 1" ''hl.dsp.window.move({ workspace = "r~1", follow = false })'')
+            (mkBind "SHIFT + 2" ''hl.dsp.window.move({ workspace = "r~2", follow = false })'')
+            (mkBind "SHIFT + 3" ''hl.dsp.window.move({ workspace = "r~3", follow = false })'')
+            (mkBind "SHIFT + 4" ''hl.dsp.window.move({ workspace = "r~4", follow = false })'')
+            (mkBind "SHIFT + 5" ''hl.dsp.window.move({ workspace = "r~5", follow = false })'')
             # focus directions
             (mkBind "h" ''hl.dsp.focus({ direction = "l" })'')
             (mkBind "l" ''hl.dsp.focus({ direction = "r" })'')
             (mkBind "k" ''hl.dsp.focus({ direction = "u" })'')
             (mkBind "j" ''hl.dsp.focus({ direction = "d" })'')
-            # move window to workspaces on monitor
-            (mkBind "SHIFT + 1" ''hl.dsp.window.move({ workspace = "r~1" })'')
-            (mkBind "SHIFT + 2" ''hl.dsp.window.move({ workspace = "r~2" })'')
-            (mkBind "SHIFT + 3" ''hl.dsp.window.move({ workspace = "r~3" })'')
-            (mkBind "SHIFT + 4" ''hl.dsp.window.move({ workspace = "r~4" })'')
-            (mkBind "SHIFT + 5" ''hl.dsp.window.move({ workspace = "r~5" })'')
             # move window in directions
             (mkBind "SHIFT + h" ''hl.dsp.window.move({ direction = "l" })'')
             (mkBind "SHIFT + l" ''hl.dsp.window.move({ direction = "r" })'')
@@ -82,7 +88,7 @@
             # screenshot — same, but save to ~/Pictures/screenshots/
             {
               _args = [
-                (mkLuaInline ''mod .. " SHIFT + Q"'')
+                (mkLuaInline ''mod .. " + SHIFT + Q"'')
                 (mkLuaInline ''hl.dsp.exec_cmd("${pkgs.writeShellScript "freeze-region-save" ''
                   filepath="$HOME/Pictures/screenshots/$(date +%Y%m%d-%H%M%S).png"
                   mkdir -p "$(dirname "$filepath")"
@@ -138,12 +144,6 @@
             {
               _args = [
                 "R"
-                (mkLuaInline ''hl.dsp.exec_cmd("hyprctl reload config-only")'')
-              ];
-            }
-            {
-              _args = [
-                (mkLuaInline ''mod .. " + R"'')
                 (mkLuaInline ''hl.dsp.exec_cmd("hyprctl reload")'')
               ];
             }

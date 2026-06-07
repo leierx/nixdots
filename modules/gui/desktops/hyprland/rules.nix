@@ -61,6 +61,12 @@
           gaps_in = 0;
         }
       ];
+      layer_rule = [
+        {
+          match.namespace = "rofi";
+          dim_around = true;
+        }
+      ];
     };
   };
 }

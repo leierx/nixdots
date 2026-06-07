@@ -1,17 +1,23 @@
 { inputs, ... }:
 {
   modules.homeManager.hyprland =
-    { pkgs, lib, ... }:
+    { pkgs, ... }:
     {
       wayland.windowManager.hyprland = {
-        plugins = [ inputs.hyprsplit.packages.${pkgs.stdenv.hostPlatform.system}.hyprsplit ];
-        settings.hs._var = lib.generators.mkLuaInline ''
-          (function()
-            local m = require("hyprsplit")
-            m.config({ num_workspaces = 5 })
-            return m
-          end)()
+        extraConfig = ''
+          hl.on("hyprland.start", function()
+            local hs = require("hyprsplit")
+            hs.config({ num_workspaces = 5, persistent_workspaces = true })
+          end)
         '';
+      };
+      xdg.configFile = {
+        "hypr/hyprsplit" = {
+          source = "${
+            inputs.hyprsplit.packages.${pkgs.stdenv.hostPlatform.system}.hyprsplitlua
+          }/share/hyprsplit";
+          recursive = true;
+        };
       };
     };
 }

@@ -42,6 +42,18 @@ in
 
       home.packages = [ pkgs.wl-clipboard ];
 
+      xdg.portal = {
+        extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+        config = {
+          hyprland = {
+            default = [
+              "hyprland"
+              "gtk"
+            ];
+          };
+        };
+      };
+
       wayland.windowManager.hyprland = {
         enable = true;
         package = osConfig.programs.hyprland.package;
@@ -92,12 +104,6 @@ in
 
             animations.enabled = false;
 
-            gestures = {
-              workspace_swipe_create_new = false;
-              workspace_swipe_use_r = true;
-              scrolling = { }; # default
-            };
-
             misc = {
               disable_hyprland_logo = true;
               disable_splash_rendering = true;
@@ -109,8 +115,6 @@ in
               on_focus_under_fullscreen = 0;
               middle_click_paste = false;
             };
-
-            binds.workspace_back_and_forth = true; # intresting feature!
 
             xwayland.enabled = true;
 
