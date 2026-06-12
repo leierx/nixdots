@@ -37,8 +37,13 @@
                   (lib.generators.mkLuaInline ''function() hl.exec_cmd("${lib.getExe pkgs.kanshi}") end'')
                 ];
               }
+              {
+                _args = [
+                  "config.reloaded"
+                  (lib.generators.mkLuaInline ''function() hl.exec_cmd("${pkgs.kanshi}/bin/kanshictl reload") end'')
+                ];
+              }
             ];
-            exec_cmd = "${pkgs.kanshi}/bin/kanshictl reload";
           };
         }
       ];

@@ -4,8 +4,7 @@
     {
       programs.waybar = {
         enable = true;
-        systemd.enable = true;
-        systemd.targets = [ "hyprland-session.target" ];
+        systemd.enable = false;
         settings = {
           topbar = {
             name = "topbar";
@@ -173,13 +172,23 @@
         '';
       };
 
-      wayland.windowManager.hyprland.settings.on = [
-        {
-          _args = [
-            "hyprland.start"
-            (lib.generators.mkLuaInline ''function() hl.exec_cmd("${lib.getExe pkgs.waybar}") end'')
+      wayland.windowManager.hyprland = {
+        settings = {
+          on = [
+            {
+              _args = [
+                "hyprland.start"
+                (lib.generators.mkLuaInline ''function() hl.exec_cmd("${lib.getExe pkgs.waybar}") end'')
+              ];
+            }
+            {
+              _args = [
+                "monitor.layout_changed"
+                (lib.generators.mkLuaInline ''function() hl.exec_cmd("${pkgs.procps}/bin/pkill -SIGUSR2 waybar") end'')
+              ];
+            }
           ];
-        }
-      ];
+        };
+      };
     };
 }

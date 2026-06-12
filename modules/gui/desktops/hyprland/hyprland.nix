@@ -40,7 +40,10 @@ in
         outerConfig.modules.homeManager.rofi
       ];
 
-      home.packages = [ pkgs.wl-clipboard ];
+      home.packages = with pkgs; [
+        wl-clipboard
+        wdisplays
+      ];
 
       xdg.portal = {
         extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
@@ -146,6 +149,7 @@ in
               mkExecOnStart "${pkgs.networkmanagerapplet}/bin/nm-applet"
             );
         };
+        extraConfig = "";
       };
     };
 }
