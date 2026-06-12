@@ -43,6 +43,7 @@ in
       home.packages = with pkgs; [
         wl-clipboard
         wdisplays
+        copyq
       ];
 
       xdg.portal = {
@@ -65,8 +66,6 @@ in
         settings = {
           # Variables
           mod._var = "SUPER";
-          terminal_cmd._var = "wezterm";
-          applicationLauncher_cmd._var = "rofi -modes drun -show drun";
 
           config = {
             general = {
@@ -141,9 +140,8 @@ in
               };
             in
             [
-              (mkExecOnStart "vesktop")
-              (mkExecOnStart "firefox")
               (mkExecOnStart "${pkgs.wbg}/bin/wbg ${./assets/wallpaper.png}")
+              (mkExecOnStart "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store")
             ]
             ++ lib.optional osConfig.networking.networkmanager.enable (
               mkExecOnStart "${pkgs.networkmanagerapplet}/bin/nm-applet"

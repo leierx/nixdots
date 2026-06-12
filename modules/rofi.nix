@@ -2,28 +2,13 @@
   modules.homeManager.rofi =
     { pkgs, ... }:
     {
-      # dependencies
       home.packages = [
         pkgs.hack-font
         pkgs.papirus-icon-theme
       ];
 
-      # config
       programs.rofi = {
         enable = true;
-        package =
-          (pkgs.rofi.override {
-            rofi-unwrapped = pkgs.rofi-unwrapped.override {
-              x11Support = false; # https://github.com/NixOS/nixpkgs/blob/d7a713c0b7e47c908258e71cba7a2d77cc8d71d5/pkgs/by-name/ro/rofi-unwrapped/package.nix#L33
-              waylandSupport = true;
-            };
-          }).overrideAttrs
-            (old: {
-              buildCommand = old.buildCommand + ''
-                rm -f $out/bin/rofi-theme-selector
-                rm -f $out/share/applications/rofi-theme-selector.desktop
-              '';
-            });
         font = "Hack 16";
         cycle = false;
         terminal = "wezterm";
@@ -94,7 +79,7 @@
 
           window {
               background-color: @background;
-              padding: 1em;
+              padding: 0.75em;
               border: 0.1em;
               border-color: #000;
               border-radius: 0.5em;
@@ -135,7 +120,6 @@
               padding: 0;
               border: 0;
               spacing: 0;
-              fixed-height: 0;
               scrollbar: false;
               background-color: @background;
               fixed-height: true;

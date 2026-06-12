@@ -30,8 +30,9 @@
               ];
             }
             # launchers
-            (mkBind "Return" "hl.dsp.exec_cmd(terminal_cmd)")
-            (mkBind "d" "hl.dsp.exec_cmd(applicationLauncher_cmd)")
+            (mkBind "Return" ''hl.dsp.exec_cmd("${pkgs.wezterm}/bin/wezterm")'')
+            (mkBind "d" ''hl.dsp.exec_cmd("${pkgs.rofi}/bin/rofi -modes drun -show drun")'')
+            (mkBind "v" ''hl.dsp.exec_cmd("${pkgs.cliphist}/bin/cliphist list | ${pkgs.rofi}/bin/rofi -dmenu -display-columns 2 -theme-str 'window {width: 50%;height: 75%;} entry {placeholder: \"Clipboard\";}' | ${pkgs.cliphist}/bin/cliphist decode | ${pkgs.wl-clipboard}/bin/wl-copy")'')
             # window control
             (mkBind "w" "hl.dsp.window.close()")
             (mkBind "s" ''hl.dsp.window.float({ action = "toggle" })'')
@@ -46,7 +47,6 @@
                 hl.dispatch(hl.dsp.window.cycle_next())
                 hl.dispatch(hl.dsp.window.bring_to_top())
               end'')
-            (mkBind "SHIFT + c" ''hl.dsp.layout("swapsplit")'')
             # focus workspaces
             (mkBind "1" ''hl.dsp.focus({ workspace = "m~1" })'')
             (mkBind "2" ''hl.dsp.focus({ workspace = "m~2" })'')
