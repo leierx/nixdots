@@ -43,7 +43,6 @@ in
       home.packages = with pkgs; [
         wl-clipboard
         wdisplays
-        copyq
       ];
 
       xdg.portal = {
