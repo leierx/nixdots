@@ -21,7 +21,6 @@ in
         outerConfig.modules.nixos.gtk
         outerConfig.modules.nixos.fonts
         outerConfig.modules.nixos.hyprland
-        outerConfig.modules.overlays.vesktop
       ];
 
       config = {

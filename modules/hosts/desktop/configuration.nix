@@ -31,26 +31,27 @@
         }
       ];
 
-      environment.systemPackages = with pkgs; [
-        kubectl
-        kubectl-df-pv
-        mousepad
-        spotify
-        pavucontrol
-        brave
-        firefox-bin
-        pika-backup
-        keymapp
-        wireguard-tools
-        age
-        opentofu
-        sops
-        signal-desktop
-        meld
-        obsidian
-        gimp
-        vesktop
-        opencode
-      ];
+      environment.systemPackages =
+        (with pkgs; [
+          kubectl
+          kubectl-df-pv
+          mousepad
+          spotify
+          pavucontrol
+          brave
+          firefox-bin
+          pika-backup
+          keymapp
+          wireguard-tools
+          age
+          opentofu
+          sops
+          signal-desktop
+          meld
+          obsidian
+          gimp
+          opencode
+        ])
+        ++ (with pkgs.unstable; [ discord-canary ]);
     };
 }
