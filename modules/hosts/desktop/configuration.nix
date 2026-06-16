@@ -35,7 +35,6 @@
                 {
                   match.class = "^(discord-canary)$";
                   monitor = "DP-2";
-                  no_initial_focus = true;
                 }
               ];
               on = [
