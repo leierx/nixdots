@@ -1,7 +1,7 @@
 { config, ... }:
 {
   modules.nixos.hosts.desktop =
-    { pkgs, ... }:
+    { pkgs, lib, ... }:
     {
       imports = [
         config.modules.nixos.profiles.minimal
@@ -28,30 +28,55 @@
               };
             };
           };
+
+          wayland.windowManager.hyprland = {
+            settings = {
+              window_rule = [
+                {
+                  match.class = "^(discord-canary)$";
+                  monitor = "DP-2";
+                  no_initial_focus = true;
+                }
+              ];
+              on = [
+                {
+                  _args = [
+                    "hyprland.start"
+                    (lib.generators.mkLuaInline ''function() hl.exec_cmd("${pkgs.discord-canary}/bin/discordcanary") end'')
+                  ];
+                }
+                {
+                  _args = [
+                    "hyprland.start"
+                    (lib.generators.mkLuaInline ''function() hl.exec_cmd("${pkgs.firefox-bin}/bin/firefox", {monitor = "DP-1"}) end'')
+                  ];
+                }
+              ];
+            };
+          };
         }
       ];
 
-      environment.systemPackages =
-        (with pkgs; [
-          kubectl
-          kubectl-df-pv
-          mousepad
-          spotify
-          pavucontrol
-          brave
-          firefox-bin
-          pika-backup
-          keymapp
-          wireguard-tools
-          age
-          opentofu
-          sops
-          signal-desktop
-          meld
-          obsidian
-          gimp
-          opencode
-        ])
-        ++ (with pkgs.unstable; [ discord-canary ]);
+      environment.systemPackages = with pkgs; [
+        kubectl
+        kubectl-df-pv
+        mousepad
+        spotify
+        pavucontrol
+        brave
+        firefox-bin
+        pika-backup
+        keymapp
+        wireguard-tools
+        age
+        opentofu
+        sops
+        signal-desktop
+        meld
+        obsidian
+        gimp
+        opencode
+        discord-canary
+      ];
     };
 }
