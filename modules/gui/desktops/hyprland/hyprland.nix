@@ -139,7 +139,7 @@ in
               };
             in
             [
-              (mkExecOnStart "${pkgs.wbg}/bin/wbg ${./assets/wallpaper.png}")
+              (mkExecOnStart "${pkgs.wbg}/bin/wbg -s ${./assets/wallpaper.png}")
               (mkExecOnStart "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store")
             ]
             ++ lib.optional osConfig.networking.networkmanager.enable (
