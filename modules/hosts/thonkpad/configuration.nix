@@ -16,7 +16,6 @@
         brave
         firefox-bin
         obsidian
-        opencode
         treefmt
         bitwarden-cli
         discord-canary

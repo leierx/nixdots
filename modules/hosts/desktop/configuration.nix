@@ -7,12 +7,14 @@
         config.modules.nixos.profiles.minimal
         config.modules.nixos.profiles.graphical
         config.modules.nixos.gaming
+        config.modules.nixos.ollama
       ];
 
       # wireguard
       networking.firewall.checkReversePath = false;
 
       home-manager.sharedModules = [
+        config.modules.homeManager.opencode
         {
           programs.ssh = {
             enable = true;
@@ -74,7 +76,6 @@
         meld
         obsidian
         gimp
-        opencode
         discord-canary
       ];
     };
