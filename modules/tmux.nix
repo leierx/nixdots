@@ -4,7 +4,7 @@
     {
       home = {
         packages = [ pkgs.tmux ];
-        sessionVariables.TMUX_TMPDIR = "\${XDG_RUNTIME_DIR:-/run/user/\$UID}";
+        sessionVariables.TMUX_TMPDIR = "\${XDG_RUNTIME_DIR}";
       };
 
       xdg.configFile."tmux/tmux.conf".text = ''

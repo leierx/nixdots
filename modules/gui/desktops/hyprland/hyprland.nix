@@ -41,6 +41,9 @@ in
       ];
 
       home.packages = with pkgs; [
+        grim
+        slurp
+        wayfreeze
         wl-clipboard
         wdisplays
       ];
@@ -146,7 +149,6 @@ in
               mkExecOnStart "${pkgs.networkmanagerapplet}/bin/nm-applet"
             );
         };
-        extraConfig = "";
       };
     };
 }

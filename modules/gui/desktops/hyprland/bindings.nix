@@ -6,103 +6,181 @@
           let
             inherit (lib.generators) mkLuaInline;
 
-            mkBind = key: dispatcher: {
-              _args = [
-                (mkLuaInline ''mod .. " + ${key}"'')
-                (mkLuaInline dispatcher)
-              ];
-            };
+            mkBind =
+              {
+                key,
+                dispatcher,
+                modifiers ? [ ],
+                mouse ? false,
+              }:
+              let
+                bindKey = lib.concatStringsSep " + " (modifiers ++ [ key ]);
+              in
+              {
+                _args = [
+                  (mkLuaInline ''mod .. " + ${bindKey}"'')
+                  (mkLuaInline dispatcher)
+                ]
+                ++ lib.optional mouse { inherit mouse; };
+              };
           in
           [
             # MOUSE BINDINGS #
-            {
-              _args = [
-                (mkLuaInline ''mod .. " + mouse:272"'')
-                (mkLuaInline "hl.dsp.window.drag()")
-                { mouse = true; }
-              ];
-            }
-            {
-              _args = [
-                (mkLuaInline ''mod .. " + mouse:273"'')
-                (mkLuaInline "hl.dsp.window.resize()")
-                { mouse = true; }
-              ];
-            }
+            (mkBind {
+              key = "mouse:272";
+              dispatcher = "hl.dsp.window.drag()";
+              mouse = true;
+            })
+            (mkBind {
+              key = "mouse:273";
+              dispatcher = "hl.dsp.window.resize()";
+              mouse = true;
+            })
             # launchers
-            (mkBind "Return" ''hl.dsp.exec_cmd("${pkgs.wezterm}/bin/wezterm")'')
-            (mkBind "d" ''hl.dsp.exec_cmd("${pkgs.rofi}/bin/rofi -modes drun -show drun")'')
-            (mkBind "v" ''hl.dsp.exec_cmd("${pkgs.cliphist}/bin/cliphist list | ${pkgs.rofi}/bin/rofi -dmenu -display-columns 2 -theme-str 'window {width: 50%;height: 75%;} entry {placeholder: \"Clipboard\";}' | ${pkgs.cliphist}/bin/cliphist decode | ${pkgs.wl-clipboard}/bin/wl-copy")'')
+            (mkBind {
+              key = "Return";
+              dispatcher = ''hl.dsp.exec_cmd("${pkgs.wezterm}/bin/wezterm")'';
+            })
+            (mkBind {
+              key = "d";
+              dispatcher = ''hl.dsp.exec_cmd("${pkgs.rofi}/bin/rofi -modes drun -show drun")'';
+            })
+            (mkBind {
+              key = "v";
+              dispatcher = ''hl.dsp.exec_cmd("${pkgs.cliphist}/bin/cliphist list | ${pkgs.rofi}/bin/rofi -dmenu -display-columns 2 -theme-str 'window {width: 50%;height: 75%;} entry {placeholder: \"Clipboard\";}' | ${pkgs.cliphist}/bin/cliphist decode | ${pkgs.wl-clipboard}/bin/wl-copy")'';
+            })
             # window control
-            (mkBind "w" "hl.dsp.window.close()")
-            (mkBind "s" ''hl.dsp.window.float({ action = "toggle" })'')
-            (mkBind "f" "hl.dsp.window.fullscreen()")
-            (mkBind "m" "hl.dsp.window.fullscreen({ mode = 1 })")
+            (mkBind {
+              key = "w";
+              dispatcher = "hl.dsp.window.close()";
+            })
+            (mkBind {
+              key = "s";
+              dispatcher = ''hl.dsp.window.float({ action = "toggle" })'';
+            })
+            (mkBind {
+              key = "f";
+              dispatcher = "hl.dsp.window.fullscreen()";
+            })
+            (mkBind {
+              key = "m";
+              dispatcher = "hl.dsp.window.fullscreen({ mode = 1 })";
+            })
             # monitors
-            (mkBind "o" ''hl.dsp.focus({ monitor = "+1" })'')
-            (mkBind "SHIFT + o" ''hl.dsp.window.move({ monitor = "+1" })'')
+            (mkBind {
+              key = "o";
+              dispatcher = ''hl.dsp.focus({ monitor = "+1" })'';
+            })
+            (mkBind {
+              key = "o";
+              modifiers = [ "SHIFT" ];
+              dispatcher = ''hl.dsp.window.move({ monitor = "+1" })'';
+            })
             # cycling
-            (mkBind "c" ''
-              function()
-                hl.dispatch(hl.dsp.window.cycle_next())
-                hl.dispatch(hl.dsp.window.bring_to_top())
-              end'')
+            (mkBind {
+              key = "c";
+              dispatcher = ''
+                function()
+                  hl.dispatch(hl.dsp.window.cycle_next())
+                  hl.dispatch(hl.dsp.window.bring_to_top())
+                end'';
+            })
             # focus workspaces
-            (mkBind "1" ''hl.dsp.focus({ workspace = "m~1" })'')
-            (mkBind "2" ''hl.dsp.focus({ workspace = "m~2" })'')
-            (mkBind "3" ''hl.dsp.focus({ workspace = "m~3" })'')
-            (mkBind "4" ''hl.dsp.focus({ workspace = "m~4" })'')
-            (mkBind "5" ''hl.dsp.focus({ workspace = "m~5" })'')
+            (mkBind {
+              key = "1";
+              dispatcher = ''hl.dsp.focus({ workspace = "m~1" })'';
+            })
+            (mkBind {
+              key = "2";
+              dispatcher = ''hl.dsp.focus({ workspace = "m~2" })'';
+            })
+            (mkBind {
+              key = "3";
+              dispatcher = ''hl.dsp.focus({ workspace = "m~3" })'';
+            })
+            (mkBind {
+              key = "4";
+              dispatcher = ''hl.dsp.focus({ workspace = "m~4" })'';
+            })
+            (mkBind {
+              key = "5";
+              dispatcher = ''hl.dsp.focus({ workspace = "m~5" })'';
+            })
             # move window to workspaces on monitor
-            (mkBind "SHIFT + 1" ''hl.dsp.window.move({ workspace = "m~1", follow = false })'')
-            (mkBind "SHIFT + 2" ''hl.dsp.window.move({ workspace = "m~2", follow = false })'')
-            (mkBind "SHIFT + 3" ''hl.dsp.window.move({ workspace = "m~3", follow = false })'')
-            (mkBind "SHIFT + 4" ''hl.dsp.window.move({ workspace = "m~4", follow = false })'')
-            (mkBind "SHIFT + 5" ''hl.dsp.window.move({ workspace = "m~5", follow = false })'')
+            (mkBind {
+              key = "1";
+              modifiers = [ "SHIFT" ];
+              dispatcher = ''hl.dsp.window.move({ workspace = "m~1", follow = false })'';
+            })
+            (mkBind {
+              key = "2";
+              modifiers = [ "SHIFT" ];
+              dispatcher = ''hl.dsp.window.move({ workspace = "m~2", follow = false })'';
+            })
+            (mkBind {
+              key = "3";
+              modifiers = [ "SHIFT" ];
+              dispatcher = ''hl.dsp.window.move({ workspace = "m~3", follow = false })'';
+            })
+            (mkBind {
+              key = "4";
+              modifiers = [ "SHIFT" ];
+              dispatcher = ''hl.dsp.window.move({ workspace = "m~4", follow = false })'';
+            })
+            (mkBind {
+              key = "5";
+              modifiers = [ "SHIFT" ];
+              dispatcher = ''hl.dsp.window.move({ workspace = "m~5", follow = false })'';
+            })
             # focus directions
-            (mkBind "h" ''hl.dsp.focus({ direction = "l" })'')
-            (mkBind "l" ''hl.dsp.focus({ direction = "r" })'')
-            (mkBind "k" ''hl.dsp.focus({ direction = "u" })'')
-            (mkBind "j" ''hl.dsp.focus({ direction = "d" })'')
+            (mkBind {
+              key = "h";
+              dispatcher = ''hl.dsp.focus({ direction = "l" })'';
+            })
+            (mkBind {
+              key = "l";
+              dispatcher = ''hl.dsp.focus({ direction = "r" })'';
+            })
+            (mkBind {
+              key = "k";
+              dispatcher = ''hl.dsp.focus({ direction = "u" })'';
+            })
+            (mkBind {
+              key = "j";
+              dispatcher = ''hl.dsp.focus({ direction = "d" })'';
+            })
             # move window in directions
-            (mkBind "SHIFT + h" ''hl.dsp.window.move({ direction = "l" })'')
-            (mkBind "SHIFT + l" ''hl.dsp.window.move({ direction = "r" })'')
-            (mkBind "SHIFT + k" ''hl.dsp.window.move({ direction = "u" })'')
-            (mkBind "SHIFT + j" ''hl.dsp.window.move({ direction = "d" })'')
+            (mkBind {
+              key = "h";
+              modifiers = [ "SHIFT" ];
+              dispatcher = ''hl.dsp.window.move({ direction = "l" })'';
+            })
+            (mkBind {
+              key = "l";
+              modifiers = [ "SHIFT" ];
+              dispatcher = ''hl.dsp.window.move({ direction = "r" })'';
+            })
+            (mkBind {
+              key = "k";
+              modifiers = [ "SHIFT" ];
+              dispatcher = ''hl.dsp.window.move({ direction = "u" })'';
+            })
+            (mkBind {
+              key = "j";
+              modifiers = [ "SHIFT" ];
+              dispatcher = ''hl.dsp.window.move({ direction = "d" })'';
+            })
             # screenshot — freeze, slurp region, copy PNG to clipboard
-            {
-              _args = [
-                (mkLuaInline ''mod .. " + Q"'')
-                (mkLuaInline ''hl.dsp.exec_cmd("${pkgs.writeShellScript "freeze-region-copy" ''
-                  p=$(mktemp -u).fifo
-                  mkfifo "$p"
-                  ${pkgs.wayfreeze}/bin/wayfreeze --after-freeze-timeout 100 --hide-cursor --after-freeze-cmd "echo > $p" & wp=$!
-                  read -r < "$p"
-                  g=$(${pkgs.slurp}/bin/slurp -d)
-                  if [ -z "$g" ]; then kill "$wp" 2>/dev/null; rm -f "$p"; exit 1; fi
-                  ${pkgs.grim}/bin/grim -g "$g" - | ${pkgs.wl-clipboard}/bin/wl-copy --type image/png
-                  kill "$wp" 2>/dev/null; rm -f "$p"
-                ''}")'')
-              ];
-            }
+            (mkBind {
+              key = "Q";
+              dispatcher = ''hl.dsp.exec_cmd("${pkgs.writeShellScript "freeze-region-copy" (builtins.readFile ./scripts/freeze-region-copy.sh)}")'';
+            })
             # screenshot — same, but save to ~/Pictures/screenshots/
-            {
-              _args = [
-                (mkLuaInline ''mod .. " + SHIFT + Q"'')
-                (mkLuaInline ''hl.dsp.exec_cmd("${pkgs.writeShellScript "freeze-region-save" ''
-                  filepath="$HOME/Pictures/screenshots/$(date +%Y%m%d-%H%M%S).png"
-                  mkdir -p "$(dirname "$filepath")"
-                  p=$(mktemp -u).fifo
-                  mkfifo "$p"
-                  ${pkgs.wayfreeze}/bin/wayfreeze --after-freeze-timeout 100 --hide-cursor --after-freeze-cmd "echo > $p" & wp=$!
-                  read -r < "$p"
-                  g=$(${pkgs.slurp}/bin/slurp -d)
-                  if [ -z "$g" ]; then kill "$wp" 2>/dev/null; rm -f "$p"; exit 1; fi
-                  ${pkgs.grim}/bin/grim -g "$g" "$filepath"
-                  kill "$wp" 2>/dev/null; rm -f "$p"
-                ''}")'')
-              ];
-            }
+            (mkBind {
+              key = "Q";
+              modifiers = [ "SHIFT" ];
+              dispatcher = ''hl.dsp.exec_cmd("${pkgs.writeShellScript "freeze-region-save" (builtins.readFile ./scripts/freeze-region-save.sh)}")'';
+            })
             # SUBMAPS
             {
               _args = [
