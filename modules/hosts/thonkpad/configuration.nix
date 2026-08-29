@@ -9,6 +9,9 @@
         config.modules.nixos.gaming
       ];
 
+      # wireguard
+      networking.firewall.checkReversePath = false;
+
       environment.systemPackages = with pkgs; [
         mousepad
         spotify
@@ -17,8 +20,9 @@
         firefox-bin
         obsidian
         treefmt
-        bitwarden-cli
         discord-canary
+        opencode
+        kubectl
       ];
     };
 }
