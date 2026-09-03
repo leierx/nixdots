@@ -21,7 +21,6 @@
         obsidian
         treefmt
         discord-canary
-        opencode
         kubectl
       ];
     };

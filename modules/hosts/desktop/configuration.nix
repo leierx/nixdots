@@ -75,7 +75,6 @@
         obsidian
         gimp
         discord-canary
-        opencode
         openmw
       ];
     };

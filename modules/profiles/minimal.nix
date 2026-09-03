@@ -33,6 +33,7 @@ in
         home-manager.users.${cfg.user}.imports = [
           outerConfig.modules.homeManager.git
           outerConfig.modules.homeManager.locale
+          outerConfig.modules.homeManager.opencode
           outerConfig.modules.homeManager.tmux
           outerConfig.modules.homeManager.user
           outerConfig.modules.homeManager.xdgUserDirs
