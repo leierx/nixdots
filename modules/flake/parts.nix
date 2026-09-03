@@ -42,6 +42,36 @@
       description = "Overlay modules (each sets nixpkgs.overlays)";
     };
 
+    modules.theme = lib.mkOption {
+      type = lib.types.submodule {
+        freeformType = lib.types.attrs;
+        options = {
+          palettes = lib.mkOption {
+            type = lib.types.attrsOf (lib.types.attrsOf lib.types.str);
+            default = { };
+            description = "Named color palettes";
+          };
+          colors = lib.mkOption {
+            type = lib.types.attrsOf lib.types.str;
+            default = { };
+            description = "Resolved palette as #RRGGBB hex";
+          };
+          rgb = lib.mkOption {
+            type = lib.types.attrsOf lib.types.str;
+            default = { };
+            description = "Resolved palette without # (lowercase), for rgb()/0x consumers";
+          };
+          vars = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            description = "Render order of the colors attrset for variable blocks";
+          };
+        };
+      };
+      default = { };
+      description = "Centralized theme: named palettes, resolved colors, derived formats and helpers";
+    };
+
     packages = lib.mkOption {
       type = lib.types.lazyAttrsOf (lib.types.lazyAttrsOf lib.types.raw);
       default = { };

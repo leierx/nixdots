@@ -1,6 +1,6 @@
 {
   modules.homeManager.tmux =
-    { pkgs, ... }:
+    { pkgs, theme, ... }:
     {
       home = {
         packages = [ pkgs.tmux ];
@@ -132,12 +132,13 @@
         set-hook -g window-linked 'if-shell "[ #{session_windows} -gt 1 ]" "set status on" ""'
         set-hook -g window-unlinked 'if-shell "[ #{session_windows} -le 1 ]" "set status off" ""'
 
-        # Kanagawa palette
-        set -g @kg_fg "#dcd7ba"
-        set -g @kg_muted "#727169"
-        set -g @kg_blue "#7e9cd8"
-        set -g @kg_red "#e82424"
-        set -g @kg_sel "#223249"
+        # tmux stays pinned to the kanagawa palette; swap these for theme.colors.* to
+        # follow the global theme instead
+        set -g @kg_fg "${theme.palettes.kanagawa.fg}"
+        set -g @kg_muted "${theme.palettes.kanagawa.muted}"
+        set -g @kg_blue "${theme.palettes.kanagawa.blue}"
+        set -g @kg_red "${theme.palettes.kanagawa.red}"
+        set -g @kg_sel "${theme.palettes.kanagawa.sel}"
 
         set -g pane-border-style "fg=#{@kg_muted},bg=default"
         set -g pane-active-border-style "fg=#{?pane_synchronized,#{@kg_red},#{@kg_blue}},bg=default"

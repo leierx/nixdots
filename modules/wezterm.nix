@@ -1,6 +1,7 @@
+{ lib, ... }:
 {
   modules.homeManager.wezterm =
-    { pkgs, ... }:
+    { pkgs, theme, ... }:
     {
       home.packages = [ pkgs.hack-font ];
 
@@ -78,36 +79,36 @@
 
           -- Colors
           config.colors = {
-            foreground = "#f1f1f1",
-            background = "#1C1C1C",
+            foreground = "${theme.colors.fg}",
+            background = "${theme.colors.bg1}",
 
             selection_fg = "none",
             selection_bg = "rgba(255 255 255 / 30%)",
 
-            cursor_bg = "#f1f1f1",
-            cursor_fg = "#1C1C1C",
-            cursor_border = "#f1f1f1",
+            cursor_bg = "${theme.colors.fg}",
+            cursor_fg = "${theme.colors.bg1}",
+            cursor_border = "${theme.colors.fg}",
 
             ansi = {
-              "#1e1e1e",
-              "#F13A31",
-              "#2BBF3E",
-              "#F1C50F",
-              "#0E66D0",
-              "#9C48CC",
-              "#4BB0E3",
-              "#F1F1F1",
+              "${theme.colors.black}",
+              "${theme.colors.red}",
+              "${theme.colors.green}",
+              "${theme.colors.yellow}",
+              "${theme.colors.blue}",
+              "${theme.colors.magenta}",
+              "${theme.colors.cyan}",
+              "${theme.colors.white}",
             },
 
             brights = {
-              "#323232",
-              "#FE3C33",
-              "#2DD042",
-              "#FECF0F",
-              "#0875F6",
-              "#B24FEA",
-              "#4FC0F7",
-              "#FEFEFE",
+              "${theme.colors.blackLight}",
+              "${theme.colors.redLight}",
+              "${theme.colors.greenLight}",
+              "${theme.colors.yellowLight}",
+              "${theme.colors.blueLight}",
+              "${theme.colors.magentaLight}",
+              "${theme.colors.cyanLight}",
+              "${theme.colors.whiteLight}",
             },
           }
 

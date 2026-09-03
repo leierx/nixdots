@@ -2,7 +2,12 @@
   modules.nixos.hyprland.security.pam.services.hyprlock = { };
 
   modules.homeManager.hyprland =
-    { pkgs, lib, ... }:
+    {
+      pkgs,
+      lib,
+      theme,
+      ...
+    }:
     {
       wayland.windowManager.hyprland.settings.lockscreen_cmd._var = "${lib.getExe pkgs.hyprlock}";
 
@@ -25,7 +30,7 @@
             {
               monitor = "";
               text = "$TIME";
-              color = "rgba(216, 222, 233, .75)";
+              color = theme.rgba theme.colors.overlay 0.75;
               font_size = 50;
               font_family = "Hack";
               position = "0, 200";
@@ -35,7 +40,7 @@
             {
               monitor = "";
               text = ''cmd[update:1000] echo -e "$(date +'%A, %B %d')"'';
-              color = "rgba(216, 222, 233, .75)";
+              color = theme.rgba theme.colors.overlay 0.75;
               font_size = 30;
               font_family = "Hack";
               position = "0, 100";

@@ -36,6 +36,7 @@ in
           outerConfig.modules.homeManager.tmux
           outerConfig.modules.homeManager.user
           outerConfig.modules.homeManager.xdgUserDirs
+          { _module.args.theme = outerConfig.modules.theme; }
         ];
       };
     };
