@@ -33,13 +33,8 @@
             "networkmanager"
             "video"
             "audio"
-            "lp"
-            "scanner"
-            "libvirtd"
-            "kvm"
             "incus-admin"
             "podman"
-            "wireshark"
             "input"
           ];
 

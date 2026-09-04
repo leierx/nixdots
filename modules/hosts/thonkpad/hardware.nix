@@ -6,7 +6,6 @@
         bluetooth.enable = true;
         cpu.intel.updateMicrocode = true;
         enableRedistributableFirmware = true;
-        trackpoint.enable = false;
 
         graphics = {
           enable = true;
@@ -23,8 +22,6 @@
         fprintd.enable = true; # fingerprint reader. See: https://github.com/NixOS/nixpkgs/issues/171136
         fstrim.enable = true; # SSD trimming
         fwupd.enable = true; # firmware update, recommended on thinkpads
-        # hardware.bolt.enable = true; # thunderbolt dock
-        power-profiles-daemon.enable = false; # Gnome/KDE default, conflicts with TLP
         thermald.enable = true; # Thermal management
 
         tlp = {

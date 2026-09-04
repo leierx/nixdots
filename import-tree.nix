@@ -9,9 +9,7 @@ let
           type = (builtins.readDir dir).${name};
           path = dir + "/${name}";
         in
-        if builtins.substring 0 1 name == "_" then
-          [ ]
-        else if type == "directory" then
+        if type == "directory" then
           recurse path
         else if type == "regular" && builtins.match ".*\\.nix$" name != null then
           [ path ]

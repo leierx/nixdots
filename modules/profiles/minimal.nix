@@ -24,6 +24,7 @@ in
         outerConfig.modules.nixos.journald
         outerConfig.modules.nixos.locale
         outerConfig.modules.nixos.network
+        outerConfig.modules.nixos.podman
         outerConfig.modules.nixos.root
         outerConfig.modules.nixos.user
         outerConfig.modules.overlays.unstableNixpkgs

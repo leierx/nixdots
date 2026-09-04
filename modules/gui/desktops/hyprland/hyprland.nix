@@ -65,7 +65,6 @@ in
         enable = true;
         package = osConfig.programs.hyprland.package;
         portalPackage = osConfig.programs.hyprland.portalPackage;
-        # systemd.variables = [ "--all" ];
         settings = {
           # Variables
           mod._var = "SUPER";

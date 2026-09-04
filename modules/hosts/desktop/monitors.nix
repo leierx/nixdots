@@ -26,6 +26,21 @@
                   }
                 ];
               }
+              {
+                profile.name = "left";
+                profile.outputs = [
+                  {
+                    criteria = "AOC Q27G2G4 0x000023BD";
+                    mode = "2560x1440@143.91Hz";
+                    position = "0,0";
+                    scale = 1.0;
+                  }
+                  {
+                    criteria = "AOC Q27G2G4 0x000021BD";
+                    status = "disable";
+                  }
+                ];
+              }
             ];
           };
 
