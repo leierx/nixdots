@@ -76,7 +76,7 @@
         obsidian
         gimp
         discord-canary
-        openmw
+        unstable.openmw
       ];
     };
 }

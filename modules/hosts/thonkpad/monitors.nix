@@ -10,7 +10,7 @@
             enable = true;
             settings = [
               {
-                profile.name = "laptop";
+                profile.name = "default";
                 profile.outputs = [
                   {
                     criteria = "eDP-1";

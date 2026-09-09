@@ -10,7 +10,7 @@
             enable = true;
             settings = [
               {
-                profile.name = "main";
+                profile.name = "default";
                 profile.outputs = [
                   {
                     criteria = "AOC Q27G2G4 0x000021BD";
