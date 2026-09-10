@@ -8,10 +8,12 @@ let
       inherit description;
     };
 
-  configurations = lib.mkOption {
-    type = lib.types.lazyAttrsOf lib.types.raw;
-    default = { };
-  };
+  configurations =
+    _:
+    lib.mkOption {
+      type = lib.types.lazyAttrsOf lib.types.raw;
+      default = { };
+    };
 
   classModules = lib.mkOption {
     type = lib.types.listOf lib.types.deferredModule;
@@ -96,8 +98,18 @@ in
       default = { };
     };
 
-    nixosConfigurations = configurations;
-    darwinConfigurations = configurations;
-    homeConfigurations = configurations;
+    identity = lib.mkOption {
+      type = lib.types.submodule {
+        options = {
+          name = lib.mkOption { type = lib.types.singleLineStr; };
+          email = lib.mkOption { type = lib.types.singleLineStr; };
+        };
+      };
+      description = "Global user identity, injected as _module.args.identity";
+    };
+
+    nixosConfigurations = configurations { };
+    darwinConfigurations = configurations { };
+    homeConfigurations = configurations { };
   };
 }

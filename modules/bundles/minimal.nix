@@ -14,14 +14,15 @@
       root
       user
       unstableNixpkgs
+      zsh
     ];
     home = with config.modules.home; [
       git
       locale
       opencode
       tmux
-      user
       xdgUserDirs
+      zsh
     ];
   };
 }

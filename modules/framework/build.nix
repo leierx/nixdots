@@ -20,11 +20,17 @@ let
       nixpkgs.hostPlatform = lib.mkDefault cfg.platform;
       nixpkgs.config.allowUnfree = lib.mkDefault true;
       # nix-darwin takes an int here, not a release string
-      system.stateVersion = lib.mkDefault 6;
+      system.stateVersion = lib.mkDefault 7;
     };
   };
 
   bundleModules = class: names: lib.concatMap (n: config.bundles.${n}.${class}) names;
+
+  identityArgs = user: {
+    _module.args.identity = config.identity // {
+      inherit user;
+    };
+  };
 
   hmFor =
     class: user: homeModules:
@@ -43,7 +49,14 @@ let
       home-manager = {
         useGlobalPkgs = true;
         useUserPackages = true;
-        sharedModules = [ { _module.args.theme = config.theme; } ];
+        sharedModules = [
+          {
+            _module.args.identity = config.identity // {
+              inherit user;
+            };
+            _module.args.theme = config.theme;
+          }
+        ];
         users.${user} = {
           imports = homeModules;
           home = {
@@ -57,16 +70,6 @@ let
       users.users.${user}.home = lib.mkIf (class == "darwin") homeDir;
     };
 
-  # exposes systems.<name>.user to feature modules via their flakeModules.<feature>.user option
-  userOption =
-    user:
-    { options, lib, ... }:
-    {
-      config = lib.optionalAttrs (options ? flakeModules.user.name) {
-        flakeModules.user.name = lib.mkDefault user;
-      };
-    };
-
   buildNixos =
     name: cfg:
     lib.nixosSystem {
@@ -77,7 +80,7 @@ let
       ++ cfg.modules
       ++ lib.optionals (cfg.user != null) [
         (hmFor "nixos" cfg.user (bundleModules "home" cfg.bundles))
-        (userOption cfg.user)
+        (identityArgs cfg.user)
       ];
     };
 
@@ -89,7 +92,8 @@ let
       ]
       ++ bundleModules "darwin" cfg.bundles
       ++ cfg.modules
-      ++ lib.optional (cfg.user != null) (hmFor "darwin" cfg.user (bundleModules "home" cfg.bundles));
+      ++ lib.optional (cfg.user != null) (hmFor "darwin" cfg.user (bundleModules "home" cfg.bundles))
+      ++ lib.optional (cfg.user != null) (identityArgs cfg.user);
     };
 
   buildHome =
@@ -109,7 +113,12 @@ let
             home.homeDirectory = "/home/${cfg.user}";
             home.stateVersion = release;
           }
-          { _module.args.theme = config.theme; }
+          {
+            _module.args.identity = config.identity // {
+              user = cfg.user;
+            };
+            _module.args.theme = config.theme;
+          }
         ];
     };
 
