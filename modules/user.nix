@@ -23,5 +23,6 @@
     };
 
     programs.zsh.enable = true; # required for the login shell
+    programs.starship.enable = true;
   };
 }

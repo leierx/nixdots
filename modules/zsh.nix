@@ -1,6 +1,4 @@
 {
-  modules.nixos.zsh.programs.starship.enable = true;
-
   modules.home.zsh = {
     programs.zsh = {
       enable = true;
