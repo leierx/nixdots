@@ -33,10 +33,12 @@ let
     in
     {
       imports = [
-        (if class == "darwin" then
-          inputs.home-manager.darwinModules.home-manager
-        else
-          inputs.home-manager.nixosModules.home-manager)
+        (
+          if class == "darwin" then
+            inputs.home-manager.darwinModules.home-manager
+          else
+            inputs.home-manager.nixosModules.home-manager
+        )
       ];
       home-manager = {
         useGlobalPkgs = true;
@@ -68,24 +70,26 @@ let
   buildNixos =
     name: cfg:
     lib.nixosSystem {
-      modules =
-        [ (defaults.nixos name cfg) ]
-        ++ bundleModules "nixos" cfg.bundles
-        ++ cfg.modules
-        ++ lib.optionals (cfg.user != null) [
-          (hmFor "nixos" cfg.user (bundleModules "home" cfg.bundles))
-          (userOption cfg.user)
-        ];
+      modules = [
+        (defaults.nixos name cfg)
+      ]
+      ++ bundleModules "nixos" cfg.bundles
+      ++ cfg.modules
+      ++ lib.optionals (cfg.user != null) [
+        (hmFor "nixos" cfg.user (bundleModules "home" cfg.bundles))
+        (userOption cfg.user)
+      ];
     };
 
   buildDarwin =
     name: cfg:
     inputs.nix-darwin.lib.darwinSystem {
-      modules =
-        [ (defaults.darwin name cfg) ]
-        ++ bundleModules "darwin" cfg.bundles
-        ++ cfg.modules
-        ++ lib.optional (cfg.user != null) (hmFor "darwin" cfg.user (bundleModules "home" cfg.bundles));
+      modules = [
+        (defaults.darwin name cfg)
+      ]
+      ++ bundleModules "darwin" cfg.bundles
+      ++ cfg.modules
+      ++ lib.optional (cfg.user != null) (hmFor "darwin" cfg.user (bundleModules "home" cfg.bundles));
     };
 
   buildHome =

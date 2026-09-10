@@ -8,11 +8,10 @@ let
       inherit description;
     };
 
-  configurations =
-    lib.mkOption {
-      type = lib.types.lazyAttrsOf lib.types.raw;
-      default = { };
-    };
+  configurations = lib.mkOption {
+    type = lib.types.lazyAttrsOf lib.types.raw;
+    default = { };
+  };
 
   classModules = lib.mkOption {
     type = lib.types.listOf lib.types.deferredModule;
