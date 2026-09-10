@@ -15,7 +15,7 @@ return {
           }
         },
         nixd = true, -- NIX LSP
-        tsserver = true, -- TypeScript/JavaScript LSP
+        ts_ls = true, -- TypeScript/JavaScript LSP
         html = true, -- HTML LSP
         cssls = true, -- CSS/SCSS/Less LSP
         marksman = true, -- Markdown LSP
@@ -35,10 +35,7 @@ return {
   {
     "stevearc/conform.nvim",
     opts = {
-      formatters_by_ft = {
-        nix = { "nixfmt" },
-        ansible = { "ansible-lint" },
-      },
+      formatters_by_ft = { nix = { "nixfmt" } },
       format_on_save = {}, -- enables autocmd
     },
     config = function(_, opts)

@@ -1,32 +1,26 @@
-{ config, ... }:
+{ lib, ... }:
 {
   modules.nixos.user =
+    { config, pkgs, ... }:
     {
-      pkgs,
-      identity ? config.identity // {
-        user = "leier";
-      },
-      ...
-    }:
-    {
-      users.groups.${identity.user} = { };
+      users.groups.leier = { };
 
-      users.users.${identity.user} = {
+      users.users.leier = {
         isNormalUser = true;
-        home = "/home/${identity.user}";
+        home = "/home/leier";
         createHome = true;
         homeMode = "0770";
-        group = identity.user;
+        group = "leier";
         shell = pkgs.zsh;
         extraGroups = [
           "wheel"
           "networkmanager"
           "video"
           "audio"
-          "incus-admin"
-          "podman"
           "input"
-        ];
+        ]
+        ++ lib.optional config.virtualisation.podman.enable "podman"
+        ++ lib.optional config.virtualisation.incus.enable "incus-admin";
 
         initialHashedPassword = "$6$IwGp276/71CzyoDG$RHOfZSCTLXN2NGk7T8QcYTx815KNhEx42ECUrNxYcdjAga0JD4EVzSgUus.WR2U44Epk8fpcnMdXTIJmYB4dd0";
       };

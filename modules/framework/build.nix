@@ -26,12 +26,6 @@ let
 
   bundleModules = class: names: lib.concatMap (n: config.bundles.${n}.${class}) names;
 
-  identityArgs = user: {
-    _module.args.identity = config.identity // {
-      inherit user;
-    };
-  };
-
   hmFor =
     class: user: homeModules:
     let
@@ -49,7 +43,6 @@ let
       home-manager = {
         useGlobalPkgs = true;
         useUserPackages = true;
-        sharedModules = [ (identityArgs user) ];
         users.${user} = {
           imports = homeModules;
           home = {
@@ -73,7 +66,6 @@ let
       ++ cfg.modules
       ++ lib.optionals (cfg.user != null) [
         (hmFor "nixos" cfg.user (bundleModules "home" cfg.bundles))
-        (identityArgs cfg.user)
       ];
     };
 
@@ -85,8 +77,7 @@ let
       ]
       ++ bundleModules "darwin" cfg.bundles
       ++ cfg.modules
-      ++ lib.optional (cfg.user != null) (hmFor "darwin" cfg.user (bundleModules "home" cfg.bundles))
-      ++ lib.optional (cfg.user != null) (identityArgs cfg.user);
+      ++ lib.optional (cfg.user != null) (hmFor "darwin" cfg.user (bundleModules "home" cfg.bundles));
     };
 
   buildHome =
@@ -106,7 +97,6 @@ let
             home.homeDirectory = "/home/${cfg.user}";
             home.stateVersion = release;
           }
-          (identityArgs cfg.user)
         ];
     };
 

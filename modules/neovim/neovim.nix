@@ -27,10 +27,10 @@
         home.packages = with pkgs; [
           ripgrep
           fd
+          fzf
           lua-language-server
           nixd
           nixfmt
-          ansible-lint
           marksman
           typescript-language-server
           vscode-langservers-extracted

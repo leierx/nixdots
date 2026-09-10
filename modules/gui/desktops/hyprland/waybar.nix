@@ -229,7 +229,7 @@
             {
               _args = [
                 "monitor.layout_changed"
-                (lib.generators.mkLuaInline ''function() hl.exec_cmd("${pkgs.procps}/bin/pkill -SIGUSR2 waybar") end'')
+                (lib.generators.mkLuaInline "function() hl.exec_cmd(${builtins.toJSON "${pkgs.procps}/bin/pkill -SIGUSR2 -u $(id -u) -x waybar"}) end")
               ];
             }
           ];

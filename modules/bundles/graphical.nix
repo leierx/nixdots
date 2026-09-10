@@ -15,6 +15,8 @@
       hyprland
       neovim
       qt
+      rofi
+      wezterm
     ];
   };
 }

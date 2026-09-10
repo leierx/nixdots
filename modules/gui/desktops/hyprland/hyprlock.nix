@@ -38,7 +38,7 @@
             }
             {
               monitor = "";
-              text = ''cmd[update:1000] echo -e "$(date +'%A, %B %d')"'';
+              text = "cmd[update:1000] ${pkgs.coreutils}/bin/date +'%A, %B %d'";
               color = "rgba(216, 222, 233, 0.750000)";
               font_size = 30;
               font_family = "Hack";
@@ -57,7 +57,7 @@
             outer_color = "rgba(255, 255, 255, 0)";
             inner_color = "rgba(255, 255, 255, 0.1)";
             font_color = "rgb(200, 200, 200)";
-            placeholder_text = "<i><span foreground=\"##ffffff99\">Enter Pass</span></i>";
+            placeholder_text = "<i><span foreground=\"#ffffff99\">Enter Pass</span></i>";
             hide_input = false;
             position = "0, -100";
             halign = "center";

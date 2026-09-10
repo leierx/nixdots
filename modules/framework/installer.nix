@@ -10,10 +10,7 @@ let
   # host's toplevel + diskoScript as ISO payload. Build the iso with:
   #
   #   nix build .#nixosConfigurations.offlineInstaller-<host>.config.system.build.isoImage
-  installerHosts = [
-    "thonkpad"
-    "desktop"
-  ];
+  installerHosts = lib.attrNames (lib.filterAttrs (_: c: c.class == "nixos") config.systems);
 
   mkInstaller =
     targetHost:

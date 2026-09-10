@@ -1,7 +1,4 @@
-{ config, inputs, ... }:
-let
-  outerConfig = config;
-in
+{ inputs, ... }:
 {
   modules.nixos.hyprland =
     { pkgs, ... }:
@@ -33,11 +30,6 @@ in
       ...
     }:
     {
-      imports = [
-        outerConfig.modules.home.wezterm
-        outerConfig.modules.home.rofi
-      ];
-
       home.packages = with pkgs; [
         grim
         slurp

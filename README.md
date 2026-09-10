@@ -23,7 +23,7 @@ Add the flake as an input and import any single module:
 ```nix
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixdots.url = "github:leier/nixdots";
   };
 }
@@ -51,20 +51,20 @@ Home-manager modules (works standalone or inside home-manager):
 }
 ```
 
-Only two args can be required, and both fall back to sensible defaults:
-
-- `theme` — gone. Colors are inlined per module, so nothing to inject.
-- `identity` — defaults to the author's identity. Override it in your eval:
+No module args are required. `theme` is gone (colors are inlined per module)
+and `identity` was removed — `user.name`/`user.email` are hardcoded in
+`modules/git.nix` and overridable through the module system:
 
 ```nix
-{ _module.args.identity = { user = "you"; name = "Your Name"; email = "you@example.com"; }; }
+{ programs.git.settings.user.name = "you"; programs.git.settings.user.email = "you@example.com"; }
 ```
 
 Notes:
 
 - `nixosModules.hyprland` is the system side only; its home-manager half is
   `homeModules.hyprland` (needs the NixOS side for the compositor package, so
-  no standalone-HM). Our own `graphical` bundle wires both halves.
+  no standalone-HM). Our own `graphical` bundle wires both halves, plus the
+  separate `rofi` and `wezterm` modules it uses.
 - Modules pin their dependencies to the nixdots flake inputs (hyprland,
   disko, nixpkgs-unstable), so import without worrying about versions.
 - Want a different color scheme? The rendered output of each module is
