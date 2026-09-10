@@ -12,6 +12,7 @@
     home = with config.modules.home; [
       cursor
       gtk
+      hyprland
       neovim
       qt
     ];

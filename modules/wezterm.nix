@@ -1,7 +1,28 @@
-{ lib, ... }:
 {
   modules.home.wezterm =
-    { pkgs, theme, ... }:
+    { pkgs, ... }:
+    let
+      colors = {
+        fg = "#f1f1f1";
+        bg1 = "#1C1C1C";
+        black = "#1e1e1e";
+        blackLight = "#323232";
+        blue = "#0E66D0";
+        blueLight = "#0875F6";
+        cyan = "#4BB0E3";
+        cyanLight = "#4FC0F7";
+        green = "#2BBF3E";
+        greenLight = "#2DD042";
+        magenta = "#9C48CC";
+        magentaLight = "#B24FEA";
+        red = "#F13A31";
+        redLight = "#FE3C33";
+        white = "#F1F1F1";
+        whiteLight = "#FEFEFE";
+        yellow = "#F1C50F";
+        yellowLight = "#FECF0F";
+      };
+    in
     {
       home.packages = [ pkgs.hack-font ];
 
@@ -79,36 +100,36 @@
 
           -- Colors
           config.colors = {
-            foreground = "${theme.colors.fg}",
-            background = "${theme.colors.bg1}",
+            foreground = "${colors.fg}",
+            background = "${colors.bg1}",
 
             selection_fg = "none",
             selection_bg = "rgba(255 255 255 / 30%)",
 
-            cursor_bg = "${theme.colors.fg}",
-            cursor_fg = "${theme.colors.bg1}",
-            cursor_border = "${theme.colors.fg}",
+            cursor_bg = "${colors.fg}",
+            cursor_fg = "${colors.bg1}",
+            cursor_border = "${colors.fg}",
 
             ansi = {
-              "${theme.colors.black}",
-              "${theme.colors.red}",
-              "${theme.colors.green}",
-              "${theme.colors.yellow}",
-              "${theme.colors.blue}",
-              "${theme.colors.magenta}",
-              "${theme.colors.cyan}",
-              "${theme.colors.white}",
+              "${colors.black}",
+              "${colors.red}",
+              "${colors.green}",
+              "${colors.yellow}",
+              "${colors.blue}",
+              "${colors.magenta}",
+              "${colors.cyan}",
+              "${colors.white}",
             },
 
             brights = {
-              "${theme.colors.blackLight}",
-              "${theme.colors.redLight}",
-              "${theme.colors.greenLight}",
-              "${theme.colors.yellowLight}",
-              "${theme.colors.blueLight}",
-              "${theme.colors.magentaLight}",
-              "${theme.colors.cyanLight}",
-              "${theme.colors.whiteLight}",
+              "${colors.blackLight}",
+              "${colors.redLight}",
+              "${colors.greenLight}",
+              "${colors.yellowLight}",
+              "${colors.blueLight}",
+              "${colors.magentaLight}",
+              "${colors.cyanLight}",
+              "${colors.whiteLight}",
             },
           }
 

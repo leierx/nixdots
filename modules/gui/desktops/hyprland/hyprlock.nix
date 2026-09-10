@@ -5,7 +5,6 @@
     {
       pkgs,
       lib,
-      theme,
       ...
     }:
     {
@@ -30,7 +29,7 @@
             {
               monitor = "";
               text = "$TIME";
-              color = theme.rgba theme.colors.overlay 0.75;
+              color = "rgba(216, 222, 233, 0.750000)";
               font_size = 50;
               font_family = "Hack";
               position = "0, 200";
@@ -40,7 +39,7 @@
             {
               monitor = "";
               text = ''cmd[update:1000] echo -e "$(date +'%A, %B %d')"'';
-              color = theme.rgba theme.colors.overlay 0.75;
+              color = "rgba(216, 222, 233, 0.750000)";
               font_size = 30;
               font_family = "Hack";
               position = "0, 100";

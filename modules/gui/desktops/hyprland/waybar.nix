@@ -3,9 +3,69 @@
     {
       pkgs,
       lib,
-      theme,
       ...
     }:
+    let
+      colors = {
+        fg = "#f1f1f1";
+        focusedBorderColor = "#0E66D0";
+        unfocusedBorderColor = "#595959";
+        bg1 = "#1C1C1C";
+        bg2 = "#2F2F2F";
+        bg3 = "#3A3A3A";
+        bg4 = "#474747";
+        bg5 = "#515151";
+        black = "#1e1e1e";
+        blackLight = "#323232";
+        blue = "#0E66D0";
+        blueLight = "#0875F6";
+        cyan = "#4BB0E3";
+        cyanLight = "#4FC0F7";
+        gray = "#818589";
+        grayLight = "#A3A6AA";
+        green = "#2BBF3E";
+        greenLight = "#2DD042";
+        magenta = "#9C48CC";
+        magentaLight = "#B24FEA";
+        primaryColor = "#0E66D0";
+        red = "#F13A31";
+        redLight = "#FE3C33";
+        white = "#F1F1F1";
+        whiteLight = "#FEFEFE";
+        yellow = "#F1C50F";
+        yellowLight = "#FECF0F";
+      };
+
+      vars = [
+        "fg"
+        "focusedBorderColor"
+        "unfocusedBorderColor"
+        "bg1"
+        "bg2"
+        "bg3"
+        "bg4"
+        "bg5"
+        "black"
+        "blackLight"
+        "blue"
+        "blueLight"
+        "cyan"
+        "cyanLight"
+        "gray"
+        "grayLight"
+        "green"
+        "greenLight"
+        "magenta"
+        "magentaLight"
+        "primaryColor"
+        "red"
+        "redLight"
+        "white"
+        "whiteLight"
+        "yellow"
+        "yellowLight"
+      ];
+    in
     {
       programs.waybar = {
         enable = true;
@@ -70,11 +130,11 @@
                 mode-mon-col = 4;
                 weeks-pos = "right";
                 format = {
-                  months = "<span color='${theme.colors.blueLight}'><b>{}</b></span>";
-                  days = "<span color='${theme.colors.fg}'><b>{}</b></span>";
-                  weeks = "<span color='${theme.colors.cyanLight}'><b>{}</b></span>";
-                  weekdays = "<span color='${theme.colors.yellow}'><b>{}</b></span>";
-                  today = "<span color='${theme.colors.redLight}'><b><u>{}</u></b></span>";
+                  months = "<span color='${colors.blueLight}'><b>{}</b></span>";
+                  days = "<span color='${colors.fg}'><b>{}</b></span>";
+                  weeks = "<span color='${colors.cyanLight}'><b>{}</b></span>";
+                  weekdays = "<span color='${colors.yellow}'><b>{}</b></span>";
+                  today = "<span color='${colors.redLight}'><b><u>{}</u></b></span>";
                 };
               };
             };
@@ -96,8 +156,8 @@
         style =
           let
             defs = lib.concatMapStringsSep "\n" (
-              name: "          @define-color ${name} ${theme.colors.${name}};"
-            ) theme.vars;
+              name: "          @define-color ${name} ${colors.${name}};"
+            ) vars;
           in
           ''
               ${defs}

@@ -23,8 +23,6 @@ in
       services.gvfs.enable = true;
       services.gnome.sushi.enable = true;
       environment.systemPackages = [ pkgs.nautilus ];
-
-      home-manager.sharedModules = [ outerConfig.modules.home.hyprland ];
     };
 
   modules.home.hyprland =
@@ -32,7 +30,6 @@ in
       pkgs,
       osConfig,
       lib,
-      theme,
       ...
     }:
     {
@@ -75,15 +72,15 @@ in
               gaps_in = 10;
               gaps_out = 15;
               col = {
-                inactive_border = "rgb(${theme.rgb.unfocusedBorderColor})";
+                inactive_border = "rgb(595959)";
                 active_border = {
                   colors = [
-                    "rgb(${theme.rgb.green})"
-                    "rgb(${theme.rgb.green})"
-                    "rgb(${theme.rgb.green})"
-                    "rgb(${theme.rgb.blue})"
-                    "rgb(${theme.rgb.blue})"
-                    "rgb(${theme.rgb.blue})"
+                    "rgb(2bbf3e)"
+                    "rgb(2bbf3e)"
+                    "rgb(2bbf3e)"
+                    "rgb(0e66d0)"
+                    "rgb(0e66d0)"
+                    "rgb(0e66d0)"
                   ];
                   angle = 30;
                 };
@@ -115,7 +112,7 @@ in
               force_default_wallpaper = 0;
               disable_autoreload = true;
               focus_on_activate = true;
-              background_color = "0x${lib.removePrefix "#" theme.colors.bg1}";
+              background_color = "0x1C1C1C";
               on_focus_under_fullscreen = 0;
               middle_click_paste = false;
             };

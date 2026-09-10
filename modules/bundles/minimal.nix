@@ -14,7 +14,6 @@
       root
       user
       unstableNixpkgs
-      zsh
     ];
     home = with config.modules.home; [
       git

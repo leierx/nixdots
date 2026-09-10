@@ -73,31 +73,6 @@ in
       description = "Declarative systems, built into *Configurations by framework/build.nix";
     };
 
-    theme = lib.mkOption {
-      type = lib.types.submodule {
-        freeformType = lib.types.attrs;
-        options = {
-          palettes = lib.mkOption {
-            type = lib.types.attrsOf (lib.types.attrsOf lib.types.str);
-            default = { };
-          };
-          colors = lib.mkOption {
-            type = lib.types.attrsOf lib.types.str;
-            default = { };
-          };
-          rgb = lib.mkOption {
-            type = lib.types.attrsOf lib.types.str;
-            default = { };
-          };
-          vars = lib.mkOption {
-            type = lib.types.listOf lib.types.str;
-            default = [ ];
-          };
-        };
-      };
-      default = { };
-    };
-
     identity = lib.mkOption {
       type = lib.types.submodule {
         options = {

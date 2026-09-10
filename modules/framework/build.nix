@@ -49,14 +49,7 @@ let
       home-manager = {
         useGlobalPkgs = true;
         useUserPackages = true;
-        sharedModules = [
-          {
-            _module.args.identity = config.identity // {
-              inherit user;
-            };
-            _module.args.theme = config.theme;
-          }
-        ];
+        sharedModules = [ (identityArgs user) ];
         users.${user} = {
           imports = homeModules;
           home = {
@@ -113,12 +106,7 @@ let
             home.homeDirectory = "/home/${cfg.user}";
             home.stateVersion = release;
           }
-          {
-            _module.args.identity = config.identity // {
-              user = cfg.user;
-            };
-            _module.args.theme = config.theme;
-          }
+          (identityArgs cfg.user)
         ];
     };
 

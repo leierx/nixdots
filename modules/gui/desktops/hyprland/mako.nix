@@ -4,9 +4,16 @@
       config,
       lib,
       pkgs,
-      theme,
       ...
     }:
+    let
+      colors = {
+        bg1 = "#1C1C1C";
+        bg3 = "#3A3A3A";
+        fg = "#f1f1f1";
+        primaryColor = "#0E66D0";
+      };
+    in
     {
       # dependencies
       home.packages = [ pkgs.hack-font ];
@@ -21,17 +28,17 @@
           on-touch = "dismiss";
           # ── Style options ───────────────────────────────────────────────
           font = "Hack 12";
-          background-color = theme.colors.bg1;
-          text-color = theme.colors.fg;
+          background-color = colors.bg1;
+          text-color = colors.fg;
           width = 500;
           height = 150; # max popup height in px (shrinks to fit)
           outer-margin = 10; # margin outside the whole notification list
           margin = "10,0"; # margin around each individual notification
           padding = 20; # inner padding on each side
           border-size = 2;
-          border-color = theme.colors.primaryColor; # border color
+          border-color = colors.primaryColor; # border color
           border-radius = 10;
-          progress-color = "over ${theme.colors.bg3}"; # progress indicator: "over" overlays, "source" replaces bg
+          progress-color = "over ${colors.bg3}"; # progress indicator: "over" overlays, "source" replaces bg
           icons = true;
           icon-path = "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark";
           history = true;
