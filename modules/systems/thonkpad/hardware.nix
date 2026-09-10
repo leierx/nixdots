@@ -1,7 +1,6 @@
 {
-  modules.nixos.hosts.thonkpad =
-    { pkgs, ... }:
-    {
+  systems.thonkpad.modules = [
+    ({ pkgs, ... }: {
       hardware = {
         bluetooth.enable = true;
         cpu.intel.updateMicrocode = true;
@@ -43,5 +42,6 @@
           };
         };
       };
-    };
+    })
+  ];
 }

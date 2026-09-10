@@ -1,5 +1,5 @@
 {
-  modules.homeManager.xdgUserDirs =
+  modules.home.xdgUserDirs =
     { config, lib, ... }:
     {
       xdg = {

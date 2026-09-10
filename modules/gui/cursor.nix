@@ -1,5 +1,5 @@
 {
-  modules.homeManager.cursor =
+  modules.home.cursor =
     { pkgs, ... }:
     {
       home.pointerCursor = {

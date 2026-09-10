@@ -1,7 +1,6 @@
 {
-  modules.nixos.hosts.thonkpad =
-    { pkgs, lib, ... }:
-    {
+  systems.thonkpad.modules = [
+    ({ pkgs, lib, ... }: {
       home-manager.sharedModules = [
         {
           systemd.user.services.kanshi = lib.mkForce { };
@@ -37,5 +36,6 @@
           };
         }
       ];
-    };
+    })
+  ];
 }

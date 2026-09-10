@@ -1,5 +1,5 @@
 {
-  modules.homeManager.hyprland = { pkgs, lib, ... }: {
+  modules.home.hyprland = { pkgs, lib, ... }: {
     wayland.windowManager.hyprland = {
       settings = {
         bind =

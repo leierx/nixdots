@@ -46,7 +46,7 @@
       };
     };
 
-  modules.homeManager.user = {
+  modules.home.user = {
     programs.zsh = {
       enable = true;
 

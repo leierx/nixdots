@@ -1,5 +1,5 @@
 {
-  modules.homeManager.qt = {
+  modules.home.qt = {
     qt = {
       enable = true;
       platformTheme.name = "adwaita";

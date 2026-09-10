@@ -94,7 +94,7 @@ let
   ];
 in
 {
-  modules.theme = {
+  theme = {
     inherit
       palettes
       colors

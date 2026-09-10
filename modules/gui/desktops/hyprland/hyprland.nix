@@ -24,10 +24,10 @@ in
       services.gnome.sushi.enable = true;
       environment.systemPackages = [ pkgs.nautilus ];
 
-      home-manager.sharedModules = [ outerConfig.modules.homeManager.hyprland ];
+      home-manager.sharedModules = [ outerConfig.modules.home.hyprland ];
     };
 
-  modules.homeManager.hyprland =
+  modules.home.hyprland =
     {
       pkgs,
       osConfig,
@@ -37,8 +37,8 @@ in
     }:
     {
       imports = [
-        outerConfig.modules.homeManager.wezterm
-        outerConfig.modules.homeManager.rofi
+        outerConfig.modules.home.wezterm
+        outerConfig.modules.home.rofi
       ];
 
       home.packages = with pkgs; [

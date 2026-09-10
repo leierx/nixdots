@@ -1,5 +1,5 @@
 {
-  modules.homeManager.hyprland = {
+  modules.home.hyprland = {
     wayland.windowManager.hyprland = {
       settings = {
         window_rule = [

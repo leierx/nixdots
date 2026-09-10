@@ -1,7 +1,7 @@
 {
   modules.nixos.gtk.programs.dconf.enable = true;
 
-  modules.homeManager.gtk =
+  modules.home.gtk =
     { pkgs, ... }:
     {
       dconf.enable = true;

@@ -1,7 +1,6 @@
 {
-  modules.nixos.hosts.desktop =
-    { pkgs, lib, ... }:
-    {
+  systems.desktop.modules = [
+    ({ pkgs, lib, ... }: {
       home-manager.sharedModules = [
         {
           systemd.user.services.kanshi = lib.mkForce { };
@@ -62,5 +61,6 @@
           };
         }
       ];
-    };
+    })
+  ];
 }

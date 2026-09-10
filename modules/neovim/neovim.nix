@@ -1,5 +1,5 @@
 {
-  modules.homeManager.neovim =
+  modules.home.neovim =
     {
       config,
       lib,

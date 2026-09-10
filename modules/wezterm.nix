@@ -1,6 +1,6 @@
 { lib, ... }:
 {
-  modules.homeManager.wezterm =
+  modules.home.wezterm =
     { pkgs, theme, ... }:
     {
       home.packages = [ pkgs.hack-font ];

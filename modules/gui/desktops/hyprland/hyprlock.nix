@@ -1,7 +1,7 @@
 {
   modules.nixos.hyprland.security.pam.services.hyprlock = { };
 
-  modules.homeManager.hyprland =
+  modules.home.hyprland =
     {
       pkgs,
       lib,

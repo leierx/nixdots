@@ -1,5 +1,5 @@
 {
-  modules.homeManager.tmux =
+  modules.home.tmux =
     { pkgs, theme, ... }:
     {
       home = {

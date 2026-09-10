@@ -1,5 +1,5 @@
 {
-  modules.homeManager.hyprland =
+  modules.home.hyprland =
     { pkgs, lib, ... }:
     {
       services.hypridle = {

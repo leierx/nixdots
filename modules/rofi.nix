@@ -1,5 +1,5 @@
 {
-  modules.homeManager.rofi =
+  modules.home.rofi =
     {
       pkgs,
       theme,

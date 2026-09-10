@@ -1,6 +1,6 @@
 { inputs, ... }:
 {
-  modules.homeManager.hyprland =
+  modules.home.hyprland =
     { pkgs, ... }:
     {
       wayland.windowManager.hyprland = {

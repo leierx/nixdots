@@ -1,7 +1,7 @@
 {
   modules.nixos.git.programs.git.enable = true;
 
-  modules.homeManager.git =
+  modules.home.git =
     { config, lib, ... }:
     let
       cfg = config.flakeModules.git;
