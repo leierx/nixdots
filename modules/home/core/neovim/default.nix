@@ -1,42 +1,31 @@
-{
-  flake.modules.homeManager.neovim =
-    {
-      config,
-      lib,
-      pkgs,
-      ...
-    }:
-    let
-      cfg = config.flakeModules.neovim;
-    in
-    {
-      options.flakeModules.neovim = {
-        outOfStorePath = lib.mkOption {
-          type = lib.types.nullOr lib.types.path;
-          default = null;
-        };
-      };
+top: {
+  options.neovim.outOfStorePath = top.lib.mkOption {
+    type = top.lib.types.nullOr top.lib.types.path;
+    default = null;
+    description = "Symlink the neovim config to this path instead of the store, for live editing";
+  };
 
-      config = {
-        xdg.configFile."nvim".source =
-          if cfg.outOfStorePath != null then
-            config.lib.file.mkOutOfStoreSymlink cfg.outOfStorePath
-          else
-            ./assets;
+  config.flake.modules.homeManager.neovim =
+    { config, pkgs, ... }:
+    {
+      xdg.configFile."nvim".source =
+        if top.config.neovim.outOfStorePath != null then
+          config.lib.file.mkOutOfStoreSymlink top.config.neovim.outOfStorePath
+        else
+          ./assets;
 
-        home.packages = with pkgs; [
-          ripgrep
-          fd
-          fzf
-          lua-language-server
-          nixd
-          nixfmt
-          marksman
-          typescript-language-server
-          vscode-langservers-extracted
-          yaml-language-server
-          tofu-ls
-        ];
-      };
+      home.packages = with pkgs; [
+        ripgrep
+        fd
+        fzf
+        lua-language-server
+        nixd
+        nixfmt
+        marksman
+        typescript-language-server
+        vscode-langservers-extracted
+        yaml-language-server
+        tofu-ls
+      ];
     };
 }

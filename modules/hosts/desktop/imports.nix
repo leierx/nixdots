@@ -6,5 +6,7 @@
     desktop
     gaming
     incus
+    efi
+    grub
   ];
 }

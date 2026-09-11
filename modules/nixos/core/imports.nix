@@ -2,7 +2,7 @@
 {
   flake.modules.nixos.core.imports = with config.flake.modules.nixos; [
     base-packages
-    bootloader
+    boot
     doas
     git
     home-manager
