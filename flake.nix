@@ -1,11 +1,15 @@
 {
-  # homemade flake-parts
+  description = "leier's NixOS / nix-darwin / home-manager configurations";
+
+  # Homemade flake-parts: every file under `modules/` is a module of one
+  # top-level configuration, whose `flake` option set is the flake output.
   outputs =
     inputs:
     (inputs.nixpkgs.lib.evalModules {
+      class = "flake";
       specialArgs.inputs = inputs;
       modules = [ (import ./import-tree.nix ./modules) ];
-    }).config;
+    }).config.flake;
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";

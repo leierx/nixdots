@@ -1,6 +1,6 @@
 { config, ... }:
 {
-  systems.thonkpad = {
+  hosts.thonkpad = {
     user = "leier";
     bundles = [
       "minimal"

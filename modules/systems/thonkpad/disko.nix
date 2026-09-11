@@ -1,6 +1,6 @@
 { inputs, ... }:
 {
-  systems.thonkpad.modules = [
+  hosts.thonkpad.modules = [
     {
       imports = [ inputs.disko.nixosModules.disko ];
 

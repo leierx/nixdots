@@ -8,13 +8,6 @@ let
       inherit description;
     };
 
-  configurations =
-    _:
-    lib.mkOption {
-      type = lib.types.lazyAttrsOf lib.types.raw;
-      default = { };
-    };
-
   classModules = lib.mkOption {
     type = lib.types.listOf lib.types.deferredModule;
     default = [ ];
@@ -40,7 +33,7 @@ in
       description = "Named class-keyed module lists, consumed by systems.<name>.bundles";
     };
 
-    systems = lib.mkOption {
+    hosts = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.submodule {
           options = {
@@ -70,11 +63,7 @@ in
         }
       );
       default = { };
-      description = "Declarative systems, built into *Configurations by framework/build.nix";
+      description = "Declarative hosts, built into flake.*Configurations by framework/build.nix";
     };
-
-    nixosConfigurations = configurations { };
-    darwinConfigurations = configurations { };
-    homeConfigurations = configurations { };
   };
 }

@@ -82,7 +82,7 @@ let
 
   buildHome =
     name: cfg:
-    assert lib.assertMsg (cfg.user != null) "systems.${name}: class \"home\" requires a user";
+    assert lib.assertMsg (cfg.user != null) "hosts.${name}: class \"home\" requires a user";
     inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = import inputs.nixpkgs {
         system = cfg.platform;
@@ -100,10 +100,12 @@ let
         ];
     };
 
-  byClass = class: lib.filterAttrs (_: c: c.class == class) config.systems;
+  byClass = class: lib.filterAttrs (_: c: c.class == class) config.hosts;
 in
 {
-  nixosConfigurations = lib.mapAttrs buildNixos (byClass "nixos");
-  darwinConfigurations = lib.mapAttrs buildDarwin (byClass "darwin");
-  homeConfigurations = lib.mapAttrs buildHome (byClass "home");
+  flake = {
+    nixosConfigurations = lib.mapAttrs buildNixos (byClass "nixos");
+    darwinConfigurations = lib.mapAttrs buildDarwin (byClass "darwin");
+    homeConfigurations = lib.mapAttrs buildHome (byClass "home");
+  };
 }

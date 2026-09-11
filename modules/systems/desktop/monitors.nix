@@ -1,5 +1,5 @@
 {
-  systems.desktop.modules = [
+  hosts.desktop.modules = [
     ({ pkgs, lib, ... }: {
       home-manager.sharedModules = [
         {

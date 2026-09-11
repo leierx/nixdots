@@ -1,5 +1,5 @@
 {
-  systems.thonkpad.modules = [
+  hosts.thonkpad.modules = [
     ({ pkgs, ... }: {
       hardware = {
         bluetooth.enable = true;

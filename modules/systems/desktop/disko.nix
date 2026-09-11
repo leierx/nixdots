@@ -1,6 +1,6 @@
 { inputs, ... }:
 {
-  systems.desktop.modules = [
+  hosts.desktop.modules = [
     {
       imports = [ inputs.disko.nixosModules.disko ];
 

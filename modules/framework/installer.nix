@@ -10,12 +10,12 @@ let
   # host's toplevel + diskoScript as ISO payload. Build the iso with:
   #
   #   nix build .#nixosConfigurations.offlineInstaller-<host>.config.system.build.isoImage
-  installerHosts = lib.attrNames (lib.filterAttrs (_: c: c.class == "nixos") config.systems);
+  installerHosts = lib.attrNames (lib.filterAttrs (_: c: c.class == "nixos") config.hosts);
 
   mkInstaller =
     targetHost:
     let
-      targetSystem = config.nixosConfigurations.${targetHost};
+      targetSystem = config.flake.nixosConfigurations.${targetHost};
     in
     lib.nixosSystem {
       modules = [
@@ -61,7 +61,7 @@ let
     };
 in
 {
-  nixosConfigurations = lib.listToAttrs (
+  flake.nixosConfigurations = lib.listToAttrs (
     map (host: lib.nameValuePair "offlineInstaller-${host}" (mkInstaller host)) installerHosts
   );
 }

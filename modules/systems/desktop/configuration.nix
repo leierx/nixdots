@@ -1,6 +1,6 @@
 { config, ... }:
 {
-  systems.desktop = {
+  hosts.desktop = {
     user = "leier";
     bundles = [
       "minimal"

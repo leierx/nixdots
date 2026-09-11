@@ -1,3 +1,5 @@
+# Conventional flake outputs, so external flakes can import single modules
+# as `inputs.nixdots.nixosModules.<aspect>`.
 { config, lib, ... }:
 let
   registry = lib.mkOption {
@@ -6,14 +8,13 @@ let
   };
 in
 {
-  options = {
+  options.flake = {
     nixosModules = registry;
     homeModules = registry;
     darwinModules = registry;
   };
 
-  # conventional flake outputs so external flakes can import single modules
-  config = {
+  config.flake = {
     nixosModules = config.modules.nixos;
     homeModules = config.modules.home;
     darwinModules = config.modules.darwin;

@@ -1,5 +1,5 @@
 {
-  systems.desktop.modules = [
+  hosts.desktop.modules = [
     {
       hardware = {
         cpu.amd.updateMicrocode = true;
