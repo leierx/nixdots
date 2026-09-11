@@ -1,14 +1,9 @@
-{
+top: {
+
   flake.modules.homeManager.tmux =
     { pkgs, ... }:
     let
-      colors = {
-        fg = "#dcd7ba";
-        muted = "#727169";
-        blue = "#7e9cd8";
-        red = "#e82424";
-        sel = "#223249";
-      };
+      colors = top.config.palettes.kanagawa;
     in
     {
       home = {

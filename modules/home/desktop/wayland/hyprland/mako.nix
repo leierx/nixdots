@@ -1,4 +1,5 @@
-{
+top: {
+
   flake.modules.homeManager.hyprland =
     {
       config,
@@ -7,12 +8,7 @@
       ...
     }:
     let
-      colors = {
-        bg1 = "#1C1C1C";
-        bg3 = "#3A3A3A";
-        fg = "#f1f1f1";
-        primaryColor = "#0E66D0";
-      };
+      colors = top.config.palettes.ui;
     in
     {
       # dependencies

@@ -1,27 +1,9 @@
-{
+top: {
+
   flake.modules.homeManager.wezterm =
     { pkgs, ... }:
     let
-      colors = {
-        fg = "#f1f1f1";
-        bg1 = "#1C1C1C";
-        black = "#1e1e1e";
-        blackLight = "#323232";
-        blue = "#0E66D0";
-        blueLight = "#0875F6";
-        cyan = "#4BB0E3";
-        cyanLight = "#4FC0F7";
-        green = "#2BBF3E";
-        greenLight = "#2DD042";
-        magenta = "#9C48CC";
-        magentaLight = "#B24FEA";
-        red = "#F13A31";
-        redLight = "#FE3C33";
-        white = "#F1F1F1";
-        whiteLight = "#FEFEFE";
-        yellow = "#F1C50F";
-        yellowLight = "#FECF0F";
-      };
+      colors = top.config.palettes.ui;
     in
     {
       home.packages = [ pkgs.hack-font ];
