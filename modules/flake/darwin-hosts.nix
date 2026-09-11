@@ -11,7 +11,6 @@ let
   defaults = hostname: host: {
     networking.hostName = lib.mkDefault hostname;
     nixpkgs.hostPlatform = lib.mkDefault host.system;
-    nixpkgs.config.allowUnfree = lib.mkDefault true;
     # nix-darwin takes an int here, not a release string
     system.stateVersion = lib.mkDefault 7;
   };

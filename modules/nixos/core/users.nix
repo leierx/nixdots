@@ -1,16 +1,19 @@
-{ lib, ... }:
+top@{ lib, ... }:
+let
+  inherit (top.config.me) username;
+in
 {
   flake.modules.nixos.user =
     { config, pkgs, ... }:
     {
-      users.groups.leier = { };
+      users.groups.${username} = { };
 
-      users.users.leier = {
+      users.users.${username} = {
         isNormalUser = true;
-        home = "/home/leier";
+        home = "/home/${username}";
         createHome = true;
         homeMode = "0770";
-        group = "leier";
+        group = username;
         shell = pkgs.zsh;
         extraGroups = [
           "wheel"

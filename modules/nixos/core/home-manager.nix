@@ -3,6 +3,9 @@
 # The `topLevel` argument is the top-level configuration, which is how a
 # lower-level module reaches the dendritic registry without `specialArgs`.
 topLevel@{ inputs, ... }:
+let
+  inherit (topLevel.config.me) username;
+in
 {
   flake.modules.nixos.home-manager =
     { config, ... }:
@@ -13,7 +16,7 @@ topLevel@{ inputs, ... }:
         useGlobalPkgs = true;
         useUserPackages = true;
 
-        users.leier.imports = [
+        users.${username}.imports = [
           topLevel.config.flake.modules.homeManager.core
           (topLevel.config.flake.modules.homeManager."homeConfigurations/${config.networking.hostName}" or { }
           )

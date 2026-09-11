@@ -1,4 +1,12 @@
 {
+  nixpkgs.allowedUnfreePackages = [
+    "discord-canary"
+    "firefox-bin"
+    "firefox-bin-unwrapped"
+    "obsidian"
+    "spotify"
+  ];
+
   flake.modules.nixos."nixosConfigurations/thonkpad" =
     { pkgs, ... }:
     {

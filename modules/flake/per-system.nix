@@ -42,7 +42,8 @@ let
 
           config._module.args.pkgs = import inputs.nixpkgs {
             inherit system;
-            config.allowUnfree = true;
+            config.allowUnfreePredicate =
+              pkg: builtins.elem (lib.getName pkg) config.nixpkgs.allowedUnfreePackages;
           };
         }
       ];

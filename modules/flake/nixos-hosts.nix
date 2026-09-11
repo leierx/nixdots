@@ -14,7 +14,6 @@ let
     networking.hostId = lib.mkDefault (builtins.substring 0 8 (builtins.hashString "sha256" hostname));
     networking.hostName = lib.mkDefault hostname;
     nixpkgs.hostPlatform = lib.mkDefault host.system;
-    nixpkgs.config.allowUnfree = lib.mkDefault true;
     system.stateVersion = lib.mkDefault lib.trivial.release;
   };
 
