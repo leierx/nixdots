@@ -1,6 +1,4 @@
 {
-  flake.modules.nixos.hyprland.security.pam.services.hyprlock = { };
-
   flake.modules.homeManager.hyprland =
     {
       pkgs,
