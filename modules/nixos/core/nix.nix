@@ -30,16 +30,5 @@
         channel.enable = false; # remove nix-channel related tools & configs, we use flakes instead
         nixPath = [ "nixpkgs=${inputs.nixpkgs.outPath}" ];
       };
-
-      # bloat removal
-      documentation.nixos.enable = false;
-      networking.dhcpcd.enable = false;
-      # change nixos default editor to neovim
-      programs.nano.enable = false;
-      programs.neovim = {
-        enable = true;
-        vimAlias = true;
-        defaultEditor = true;
-      };
     };
 }
