@@ -1,13 +1,5 @@
 { lib, ... }:
 let
-  registry =
-    description:
-    lib.mkOption {
-      type = lib.types.lazyAttrsOf lib.types.deferredModule;
-      default = { };
-      inherit description;
-    };
-
   classModules = lib.mkOption {
     type = lib.types.listOf lib.types.deferredModule;
     default = [ ];
@@ -15,10 +7,6 @@ let
 in
 {
   options = {
-    modules.nixos = registry "Reusable NixOS modules";
-    modules.darwin = registry "Reusable nix-darwin modules";
-    modules.home = registry "Reusable home-manager modules";
-
     bundles = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.submodule {

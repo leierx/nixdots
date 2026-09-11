@@ -1,5 +1,5 @@
 {
-  modules.nixos.doas =
+  flake.modules.nixos.doas =
     { pkgs, ... }:
     {
       security.doas = {

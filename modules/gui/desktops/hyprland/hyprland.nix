@@ -1,6 +1,6 @@
 { inputs, ... }:
 {
-  modules.nixos.hyprland =
+  flake.modules.nixos.hyprland =
     { pkgs, ... }:
     {
       programs.hyprland = {
@@ -22,7 +22,7 @@
       environment.systemPackages = [ pkgs.nautilus ];
     };
 
-  modules.home.hyprland =
+  flake.modules.homeManager.hyprland =
     {
       pkgs,
       osConfig,

@@ -1,6 +1,6 @@
 { lib, ... }:
 {
-  modules.nixos.user =
+  flake.modules.nixos.user =
     { config, pkgs, ... }:
     {
       users.groups.leier = { };

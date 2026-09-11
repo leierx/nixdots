@@ -1,5 +1,5 @@
 {
-  modules.home.rofi =
+  flake.modules.homeManager.rofi =
     { pkgs, lib, ... }:
     let
       colors = {

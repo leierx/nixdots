@@ -1,5 +1,5 @@
 {
-  modules.home.cursor =
+  flake.modules.homeManager.cursor =
     { pkgs, ... }:
     {
       home.pointerCursor = {

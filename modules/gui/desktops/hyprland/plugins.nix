@@ -1,6 +1,6 @@
 { inputs, ... }:
 {
-  modules.home.hyprland =
+  flake.modules.homeManager.hyprland =
     { pkgs, ... }:
     {
       wayland.windowManager.hyprland = {

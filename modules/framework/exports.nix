@@ -15,8 +15,8 @@ in
   };
 
   config.flake = {
-    nixosModules = config.modules.nixos;
-    homeModules = config.modules.home;
-    darwinModules = config.modules.darwin;
+    nixosModules = config.flake.modules.nixos;
+    homeModules = config.flake.modules.homeManager;
+    darwinModules = config.flake.modules.darwin;
   };
 }

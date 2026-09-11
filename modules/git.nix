@@ -1,8 +1,8 @@
 { ... }:
 {
-  modules.nixos.git.programs.git.enable = true;
+  flake.modules.nixos.git.programs.git.enable = true;
 
-  modules.home.git = {
+  flake.modules.homeManager.git = {
     programs.git = {
       enable = true;
       settings = {

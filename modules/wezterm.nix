@@ -1,5 +1,5 @@
 {
-  modules.home.wezterm =
+  flake.modules.homeManager.wezterm =
     { pkgs, ... }:
     let
       colors = {

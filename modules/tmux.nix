@@ -1,5 +1,5 @@
 {
-  modules.home.tmux =
+  flake.modules.homeManager.tmux =
     { pkgs, ... }:
     let
       colors = {

@@ -1,5 +1,5 @@
 {
-  modules.home.opencode =
+  flake.modules.homeManager.opencode =
     { pkgs, ... }:
     {
       home.sessionVariables.OPENCODE_DISABLE_LSP_DOWNLOAD = "true";

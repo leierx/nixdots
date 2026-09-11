@@ -7,7 +7,7 @@
       "graphical"
     ];
     modules = [
-      config.modules.nixos.gaming
+      config.flake.modules.nixos.gaming
       ({ pkgs, ... }: {
         # wireguard
         networking.firewall.checkReversePath = false;

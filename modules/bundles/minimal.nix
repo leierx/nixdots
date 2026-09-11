@@ -1,10 +1,10 @@
 { config, ... }:
 {
   bundles.minimal = {
-    nixos = with config.modules.nixos; [
+    nixos = with config.flake.modules.nixos; [
       bootloader
-      basePackages
-      nixosConfig
+      base-packages
+      nix
       doas
       git
       journald
@@ -13,14 +13,14 @@
       podman
       root
       user
-      unstableNixpkgs
+      unstable-nixpkgs
     ];
-    home = with config.modules.home; [
+    home = with config.flake.modules.homeManager; [
       git
       locale
       opencode
       tmux
-      xdgUserDirs
+      xdg-user-dirs
       zsh
     ];
   };

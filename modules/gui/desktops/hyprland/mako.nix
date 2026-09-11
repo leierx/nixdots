@@ -1,5 +1,5 @@
 {
-  modules.home.hyprland =
+  flake.modules.homeManager.hyprland =
     {
       config,
       lib,

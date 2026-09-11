@@ -1,5 +1,5 @@
 {
-  modules.nixos.locale =
+  flake.modules.nixos.locale =
     { pkgs, ... }:
     {
       console = {
@@ -28,7 +28,7 @@
       };
     };
 
-  modules.home.locale = {
+  flake.modules.homeManager.locale = {
     wayland.windowManager.hyprland.settings.config.input = {
       kb_layout = "no";
       kb_variant = "nodeadkeys";

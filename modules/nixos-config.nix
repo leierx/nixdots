@@ -1,6 +1,6 @@
 { inputs, ... }:
 {
-  modules.nixos.nixosConfig =
+  flake.modules.nixos.nix =
     { lib, ... }:
     {
       nix = {

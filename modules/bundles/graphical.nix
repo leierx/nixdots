@@ -1,15 +1,15 @@
 { config, ... }:
 {
   bundles.graphical = {
-    nixos = with config.modules.nixos; [
-      displayManager
+    nixos = with config.flake.modules.nixos; [
+      display-manager
       sound
       plymouth
       gtk
       fonts
       hyprland
     ];
-    home = with config.modules.home; [
+    home = with config.flake.modules.homeManager; [
       cursor
       gtk
       hyprland

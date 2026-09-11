@@ -1,5 +1,5 @@
 {
-  modules.home.qt = {
+  flake.modules.homeManager.qt = {
     qt = {
       enable = true;
       platformTheme.name = "adwaita";
