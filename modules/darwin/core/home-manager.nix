@@ -1,7 +1,7 @@
 # Home-manager, evaluated inside the nix-darwin configuration of each host.
 topLevel@{ inputs, ... }:
 let
-  inherit (topLevel.config.me) username;
+  inherit (topLevel.config.identity) username;
 in
 {
   flake.modules.darwin.home-manager =

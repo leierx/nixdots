@@ -4,7 +4,7 @@ top: {
   flake.modules.homeManager.core =
     { lib, pkgs, ... }:
     let
-      inherit (top.config.me) username;
+      inherit (top.config.identity) username;
     in
     {
       home = {

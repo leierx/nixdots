@@ -4,7 +4,7 @@
 # lower-level module reaches the dendritic registry without `specialArgs`.
 topLevel@{ inputs, ... }:
 let
-  inherit (topLevel.config.me) username;
+  inherit (topLevel.config.identity) username;
 in
 {
   flake.modules.nixos.home-manager =

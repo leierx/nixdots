@@ -5,7 +5,7 @@ let
   inherit (lib) mkOption types;
 in
 {
-  options.me = {
+  options.identity = {
     username = mkOption {
       type = types.singleLineStr;
       description = "Login name of the primary user";
@@ -20,7 +20,7 @@ in
     };
   };
 
-  config.me = {
+  config.identity = {
     username = "leier";
     fullName = "Lars Smith Eier";
     email = "larssmitheier@protonmail.com";

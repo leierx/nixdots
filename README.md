@@ -53,10 +53,9 @@ or `import-tree` dependency.
 | `modules/flake/nixos-hosts.nix` | builds `nixosConfigurations` from `nixosHosts.<name>` |
 | `modules/flake/darwin-hosts.nix` | builds `darwinConfigurations` from `darwinHosts.<name>` |
 | `modules/flake/home-configurations.nix` | builds standalone `homeConfigurations` from `homeConfigs.<name>` |
-| `modules/flake/installer.nix` | an offline installer ISO per NixOS host |
+| `modules/flake/offline-installer.nix` | an offline installer ISO per NixOS host |
 | `modules/flake/checks.nix` | formatting and whole-fleet evaluation checks |
-| `modules/flake/me.nix` | username, full name and email, in one place |
-| `modules/flake/unfree.nix` | `nixpkgs.allowedUnfreePackages`, opted into per module |
+| `modules/flake/identity.nix` | username, full name and email, in one place |
 
 Modules stored in `flake.modules.<class>` are tagged with their module
 `_class`, so loading a home-manager module into a NixOS configuration is a
@@ -117,17 +116,14 @@ host's home configuration is written in the same host directory.
 ## Usage
 
 ```bash
-nix develop                     # rebuild / installer / update helpers
-rebuild thonkpad                # nixos-rebuild switch --flake .#thonkpad
-installer thonkpad              # build the offline installer ISO
+sudo nixos-rebuild switch --flake .#thonkpad
 nix flake check                 # formatting + evaluation of every host
 nix fmt                         # nixfmt-tree
 ```
 
 ## Using individual modules elsewhere
 
-Every aspect is published, both as `modules.<class>.<aspect>` and under the
-conventional output names:
+Every aspect is published as `modules.<class>.<aspect>`:
 
 ```nix
 {
@@ -139,7 +135,7 @@ conventional output names:
 # a NixOS configuration elsewhere
 { inputs, ... }:
 {
-  imports = [ inputs.nixdots.nixosModules.git ];
+  imports = [ inputs.nixdots.modules.nixos.git ];
 }
 ```
 
@@ -148,16 +144,16 @@ conventional output names:
 { inputs, ... }:
 {
   imports = [
-    inputs.nixdots.homeModules.hyprland # waybar, mako, hyprlock, bindings …
-    inputs.nixdots.homeModules.zsh
+    inputs.nixdots.modules.homeManager.hyprland # waybar, mako, hyprlock, bindings …
+    inputs.nixdots.modules.homeManager.zsh
   ];
 }
 ```
 
 Notes:
 
-- `nixosModules.hyprland` is the system half only; its home-manager half is
-  `homeModules.hyprland`, which reads `osConfig` for the compositor package
+- `modules.nixos.hyprland` is the system half only; its home-manager half is
+  `modules.homeManager.hyprland`, which reads `osConfig` for the compositor package
   and therefore needs the NixOS side.
 - Modules pin their dependencies to this flake's inputs (hyprland, disko,
   nixpkgs-unstable), so importing one does not mean matching versions.

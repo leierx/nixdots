@@ -1,5 +1,7 @@
 { inputs, ... }:
 {
+  flake.modules.nixos.core.nixpkgs.config.allowUnfree = true;
+
   flake.modules.nixos.unstable-nixpkgs =
     { config, pkgs, ... }:
     {

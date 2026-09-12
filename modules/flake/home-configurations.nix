@@ -14,8 +14,7 @@ let
     inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = import inputs.nixpkgs {
         system = cfg.system;
-        config.allowUnfreePredicate =
-          pkg: builtins.elem (lib.getName pkg) config.nixpkgs.allowedUnfreePackages;
+        config.allowUnfree = true;
       };
       modules = [
         config.flake.modules.homeManager.core

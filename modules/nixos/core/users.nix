@@ -1,6 +1,6 @@
 top@{ lib, ... }:
 let
-  inherit (top.config.me) username;
+  inherit (top.config.identity) username;
 in
 {
   flake.modules.nixos.user =
