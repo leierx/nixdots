@@ -1,5 +1,7 @@
 {
   flake.modules.nixos.network = {
+    networking.dhcpcd.enable = false;
+
     services.resolved = {
       enable = true;
       settings.Resolve = {

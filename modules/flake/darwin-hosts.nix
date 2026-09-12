@@ -11,8 +11,6 @@ let
   defaults = hostname: host: {
     networking.hostName = lib.mkDefault hostname;
     nixpkgs.hostPlatform = lib.mkDefault host.system;
-    # nix-darwin takes an int here, not a release string
-    system.stateVersion = lib.mkDefault 7;
   };
 
   mkHost =
@@ -20,7 +18,6 @@ let
     inputs.nix-darwin.lib.darwinSystem {
       modules = [
         (defaults hostname host)
-        config.flake.modules.darwin.core
         (config.flake.modules.darwin."darwinConfigurations/${hostname}" or { })
       ];
     };

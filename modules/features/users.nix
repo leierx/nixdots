@@ -1,9 +1,11 @@
+# The primary user, across every class: the NixOS account, the home-manager
+# identity, and root's locked password.
 top@{ lib, ... }:
 let
   inherit (top.config.identity) username;
 in
 {
-  flake.modules.nixos.user =
+  flake.modules.nixos.users =
     { config, pkgs, ... }:
     {
       users.groups.${username} = { };
@@ -28,7 +30,21 @@ in
         initialHashedPassword = "$6$IwGp276/71CzyoDG$RHOfZSCTLXN2NGk7T8QcYTx815KNhEx42ECUrNxYcdjAga0JD4EVzSgUus.WR2U44Epk8fpcnMdXTIJmYB4dd0";
       };
 
-      programs.zsh.enable = true; # required for the login shell
+      # login shell; the configuration itself lives in the zsh feature
+      programs.zsh.enable = true;
       programs.starship.enable = true;
+
+      users.users.root.hashedPassword = "!";
+    };
+
+  flake.modules.homeManager.users =
+    { pkgs, ... }:
+    {
+      home = {
+        username = lib.mkDefault username;
+        homeDirectory = lib.mkDefault (
+          if pkgs.stdenv.hostPlatform.isDarwin then "/Users/${username}" else "/home/${username}"
+        );
+      };
     };
 }

@@ -5,6 +5,15 @@ top: {
     description = "Symlink the neovim config to this path instead of the store, for live editing";
   };
 
+  config.flake.modules.nixos.neovim = {
+    programs.neovim = {
+      enable = true;
+      vimAlias = true;
+      defaultEditor = true;
+    };
+    programs.nano.enable = false;
+  };
+
   config.flake.modules.homeManager.neovim =
     { config, pkgs, ... }:
     {

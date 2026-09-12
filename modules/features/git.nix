@@ -1,4 +1,6 @@
 top: {
+  flake.modules.nixos.git.programs.git.enable = true;
+
   flake.modules.homeManager.git = {
     programs.git = {
       enable = true;

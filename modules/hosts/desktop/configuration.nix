@@ -2,6 +2,8 @@
   flake.modules.nixos."nixosConfigurations/desktop" =
     { pkgs, ... }:
     {
+      system.stateVersion = "26.05";
+
       # wireguard
       networking.firewall.checkReversePath = false;
 

@@ -1,12 +1,7 @@
-{ config, ... }:
 {
   flake.modules.homeManager."homeConfigurations/desktop" =
     { pkgs, lib, ... }:
     {
-      imports = with config.flake.modules.homeManager; [
-        desktop
-      ];
-
       programs.ssh = {
         enable = true;
         matchBlocks = {

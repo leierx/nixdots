@@ -17,7 +17,7 @@ let
         config.allowUnfree = true;
       };
       modules = [
-        config.flake.modules.homeManager.core
+        { home.stateVersion = lib.mkDefault lib.trivial.release; }
         (config.flake.modules.homeManager."homeConfigurations/${name}" or { })
       ];
     };

@@ -1,7 +1,7 @@
 # Builds `flake.nixosConfigurations` from `nixosHosts.<hostname>`.
 #
-# Each host is assembled from the `core` aspect plus everything any module
-# contributed to `flake.modules.nixos."nixosConfigurations/<hostname>"`.
+# A host is exactly what its own aspect imports: nothing is added implicitly,
+# so `modules/hosts/<hostname>/` states the whole machine.
 {
   config,
   lib,
@@ -14,7 +14,6 @@ let
     networking.hostId = lib.mkDefault (builtins.substring 0 8 (builtins.hashString "sha256" hostname));
     networking.hostName = lib.mkDefault hostname;
     nixpkgs.hostPlatform = lib.mkDefault host.system;
-    system.stateVersion = lib.mkDefault lib.trivial.release;
   };
 
   mkHost =
@@ -22,7 +21,6 @@ let
     lib.nixosSystem {
       modules = [
         (defaults hostname host)
-        config.flake.modules.nixos.core
         (config.flake.modules.nixos."nixosConfigurations/${hostname}" or { })
       ];
     };
