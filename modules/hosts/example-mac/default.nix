@@ -3,10 +3,6 @@
 {
   darwinHosts.example-mac = { };
 
-  flake.modules.darwin."darwinConfigurations/example-mac" = {
-    imports = with config.flake.modules.darwin; [ base ];
-
-    # nix-darwin takes an int here, not a release string
-    system.stateVersion = 7;
-  };
+  flake.modules.darwin."darwinConfigurations/example-mac".imports =
+    with config.flake.modules.darwin; [ base ];
 }

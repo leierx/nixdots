@@ -67,6 +67,11 @@ in
     };
   };
 
+  config.systems = [
+    "x86_64-linux"
+    "aarch64-darwin"
+  ];
+
   config.flake = {
     packages = collect "packages";
     checks = collect "checks";

@@ -2,8 +2,6 @@
   flake.modules.nixos."nixosConfigurations/thonkpad" =
     { pkgs, ... }:
     {
-      system.stateVersion = "26.05";
-
       # wireguard
       networking.firewall.checkReversePath = false;
 
