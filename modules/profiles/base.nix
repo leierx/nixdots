@@ -39,7 +39,7 @@ root: {
   flake.modules.homeManager.base.imports = with root.config.flake.modules.homeManager; [
     git
     locale
-    opencode
+    pi-agent
     tmux
     users
     xdg-user-dirs
