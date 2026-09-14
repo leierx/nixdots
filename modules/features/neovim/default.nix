@@ -1,6 +1,6 @@
-top: {
-  options.neovim.outOfStorePath = top.lib.mkOption {
-    type = top.lib.types.nullOr top.lib.types.path;
+root: {
+  options.neovim.outOfStorePath = root.lib.mkOption {
+    type = root.lib.types.nullOr root.lib.types.path;
     default = null;
     description = "Symlink the neovim config to this path instead of the store, for live editing";
   };
@@ -18,8 +18,8 @@ top: {
     { config, pkgs, ... }:
     {
       xdg.configFile."nvim".source =
-        if top.config.neovim.outOfStorePath != null then
-          config.lib.file.mkOutOfStoreSymlink top.config.neovim.outOfStorePath
+        if root.config.neovim.outOfStorePath != null then
+          config.lib.file.mkOutOfStoreSymlink root.config.neovim.outOfStorePath
         else
           ./assets;
 

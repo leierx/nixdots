@@ -16,7 +16,7 @@ let
       class = "perSystem";
       specialArgs = {
         inherit inputs system;
-        top = config;
+        root = config;
       };
       modules = [
         config.perSystem

@@ -1,8 +1,8 @@
 # The baseline every machine of mine gets. Hosts import it explicitly; the
 # builders inject nothing.
-top: {
+root: {
   flake.modules.nixos.base = {
-    imports = with top.config.flake.modules.nixos; [
+    imports = with root.config.flake.modules.nixos; [
       boot
       doas
       documentation
@@ -20,23 +20,23 @@ top: {
       users
     ];
 
-    home-manager.users.${top.config.identity.username}.imports = [
-      top.config.flake.modules.homeManager.base
+    home-manager.users.${root.config.identity.username}.imports = [
+      root.config.flake.modules.homeManager.base
     ];
   };
 
   flake.modules.darwin.base = {
-    imports = with top.config.flake.modules.darwin; [
+    imports = with root.config.flake.modules.darwin; [
       home-manager
       nixpkgs
     ];
 
-    home-manager.users.${top.config.identity.username}.imports = [
-      top.config.flake.modules.homeManager.base
+    home-manager.users.${root.config.identity.username}.imports = [
+      root.config.flake.modules.homeManager.base
     ];
   };
 
-  flake.modules.homeManager.base.imports = with top.config.flake.modules.homeManager; [
+  flake.modules.homeManager.base.imports = with root.config.flake.modules.homeManager; [
     git
     locale
     opencode

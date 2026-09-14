@@ -1,8 +1,8 @@
 # The primary user, across every class: the NixOS account, the home-manager
 # identity, and root's locked password.
-top@{ lib, ... }:
+root@{ lib, ... }:
 let
-  inherit (top.config.identity) username;
+  inherit (root.config.identity) username;
 in
 {
   flake.modules.nixos.users =

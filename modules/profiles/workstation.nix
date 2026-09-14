@@ -1,8 +1,8 @@
 # A machine I sit in front of: display manager, audio, the wayland session
 # and the graphical tooling that goes with them.
-top: {
+root: {
   flake.modules.nixos.workstation = {
-    imports = with top.config.flake.modules.nixos; [
+    imports = with root.config.flake.modules.nixos; [
       display-manager
       fonts
       gtk
@@ -11,12 +11,12 @@ top: {
       sound
     ];
 
-    home-manager.users.${top.config.identity.username}.imports = [
-      top.config.flake.modules.homeManager.workstation
+    home-manager.users.${root.config.identity.username}.imports = [
+      root.config.flake.modules.homeManager.workstation
     ];
   };
 
-  flake.modules.homeManager.workstation.imports = with top.config.flake.modules.homeManager; [
+  flake.modules.homeManager.workstation.imports = with root.config.flake.modules.homeManager; [
     cursor
     gtk
     hyprland

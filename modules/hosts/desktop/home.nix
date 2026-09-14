@@ -1,4 +1,4 @@
-{
+root: {
   flake.modules.homeManager."homeConfigurations/desktop" =
     { pkgs, lib, ... }:
     {

@@ -1,5 +1,4 @@
-top: {
-
+root: {
   flake.modules.homeManager.hyprland =
     {
       config,
@@ -8,7 +7,7 @@ top: {
       ...
     }:
     let
-      colors = top.config.palettes.ui;
+      colors = root.config.palettes.ui;
     in
     {
       # dependencies

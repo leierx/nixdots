@@ -1,9 +1,9 @@
-top: {
+root: {
 
   flake.modules.homeManager.rofi =
     { pkgs, lib, ... }:
     let
-      colors = top.config.palettes.ui;
+      colors = root.config.palettes.ui;
 
       varBlock = lib.concatMapStringsSep "\n" (name: "            ${name}: ${colors.${name}};") (
         lib.attrNames colors

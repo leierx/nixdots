@@ -1,9 +1,9 @@
-top: {
+root: {
 
   flake.modules.homeManager.wezterm =
     { pkgs, ... }:
     let
-      colors = top.config.palettes.ui;
+      colors = root.config.palettes.ui;
     in
     {
       home.packages = [ pkgs.hack-font ];

@@ -1,12 +1,12 @@
 # Home-manager itself: the NixOS and nix-darwin wiring that evaluates this
 # host's home configuration for the primary user.
-topLevel@{ inputs, lib, ... }:
+root@{ inputs, lib, ... }:
 let
-  inherit (topLevel.config.identity) username;
+  inherit (root.config.identity) username;
 
   userModules = hostName: [
     { home.stateVersion = lib.mkDefault lib.trivial.release; }
-    (topLevel.config.flake.modules.homeManager."homeConfigurations/${hostName}" or { })
+    (root.config.flake.modules.homeManager."homeConfigurations/${hostName}" or { })
   ];
 
   settings = {

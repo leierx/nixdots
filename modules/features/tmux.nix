@@ -1,9 +1,9 @@
-top: {
+root: {
 
   flake.modules.homeManager.tmux =
     { pkgs, ... }:
     let
-      colors = top.config.palettes.kanagawa;
+      colors = root.config.palettes.kanagawa;
     in
     {
       home = {

@@ -11,7 +11,7 @@ once across every class it touches:
 
 ```nix
 # modules/features/git.nix
-top: {
+root: {
   flake.modules.nixos.git.programs.git.enable = true;
   flake.modules.homeManager.git = { ... };
 }
