@@ -5,7 +5,7 @@
       home.sessionVariables.PI_SKIP_VERSION_CHECK = "1";
 
       home.packages = with pkgs; [
-        pi-coding-agent
+        pkgs.unstable.pi-coding-agent
         git
         ripgrep
         fd
