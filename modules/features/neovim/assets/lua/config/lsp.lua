@@ -24,22 +24,14 @@ for _, name in ipairs(servers) do
 end
 
 vim.lsp.enable(servers)
-vim.lsp.inlay_hint.enable(true)
 
-vim.api.nvim_create_autocmd("LspAttach", {
-  desc = "Request workspace-wide diagnostics once per client",
-  callback = function(args)
-    local client = vim.lsp.get_client_by_id(args.data.client_id)
-    -- Clients without filetypes are in-process auxiliaries with nothing to
-    -- diagnose.
-    if not client or client.config.filetypes == nil or client._workspace_diag_set then
-      return
-    end
-    client._workspace_diag_set = true
-    if client:supports_method("workspace/diagnostic", args.buf) then
+vim.lsp.config('*', {
+  on_attach = function(client, bufnr)
+    -- some clients support workspace diagnostics natively
+    if client:supports_method("workspace/diagnostic", bufnr) then
       vim.lsp.buf.workspace_diagnostics({ client_id = client.id })
     else
-      require("workspace-diagnostics").populate_workspace_diagnostics(client, args.buf)
+      require("workspace-diagnostics").populate_workspace_diagnostics(client, bufnr)
     end
-  end,
+  end
 })

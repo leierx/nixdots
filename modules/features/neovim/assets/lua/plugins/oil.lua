@@ -31,3 +31,29 @@ require("oil-git").setup({
   show_directory_highlights = true,
   show_ignored_files = false,
 })
+
+-- Open the preview when oil is entered from a file, but respect a manual close
+-- while browsing within oil.
+local oil_aug = vim.api.nvim_create_augroup("OilAutoPreview", {})
+vim.api.nvim_create_autocmd("BufLeave", {
+  group = oil_aug,
+  callback = function()
+    if not require("oil.util").is_oil_bufnr(0) then
+      vim.w.oil_want_preview = true
+    end
+  end,
+})
+vim.api.nvim_create_autocmd("BufEnter", {
+  group = oil_aug,
+  callback = function()
+    if vim.bo.filetype ~= "oil" or not vim.w.oil_want_preview then
+      return
+    end
+    vim.w.oil_want_preview = false
+    require("oil.util").run_after_load(0, function()
+      if require("oil").get_cursor_entry() and not require("oil.util").get_preview_win() then
+        require("oil").open_preview()
+      end
+    end)
+  end,
+})

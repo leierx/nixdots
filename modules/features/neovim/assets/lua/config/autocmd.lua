@@ -59,26 +59,6 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
--- trim trailing blank lines on save; the single trailing newline itself is
--- 'fixeol's job (buffer lines never include it, so appending an empty line
--- here would write a blank line instead)
-vim.api.nvim_create_autocmd("BufWritePre", {
-  desc = "Trim trailing blank lines",
-  callback = function(args)
-    if vim.bo[args.buf].binary then
-      return
-    end
-    local lines = vim.api.nvim_buf_get_lines(args.buf, 0, -1, false)
-    local n = #lines
-    while n > 1 and lines[n] == "" do
-      n = n - 1
-    end
-    if n < #lines then
-      vim.api.nvim_buf_set_lines(args.buf, n, -1, false, {})
-    end
-  end,
-})
-
 -- `:restart` drops command-line files; reopen the focused file on the new server
 local function restart_file()
   local function is_file(buf)
@@ -101,4 +81,3 @@ vim.api.nvim_create_user_command("Restart", function()
 end, { desc = "Restart, reopening the focused file" })
 
 vim.cmd([[cnoreabbrev <expr> restart (getcmdtype() ==# ':' && getcmdline() ==# 'restart') ? 'Restart' : 'restart']])
-

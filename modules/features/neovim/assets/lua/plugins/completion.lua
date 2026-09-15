@@ -3,47 +3,28 @@ vim.pack.add({
   { src = "https://github.com/saghen/blink.cmp",            version = vim.version.range("1.*") },
 })
 
--- Path items carry a real filesystem name; everything else is an LSP kind.
--- mini.icons matches "file" on the basename's extension, so the label suffices.
-local function icon_args(ctx)
-  if ctx.source_name ~= "Path" then return "lsp", ctx.kind end
-  return ctx.kind == "Folder" and "directory" or "file", ctx.label
-end
-
 require("blink.cmp").setup({
-  keymap = { preset = "enter" },
-
-  -- Native vim.snippet expansion; friendly-snippets is picked up automatically.
-  snippets = { preset = "default" },
-
+  snippets = { preset = "luasnip" },
+  sources = { default = { "lsp", "path", "snippets", "buffer" }, },
+  signature = { enabled = true },
+  keymap = { preset = "enter", ["<C-y>"] = { "select_and_accept" }, },
   completion = {
     menu = {
-      border = "rounded",
-      draw = {
-        components = {
-          kind_icon = {
-            text = function(ctx)
-              local icon = MiniIcons.get(icon_args(ctx))
-              return (icon or ctx.kind_icon) .. ctx.icon_gap
-            end,
-            highlight = function(ctx)
-              local _, hl = MiniIcons.get(icon_args(ctx))
-              return hl or ctx.kind_hl
-            end,
-          },
-        },
+      border = "none",
+      draw = { treesitter = { "lsp" } },
+    },
+    documentation = {
+      auto_show = true,
+      auto_show_delay_ms = 500,
+    },
+    accept = {
+      auto_brackets = {
+        enabled = true,
       },
     },
-    documentation = { auto_show = true, auto_show_delay_ms = 200, window = { border = "rounded" } },
-
-    ghost_text = { enabled = true },
+    ghost_text = {
+      enabled = true,
+      show_with_selection = true,
+    },
   },
-
-  signature = { enabled = true, window = { border = "rounded" } },
-
-  sources = {
-    default = { "lsp", "path", "snippets", "buffer" },
-  },
-
-  fuzzy = { implementation = "prefer_rust" },
 })

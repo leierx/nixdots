@@ -24,13 +24,13 @@ o.tabstop = 2 -- visual width of a tab character
 o.number = true
 o.relativenumber = true
 o.scrolloff = 4 -- keep a little context above/below the cursor
+o.fixeol = true -- always ensure a final newline
 
 -- Search
 o.ignorecase = true -- case-insensitive search...
 o.smartcase = true -- ...unless the pattern contains uppercase
 
 -- UI helpers
-o.signcolumn = "yes" -- always show sign column to avoid text jumping
 o.updatetime = 250 -- faster CursorHold for diagnostics, gitsigns, etc.
 o.inccommand = "split" -- live preview of :s substitutions
 
