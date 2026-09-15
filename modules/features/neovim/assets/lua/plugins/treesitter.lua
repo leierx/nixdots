@@ -1,4 +1,6 @@
-vim.pack.add({ "https://github.com/nvim-treesitter/nvim-treesitter" })
+vim.pack.add({
+  { src = "https://github.com/nvim-treesitter/nvim-treesitter", version = "main" },
+})
 
 -- nvim-treesitter "main" (the rewrite): the plugin only ships parsers and
 -- queries; highlighting is Neovim's own vim.treesitter.start(). Parser

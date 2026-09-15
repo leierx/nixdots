@@ -22,17 +22,20 @@ local function with_writable_config(fn)
   end
 end
 
-vim.pack.add = with_writable_config(vim.pack.add)
+local pack_add = vim.pack.add
+vim.pack.add = with_writable_config(function(specs, opts)
+  return pack_add(specs, vim.tbl_extend("force", { confirm = false }, opts or {}))
+end)
 vim.pack.update = with_writable_config(vim.pack.update)
 vim.pack.del = with_writable_config(vim.pack.del)
 
-local stale = vim.iter(vim.pack.get())
+require("config")
+require("plugins")
+
+local stale = vim.iter(vim.pack.get(nil, { info = false }))
     :filter(function(p) return not p.active end)
     :map(function(p) return p.spec.name end)
     :totable()
 if #stale > 0 then
   vim.pack.del(stale)
 end
-
-require("config")
-require("plugins")

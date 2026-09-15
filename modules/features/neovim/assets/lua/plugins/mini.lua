@@ -1,4 +1,6 @@
-vim.pack.add({ "https://github.com/nvim-mini/mini.nvim" })
+vim.pack.add({
+  { src = "https://github.com/nvim-mini/mini.nvim", version = "stable" },
+})
 
 -- icons, replace nvim_web_devicons
 require("mini.icons").setup()
