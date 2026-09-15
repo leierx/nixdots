@@ -12,7 +12,7 @@ end
 
 require("blink.cmp").setup({
   -- 'default' = <C-y> accept, <C-n>/<C-p> cycle, <C-space> menu/docs, <C-k>
-  keymap = { preset = "super-tab" },
+  keymap = { preset = "enter" },
 
   -- Native vim.snippet expansion; friendly-snippets is picked up automatically.
   snippets = { preset = "default" },

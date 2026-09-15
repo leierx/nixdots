@@ -22,9 +22,8 @@ local function with_writable_config(fn)
   end
 end
 
-local pack_add = vim.pack.add
 vim.pack.add = with_writable_config(function(specs, opts)
-  return pack_add(specs, vim.tbl_extend("force", { confirm = false }, opts or {}))
+  return vim.pack.add(specs, vim.tbl_extend("force", { confirm = false }, opts or {}))
 end)
 vim.pack.update = with_writable_config(vim.pack.update)
 vim.pack.del = with_writable_config(vim.pack.del)
