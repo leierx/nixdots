@@ -79,3 +79,26 @@ vim.api.nvim_create_autocmd("BufWritePre", {
   end,
 })
 
+-- `:restart` drops command-line files; reopen the focused file on the new server
+local function restart_file()
+  local function is_file(buf)
+    return buf > 0
+      and vim.api.nvim_buf_is_loaded(buf)
+      and vim.bo[buf].buftype == ""
+      and vim.api.nvim_buf_get_name(buf) ~= ""
+  end
+
+  for _, buf in ipairs({ vim.api.nvim_get_current_buf(), vim.fn.bufnr("#") }) do
+    if is_file(buf) then
+      return vim.api.nvim_buf_get_name(buf)
+    end
+  end
+end
+
+vim.api.nvim_create_user_command("Restart", function()
+  local file = restart_file()
+  vim.cmd(file and ("restart edit " .. vim.fn.fnameescape(file)) or "restart")
+end, { desc = "Restart, reopening the focused file" })
+
+vim.cmd([[cnoreabbrev <expr> restart (getcmdtype() ==# ':' && getcmdline() ==# 'restart') ? 'Restart' : 'restart']])
+

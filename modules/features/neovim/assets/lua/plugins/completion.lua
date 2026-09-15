@@ -11,7 +11,6 @@ local function icon_args(ctx)
 end
 
 require("blink.cmp").setup({
-  -- 'default' = <C-y> accept, <C-n>/<C-p> cycle, <C-space> menu/docs, <C-k>
   keymap = { preset = "enter" },
 
   -- Native vim.snippet expansion; friendly-snippets is picked up automatically.

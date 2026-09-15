@@ -54,6 +54,31 @@ k.set("n", "s", "<Nop>", { desc = "use `cl` or `r`" })
 -- oil.nvim
 k.set("n", "<leader>e", ":Oil<cr>", { silent = true })
 
+-- Reveal the selected file in oil instead of opening it
+local function reveal_in_oil(path)
+  local dir, name = vim.fs.dirname(path), vim.fs.basename(path)
+  require("oil").open(dir, nil, function()
+    for lnum = 1, vim.api.nvim_buf_line_count(0) do
+      local entry = require("oil").get_entry_on_line(0, lnum)
+      if entry and entry.name == name then
+        vim.api.nvim_win_set_cursor(0, { lnum, 0 })
+        break
+      end
+    end
+  end)
+end
+
+k.set("n", "<leader>E", function()
+  require("fzf-lua").files({
+    cwd = project_root(),
+    actions = {
+      default = function(selected, opts)
+        reveal_in_oil(require("fzf-lua.path").entry_to_file(selected[1], opts).path)
+      end,
+    },
+  })
+end, { desc = "Find files, reveal in oil" })
+
 -- quicker.nvim
 k.set("n", "<leader>qf", function() require("quicker").toggle() end, { desc = "Toggle quickfix" })
 
