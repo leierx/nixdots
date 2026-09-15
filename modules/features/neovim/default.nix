@@ -27,6 +27,10 @@ root: {
         ripgrep
         fd
         fzf
+        # nvim-treesitter (main) compiles parsers with these
+        tree-sitter
+        gcc
+        # LSP servers (defaults from nvim-lspconfig, overrides in assets/lsp/)
         lua-language-server
         nixd
         nixfmt

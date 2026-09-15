@@ -5,7 +5,7 @@
       home.sessionVariables.PI_SKIP_VERSION_CHECK = "1";
 
       home.packages = with pkgs; [
-        pkgs.unstable.pi-coding-agent
+        unstable.pi-coding-agent
         git
         ripgrep
         fd
@@ -24,46 +24,9 @@
           enableInstallTelemetry = false;
           quietStartup = true;
           defaultProjectTrust = "ask";
-          defaultProvider = "kimi-coding";
-          defaultModel = "kimi-coding/kimi-k3";
-          defaultThinkingLevel = "medium";
-          modelThinkingLevels = {
-            "kimi-coding/kimi-k3" = "medium";
-          };
-          subagents = {
-            defaultProvider = "deepseek";
-            defaultModel = "deepseek/deepseek-v4-flash";
-            agentOverrides = {
-              scout = {
-                model = "deepseek/deepseek-v4-flash";
-                thinking = "low";
-              };
-              delegate = {
-                model = "deepseek/deepseek-v4-flash";
-                thinking = "low";
-              };
-              researcher = {
-                model = "deepseek/deepseek-v4-flash";
-                thinking = "medium";
-              };
-              worker = {
-                model = "kimi-coding/kimi-k3";
-                thinking = "high";
-              };
-              reviewer = {
-                model = "kimi-coding/kimi-k3";
-                thinking = "high";
-              };
-              evidence-auditor = {
-                model = "kimi-coding/kimi-k3";
-                thinking = "high";
-              };
-              oracle = {
-                model = "kimi-coding/kimi-k3";
-                thinking = "high";
-              };
-            };
-          };
+          defaultProvider = "opencode-go";
+          defaultModel = "deepseek-v4.1-flash";
+          defaultThinkingLevel = "high";
           defaultTools = [
             "read"
             "bash"

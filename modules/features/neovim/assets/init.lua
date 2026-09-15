@@ -1,33 +1,38 @@
-require("options")
-require("keymap")
-require("autocmd")
-require("filetypes")
+-- ~/.config/nvim is a nix store symlink (read-only), but vim.pack writes its
+-- lockfile to stdpath('config'). Redirect stdpath('config') to a writable
+-- directory around every vim.pack call so add/update/del still work.
+local writable_config = vim.fs.joinpath(vim.fn.stdpath("data"), "nvim-pack-config")
+local orig_stdpath = vim.fn.stdpath
 
--- Bootstrap lazy.nvim
-local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not (vim.uv or vim.loop).fs_stat(lazypath) then
-  local lazyrepo = "https://github.com/folke/lazy.nvim.git"
-  local out = vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
-  if vim.v.shell_error ~= 0 then
-    vim.api.nvim_echo({ { "Failed to clone lazy.nvim:\n", "ErrorMsg" }, { out, "WarningMsg" }, { "\nPress any key to exit..." } }, true, {})
-    vim.fn.getchar()
-    os.exit(1)
+local function with_writable_config(fn)
+  return function(...)
+    ---@diagnostic disable-next-line: duplicate-set-field
+    vim.fn.stdpath = function(what)
+      if what == "config" then
+        return writable_config
+      end
+      return orig_stdpath(what)
+    end
+    local ok, result = pcall(fn, ...)
+    vim.fn.stdpath = orig_stdpath
+    if not ok then
+      error(result)
+    end
+    return result
   end
 end
-vim.opt.rtp:prepend(lazypath)
 
--- Setup
-require("lazy").setup({
-  -- cachedir instead of ~/config/nvim
-  lockfile = vim.fn.stdpath("cache") .. "/lazy-lock.json",
-  -- makes it a little nicer
-  ui = { border = "rounded" },
-  install = { colorscheme = { "kanagawa", "habamax" } },
-  -- less overhead
-  change_detection = { enabled = false, notify = false },
-  -- Plugins
-  spec = { { import = "plugins" } },
-  -- automagically check for updates, but dont notify me
-  checker = { enabled = true, notify = false },
-})
+vim.pack.add = with_writable_config(vim.pack.add)
+vim.pack.update = with_writable_config(vim.pack.update)
+vim.pack.del = with_writable_config(vim.pack.del)
 
+local stale = vim.iter(vim.pack.get())
+    :filter(function(p) return not p.active end)
+    :map(function(p) return p.spec.name end)
+    :totable()
+if #stale > 0 then
+  vim.pack.del(stale)
+end
+
+require("config")
+require("plugins")
