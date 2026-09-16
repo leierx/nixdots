@@ -1,5 +1,14 @@
-{
-  flake.modules.homeManager.pi-agent =
+root: {
+  options.piAgent.settings = root.lib.mkOption {
+    type = root.lib.types.attrsOf root.lib.types.json;
+    default = { };
+    description = ''
+      Extra settings for ~/.pi/agent/settings.json, merged over the shared
+      defaults; e.g. pin a default provider, model or thinking level.
+    '';
+  };
+
+  config.flake.modules.homeManager.pi-agent =
     { pkgs, ... }:
     {
       home.sessionVariables.PI_SKIP_VERSION_CHECK = "1";
@@ -20,34 +29,33 @@
       ];
 
       home.file = {
-        ".pi/agent/settings.json".text = builtins.toJSON {
-          enableInstallTelemetry = false;
-          quietStartup = true;
-          defaultProjectTrust = "ask";
-          defaultProvider = "opencode-go";
-          defaultModel = "deepseek-v4.1-flash";
-          defaultThinkingLevel = "high";
-          defaultTools = [
-            "read"
-            "bash"
-            "edit"
-            "write"
-            "grep"
-            "find"
-            "ls"
-          ];
-          enableSkillCommands = true;
-          npmCommand = [ "${pkgs.nodejs}/bin/npm" ];
-          compaction = {
-            enabled = true;
-            reserveTokens = 16384;
-            keepRecentTokens = 20000;
-          };
-          packages = [
-            "npm:pi-web-fetch@1.1.0"
-            "npm:pi-subagents@0.68.0"
-          ];
-        };
+        ".pi/agent/settings.json".text = builtins.toJSON (
+          {
+            enableInstallTelemetry = false;
+            quietStartup = true;
+            defaultTools = [
+              "read"
+              "bash"
+              "edit"
+              "write"
+              "grep"
+              "find"
+              "ls"
+            ];
+            enableSkillCommands = true;
+            npmCommand = [ "${pkgs.nodejs}/bin/npm" ];
+            compaction = {
+              enabled = true;
+              reserveTokens = 16384;
+              keepRecentTokens = 20000;
+            };
+            packages = [
+              "npm:pi-web-fetch@1.1.0"
+              "npm:pi-subagents@0.68.0"
+            ];
+          }
+          // root.config.piAgent.settings
+        );
 
         ".pi/agent/APPEND_SYSTEM.md".text = ''
           - Be plain and concise. No filler, preamble, or corporate tone.
@@ -55,9 +63,10 @@
           - Never fabricate context, file contents, command output, or parameter values. Gather information with tools first. Ask the user only when tools can't answer it. If you make a minor assumption, say so.
           - Confirm before destructive or irreversible actions.
           - Don't create documentation (READMEs, summary or changelog .md files) unless asked.
+          - Comments: default to none. One line unless the context genuinely can't fit. No banners or headers comments. In code you're changing, drop comments that restate the code; leave unrelated comments alone.
         '';
 
-        ".pi/agent/skills/commit-style.md".text = ''
+        ".pi/agent/skills/commit-style/SKILL.md".text = ''
           ---
           name: commit-style
           description: Format git commit messages using Conventional Commits with a DCO sign-off line.
@@ -74,7 +83,7 @@
           - Never write "WIP", "misc", or "updates" as the subject — ask what actually changed.
         '';
 
-        ".pi/agent/skills/comment-policy.md".text = ''
+        ".pi/agent/skills/comment-policy/SKILL.md".text = ''
           ---
           name: comment-policy
           description: Enforce a strict minimal-comment policy when writing or reviewing code.

@@ -1,5 +1,11 @@
 root: {
-  flake.modules.homeManager."homeConfigurations/desktop" =
+  config.piAgent.settings = {
+    defaultProvider = "opencode-go";
+    defaultModel = "deepseek-v4.1-flash";
+    defaultThinkingLevel = "high";
+  };
+
+  config.flake.modules.homeManager."homeConfigurations/desktop" =
     { pkgs, lib, ... }:
     {
       programs.ssh = {
