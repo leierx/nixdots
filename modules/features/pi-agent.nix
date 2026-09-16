@@ -65,7 +65,7 @@ root: {
           - Surface dead code, stale artifacts and small clearly-correct fixes in your reply and offer to do them; don't bury actionable findings in documentation.
           - Don't create documentation (READMEs, summary or changelog .md files) unless asked.
           - Comments: default to none. One line unless the context genuinely can't fit. No banners or headers comments. In code you're changing, drop comments that restate the code; leave unrelated comments alone.
-          - Prefer the direct expression. Skip single-use indirection and premature abstraction.
+          - Prefer the direct expression: inline and use locals until something repeats ~3 times before extracting helpers. Extract earlier only when it clearly aids readability (long functions, distinct named concepts, logic shared across files). No speculative abstractions.
         '';
 
         ".pi/agent/skills/commit-style/SKILL.md".text = ''
