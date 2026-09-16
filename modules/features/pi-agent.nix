@@ -45,42 +45,16 @@
           };
           packages = [
             "npm:pi-web-fetch@1.1.0"
-            "npm:pi-subagents@0.67.0"
+            "npm:pi-subagents@0.68.0"
           ];
         };
 
-        ".pi/agent/AGENTS.md".text = ''
-          # Global agent instructions
-
-          Cross-project working preferences. Project `AGENTS.md` files win where they disagree.
-
-          ## Reading and searching
-
-          - Use `read` for files, not `cat`/`head`/`tail`. It truncates and paginates.
-          - Use `grep` and `find` for search; use `ls` for listing.
-          - Reserve `bash` for actual commands. Redirect large output to a file and grep it.
-
-          ## Editing
-
-          - Use `edit` for targeted changes, `write` for new files or full rewrites.
-          - Batch multiple edits to one file into a single `edit` call.
-
-          ## Git safety
-
-          - `git checkout <path>` restores from the index, not HEAD. Check `git diff --cached --name-only` first, or use `git restore --source=HEAD <path>`.
-          - Use `git worktree add` to inspect another revision instead of `git stash`.
-
-          ## Delegation
-
-          - For unfamiliar codebases, delegate to `scout` subagents in parallel.
-          - For mechanical work, define an invariant first, then delegate.
-          - Send reviews to a fresh-context `reviewer`, not the author.
-
-          ## Style
-
-          - Be concise. Report conclusions and evidence, not narration.
-          - Comments explain *why*, never *what*.
-          - Commits: Conventional Commits, signed off with `git commit -s`.
+        ".pi/agent/APPEND_SYSTEM.md".text = ''
+          - Be plain and concise. No filler, preamble, or corporate tone.
+          - Delegate coding work to pi-subagents when it's parallelizable, context-heavy, or clearly matches a specialist agent. Handle small, local edits directly. Before delegating, state in one line which agent and why.
+          - Never fabricate context, file contents, command output, or parameter values. Gather information with tools first. Ask the user only when tools can't answer it. If you make a minor assumption, say so.
+          - Confirm before destructive or irreversible actions.
+          - Don't create documentation (READMEs, summary or changelog .md files) unless asked.
         '';
 
         ".pi/agent/skills/commit-style.md".text = ''

@@ -23,6 +23,6 @@ root: {
     neovim
     qt
     rofi
-    wezterm
+    kitty
   ];
 }

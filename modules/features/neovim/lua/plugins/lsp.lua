@@ -8,6 +8,7 @@ local servers = {
   "jsonls",
   "yamlls",
   "tofu_ls",
+  "gopls",
 }
 
 for _, name in ipairs(servers) do

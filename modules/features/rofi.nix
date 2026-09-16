@@ -19,7 +19,7 @@ root: {
         enable = true;
         font = "Hack 16";
         cycle = false;
-        terminal = "wezterm";
+        terminal = "kitty";
         extraConfig = {
           show-icons = true;
           drun-match-fields = "name,exec,generic,categories,keywords";

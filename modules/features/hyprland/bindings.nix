@@ -39,7 +39,7 @@
             # launchers
             (mkBind {
               key = "Return";
-              dispatcher = ''hl.dsp.exec_cmd("${pkgs.wezterm}/bin/wezterm")'';
+              dispatcher = ''hl.dsp.exec_cmd("${pkgs.kitty}/bin/kitty")'';
             })
             (mkBind {
               key = "d";

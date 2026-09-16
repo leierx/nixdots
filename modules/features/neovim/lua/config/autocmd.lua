@@ -5,6 +5,17 @@ vim.api.nvim_create_autocmd("TextYankPost", {
   end,
 })
 
+-- gofmt insists on tabs, unlike the 2-space global default
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "go",
+  callback = function()
+    vim.opt_local.expandtab = false
+    vim.opt_local.tabstop = 4
+    vim.opt_local.shiftwidth = 4
+    vim.opt_local.softtabstop = 4
+  end,
+})
+
 -- no auto-continue comments
 vim.api.nvim_create_autocmd({ "FileType" }, {
   callback = function()

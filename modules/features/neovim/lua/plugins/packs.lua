@@ -12,7 +12,6 @@ vim.pack.add({
   "https://github.com/nvim-lualine/lualine.nvim",
   "https://github.com/stevearc/oil.nvim",
   "https://github.com/malewicz1337/oil-git.nvim",
-  "https://github.com/rachartier/tiny-cmdline.nvim",
   "https://github.com/stevearc/conform.nvim",
   "https://github.com/neovim/nvim-lspconfig",
   "https://github.com/b0o/SchemaStore.nvim",

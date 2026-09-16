@@ -6,6 +6,5 @@ require("plugins.mini") -- devicons mock must precede icon consumers
 require("plugins.misc")
 require("plugins.fzf-lua")
 require("plugins.oil")
-require("plugins.tiny-cmdline")
 require("plugins.completion")
 require("plugins.floaterminal")

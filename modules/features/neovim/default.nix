@@ -21,7 +21,7 @@ root: {
         if root.config.neovim.outOfStorePath != null then
           config.lib.file.mkOutOfStoreSymlink root.config.neovim.outOfStorePath
         else
-          ./assets;
+          ./.;
 
       home.packages = with pkgs; [
         neovim
@@ -32,7 +32,7 @@ root: {
         # nvim-treesitter (main) compiles parsers with these
         tree-sitter
         gcc
-        # LSP servers (defaults from nvim-lspconfig, overrides in assets/lsp/)
+        # LSP servers (defaults from nvim-lspconfig, overrides in lsp/)
         lua-language-server
         nixd
         nixfmt
@@ -41,6 +41,10 @@ root: {
         vscode-langservers-extracted
         yaml-language-server
         tofu-ls
+        # Go (only what nvim drives: gopls, conform formatters)
+        gopls
+        gotools # goimports
+        gofumpt
       ];
     };
 }

@@ -33,7 +33,6 @@ require("blink.cmp").setup({
     accept = {
       auto_brackets = { enabled = true },
     },
-    ghost_text = { enabled = true },
     trigger = { show_in_snippet = false },
   },
 })
