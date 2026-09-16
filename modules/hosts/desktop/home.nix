@@ -5,6 +5,8 @@ root: {
     defaultThinkingLevel = "high";
   };
 
+  config.nixIndex.smallDatabase = true;
+
   config.flake.modules.homeManager."homeConfigurations/desktop" =
     { pkgs, lib, ... }:
     {

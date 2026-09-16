@@ -105,6 +105,7 @@ makes `inputs.nixdots.modules.nixos.<aspect>` work from another flake.
 | `systems` | `listOf str` | Default `[ "x86_64-linux" "aarch64-darwin" ]`. Drives `perSystem`. |
 | `perSystem` | `deferredModule` | Evaluated once per `systems` entry. |
 | `neovim.outOfStorePath` | `nullOr path` | When set, symlinks the nvim config out of the store for live editing. |
+| `nixIndex.smallDatabase` | `bool` | Use the small (bin/-only) nix-index DB instead of the full one. |
 | `piAgent.settings` | `attrsOf json` | Merged over shared pi defaults; set per host. |
 
 Flake outputs declared: `modules`, `nixosConfigurations`,
@@ -171,7 +172,7 @@ and read `root.config.<option>`.
 | `neovim/` | nixos, homeManager | `neovim` | see below |
 | `network.nix` | nixos | `network` | systemd-resolved + DoT/DNSSEC, NetworkManager, nftables, no DHCP |
 | `nix.nix` | nixos | `nix` | GC, flakes, cache, nixpkgs registry -> input |
-| `nix-index.nix` | homeManager | `nix-index` | prebuilt nix-index DB (`nix-index-database` input) + wrapped comma |
+| `nix-index.nix` | homeManager | `nix-index` | prebuilt nix-index DB (`nix-index-database` input) + wrapped comma; full by default, `nixIndex.smallDatabase` switches to the small DB |
 | `nixpkgs.nix` | nixos, darwin | `nixpkgs`, `unstable-nixpkgs` | `allowUnfree`; overlay exposing `pkgs.unstable` |
 | `packages.nix` | nixos | `packages` | jq, fzf, fastfetch, tree |
 | `pi-agent.nix` | homeManager | `pi-agent` (+ option `piAgent.settings`) | pi CLI + its `~/.pi/agent` files and skills |
