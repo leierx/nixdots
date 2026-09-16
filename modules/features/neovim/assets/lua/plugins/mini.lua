@@ -4,6 +4,7 @@ MiniIcons.mock_nvim_web_devicons()
 
 require("mini.cursorword").setup()
 require("mini.pairs").setup()
+require("mini.surround").setup()
 require("mini.jump").setup({ silent = true })
 
 require("mini.indentscope").setup({

@@ -4,7 +4,6 @@ vim.pack.add({
   { src = "https://github.com/saghen/blink.cmp", version = vim.version.range("1.*") },
   "https://github.com/rafamadriz/friendly-snippets",
   "https://github.com/rebelot/kanagawa.nvim",
-  "https://github.com/kylechui/nvim-surround",
   "https://github.com/lewis6991/gitsigns.nvim",
   "https://github.com/wansmer/treesj",
   "https://github.com/rachartier/tiny-inline-diagnostic.nvim",

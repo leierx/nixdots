@@ -21,4 +21,3 @@ require("conform").setup({
 require("treesj").setup({ use_default_keymaps = false })
 
 require("tiny-inline-diagnostic").setup()
-vim.diagnostic.config()

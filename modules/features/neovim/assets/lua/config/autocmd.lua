@@ -51,7 +51,7 @@ vim.api.nvim_create_autocmd("VimResized", {
 -- close utility buffers with q / <Esc>
 vim.api.nvim_create_autocmd("FileType", {
   desc = "Close some buffers with q / <Esc>",
-  pattern = { "help", "qf", "lspinfo", "checkhealth", "startuptime" },
+  pattern = { "help", "qf", "checkhealth", "startuptime" },
   callback = function(ev)
     vim.bo[ev.buf].buflisted = false
     vim.keymap.set("n", "q", ":bd<CR>", { buf = ev.buf, silent = true, desc = "Close window" })

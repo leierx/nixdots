@@ -40,11 +40,9 @@ local function project_root()
   return vim.fs.root(0, { ".git" }) or vim.fs.root(vim.fn.getcwd(), { ".git" }) or vim.fn.getcwd()
 end
 
-k.set("n", "<leader>f", function() require("fzf-lua").files({ cwd = project_root() }) end,
-  { desc = "Find files in project root" })
+k.set("n", "<leader>f", function() require("fzf-lua").files({ cwd = project_root() }) end, { desc = "Find files in project root" })
 k.set("n", "<leader>F", function() require("fzf-lua").files({ cwd = vim.uv.os_homedir() }) end, { desc = "Find files ~" })
-k.set("n", "<leader>g", function() require("fzf-lua").live_grep_native({ cwd = project_root() }) end,
-  { desc = "Live grep in project root" })
+k.set("n", "<leader>g", function() require("fzf-lua").live_grep_native({ cwd = project_root() }) end, { desc = "Live grep in project root" })
 k.set("n", "<leader>ca", function() require("tiny-code-action").code_action() end, { desc = "Code action" })
 k.set("n", "<leader>b", function() require("fzf-lua").buffers() end, { desc = "Buffers" })
 k.set("n", "<leader>o", function() require("fzf-lua").oldfiles() end, { desc = "Find old files" })
@@ -52,12 +50,6 @@ k.set("n", "<leader><space>", function() require("fzf-lua").builtin() end, { des
 
 -- mini.nvim
 k.set("n", "s", "<Nop>", { desc = "use `cl` or `r`" })
-
--- nvim-surround: mini.surround-style bindings, default ys/ds/cs disabled
-vim.g.nvim_surround_no_mappings = true
-k.set({"n", "x"}, "sa", "<Plug>(nvim-surround-normal)", { desc = "Add surrounding" })
-k.set("n", "sd", "<Plug>(nvim-surround-delete)", { desc = "Delete surrounding" })
-k.set("n", "sr", "<Plug>(nvim-surround-change)", { desc = "Replace surrounding" })
 
 -- gitsigns
 k.set("n", "<leader>hp", function() require("gitsigns").preview_hunk() end, { desc = "Preview hunk" })
