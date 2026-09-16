@@ -1,10 +1,9 @@
 require("plugins.colorscheme")
 require("plugins.treesitter")
 require("plugins.mini") -- devicons mock must precede icon consumers
+require("plugins.nvim-surround")
 require("plugins.treesj")
 require("plugins.tiny-inline-diagnostic")
-require("plugins.quicker")
-require("plugins.zdiff")
 require("plugins.fzf-lua")
 require("plugins.lualine")
 require("plugins.oil")

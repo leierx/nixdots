@@ -5,6 +5,7 @@ require("kanagawa").setup({
   -- which blink never uses, and no LabelDescription/Source/DocSeparator).
   overrides = function(colors)
     local theme = colors.theme
+    local palette = colors.palette
     return {
       -- slightly brighter linenumbers
       LineNr = { fg = theme.ui.fg_dim },
@@ -17,13 +18,14 @@ require("kanagawa").setup({
       FloatBorder = { bg = "none" },
       FloatTitle = { bg = "none" },
 
-      -- make popup/completion menus darker & more neutral (less "wave blue")
-      Pmenu = { fg = theme.ui.shade0, bg = theme.ui.bg_p1 },
+      Pmenu = { fg = theme.ui.shade0, bg = "none" },
       PmenuSel = { fg = "NONE", bg = theme.ui.bg_p2 },
       PmenuSbar = { bg = theme.ui.bg_m1 },
       PmenuThumb = { bg = theme.ui.bg_p2 },
-      PmenuKind = { fg = theme.ui.fg_dim, bg = theme.ui.bg_p1 },
-      PmenuExtra = { fg = theme.syn.comment, bg = theme.ui.bg_p1 },
+      BlinkCmpMenu = { bg = theme.ui.bg },
+      BlinkCmpMenuBorder = { bg = theme.ui.bg, fg = palette.crystalBlue },
+      BlinkCmpDoc = { bg = theme.ui.bg },
+      BlinkCmpDocBorder = { bg = theme.ui.bg, fg = palette.crystalBlue },
     }
   end,
 })

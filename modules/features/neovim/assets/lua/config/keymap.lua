@@ -56,9 +56,5 @@ k.set("n", "s", "<Nop>", { desc = "use `cl` or `r`" })
 -- oil.nvim
 k.set("n", "<leader>e", ":Oil --preview<cr>", { silent = true })
 
--- quicker.nvim
-k.set("n", "<leader>qf", function() require("quicker").toggle() end, { desc = "Toggle quickfix" })
-
--- zdiff.nvim
-k.set("n", "<leader>zd", "<cmd>Zdiff<cr>", { desc = "Zdiff (uncommitted)" })
-k.set("n", "<leader>zD", "<cmd>Zdiff main<cr>", { desc = "Zdiff (vs main)" })
+-- better J
+vim.keymap.set("n", "J", function() require("treesj").toggle() end, { desc = "Toggle split/join node" })
