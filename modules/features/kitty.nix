@@ -51,8 +51,8 @@ root: {
           # Color scheme
           foreground = colors.foreground; # Adwaita darker
           background = colors.background; # Adwaita darker
-          selection_foreground = colors.selectionForeground; # Adwaita darker
-          selection_background = colors.selectionBackground; # Adwaita darker
+          selection_foreground = "none"; # reverse-video selection (alacritty-style)
+          selection_background = "none";
           # The color table
           color0 = colors.black; # Adwaita darker
           color8 = colors.blackLight; # Adwaita darker

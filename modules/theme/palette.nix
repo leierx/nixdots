@@ -45,8 +45,6 @@
     background = "#000000";
     cursor = "#deddda";
     cursorText = "#000000";
-    selectionBackground = "#1c1c1c";
-    selectionForeground = "#c0bfbc";
     urlColor = "#1a5fb4";
     activeBorderColor = "#1e1e1e";
     inactiveBorderColor = "#282828";

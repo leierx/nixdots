@@ -8,6 +8,8 @@ root: {
   config.flake.modules.homeManager."homeConfigurations/desktop" =
     { pkgs, lib, ... }:
     {
+      imports = [ root.config.flake.modules.homeManager.nix-index ];
+
       programs.ssh = {
         enable = true;
         matchBlocks = {

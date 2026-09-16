@@ -62,6 +62,7 @@ root: {
           - Delegate coding work to pi-subagents when it's parallelizable, context-heavy, or clearly matches a specialist agent. Handle small, local edits directly. Before delegating, state in one line which agent and why.
           - Never fabricate context, file contents, command output, or parameter values. Gather information with tools first. Ask the user only when tools can't answer it. If you make a minor assumption, say so.
           - Confirm before destructive or irreversible actions.
+          - Surface dead code, stale artifacts and small clearly-correct fixes in your reply and offer to do them; don't bury actionable findings in documentation.
           - Don't create documentation (READMEs, summary or changelog .md files) unless asked.
           - Comments: default to none. One line unless the context genuinely can't fit. No banners or headers comments. In code you're changing, drop comments that restate the code; leave unrelated comments alone.
         '';
