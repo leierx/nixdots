@@ -53,6 +53,16 @@ k.set("n", "<leader><space>", function() require("fzf-lua").builtin() end, { des
 -- mini.nvim
 k.set("n", "s", "<Nop>", { desc = "use `cl` or `r`" })
 
+-- nvim-surround: mini.surround-style bindings, default ys/ds/cs disabled
+vim.g.nvim_surround_no_mappings = true
+k.set({"n", "x"}, "sa", "<Plug>(nvim-surround-normal)", { desc = "Add surrounding" })
+k.set("n", "sd", "<Plug>(nvim-surround-delete)", { desc = "Delete surrounding" })
+k.set("n", "sr", "<Plug>(nvim-surround-change)", { desc = "Replace surrounding" })
+
+-- gitsigns
+k.set("n", "<leader>hp", function() require("gitsigns").preview_hunk() end, { desc = "Preview hunk" })
+k.set("n", "<leader>hb", function() require("gitsigns").blame_line({ full = true }) end, { desc = "Blame line" })
+
 -- oil.nvim
 k.set("n", "<leader>e", ":Oil --preview<cr>", { silent = true })
 

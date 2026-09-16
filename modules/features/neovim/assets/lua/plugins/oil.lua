@@ -1,8 +1,3 @@
-vim.pack.add({
-  "https://github.com/stevearc/oil.nvim",
-  "https://github.com/malewicz1337/oil-git.nvim",
-})
-
 require("oil").setup({
   skip_confirm_for_simple_edits = true,
   use_default_keymaps = false,

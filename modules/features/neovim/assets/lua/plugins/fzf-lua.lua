@@ -1,8 +1,3 @@
-vim.pack.add({
-  "https://github.com/ibhagwan/fzf-lua",
-  "https://github.com/rachartier/tiny-code-action.nvim",
-})
-
 local fzf_lua = require("fzf-lua")
 local code_action = require("tiny-code-action")
 

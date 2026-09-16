@@ -1,5 +1,3 @@
-vim.pack.add({ "https://github.com/rebelot/kanagawa.nvim" })
-
 require("kanagawa").setup({
   -- Fix the blink.cmp groups kanagawa misses (it defines BlinkCmpLabelDetails,
   -- which blink never uses, and no LabelDescription/Source/DocSeparator).

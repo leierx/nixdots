@@ -1,5 +1,3 @@
-vim.pack.add({ "https://github.com/rachartier/tiny-cmdline.nvim" })
-
 -- tiny-cmdline is setup-less; it needs the new cmdline UI framework
 require("vim._core.ui2").enable()
 vim.o.cmdheight = 0

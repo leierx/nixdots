@@ -1,9 +1,3 @@
-vim.pack.add({
-  "https://github.com/neovim/nvim-lspconfig",
-  "https://github.com/b0o/SchemaStore.nvim",
-  "https://github.com/artemave/workspace-diagnostics.nvim",
-})
-
 local servers = {
   "lua_ls",
   "nixd",
