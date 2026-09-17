@@ -44,17 +44,3 @@ o.mouse = "" -- disable mouse
 vim.schedule(function()
   o.clipboard = "unnamedplus" -- system clipboard (deferred for startup speed)
 end)
-
--- Messages & cmdline (ui2)
-o.cmdheight = 0
-
-require("vim._core.ui2").enable({
-  enable = true,
-  msg = {
-    targets = "msg", -- floating message window (bottom right)
-    cmd = { height = 0.5 },
-    dialog = { height = 0.5 },
-    msg = { height = 0.5, timeout = 4000 },
-    pager = { height = 0.5 },
-  },
-})

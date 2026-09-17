@@ -1,4 +1,5 @@
 require("config.options")
+require("config.ui2")
 require("config.keymap")
 require("config.autocmd")
 require("config.filetypes")
