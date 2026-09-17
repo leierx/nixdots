@@ -43,14 +43,6 @@ vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter", "WinLeave", "BufLeave" }, 
   end,
 })
 
-vim.api.nvim_create_autocmd("FileType", {
-  pattern = { "help", "man", "qf" },
-  callback = function()
-    vim.cmd("wincmd _")
-    vim.cmd("wincmd |")
-  end,
-})
-
 -- equalize splits when terminal window is resized (across tabs)
 vim.api.nvim_create_autocmd("VimResized", {
   desc = "Equalize splits on resize",
