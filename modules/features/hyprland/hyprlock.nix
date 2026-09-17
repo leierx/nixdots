@@ -55,7 +55,10 @@
             outer_color = "rgba(255, 255, 255, 0)";
             inner_color = "rgba(255, 255, 255, 0.1)";
             font_color = "rgb(200, 200, 200)";
-            placeholder_text = "<i><span foreground=\"#ffffff99\">Enter Pass</span></i>";
+            font_family = "Hack";
+            # hyprlang treats an unescaped # as a comment; ## is a literal #.
+            placeholder_text = "<i><span foreground=\"##ffffff99\">Enter Pass</span></i>";
+            fail_text = "<i><span foreground=\"##ff8888cc\">$FAIL</span> <b>($ATTEMPTS)</b></i>";
             hide_input = false;
             position = "0, -100";
             halign = "center";
