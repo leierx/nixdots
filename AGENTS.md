@@ -98,7 +98,7 @@ makes `inputs.nixdots.modules.nixos.<aspect>` work from another flake.
 | Option | Type | Notes |
 | --- | --- | --- |
 | `identity` | `{ username, fullName, email }` | Primary user; read by `users`, `git`, `home-manager`, profiles. |
-| `palettes` | `attrsOf (attrsOf str)` | `ui` (rofi, mako, waybar), `adwaitaDarker` (kitty), `kanagawa` (tmux). |
+| `palettes` | `attrsOf (attrsOf str)` | `ui` (rofi, mako, waybar), `kanagawa` (tmux). |
 | `nixosHosts.<name>` | submodule `{ system }` | Drives `flake.nixosConfigurations`. |
 | `darwinHosts.<name>` | submodule `{ system }` | Drives `flake.darwinConfigurations`. |
 | `homeConfigs.<name>` | submodule `{ system }` | Standalone HM for non-NixOS machines. |
@@ -167,7 +167,7 @@ and read `root.config.<option>`.
 | `hyprland/` | nixos, homeManager | `hyprland` | see below |
 | `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage |
 | `journald.nix` | nixos | `journald` | 90-day retention |
-| `kitty.nix` | homeManager | `kitty` | kitty, colors from `palettes.adwaitaDarker` |
+| `kitty.nix` | homeManager | `kitty` | kitty, Adwaita darker via `themeFile`, Hack font via `programs.kitty.font` |
 | `locale.nix` | nixos, homeManager | `locale` | `no`/`nodeadkeys`, `en_DK.UTF-8`, Europe/Oslo, timesyncd; sets hyprland kb |
 | `neovim/` | nixos, homeManager | `neovim` | see below |
 | `network.nix` | nixos | `network` | systemd-resolved + DoT/DNSSEC, NetworkManager, nftables, no DHCP |

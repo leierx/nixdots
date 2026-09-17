@@ -39,38 +39,6 @@
     yellowLight = "#FECF0F";
   };
 
-  # Adwaita darker terminal palette, from kitty-themes
-  config.palettes.adwaitaDarker = {
-    foreground = "#deddda";
-    background = "#000000";
-    cursor = "#deddda";
-    cursorText = "#000000";
-    urlColor = "#1a5fb4";
-    activeBorderColor = "#1e1e1e";
-    inactiveBorderColor = "#282828";
-    bellBorderColor = "#ed333b";
-    activeTabBackground = "#101010";
-    activeTabForeground = "#fcfcfc";
-    inactiveTabBackground = "#1c1c1c";
-    inactiveTabForeground = "#b0afac";
-    black = "#000000";
-    red = "#ed333b";
-    green = "#57e389";
-    yellow = "#ff7800";
-    blue = "#62a0ea";
-    magenta = "#9141ac";
-    cyan = "#5bc8af";
-    white = "#deddda";
-    blackLight = "#9a9996";
-    redLight = "#f66151";
-    greenLight = "#8ff0a4";
-    yellowLight = "#ffa348";
-    blueLight = "#99c1f1";
-    magentaLight = "#dc8add";
-    cyanLight = "#93ddc2";
-    whiteLight = "#f6f5f4";
-  };
-
   # Matches the neovim colorscheme
   config.palettes.kanagawa = {
     fg = "#dcd7ba";

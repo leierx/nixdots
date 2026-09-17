@@ -8,6 +8,7 @@ root: {
   config.flake.modules.nixos.neovim = {
     programs.neovim = {
       enable = true;
+      viAlias = true;
       vimAlias = true;
       defaultEditor = true;
     };
@@ -17,6 +18,12 @@ root: {
   config.flake.modules.homeManager.neovim =
     { config, pkgs, ... }:
     {
+      programs.neovim = {
+        enable = true;
+        viAlias = true;
+        vimAlias = true;
+      };
+
       xdg.configFile."nvim".source =
         if root.config.neovim.outOfStorePath != null then
           config.lib.file.mkOutOfStoreSymlink root.config.neovim.outOfStorePath
@@ -24,8 +31,6 @@ root: {
           ./.;
 
       home.packages = with pkgs; [
-        neovim
-        #
         ripgrep
         fd
         fzf

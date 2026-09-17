@@ -1,4 +1,5 @@
-root: {
+root@{ inputs, ... }:
+{
   options.piAgent.settings = root.lib.mkOption {
     type = root.lib.types.attrsOf root.lib.types.json;
     default = { };
@@ -10,11 +11,25 @@ root: {
 
   config.flake.modules.homeManager.pi-agent =
     { pkgs, ... }:
+    let
+      pi-coding-agent = pkgs.symlinkJoin {
+        name = "pi-wrapped";
+        paths = [
+          inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pi-coding-agent
+        ];
+        nativeBuildInputs = [ pkgs.makeWrapper ];
+        postBuild = ''
+          wrapProgram $out/bin/pi \
+            ${pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux "--set PUPPETEER_SKIP_DOWNLOAD 1 --set-default PUPPETEER_EXECUTABLE_PATH ${pkgs.lib.getExe pkgs.chromium}"} \
+            --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.uv ]}
+        '';
+      };
+    in
     {
       home.sessionVariables.PI_SKIP_VERSION_CHECK = "1";
 
       home.packages = with pkgs; [
-        unstable.pi-coding-agent
+        pi-coding-agent
         git
         ripgrep
         fd
@@ -32,7 +47,7 @@ root: {
         ".pi/agent/settings.json".text = builtins.toJSON (
           {
             enableInstallTelemetry = false;
-            quietStartup = true;
+            quietStartup = false;
             defaultTools = [
               "read"
               "bash"
