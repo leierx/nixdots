@@ -36,6 +36,19 @@ Features pin their dependencies to this flake's inputs (hyprland, disko,
 nixpkgs-unstable). The home-manager half of `hyprland` reads `osConfig` for the
 compositor package and therefore needs the NixOS half.
 
+## Options
+
+Modules are hardcoded on purpose. An option is added only when a machine
+actually needs a different value — never in anticipation of one. Until then the
+value sits inline in the feature file, where it is one edit away from being
+changed and one glance away from being understood; promoting it to an option
+later is mechanical. A constant nobody is overriding is just indirection.
+
+The exception is shared data, which is not an option in that sense: `identity`,
+`palettes`, `systems` and the per-host `*.settings` bags are declared once at the
+top level because several modules genuinely read them. Those exist because a
+value is *shared*, not because a value might vary.
+
 ## Building
 
 ```bash
