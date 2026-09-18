@@ -1,4 +1,8 @@
-{ inputs, ... }:
+root@{ inputs, ... }:
+let
+  ui = root.config.palettes.ui;
+  hex = c: root.lib.removePrefix "#" c;
+in
 {
   flake.modules.nixos.hyprland =
     { pkgs, ... }:
@@ -66,15 +70,15 @@
               gaps_in = 10;
               gaps_out = 15;
               col = {
-                inactive_border = "rgb(595959)";
+                inactive_border = "rgb(${hex ui.unfocusedBorderColor})";
                 active_border = {
                   colors = [
-                    "rgb(2bbf3e)"
-                    "rgb(2bbf3e)"
-                    "rgb(2bbf3e)"
-                    "rgb(0e66d0)"
-                    "rgb(0e66d0)"
-                    "rgb(0e66d0)"
+                    "rgb(${hex ui.green})"
+                    "rgb(${hex ui.green})"
+                    "rgb(${hex ui.green})"
+                    "rgb(${hex ui.focusedBorderColor})"
+                    "rgb(${hex ui.focusedBorderColor})"
+                    "rgb(${hex ui.focusedBorderColor})"
                   ];
                   angle = 30;
                 };
@@ -106,7 +110,7 @@
               force_default_wallpaper = 0;
               disable_autoreload = true;
               focus_on_activate = true;
-              background_color = "0x1C1C1C";
+              background_color = "0x${hex ui.bg1}";
               on_focus_under_fullscreen = 0;
               middle_click_paste = false;
             };

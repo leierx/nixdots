@@ -14,7 +14,7 @@ root: {
       xdg.configFile."tmux/tmux.conf".text = ''
         # remove default keybindings
         unbind-key -a
-        unbind-key -a -T copy-mode
+        unbind-key -a -T copy-mode-vi
 
         # faster esc + editor focus support
         set -sg escape-time 10
@@ -27,6 +27,10 @@ root: {
         # terminal + truecolor
         set -g default-terminal "screen-256color"
         set -ag terminal-overrides ",xterm-256color:Tc"
+
+        # modified Enter / shift-enter keys; csi-u needs tmux >= 3.5
+        set -g extended-keys on
+        set -g extended-keys-format csi-u
 
         # mouse disabled
         set -g mouse off
@@ -44,7 +48,6 @@ root: {
 
         # prefix key
         set -g prefix C-a
-        bind-key C-a send-prefix
 
         # splits
         bind-key -T prefix v split-window -h -c "#{pane_current_path}"

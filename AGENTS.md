@@ -98,7 +98,7 @@ makes `inputs.nixdots.modules.nixos.<aspect>` work from another flake.
 | Option | Type | Notes |
 | --- | --- | --- |
 | `identity` | `{ username, fullName, email }` | Primary user; read by `users`, `git`, `home-manager`, profiles. |
-| `palettes` | `attrsOf (attrsOf str)` | `ui` (rofi, mako, waybar), `kanagawa` (tmux). |
+| `palettes` | `attrsOf (attrsOf str)` | `ui` (rofi, mako, waybar, hyprland), `kanagawa` (tmux). |
 | `nixosHosts.<name>` | submodule `{ system }` | Drives `flake.nixosConfigurations`. |
 | `darwinHosts.<name>` | submodule `{ system }` | Drives `flake.darwinConfigurations`. |
 | `homeConfigs.<name>` | submodule `{ system }` | Standalone HM for non-NixOS machines. |
@@ -167,7 +167,6 @@ and read `root.config.<option>`.
 | `hyprland/` | nixos, homeManager | `hyprland` | see below |
 | `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage |
 | `journald.nix` | nixos | `journald` | 90-day retention |
-| `kitty.nix` | homeManager | `kitty` | kitty, Adwaita darker via `themeFile`, Hack font via `programs.kitty.font` |
 | `locale.nix` | nixos, homeManager | `locale` | `no`/`nodeadkeys`, `en_DK.UTF-8`, Europe/Oslo, timesyncd; sets hyprland kb |
 | `neovim/` | nixos, homeManager | `neovim` | see below |
 | `network.nix` | nixos | `network` | systemd-resolved + DoT/DNSSEC, NetworkManager, nftables, no DHCP |
@@ -175,13 +174,14 @@ and read `root.config.<option>`.
 | `nix-index.nix` | homeManager | `nix-index` | prebuilt nix-index DB (`nix-index-database` input) + wrapped comma; full by default, `nixIndex.smallDatabase` switches to the small DB |
 | `nixpkgs.nix` | nixos, darwin | `nixpkgs`, `unstable-nixpkgs` | `allowUnfree`; overlay exposing `pkgs.unstable` |
 | `packages.nix` | nixos | `packages` | jq, fzf, fastfetch, tree |
-| `pi-agent.nix` | homeManager | `pi-agent` (+ option `piAgent.settings`) | pi CLI + its `~/.pi/agent` files and skills |
+| `pi-agent/` | homeManager | `pi-agent` (+ option `piAgent.settings`) | pi CLI + its `~/.pi/agent` files and skills |
 | `plymouth.nix` | nixos | `plymouth` | plymouth + quiet boot params |
 | `podman.nix` | nixos | `podman` | podman + docker compat, DNS on `podman0` |
 | `rofi.nix` | homeManager | `rofi` | rofi theme generated from `palettes.ui` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
 | `tmux.nix` | homeManager | `tmux` | tmux config, status from `palettes.kanagawa` |
 | `users.nix` | nixos, homeManager | `users` | primary user, groups, hashed password, zsh+starship, root locked |
+| `wezterm.nix` | homeManager | `wezterm` | wezterm with the built-in `3024 (base16)` color scheme, Hack font |
 | `xdg.nix` | homeManager | `xdg-user-dirs` | XDG dirs + `~/Dev` |
 | `zsh.nix` | homeManager | `zsh` | oh-my-zsh, autosuggestions, syntax highlight |
 
@@ -201,10 +201,9 @@ Notes on specific features:
   `vim.pack` so its lockfile writes to a writable data dir, because the store
   symlink is read-only. Neovim 0.12+ `vim.pack` is the plugin manager; no
   lazy.nvim.
-- **`pi-agent.nix`** writes `~/.pi/agent/settings.json`, `APPEND_SYSTEM.md`
-  and the `commit-style` / `comment-policy` skills, then merges
-  `piAgent.settings` over the defaults; `desktop` uses it to pin its
-  provider, model and thinking level.
+- **`pi-agent/`** writes `~/.pi/agent/settings.json`, `APPEND_SYSTEM.md`
+  and the `commit-style` skill, then merges `piAgent.settings` over the
+  defaults; `desktop` uses it to pin its provider, model and thinking level.
 
 ### Profiles (`modules/profiles/`)
 
@@ -218,7 +217,7 @@ to take.
   tmux users xdg-user-dirs zsh`.
 - `workstation` — nixos imports `display-manager fonts gtk hyprland plymouth
   sound`; `homeManager.workstation` imports `cursor gtk hyprland neovim qt
-  rofi kitty`. Its NixOS half pulls in the HM half.
+  rofi wezterm`. Its NixOS half pulls in the HM half.
 
 ### Theme (`modules/theme/`)
 
@@ -271,6 +270,14 @@ nix fmt                  # formatter = nixfmt-tree
 
 ## Sharp edges
 
+- **pi's `settings.json` is a read-only store symlink.** Anything pi would
+  normally save itself (`theme`, `defaultProvider`, `defaultModel`,
+  `defaultTools`, `packages`, `defaultProjectTrust`) fails to write and reverts
+  on restart; set those through `piAgent.settings` instead. pi's own files
+  (`auth.json`, `sessions/`, `npm/`) are unaffected.
+- **pi themes cannot paint the screen background.** The theme format has no
+  global background token; only the per-box `*Bg` tokens exist. The backdrop is
+  the terminal's, i.e. wezterm's `3024 (base16)` background.
 - **Formatters/checks are per-system.** A new `perSystem` definition merges;
   don't redeclare `systems`.
 - **`stateVersion`** defaults to the nixpkgs release for NixOS and `7` for
