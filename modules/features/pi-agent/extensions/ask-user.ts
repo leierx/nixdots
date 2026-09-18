@@ -45,7 +45,7 @@ type Ctx = {
   hasUI: boolean;
   ui: {
     select(title: string, options: string[], opts?: DialogOptions): Promise<string | undefined>;
-    input(title: string, placeholder?: string, opts?: DialogOptions): Promise<string | undefined>;
+    editor(title: string, prefill?: string): Promise<string | undefined>;
     notify(message: string, type?: "info" | "warning" | "error"): void;
   };
 };
@@ -112,8 +112,8 @@ export default function askUser(pi: Registry) {
       const dialogOptions = { signal };
       const answers: Answer[] = [];
 
-      const askText = async (question: string) =>
-        (await ctx.ui.input(question, "Type your answer", dialogOptions))?.trim();
+      // editor() is the multi-line prompt: Ctrl+J/Shift+Enter add lines, Ctrl+G opens $EDITOR.
+      const askText = async (question: string) => (await ctx.ui.editor(question))?.trim();
 
       const cancelResult = () =>
         result(
