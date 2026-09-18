@@ -76,8 +76,6 @@ root@{ inputs, ... }:
 
         ".pi/agent/APPEND_SYSTEM.md".source = ./APPEND_SYSTEM.md;
 
-        ".pi/agent/extensions/ask-user.ts".source = ./extensions/ask-user.ts;
-
         ".pi/agent/skills/commit-style/SKILL.md".source = ./skills/commit-style/SKILL.md;
       };
     };
