@@ -20,7 +20,7 @@ root: {
               muted = "color8";
               dim = "color8";
               text = "foreground";
-              thinkingText = "color8";
+              thinkingText = "color7";
               scrollbarTrack = "inactive_border_color";
               scrollbarThumb = "color8";
 
