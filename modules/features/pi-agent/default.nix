@@ -70,6 +70,9 @@ root@{ inputs, ... }:
             packages = [
               "npm:pi-web-fetch@1.1.0"
               "npm:pi-subagents@0.68.0"
+              "npm:@juicesharp/rpiv-ask-user-question@2.10.1"
+              "npm:@juicesharp/rpiv-todo@2.10.1"
+              "npm:pi-sidebar-tui@1.7.4"
             ];
           } root.config.piAgent.settings
         );
