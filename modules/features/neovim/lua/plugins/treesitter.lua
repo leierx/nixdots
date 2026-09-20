@@ -19,6 +19,8 @@ require("nvim-treesitter").install({
   "markdown",
   "markdown_inline",
   "nix",
+  "qmldir",
+  "qmljs",
   "query",
   "regex",
   "scss",

@@ -46,6 +46,7 @@ root: {
         vscode-langservers-extracted
         yaml-language-server
         tofu-ls
+        qt6.qtdeclarative # QML: qmlls, qmlformat, qmllint (quickshell configs)
         # Go (only what nvim drives: gopls, conform formatters)
         gopls
         gotools # goimports

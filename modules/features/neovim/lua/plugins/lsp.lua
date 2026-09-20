@@ -1,6 +1,7 @@
 local servers = {
   "lua_ls",
   "nixd",
+  "qmlls",
   "ts_ls",
   "html",
   "cssls",
