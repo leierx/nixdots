@@ -1,6 +1,5 @@
-# Entry-point helper: turns a directory into a module that imports every
-# `.nix` file beneath it. Files and directories whose name starts with `.`
-# or `_` are skipped, so `_`-prefixed paths can hold non-module Nix code.
+# Turns a directory into a module importing every `.nix` beneath it; `.`/`_`
+# prefixed paths are skipped, so `_` can hold non-module Nix code.
 modulesPath:
 let
   isHidden = name: builtins.substring 0 1 name == "." || builtins.substring 0 1 name == "_";

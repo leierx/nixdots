@@ -1,6 +1,5 @@
-# A minimal `perSystem`: one deferred module evaluated once per entry of
-# `systems`, producing the system-keyed flake outputs. Any top-level module
-# may define `perSystem`; definitions merge like any other module.
+# A minimal `perSystem`: one deferred module evaluated per `systems` entry,
+# producing the system-keyed outputs. Definitions merge like any module.
 {
   config,
   inputs,

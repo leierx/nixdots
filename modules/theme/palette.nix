@@ -1,6 +1,5 @@
-# Colour palettes, declared once at the top level and read by any module of
-# any class. This is the dendritic answer to sharing values between files:
-# no `specialArgs`, no imports between siblings.
+# Colour palettes, declared once at the top level and read by any class: the
+# dendritic way to share values between files, without specialArgs or imports.
 { lib, ... }:
 {
   options.palettes = lib.mkOption {

@@ -1,7 +1,6 @@
--- nvim-treesitter "main" (the rewrite): the plugin only ships parsers and
--- queries; highlighting is Neovim's own vim.treesitter.start(). Parser
--- installation shells out to the `tree-sitter` CLI and a C compiler, both
--- provided by the nix module. install() is async and a no-op once done.
+-- nvim-treesitter "main" only ships parsers/queries; highlighting is Neovim's
+-- vim.treesitter.start(). install() shells out to the tree-sitter CLI and a C
+-- compiler (both from the nix module) and is async, a no-op once done.
 require("nvim-treesitter").install({
   "bash",
   "css",

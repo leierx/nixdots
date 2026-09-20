@@ -1,9 +1,6 @@
-# The flake output surface of the top-level configuration.
-#
-# `flake.nix` returns `config.flake`, so every option declared here is a
-# flake output. `flake.modules.<class>.<aspect>` is the dendritic module
-# registry: lower-level (NixOS / home-manager / nix-darwin) modules are
-# stored as values of the top-level configuration and merged by name.
+# The flake output surface: `flake.nix` returns `config.flake`, so every option
+# declared here is an output. `flake.modules.<class>.<aspect>` is the dendritic
+# registry storing class-tagged modules as values, merged by name.
 { lib, ... }:
 let
   inherit (lib) mkOption types;
@@ -24,9 +21,8 @@ let
       inherit description;
     };
 
-  # Tag every stored module with its class and origin, so loading a
-  # home-manager module into a NixOS configuration is a plain type error
-  # instead of a wall of "undeclared option" noise.
+  # Tag stored modules with class and origin, so a wrong-class import is a
+  # plain type error instead of "undeclared option" noise.
   tag =
     class: name: module:
     if class == "generic" then

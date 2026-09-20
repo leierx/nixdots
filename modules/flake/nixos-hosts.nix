@@ -1,8 +1,5 @@
-# Builds `flake.nixosConfigurations` from `nixosHosts.<hostname>`.
-#
-# A host is exactly what its own aspect imports; the only things added
-# implicitly are the identity of the machine and a stateVersion default,
-# both of which a host may override.
+# Builds `flake.nixosConfigurations` from `nixosHosts.<hostname>`: a host is
+# its own aspect imports plus an injected hostId/hostname and stateVersion default.
 {
   config,
   lib,

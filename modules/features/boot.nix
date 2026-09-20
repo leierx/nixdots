@@ -1,6 +1,5 @@
-# Booting. The default is GRUB on EFI, which is what every machine here
-# uses; `systemd-boot` is the alternative and forces GRUB back off, so a
-# host can import it on top of `base` without touching the profile.
+# Default is GRUB on EFI. `systemd-boot` is the alternative and forces GRUB
+# off, so a host can import it on top of `base` without touching the profile.
 {
   flake.modules.nixos.boot =
     { pkgs, ... }:

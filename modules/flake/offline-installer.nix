@@ -5,10 +5,8 @@
   ...
 }:
 let
-  # Hosts that get an `offlineInstaller-<host>` nixosConfiguration. Each
-  # is a separate NixOS system (the iso live-media), carrying the named
-  # host's toplevel + diskoScript as ISO payload. Build the iso with:
-  #
+  # Every nixosHosts entry also gets an `offlineInstaller-<host>` ISO system
+  # carrying its toplevel + diskoScript:
   #   nix build .#nixosConfigurations.offlineInstaller-<host>.config.system.build.isoImage
   installerHosts = lib.attrNames config.nixosHosts;
 
