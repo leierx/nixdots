@@ -1,3 +1,6 @@
+-- cache compiled Lua modules; must run before any require
+vim.loader.enable()
+
 -- ~/.config/nvim is a nix store symlink (read-only), but vim.pack writes its
 -- lockfile to stdpath('config'). Redirect stdpath('config') to a writable
 -- directory around every vim.pack call so add/update/del still work.
