@@ -39,36 +39,29 @@
     yellowLight = "#FECF0F";
   };
 
-  config.palettes.adwaita_darker = {
-    background = "#000000";
-    foreground = "#deddda";
-    cursor = "#deddda";
-    cursor_text_color = "#000000";
-    selection_background = "#1c1c1c";
-    selection_foreground = "#c0bfbc";
-    url_color = "#1a5fb4";
-    active_border_color = "#1e1e1e";
-    inactive_border_color = "#282828";
-    bell_border_color = "#ed333b";
-    active_tab_background = "#101010";
-    active_tab_foreground = "#fcfcfc";
-    inactive_tab_background = "#1c1c1c";
-    inactive_tab_foreground = "#b0afac";
-    color0 = "#000000";
-    color1 = "#ed333b";
-    color2 = "#57e389";
-    color3 = "#ff7800";
-    color4 = "#62a0ea";
-    color5 = "#9141ac";
-    color6 = "#5bc8af";
-    color7 = "#deddda";
-    color8 = "#9a9996";
-    color9 = "#f66151";
-    color10 = "#8ff0a4";
-    color11 = "#ffa348";
-    color12 = "#99c1f1";
-    color13 = "#dc8add";
-    color14 = "#93ddc2";
+  # ghostty's "Adwaita Dark"
+  config.palettes.adwaita_dark = {
+    background = "#1d1d20";
+    foreground = "#ffffff";
+    cursor = "#ffffff";
+    cursor_text_color = "#1d1d20";
+    selection_background = "#ffffff";
+    selection_foreground = "#5e5c64";
+    color0 = "#241f31";
+    color1 = "#c01c28";
+    color2 = "#2ec27e";
+    color3 = "#f5c211";
+    color4 = "#1e78e4";
+    color5 = "#9841bb";
+    color6 = "#0ab9dc";
+    color7 = "#c0bfbc";
+    color8 = "#5e5c64";
+    color9 = "#ed333b";
+    color10 = "#57e389";
+    color11 = "#f8e45c";
+    color12 = "#51a1ff";
+    color13 = "#c061cb";
+    color14 = "#4fd2fd";
     color15 = "#f6f5f4";
   };
 
