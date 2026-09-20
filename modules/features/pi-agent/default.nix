@@ -52,6 +52,7 @@ root@{ inputs, ... }:
             enableInstallTelemetry = false;
             collapseChangelog = true;
             quietStartup = true;
+            hideThinkingBlock = true;
 
             npmCommand = [ "${pkgs.nodejs}/bin/npm" ];
 
