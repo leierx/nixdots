@@ -12,6 +12,8 @@ root: {
     {
       imports = [ root.config.flake.modules.homeManager.nix-index ];
 
+      home.packages = [ pkgs.quickshell ];
+
       programs.ssh = {
         enable = true;
         matchBlocks = {
