@@ -24,8 +24,9 @@ root: {
         bind-key -T prefix < swap-window -t -1
         bind-key -T prefix > swap-window -t +1
 
-        # terminal + truecolor
-        set -g default-terminal "screen-256color"
+        # terminal + truecolor; screen-256color lacks sitm/ritm, which makes tmux render
+        # italics as reverse video (pi draws thinking text in italics)
+        set -g default-terminal "tmux-256color"
         set -ag terminal-overrides ",xterm-256color:Tc"
 
         # modified Enter / shift-enter keys; csi-u needs tmux >= 3.5
