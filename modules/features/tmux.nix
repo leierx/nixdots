@@ -124,6 +124,8 @@ root: {
         bind-key -T copy-mode-vi l send-keys -X cursor-right
 
         # copy-mode scroll
+        bind-key -T copy-mode-vi C-u send-keys -X halfpage-up
+        bind-key -T copy-mode-vi C-d send-keys -X halfpage-down
         bind-key -T copy-mode-vi H send-keys -X top-line
         bind-key -T copy-mode-vi J send-keys -X scroll-down
         bind-key -T copy-mode-vi K send-keys -X scroll-up
