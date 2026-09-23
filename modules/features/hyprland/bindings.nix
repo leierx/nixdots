@@ -46,7 +46,7 @@
               dispatcher = ''hl.dsp.exec_cmd("${pkgs.rofi}/bin/rofi -modes drun -show drun")'';
             })
             (mkBind {
-              key = "v";
+              key = "b";
               dispatcher = ''hl.dsp.exec_cmd("${pkgs.cliphist}/bin/cliphist list | ${pkgs.rofi}/bin/rofi -dmenu -display-columns 2 -theme-str 'window {width: 50%;height: 75%;} entry {placeholder: \"Clipboard\";}' | ${pkgs.cliphist}/bin/cliphist decode | ${pkgs.wl-clipboard}/bin/wl-copy")'';
             })
             # window control
