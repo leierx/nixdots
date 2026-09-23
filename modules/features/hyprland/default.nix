@@ -44,6 +44,9 @@ in
         wdisplays
       ];
 
+      # cliphist's history persists in the cache dir; drop it on every login.
+      systemd.user.tmpfiles.rules = [ "R %C/cliphist" ];
+
       xdg.portal = {
         extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
         config = {
