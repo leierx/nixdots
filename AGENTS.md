@@ -48,18 +48,37 @@ modules/hosts/            desktop/, thonkpad/
 ### `flake.nix`
 
 ```nix
-outputs = inputs:
-  (inputs.nixpkgs.lib.evalModules {
-    class = "flake";
-    specialArgs.inputs = inputs;
-    modules = [ (import ./import-tree.nix ./modules) ];
-  }).config.flake;
+outputs =
+  inputs:
+  let
+    eval =
+      extra:
+      (lib.evalModules {
+        class = "flake";
+        specialArgs.inputs = inputs;
+        modules = [ (import ./import-tree.nix ./modules) ] ++ lib.toList extra;
+      }).config.flake;
+  in
+  eval [ ] // { lib.reconfigure = eval; };
 ```
 
 One evaluation, class `"flake"`, `inputs` passed as a `specialArg`. Its
 `config.flake` is the flake's output attribute set. This is why every file is
 a module of the same configuration and may freely read `config`, `lib` and
 `inputs` at the top level.
+
+`lib.reconfigure` is that same evaluation, parameterised. It exists because
+`root.config.<option>` resolves *here*: an importer of
+`modules.homeManager.pi-agent` would otherwise get my values baked in.
+Running the evaluation again with their module merged in gives them the whole
+registry rebuilt around their values, with no mirrored option declarations and
+no change to how features are written. The default outputs are `eval [ ]`, so
+plain `imports = [ inputs.nixdots.modules.<class>.<aspect> ]` is unaffected.
+Usage is documented in [README.md](./README.md#overriding-what-a-module-reads).
+Two sharp edges: each call is an independent evaluation, so the *same* aspect
+taken from two calls lands duplicate definitions in one configuration; and
+values this flake actually defines (`identity`, `palettes`) need `mkForce` from
+the caller, while empty ones (`piAgent.settings`) take a plain definition.
 
 ### `import-tree.nix`
 
@@ -110,7 +129,8 @@ makes `inputs.nixdots.modules.nixos.<aspect>` work from another flake.
 
 Flake outputs declared: `modules`, `nixosConfigurations`,
 `darwinConfigurations`, `homeConfigurations`, `formatter`, `checks`,
-`devShells`, `packages`.
+`devShells`, `packages`. `lib.reconfigure` is added in `flake.nix` itself,
+outside the evaluation.
 
 ### `perSystem` — `modules/flake/per-system.nix`
 

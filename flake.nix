@@ -5,11 +5,26 @@
   # top-level configuration, whose `flake` option set is the flake output.
   outputs =
     inputs:
-    (inputs.nixpkgs.lib.evalModules {
-      class = "flake";
-      specialArgs.inputs = inputs;
-      modules = [ (import ./import-tree.nix ./modules) ];
-    }).config.flake;
+    let
+      lib = inputs.nixpkgs.lib;
+
+      # `extra` is how an external flake joins this evaluation instead of
+      # consuming its frozen result: its modules are merged in before any
+      # option resolves, so every value read as `root.config.<option>` is
+      # theirs to define.
+      eval =
+        extra:
+        (lib.evalModules {
+          class = "flake";
+          specialArgs.inputs = inputs;
+          modules = [ (import ./import-tree.nix ./modules) ] ++ lib.toList extra;
+        }).config.flake;
+    in
+    eval [ ]
+    // {
+      # not part of the evaluation, it *is* the evaluation
+      lib.reconfigure = eval;
+    };
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
