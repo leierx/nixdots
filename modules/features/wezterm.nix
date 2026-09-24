@@ -9,6 +9,12 @@ root: {
 
       programs.wezterm = {
         enable = true;
+
+        # home-manager sources wezterm.sh into the shell by default; tmux owns
+        # the terminal here, so the OSC escapes buy nothing
+        enableBashIntegration = false;
+        enableZshIntegration = false;
+
         extraConfig = ''
           local wezterm = require "wezterm"
           local act = wezterm.action
