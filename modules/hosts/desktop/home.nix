@@ -1,11 +1,13 @@
 root: {
-  config.piAgent.settings = {
+  # mkDefault: these are my preferences, not the module's, so an external
+  # evaluation via lib.reconfigure can replace the bag with a plain definition
+  config.piAgent.settings = root.lib.mkDefault {
     defaultProvider = "opencode-go";
     defaultModel = "deepseek-v4.1-flash";
     defaultThinkingLevel = "high";
   };
 
-  config.nixIndex.smallDatabase = true;
+  config.nixIndex.smallDatabase = root.lib.mkDefault true;
 
   config.flake.modules.homeManager."homeConfigurations/desktop" =
     { pkgs, lib, ... }:
