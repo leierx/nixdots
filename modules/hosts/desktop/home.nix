@@ -1,6 +1,4 @@
 root: {
-  # mkDefault: these are my preferences, not the module's, so an external
-  # evaluation via lib.reconfigure can replace the bag with a plain definition
   config.piAgent.settings = root.lib.mkDefault {
     defaultProvider = "opencode-go";
     defaultModel = "deepseek-v4.1-flash";
