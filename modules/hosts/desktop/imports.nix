@@ -7,5 +7,6 @@
     workstation
     gaming
     incus
+    libvirt
   ];
 }

@@ -187,6 +187,7 @@ and read `root.config.<option>`.
 | `hyprland/` | nixos, homeManager | `hyprland` | see below |
 | `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage |
 | `journald.nix` | nixos | `journald` | 90-day retention |
+| `libvirt.nix` | nixos | `libvirt` | libvirtd + unprivileged QEMU/KVM with swtpm, virt-manager, trusted `br0` lab bridge |
 | `locale.nix` | nixos, homeManager | `locale` | `no`/`nodeadkeys`, `en_DK.UTF-8`, Europe/Oslo, timesyncd; sets hyprland kb |
 | `neovim/` | nixos, homeManager | `neovim` | see below |
 | `network.nix` | nixos | `network` | systemd-resolved + DoT/DNSSEC, NetworkManager, nftables, no DHCP |
@@ -254,8 +255,8 @@ list, sibling files contribute to the same
 - **`thonkpad`** — imports `base workstation gaming`. Intel laptop: microcode,
   `intel-media-driver`, bluetooth, `fprintd`, `thermald`, TLP battery
   thresholds, disko, single-monitor kanshi profile.
-- **`desktop`** — imports `base workstation gaming incus`. AMD desktop: RX
-  6700 XT with 32-bit graphics and `kvm-amd`, zram, disko, two-monitor kanshi
+- **`desktop`** — imports `base workstation gaming incus libvirt`. AMD desktop:
+  RX 6700 XT with 32-bit graphics and `kvm-amd`, zram, disko, two-monitor kanshi
   profile, WireGuard reverse-path off, `piAgent` defaults, SSH match blocks,
   host-specific app list.
 

@@ -25,7 +25,9 @@ in
           "input"
         ]
         ++ lib.optional config.virtualisation.podman.enable "podman"
-        ++ lib.optional config.virtualisation.incus.enable "incus-admin";
+        ++ lib.optional config.virtualisation.incus.enable "incus-admin"
+        ++ lib.optional config.virtualisation.libvirtd.enable "libvirtd"
+        ++ lib.optional config.virtualisation.libvirtd.enable "kvm";
 
         initialHashedPassword = "$6$IwGp276/71CzyoDG$RHOfZSCTLXN2NGk7T8QcYTx815KNhEx42ECUrNxYcdjAga0JD4EVzSgUus.WR2U44Epk8fpcnMdXTIJmYB4dd0";
       };

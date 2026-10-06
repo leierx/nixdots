@@ -25,6 +25,31 @@
         gimp
         discord-canary
         unstable.openmw
+
+        # Metal3 / Cluster API lab tooling
+        act
+        butane
+        clusterctl
+        cosign
+        crane
+        cryptsetup
+        erofs-utils
+        gh
+        gptfdisk
+        just
+        kubeconform
+        kubernetes-helm
+        openssl
+        oras
+        sbsigntool
+        shellcheck
+        skopeo
+        squashfsTools
+        syft
+        systemdUkify
+        xorriso
+        yamllint
+        yq-go
       ];
     };
 }
