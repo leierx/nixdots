@@ -196,6 +196,7 @@ and read `root.config.<option>`.
 | `nixpkgs.nix` | nixos, darwin | `nixpkgs`, `unstable-nixpkgs` | `allowUnfree`; overlay exposing `pkgs.unstable` |
 | `packages.nix` | nixos | `packages` | jq, fzf, fastfetch, tree |
 | `pi-agent/` | homeManager | `pi-agent` (+ option `piAgent.settings`) | pi CLI + its `~/.pi/agent` files and skills |
+| `pig.nix` | homeManager (+ `packages.<system>.pig`) | `pig` | builds [PiG](https://github.com/MichaelKinsy/PiG) with Go 1.27 via `perSystem`; the HM aspect installs that flake package |
 | `plymouth.nix` | nixos | `plymouth` | plymouth + quiet boot params |
 | `podman.nix` | nixos | `podman` | podman + docker compat, DNS on `podman0` |
 | `rofi.nix` | homeManager | `rofi` | rofi theme generated from `palettes.ui` |
