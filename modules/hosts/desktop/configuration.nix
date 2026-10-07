@@ -4,6 +4,7 @@
     {
       # wireguard
       networking.firewall.checkReversePath = false;
+      networking.firewall.trustedInterfaces = [ "m3lab0" ];
 
       environment.systemPackages = with pkgs; [
         kubectl
