@@ -4,7 +4,7 @@ root: {
     {
       imports = [ root.config.flake.modules.homeManager.nix-index ];
 
-      piAgent.settings = {
+      pig.settings = {
         defaultProvider = "opencode-go";
         defaultModel = "deepseek-v4.1-flash";
         defaultThinkingLevel = "high";

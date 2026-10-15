@@ -22,7 +22,7 @@ is hand-rolled in `flake.nix`, `import-tree.nix` and `modules/flake/`.
 - **Anything a host or an importer sets is an option of the feature's class
   module.** Top-level values are global to every host and baked into the
   exported aspects, so per-host or per-importer knobs are declared inside the
-  aspect itself (home-manager `piAgent.settings`, `neovim.outOfStorePath`) and
+  aspect itself (home-manager `pig.settings`, `neovim.outOfStorePath`) and
   set from the host's own home aspect or the importer's config.
 - **Install through the module when one exists.** `programs.<x>.enable` (or
   `services.<x>`) instead of a bare package, so binds and other features can
@@ -43,7 +43,7 @@ README.md                 brief user-facing doc
 AGENTS.md                 this file
 
 modules/flake/            the substrate (see below)
-modules/features/         one flat file per feature (+ hyprland/, neovim/, pi-agent/)
+modules/features/         one flat file per feature (+ hyprland/, neovim/, pig/)
 modules/profiles/         base.nix, workstation.nix
 modules/theme/            palette.nix, fonts, gtk, qt, cursor
 modules/hosts/            desktop/, thonkpad/
@@ -182,8 +182,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `nix-index.nix` | homeManager | `nix-index` | small prebuilt nix-index DB (`nix-index-database` input) + wrapped comma, no full-DB cache symlink |
 | `nixpkgs.nix` | nixos | `nixpkgs`, `unstable-nixpkgs` | `allowUnfree`; overlay exposing `pkgs.unstable` |
 | `packages.nix` | nixos | `packages` | jq, fzf, fastfetch, tree, kubectl |
-| `pi-agent/` | homeManager | `pi-agent` (+ HM option `piAgent.settings`) | pi CLI wrapped with its tool PATH, plus its `~/.pi/agent` files and skills |
-| `pig.nix` | homeManager (+ `packages.<system>.pig`) | `pig` | builds [PiG](https://github.com/MichaelKinsy/PiG) with Go 1.27 via `perSystem`; the HM aspect installs that flake package |
+| `pig/` | homeManager (+ `packages.<system>.pig`) | `pig` (+ HM option `pig.settings`) | builds [PiG](https://github.com/MichaelKinsy/PiG) with Go 1.27 via `perSystem`; the HM aspect installs it with node, rg and fd, plus its agent-dir files and skills |
 | `plymouth.nix` | nixos | `plymouth` | plymouth + quiet boot params |
 | `podman.nix` | nixos | `podman` | podman + docker compat, DNS on `podman0` |
 | `rofi.nix` | homeManager | `rofi` | rofi theme generated from `palettes.ui` |
@@ -239,9 +238,12 @@ Notes on specific features:
   - To update plugins from a store install: `:lua vim.pack.update()`, then
     copy `~/.local/share/nvim/nvim-pack-config/nvim-pack-lock.json` into
     `modules/features/neovim/` and commit. Run `:TSUpdate` afterwards.
-- **`pi-agent/`** wraps pi with the tools its bash tool needs on PATH, writes
-  `~/.pi/agent/settings.json`, `APPEND_SYSTEM.md` and the `commit-style`
-  skill, then merges its home-manager option `piAgent.settings` over the
+- **`pig/`** builds PiG as the flake package `packages.<system>.pig` and
+  installs it with `nodejs` (PiG runs the TypeScript plugins with `node` from
+  PATH), `programs.ripgrep` and `programs.fd`. It writes `settings.json`,
+  `APPEND_SYSTEM.md` and the `commit-style` skill into PiG's agent directory
+  (`$XDG_CONFIG_HOME/pig/agent` when `xdg.enable`, else `~/.pig/agent`, matching
+  how PiG resolves it), then merges its home-manager option `pig.settings` over the
   defaults; `nixosConfigurations/desktop/home` sets it to pin its provider,
   model and thinking level.
 
@@ -253,7 +255,7 @@ to take.
 - `base` — nixos imports `boot doas documentation git home-manager journald
   locale network neovim nix nixpkgs packages podman unstable-nixpkgs
   users` and wires `homeManager.base`; `homeManager.base` imports `git
-  pi-agent tmux users xdg-user-dirs zsh`.
+  pig tmux users xdg-user-dirs zsh`.
 - `workstation` — nixos imports `display-manager fonts gtk hyprland plymouth
   sound`; `homeManager.workstation` imports `bluetooth cursor desktop-apps gtk
   hyprland neovim qt rofi wezterm`. Its NixOS half pulls in the HM half.
@@ -283,13 +285,13 @@ individual by nature, so it is not factored into a shared aspect.
   microcode, firmware, RX 6700 XT graphics, `kvm-amd`, fstrim, fwupd, zram, ZSA keyboard udev rules
   (keymapp), disko, two-monitor kanshi
   profile, trusted `m3lab0`, nix-index, `programs.gh` (git credential helper
-  for github.com), quickshell, `piAgent` settings, SSH match blocks,
+  for github.com), quickshell, `pig` settings, SSH match blocks,
   host-specific app list.
 
 ## External consumers
 
 The mac (a separate nix-darwin flake) imports `modules.homeManager.{wezterm,
-neovim, pi-agent, pig, tmux}`. Keep those aspects platform-neutral (no
+neovim, pig, tmux}`. Keep those aspects platform-neutral (no
 Linux-only packages without a guard), keep `aarch64-darwin` in `systems` for
 `pig`, and expose anything the mac must set as an option of the aspect.
 
@@ -320,12 +322,12 @@ nix fmt                  # formatter = nixfmt-tree
 
 ## Sharp edges
 
-- **pi's `settings.json` is a read-only store symlink.** Anything pi would
+- **PiG's `settings.json` is a read-only store symlink.** Anything PiG would
   normally save itself (`theme`, `defaultProvider`, `defaultModel`,
   `defaultTools`, `packages`, `defaultProjectTrust`) fails to write and reverts
-  on restart; set those through the home-manager option `piAgent.settings`
-  instead. pi's own files (`auth.json`, `sessions/`, `npm/`) are unaffected.
-- **pi themes cannot paint the screen background.** The theme format has no
+  on restart; set those through the home-manager option `pig.settings`
+  instead. PiG's own files (`auth.json`, `sessions/`, `npm/`) are unaffected.
+- **PiG themes cannot paint the screen background.** The theme format has no
   global background token; only the per-box `*Bg` tokens exist. The backdrop is
   the terminal's, i.e. wezterm's Adwaita Dark background.
 - **Formatters/checks are per-system.** A new `perSystem` definition merges;
