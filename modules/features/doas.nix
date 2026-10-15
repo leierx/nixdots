@@ -12,6 +12,10 @@
             setEnv = [
               "LANG"
               "NIX_PATH"
+              # exported by doas-sudo-shim; git/libgit2 use SUDO_UID to trust the caller's repos
+              "SUDO_UID"
+              "SUDO_GID"
+              "SUDO_USER"
             ];
           }
         ];
