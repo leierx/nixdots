@@ -17,7 +17,9 @@ root: {
   };
 
   flake.modules.homeManager.workstation.imports = with root.config.flake.modules.homeManager; [
+    bluetooth
     cursor
+    desktop-apps
     gtk
     hyprland
     neovim

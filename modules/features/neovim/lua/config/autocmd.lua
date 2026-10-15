@@ -1,7 +1,7 @@
 -- highlight yank
 vim.api.nvim_create_autocmd("TextYankPost", {
   callback = function()
-    vim.highlight.on_yank({ timeout = 200 })
+    vim.hl.on_yank({ timeout = 200 })
   end,
 })
 
@@ -19,7 +19,7 @@ vim.api.nvim_create_autocmd("FileType", {
 -- no auto-continue comments
 vim.api.nvim_create_autocmd({ "FileType" }, {
   callback = function()
-    vim.opt.formatoptions:remove({ "r", "o" })
+    vim.opt_local.formatoptions:remove({ "r", "o" })
   end,
 })
 

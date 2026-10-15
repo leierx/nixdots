@@ -28,7 +28,8 @@ root: {
           sort = true;
           sorting-method = "fzf";
         };
-        theme = builtins.toFile "rofi-theme.rasi" ''
+        # a path string: HM would read a derivation as an attrset theme
+        theme = "${pkgs.writeText "rofi-theme.rasi" ''
           * {
             ${varBlock}
             // standard names
@@ -229,7 +230,7 @@ root: {
               cursor: inherit;
               text-color: inherit;
           }
-        '';
+        ''}";
       };
     };
 }

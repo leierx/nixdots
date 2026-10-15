@@ -2,7 +2,7 @@
 { config, ... }:
 {
   perSystem =
-    { pkgs, ... }:
+    { lib, pkgs, ... }:
     {
       formatter = pkgs.nixfmt-tree;
 
@@ -17,18 +17,18 @@
               find "$src" -name '*.nix' -type f -print0 | xargs -0 nixfmt --check
               touch "$out"
             '';
-
-        # Forces module-system evaluation of every NixOS host and installer
-        # without building them: reading `.name` evaluates the derivation.
+      }
+      // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+        # instantiate every host and installer; the discarded context keeps them from being built
         eval =
           pkgs.runCommand "eval-check"
             {
-              toplevelNames = builtins.map (system: system.config.system.build.toplevel.name) (
-                builtins.attrValues config.flake.nixosConfigurations
-              );
+              toplevelDrvs = builtins.map (
+                system: builtins.unsafeDiscardStringContext system.config.system.build.toplevel.drvPath
+              ) (builtins.attrValues config.flake.nixosConfigurations);
             }
             ''
-              echo "$toplevelNames" > "$out"
+              echo "$toplevelDrvs" > "$out"
             '';
       };
     };

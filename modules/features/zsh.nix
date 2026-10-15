@@ -1,5 +1,8 @@
 {
   flake.modules.homeManager.zsh = {
+    # Ctrl-R history, Ctrl-T files, Alt-C directories
+    programs.fzf.enable = true;
+
     programs.zsh = {
       enable = true;
 
@@ -7,10 +10,7 @@
       enableCompletion = true;
       syntaxHighlighting.enable = true;
 
-      history = {
-        size = 10000;
-        save = 690000;
-      };
+      history.size = 100000;
 
       autosuggestion = {
         enable = true;
@@ -18,7 +18,7 @@
       };
 
       initContent = ''
-        # Accept autosuggestion with Ctrl+Space
+        # Execute autosuggestion with Ctrl+Space
         bindkey '^ ' autosuggest-execute
       '';
     };

@@ -1,40 +1,23 @@
-# Home-manager itself: the NixOS and nix-darwin wiring that evaluates this
-# host's home configuration for the primary user.
+# NixOS wiring for the primary user's home-manager configuration on this host.
 root@{ inputs, lib, ... }:
-let
-  inherit (root.config.identity) username;
-
-  userModules = hostName: [
-    { home.stateVersion = lib.mkDefault lib.trivial.release; }
-    (root.config.flake.modules.homeManager."homeConfigurations/${hostName}" or { })
-  ];
-
-  settings = {
-    useGlobalPkgs = true;
-    useUserPackages = true;
-  };
-in
 {
   flake.modules.nixos.home-manager =
     { config, ... }:
     {
       imports = [ inputs.home-manager.nixosModules.home-manager ];
 
-      home-manager = settings // {
-        users.${username}.imports = userModules config.networking.hostName;
-      };
-    };
+      home-manager = {
+        useGlobalPkgs = true;
+        useUserPackages = true;
+        # a pre-existing file at a managed path would otherwise fail activation
+        backupFileExtension = "hm-bak";
 
-  flake.modules.darwin.home-manager =
-    { config, ... }:
-    {
-      imports = [ inputs.home-manager.darwinModules.home-manager ];
-
-      # nix-darwin derives the home-manager home directory from this entry
-      users.users.${username}.home = lib.mkDefault "/Users/${username}";
-
-      home-manager = settings // {
-        users.${username}.imports = userModules config.networking.hostName;
+        users.${root.config.identity.username}.imports = [
+          { home.stateVersion = lib.mkDefault lib.trivial.release; }
+          (root.config.flake.modules.homeManager."nixosConfigurations/${config.networking.hostName}/home"
+            or { }
+          )
+        ];
       };
     };
 }

@@ -7,16 +7,17 @@
         extraRules = [
           {
             groups = [ "wheel" ];
-            keepEnv = true;
             noPass = true;
+            # keepenv would leak XDG_* and leave root-owned files in ~
+            setEnv = [
+              "LANG"
+              "NIX_PATH"
+            ];
           }
         ];
       };
       security.sudo.enable = false;
 
-      environment = {
-        interactiveShellInit = ''alias sudo="doas"'';
-        systemPackages = [ pkgs.doas-sudo-shim ];
-      };
+      environment.systemPackages = [ pkgs.doas-sudo-shim ];
     };
 }

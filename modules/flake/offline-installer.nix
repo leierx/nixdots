@@ -6,7 +6,7 @@
 }:
 let
   # Every nixosHosts entry also gets an `offlineInstaller-<host>` ISO system
-  # carrying its toplevel + diskoScript:
+  # carrying its toplevel + disko destroy-format-mount script:
   #   nix build .#nixosConfigurations.offlineInstaller-<host>.config.system.build.isoImage
   installerHosts = lib.attrNames config.nixosHosts;
 
@@ -14,6 +14,7 @@ let
     targetHost:
     let
       targetSystem = config.flake.nixosConfigurations.${targetHost};
+      inherit (targetSystem.config.system.build) toplevel destroyFormatMount;
     in
     lib.nixosSystem {
       modules = [
@@ -21,17 +22,17 @@ let
         (
           { pkgs, ... }:
           {
-            console.keyMap = "no";
-            i18n.defaultLocale = "en_DK.UTF-8";
-            time.timeZone = "Europe/Oslo";
+            console.keyMap = targetSystem.config.console.keyMap;
+            i18n.defaultLocale = targetSystem.config.i18n.defaultLocale;
+            time.timeZone = targetSystem.config.time.timeZone;
 
             isoImage.squashfsCompression = "zstd -Xcompression-level 22";
             isoImage.storeContents = [
-              targetSystem.config.system.build.toplevel
-              targetSystem.config.system.build.diskoScript
+              toplevel
+              destroyFormatMount
             ];
 
-            nixpkgs.hostPlatform = "x86_64-linux";
+            nixpkgs.hostPlatform = targetSystem.config.nixpkgs.hostPlatform;
             nix.channel.enable = false;
             nix.settings.substituters = lib.mkForce [ ];
             nix.settings.experimental-features = [
@@ -45,12 +46,13 @@ let
             environment.defaultPackages = lib.mkForce [ ];
             environment.systemPackages = [
               (pkgs.writeShellScriptBin "offline-installer" ''
-                ${targetSystem.config.system.build.diskoScript}
+                set -euo pipefail
+                ${lib.getExe destroyFormatMount}
                 ${lib.getExe pkgs.nixos-install} \
                   --root /mnt \
                   --no-root-passwd \
                   --no-channel-copy \
-                  --system ${targetSystem.config.system.build.toplevel}
+                  --system ${toplevel}
               '')
             ];
           }

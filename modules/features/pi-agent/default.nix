@@ -1,18 +1,24 @@
-root@{ inputs, ... }:
+{ inputs, ... }:
 {
-  options.piAgent.settings = root.lib.mkOption {
-    type = root.lib.types.attrsOf root.lib.types.json;
-    default = { };
-    description = ''
-      Per-host overrides for ~/.pi/agent/settings.json, merged over the defaults
-      in pi-agent/default.nix; e.g. pin a default provider, model or thinking level.
-    '';
-  };
-
-  config.flake.modules.homeManager.pi-agent =
-    { pkgs, lib, ... }:
+  flake.modules.homeManager.pi-agent =
     {
-      home.packages = [
+      config,
+      pkgs,
+      lib,
+      ...
+    }:
+    {
+      options.piAgent.settings = lib.mkOption {
+        type = lib.types.attrsOf lib.types.json;
+        default = { };
+        description = ''
+          Overrides for ~/.pi/agent/settings.json, merged over the defaults
+          in pi-agent/default.nix; e.g. pin a default provider, model or thinking level.
+        '';
+      };
+
+      # tools pi's bash tool should always find, on pi's PATH only
+      config.home.packages = [
         (pkgs.symlinkJoin {
           name = "pi-wrapped";
           paths = [
@@ -23,30 +29,29 @@ root@{ inputs, ... }:
             wrapProgram $out/bin/pi \
               --prefix PATH : ${
                 lib.makeBinPath (
+                  with pkgs;
                   [
-                    pkgs.ripgrep
-                    pkgs.fd
-                    pkgs.nodejs
-                    pkgs.bun
-                    pkgs.uv
-                    pkgs.python3
-                    pkgs.jq
-                    pkgs.git
-                    pkgs.coreutils
-                    pkgs.gnumake
-                    pkgs.shellcheck
-                    pkgs.shfmt
+                    ripgrep
+                    fd
+                    nodejs
+                    bun
+                    uv
+                    python3
+                    jq
+                    git
+                    coreutils
+                    gnumake
+                    shellcheck
+                    shfmt
                   ]
-                  ++ lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.chromium
                 )
               } \
-              --set-default PI_SKIP_VERSION_CHECK 1 \
-              ${lib.optionalString pkgs.stdenv.hostPlatform.isLinux "--set PUPPETEER_SKIP_DOWNLOAD 1 --set-default PUPPETEER_EXECUTABLE_PATH ${lib.getExe pkgs.chromium}"}
+              --set-default PI_SKIP_VERSION_CHECK 1
           '';
         })
       ];
 
-      home.file = {
+      config.home.file = {
         ".pi/agent/settings.json".source = (pkgs.formats.json { }).generate "pi-settings.json" (
           lib.recursiveUpdate {
             enableInstallTelemetry = false;
@@ -54,7 +59,7 @@ root@{ inputs, ... }:
             quietStartup = true;
             hideThinkingBlock = true;
 
-            npmCommand = [ "${pkgs.nodejs}/bin/npm" ];
+            npmCommand = [ (lib.getExe' pkgs.nodejs "npm") ];
 
             defaultTools = [
               "read"
@@ -67,12 +72,11 @@ root@{ inputs, ... }:
             ];
 
             packages = [
-              "npm:pi-web-fetch@1.1.0"
               "npm:pi-subagents@0.72.0"
               "npm:@juicesharp/rpiv-ask-user-question@2.12.0"
               "npm:@juicesharp/rpiv-todo@2.12.0"
             ];
-          } root.config.piAgent.settings
+          } config.piAgent.settings
         );
 
         ".pi/agent/APPEND_SYSTEM.md".source = ./APPEND_SYSTEM.md;

@@ -25,20 +25,8 @@ root: {
     ];
   };
 
-  flake.modules.darwin.base = {
-    imports = with root.config.flake.modules.darwin; [
-      home-manager
-      nixpkgs
-    ];
-
-    home-manager.users.${root.config.identity.username}.imports = [
-      root.config.flake.modules.homeManager.base
-    ];
-  };
-
   flake.modules.homeManager.base.imports = with root.config.flake.modules.homeManager; [
     git
-    locale
     pi-agent
     tmux
     users

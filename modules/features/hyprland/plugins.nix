@@ -1,12 +1,19 @@
-{ inputs, ... }:
+root@{ inputs, lib, ... }:
 {
-  flake.modules.homeManager.hyprland =
+  options.hyprland.workspaces = lib.mkOption {
+    type = lib.types.ints.positive;
+    description = "Number of workspaces on each monitor";
+  };
+
+  config.hyprland.workspaces = 6;
+
+  config.flake.modules.homeManager.hyprland =
     { pkgs, ... }:
     {
       wayland.windowManager.hyprland = {
+        settings.hs._var = lib.generators.mkLuaInline ''require("hyprsplit")'';
         extraConfig = ''
-          local hs = require("hyprsplit")
-          hs.config({ num_workspaces = 5, persistent_workspaces = true })
+          hs.config({ num_workspaces = ${toString root.config.hyprland.workspaces}, persistent_workspaces = true })
         '';
       };
       xdg.configFile = {

@@ -11,10 +11,5 @@
         x11.defaultCursor = "left_ptr";
         gtk.enable = true;
       };
-
-      home.sessionVariables = {
-        XCURSOR_THEME = "Adwaita";
-        XCURSOR_SIZE = "24";
-      };
     };
 }

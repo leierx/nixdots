@@ -5,15 +5,7 @@
 let
   inherit (lib) mkOption types;
 
-  configurations =
-    description:
-    mkOption {
-      type = types.lazyAttrsOf types.raw;
-      default = { };
-      inherit description;
-    };
-
-  bySystem =
+  output =
     description:
     mkOption {
       type = types.lazyAttrsOf types.raw;
@@ -25,15 +17,12 @@ let
   # plain type error instead of "undeclared option" noise.
   tag =
     class: name: module:
-    if class == "generic" then
-      module
-    else
-      { ... }:
-      {
-        _class = class;
-        _file = "flake.modules.${class}.${name}";
-        imports = [ module ];
-      };
+    { ... }:
+    {
+      _class = class;
+      _file = "flake.modules.${class}.${name}";
+      imports = [ module ];
+    };
 in
 {
   options.flake = {
@@ -43,19 +32,16 @@ in
       apply = lib.mapAttrs (class: lib.mapAttrs (tag class));
       description = ''
         Groups of modules published by the flake, keyed by module class
-        (`nixos`, `homeManager`, `darwin`, or `generic`) and then by aspect
-        name. Values merge across files, so one aspect may be assembled by
-        any number of top-level modules.
+        (`nixos`, `homeManager`) and then by aspect name. Values merge across
+        files, so one aspect may be assembled by any number of top-level modules.
       '';
     };
 
-    nixosConfigurations = configurations "Evaluated NixOS systems";
-    darwinConfigurations = configurations "Evaluated nix-darwin systems";
-    homeConfigurations = configurations "Evaluated standalone home-manager configurations";
+    nixosConfigurations = output "Evaluated NixOS systems";
 
-    formatter = bySystem "Flake formatter, keyed by system";
-    checks = bySystem "Flake checks, keyed by system";
-    devShells = bySystem "Development shells, keyed by system";
-    packages = bySystem "Packages, keyed by system";
+    formatter = output "Flake formatter, keyed by system";
+    checks = output "Flake checks, keyed by system";
+    devShells = output "Development shells, keyed by system";
+    packages = output "Packages, keyed by system";
   };
 }

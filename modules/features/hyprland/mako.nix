@@ -1,11 +1,6 @@
 root: {
   flake.modules.homeManager.hyprland =
-    {
-      config,
-      lib,
-      pkgs,
-      ...
-    }:
+    { pkgs, ... }:
     let
       colors = root.config.palettes.ui;
     in
@@ -43,14 +38,5 @@ root: {
           max-visible = 8; # max visible notifications (-1 = unlimited)
         };
       };
-
-      wayland.windowManager.hyprland.settings.on = [
-        {
-          _args = [
-            "hyprland.start"
-            (lib.generators.mkLuaInline ''function() hl.exec_cmd("${lib.getExe config.services.mako.package}") end'')
-          ];
-        }
-      ];
     };
 }

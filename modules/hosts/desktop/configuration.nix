@@ -2,18 +2,10 @@
   flake.modules.nixos."nixosConfigurations/desktop" =
     { pkgs, ... }:
     {
-      # wireguard
-      networking.firewall.checkReversePath = false;
       networking.firewall.trustedInterfaces = [ "m3lab0" ];
 
       environment.systemPackages = with pkgs; [
-        kubectl
         kubectl-df-pv
-        mousepad
-        spotify
-        pavucontrol
-        brave
-        firefox-bin
         pika-backup
         keymapp
         wireguard-tools
@@ -22,9 +14,7 @@
         sops
         signal-desktop
         meld
-        obsidian
         gimp
-        discord-canary
         unstable.openmw
 
         # Metal3 / Cluster API lab tooling
@@ -35,7 +25,6 @@
         crane
         cryptsetup
         erofs-utils
-        gh
         gptfdisk
         just
         kubeconform

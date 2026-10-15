@@ -1,8 +1,12 @@
-#!/bin/sh
-set -eu
-
-filepath="$HOME/Pictures/screenshots/$(date +%Y%m%d-%H%M%S)-$$.png"
-mkdir -p "$(dirname "$filepath")"
+# usage: freeze-region copy|save; $screenshot_dir is set by the nix wrapper
+mode=${1:-}
+case "$mode" in
+copy | save) ;;
+*)
+  echo "usage: freeze-region copy|save" >&2
+  exit 2
+  ;;
+esac
 
 tmpdir=$(mktemp -d)
 marker="$tmpdir/frozen"
@@ -23,4 +27,10 @@ done
 [ -e "$marker" ] || exit 1
 g=$(slurp -d)
 [ -n "$g" ] || exit 1
-grim -g "$g" "$filepath"
+
+if [ "$mode" = copy ]; then
+  grim -g "$g" - | wl-copy --type image/png
+else
+  mkdir -p "$screenshot_dir"
+  grim -g "$g" "$screenshot_dir/$(date +%Y%m%d-%H%M%S)-$$.png"
+fi

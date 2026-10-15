@@ -1,12 +1,30 @@
+root@{ lib, ... }:
+let
+  ui = root.config.palettes.ui;
+  hex = lib.removePrefix "#";
+in
 {
   flake.modules.homeManager.hyprland =
     {
+      config,
       pkgs,
       lib,
+      osConfig,
       ...
     }:
+    let
+      fingerprint = osConfig.services.fprintd.enable;
+      label = {
+        monitor = "";
+        color = "rgba(${hex ui.fg}bf)";
+        font_family = "Hack";
+        halign = "center";
+        valign = "center";
+      };
+    in
     {
-      wayland.windowManager.hyprland.settings.lockscreen_cmd._var = "${lib.getExe pkgs.hyprlock}";
+      wayland.windowManager.hyprland.settings.lockscreen_cmd._var =
+        lib.getExe config.programs.hyprlock.package;
 
       programs.hyprlock = {
         enable = true;
@@ -24,27 +42,31 @@
           };
 
           label = [
-            {
-              monitor = "";
-              text = "$TIME";
-              color = "rgba(216, 222, 233, 0.750000)";
-              font_size = 50;
-              font_family = "Hack";
-              position = "0, 200";
-              halign = "center";
-              valign = "center";
+            (
+              label
+              // {
+                text = "$TIME";
+                font_size = 50;
+                position = "0, 200";
+              }
+            )
+            (
+              label
+              // {
+                text = "cmd[update:1000] ${pkgs.coreutils}/bin/date +'%A, %B %d'";
+                font_size = 30;
+                position = "0, 100";
+              }
+            )
+          ]
+          ++ lib.optional fingerprint (
+            label
+            // {
+              text = "$FPRINTPROMPT";
+              font_size = 14;
+              position = "0, -170";
             }
-            {
-              monitor = "";
-              text = "cmd[update:1000] ${pkgs.coreutils}/bin/date +'%A, %B %d'";
-              color = "rgba(216, 222, 233, 0.750000)";
-              font_size = 30;
-              font_family = "Hack";
-              position = "0, 100";
-              halign = "center";
-              valign = "center";
-            }
-          ];
+          );
 
           input-field = {
             monitor = "";
@@ -52,19 +74,20 @@
             dots_center = true;
             dots_size = 0.2;
             dots_spacing = 0.2;
-            outer_color = "rgba(255, 255, 255, 0)";
-            inner_color = "rgba(255, 255, 255, 0.1)";
-            font_color = "rgb(200, 200, 200)";
+            outer_color = "rgba(00000000)";
+            inner_color = "rgba(${hex ui.white}1a)";
+            font_color = "rgb(${hex ui.fg})";
             font_family = "Hack";
             # hyprlang treats an unescaped # as a comment; ## is a literal #.
-            placeholder_text = "<i><span foreground=\"##ffffff99\">Enter Pass</span></i>";
-            fail_text = "<i><span foreground=\"##ff8888cc\">$FAIL</span> <b>($ATTEMPTS)</b></i>";
+            placeholder_text = "<i><span foreground=\"##${hex ui.fg}99\">Enter Pass</span></i>";
+            fail_text = "<i><span foreground=\"##${hex ui.redLight}cc\">$FAIL</span> <b>($ATTEMPTS)</b></i>";
             hide_input = false;
             position = "0, -100";
             halign = "center";
             valign = "center";
           };
-        };
+        }
+        // lib.optionalAttrs fingerprint { auth."fingerprint:enabled" = true; };
       };
     };
 }

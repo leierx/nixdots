@@ -1,4 +1,5 @@
-local servers = {
+-- overrides live in after/lsp/<name>.lua, which wins over nvim-lspconfig's lsp/
+vim.lsp.enable({
   "lua_ls",
   "nixd",
   "qmlls",
@@ -10,24 +11,18 @@ local servers = {
   "yamlls",
   "tofu_ls",
   "gopls",
-}
+})
 
-for _, name in ipairs(servers) do
-  local path = vim.fs.joinpath(vim.fn.stdpath("config"), "lsp", name .. ".lua")
-  if vim.uv.fs_stat(path) then
-    vim.lsp.config(name, dofile(path))
-  end
-end
-
-vim.lsp.enable(servers)
-
-vim.lsp.config('*', {
-  on_attach = function(client, bufnr)
+-- LspAttach, not on_attach: a server's own on_attach (ts_ls) would replace ours
+vim.api.nvim_create_autocmd("LspAttach", {
+  desc = "Workspace diagnostics",
+  callback = function(args)
+    local client = assert(vim.lsp.get_client_by_id(args.data.client_id))
     -- some clients support workspace diagnostics natively
-    if client:supports_method("workspace/diagnostic", bufnr) then
+    if client:supports_method("workspace/diagnostic", args.buf) then
       vim.lsp.buf.workspace_diagnostics({ client_id = client.id })
     else
-      require("workspace-diagnostics").populate_workspace_diagnostics(client, bufnr)
+      require("workspace-diagnostics").populate_workspace_diagnostics(client, args.buf)
     end
-  end
+  end,
 })

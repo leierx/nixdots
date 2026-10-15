@@ -1,5 +1,4 @@
-# Keyboard, locale and time. One decision, applied to the console, to X/xkb
-# and to the wayland session.
+# Keyboard, locale and time for the console and xkb; hyprland reads xkb via osConfig.
 let
   layout = "no";
   variant = "nodeadkeys";
@@ -32,11 +31,4 @@ in
         inherit layout variant;
       };
     };
-
-  flake.modules.homeManager.locale = {
-    wayland.windowManager.hyprland.settings.config.input = {
-      kb_layout = layout;
-      kb_variant = variant;
-    };
-  };
 }

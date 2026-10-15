@@ -4,8 +4,8 @@
       cpu.amd.updateMicrocode = true;
       enableRedistributableFirmware = true;
 
-      # MediaTek MT7922 combo card; the BT half needs explicit enable.
-      # bluetooth.enable = true;
+      # udev uaccess rules so keymapp can flash the ZSA keyboard
+      keyboard.zsa.enable = true;
 
       # Radeon RX 6700 XT
       graphics = {

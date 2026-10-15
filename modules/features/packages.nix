@@ -7,6 +7,7 @@
         fzf
         fastfetch
         tree
+        kubectl
       ];
     };
 }

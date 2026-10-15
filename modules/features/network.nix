@@ -1,7 +1,5 @@
 {
   flake.modules.nixos.network = {
-    networking.dhcpcd.enable = false;
-
     services.resolved = {
       enable = true;
       settings.Resolve = {
@@ -18,6 +16,8 @@
 
       firewall = {
         allowPing = false;
+        # strict breaks WireGuard full tunnels
+        checkReversePath = "loose";
       };
 
       nftables.enable = true;

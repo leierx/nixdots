@@ -18,9 +18,5 @@
           publicShare = lib.mkForce null;
         };
       };
-
-      home.activation.createProjectsDir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        mkdir -p "$HOME/Dev"
-      '';
     };
 }

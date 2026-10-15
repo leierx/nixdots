@@ -4,8 +4,6 @@
     {
       virtualisation.incus = {
         enable = true;
-        ui.enable = lib.mkDefault false;
-        agent.enable = lib.mkDefault true;
         preseed = lib.mkDefault {
           networks = [
             {

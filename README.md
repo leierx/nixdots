@@ -1,6 +1,6 @@
 # nixdots
 
-NixOS / nix-darwin / home-manager configurations in the
+NixOS / home-manager configurations in the
 [dendritic pattern](https://github.com/mightyiam/dendritic), on a
 dependency-free, hand-rolled substrate.
 
@@ -20,80 +20,34 @@ root: {
 ## Using a module elsewhere
 
 Every aspect is published as a flake output, so another flake can import
-individual features by name:
+individual features by name, as my mac's configuration does:
 
 ```nix
 { inputs, ... }:
 {
-  imports = [
-    inputs.nixdots.modules.nixos.hyprland # compositor, portals, pam
-    inputs.nixdots.modules.homeManager.hyprland # session, waybar, mako, binds
+  # a home-manager module
+  imports = with inputs.nixdots.modules.homeManager; [
+    wezterm
+    neovim
+    pi-agent
+    pig
+    tmux
   ];
+
+  # knobs an importer may need are options of the aspect itself
+  piAgent.settings.defaultThinkingLevel = "high";
+  neovim.outOfStorePath = "/Users/me/nixdots/modules/features/neovim";
 }
 ```
 
 Features pin their dependencies to this flake's inputs (hyprland, disko,
-nixpkgs-unstable). The home-manager half of `hyprland` reads `osConfig` for the
-compositor package and therefore needs the NixOS half.
+nixpkgs-unstable). The home-manager half of `hyprland` reads `osConfig` and
+therefore needs the NixOS half (`modules.nixos.hyprland`).
 
-### Overriding what a module reads
-
-Those modules read shared values — my name, my colours, my pi settings — from
-this flake's top-level configuration, so importing them as above gives you my
-values. To supply your own, join the evaluation instead of consuming its
-result: `lib.reconfigure` takes a module (or a list of them), merges it into
-the top-level configuration and hands back the same output set the flake
-normally produces.
-
-Inline, when you need one aspect:
-
-```nix
-{ inputs, lib, ... }:
-{
-  imports = [
-    (inputs.nixdots.lib.reconfigure {
-      identity.email = lib.mkForce "you@example.org";
-    }).modules.homeManager.git
-  ];
-}
-```
-
-Bound once in a `let`, when you need several — this is the form to prefer,
-since every call is a separate evaluation and taking the *same* aspect from two
-of them lands two sets of definitions in one configuration:
-
-```nix
-{ inputs, lib, ... }:
-let
-  nixdots = inputs.nixdots.lib.reconfigure [
-    {
-      identity.email = lib.mkForce "you@example.org";
-      identity.fullName = lib.mkForce "Your Name";
-      palettes.ui.blue = lib.mkForce "#1e88e5"; # every other colour stays mine
-    }
-    ./my-pi-settings.nix # an ordinary module: piAgent.settings = { ... };
-  ];
-in
-{
-  imports = [
-    nixdots.modules.homeManager.git
-    nixdots.modules.homeManager.rofi
-    nixdots.modules.homeManager.pi-agent
-  ];
-}
-```
-
-The rule of thumb: values I already define (`identity.*`, `palettes.*`) need
-`lib.mkForce`, because a plain definition would sit at the same priority as
-mine and the module system will tell you so. Values I leave empty
-(`piAgent.settings`, `neovim.outOfStorePath`, `nixIndex.smallDatabase`) take a
-plain definition. Either way the granularity is per key: overriding one colour
-or one setting leaves the rest of mine in place.
-
-Everything the top-level configuration declares is fair game — see
-[AGENTS.md](./AGENTS.md#top-level-options) for the list — and everything the
-modules themselves set is ordinary options, so `lib.mkForce` in your own
-configuration remains the escape hatch for the rest.
+Shared values such as my colours (`palettes`) are read from this flake's own
+configuration, so an imported aspect brings them along. Anything else is an
+ordinary option the aspect sets, and `lib.mkForce` in your configuration
+overrides it.
 
 ## Options
 
@@ -104,9 +58,11 @@ changed and one glance away from being understood; promoting it to an option
 later is mechanical. A constant nobody is overriding is just indirection.
 
 The exception is shared data, which is not an option in that sense: `identity`,
-`palettes`, `systems` and the per-host `*.settings` bags are declared once at the
-top level because several modules genuinely read them. Those exist because a
-value is *shared*, not because a value might vary.
+`palettes`, `hyprland.workspaces` and `systems` are declared once at the top
+level because several modules genuinely read them. Those exist because a value
+is *shared*, not because a value might vary. A value that does vary per host or
+per importer (`piAgent.settings`, `neovim.outOfStorePath`) is an option of the
+aspect that reads it, set from the host's or the importer's own configuration.
 
 ## Building
 
@@ -134,7 +90,7 @@ modules/
                    identity, checks, offline installer
   features/ one flat file per feature, covering every class it
                    applies to; a directory only when the feature has parts
-                   (hyprland/, neovim/)
+                   (hyprland/, neovim/, pi-agent/)
   profiles/ base and workstation: named groups of features
   theme/ palette, fonts, gtk, qt, cursor
   hosts/ one directory per machine

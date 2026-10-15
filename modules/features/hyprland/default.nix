@@ -1,7 +1,7 @@
-root@{ inputs, ... }:
+root@{ inputs, lib, ... }:
 let
   ui = root.config.palettes.ui;
-  hex = c: root.lib.removePrefix "#" c;
+  hex = lib.removePrefix "#";
 in
 {
   flake.modules.nixos.hyprland =
@@ -15,9 +15,10 @@ in
         xwayland.enable = true;
       };
 
+      hardware.graphics.enable = true;
+
       nix.settings = {
         substituters = [ "https://hyprland.cachix.org" ];
-        trusted-substituters = [ "https://hyprland.cachix.org" ];
         trusted-public-keys = [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
       };
 
@@ -25,11 +26,13 @@ in
       services.gnome.sushi.enable = true;
       environment.systemPackages = [ pkgs.nautilus ];
 
-      security.pam.services.hyprlock = { };
+      # hyprlock reads fprintd itself; pam_fprintd would block the password
+      security.pam.services.hyprlock.fprintAuth = false;
     };
 
   flake.modules.homeManager.hyprland =
     {
+      config,
       pkgs,
       osConfig,
       lib,
@@ -37,15 +40,32 @@ in
     }:
     {
       home.packages = with pkgs; [
-        grim
-        slurp
-        wayfreeze
         wl-clipboard
         wdisplays
       ];
 
+      # session services run under Hyprland only
+      wayland.systemd.target = "hyprland-session.target";
+
+      services.cliphist = {
+        enable = true;
+        allowImages = true;
+      };
       # cliphist's history persists in the cache dir; drop it on every login.
       systemd.user.tmpfiles.rules = [ "R %C/cliphist" ];
+
+      services.hyprpolkitagent.enable = true;
+
+      services.network-manager-applet.enable = osConfig.networking.networkmanager.enable;
+      # its unit hardcodes graphical-session.target
+      systemd.user.services.network-manager-applet = lib.mkIf osConfig.networking.networkmanager.enable {
+        Unit.PartOf = lib.mkForce [ config.wayland.systemd.target ];
+        Unit.After = lib.mkForce [
+          config.wayland.systemd.target
+          "tray.target"
+        ];
+        Install.WantedBy = lib.mkForce [ config.wayland.systemd.target ];
+      };
 
       xdg.portal = {
         extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
@@ -85,8 +105,8 @@ in
                   ];
                   angle = 30;
                 };
-                nogroup_border = "0xffffaaff";
-                nogroup_border_active = "0xffff00ff";
+                nogroup_border = "rgb(${hex ui.magenta})";
+                nogroup_border_active = "rgb(${hex ui.magentaLight})";
               };
               layout = "dwindle"; # default layout
             };
@@ -105,6 +125,11 @@ in
             };
 
             animations.enabled = false;
+
+            input = {
+              kb_layout = osConfig.services.xserver.xkb.layout;
+              kb_variant = osConfig.services.xserver.xkb.variant;
+            };
 
             misc = {
               disable_hyprland_logo = true;
@@ -132,19 +157,19 @@ in
           on =
             let
               inherit (lib.generators) mkLuaInline;
-              mkExecOnStart = cmd: {
+              mkExecOn = event: cmd: {
                 _args = [
-                  "hyprland.start"
+                  event
                   (mkLuaInline "function() hl.exec_cmd(${builtins.toJSON cmd}) end")
                 ];
               };
             in
             [
-              (mkExecOnStart "${pkgs.wbg}/bin/wbg -s ${./assets/wallpaper.png}")
-              (mkExecOnStart "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store")
+              (mkExecOn "hyprland.start" "${lib.getExe pkgs.wbg} -s ${./assets/wallpaper.png}")
             ]
-            ++ lib.optional osConfig.networking.networkmanager.enable (
-              mkExecOnStart "${pkgs.networkmanagerapplet}/bin/nm-applet"
+            # a config reload resets the outputs to Hyprland's monitor rules
+            ++ lib.optional config.services.kanshi.enable (
+              mkExecOn "config.reloaded" "${lib.getExe' config.services.kanshi.package "kanshictl"} reload"
             );
         };
       };

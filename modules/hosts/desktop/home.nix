@@ -1,18 +1,22 @@
 root: {
-  config.piAgent.settings = root.lib.mkDefault {
-    defaultProvider = "opencode-go";
-    defaultModel = "deepseek-v4.1-flash";
-    defaultThinkingLevel = "high";
-  };
-
-  config.nixIndex.smallDatabase = root.lib.mkDefault true;
-
-  config.flake.modules.homeManager."homeConfigurations/desktop" =
+  flake.modules.homeManager."nixosConfigurations/desktop/home" =
     { pkgs, lib, ... }:
     {
       imports = [ root.config.flake.modules.homeManager.nix-index ];
 
-      home.packages = [ pkgs.quickshell ];
+      piAgent.settings = {
+        defaultProvider = "opencode-go";
+        defaultModel = "deepseek-v4.1-flash";
+        defaultThinkingLevel = "high";
+      };
+
+      programs.quickshell.enable = true;
+
+      # also git's credential helper for github.com over https
+      programs.gh = {
+        enable = true;
+        settings.aliases.co = "pr checkout";
+      };
 
       programs.ssh = {
         enable = true;
@@ -40,13 +44,13 @@ root: {
           {
             _args = [
               "hyprland.start"
-              (lib.generators.mkLuaInline ''function() hl.exec_cmd("${pkgs.discord-canary}/bin/discordcanary") end'')
+              (lib.generators.mkLuaInline ''function() hl.exec_cmd("${lib.getExe pkgs.discord-canary}") end'')
             ];
           }
           {
             _args = [
               "hyprland.start"
-              (lib.generators.mkLuaInline ''function() hl.exec_cmd("${pkgs.firefox-bin}/bin/firefox", {monitor = "DP-1"}) end'')
+              (lib.generators.mkLuaInline ''function() hl.exec_cmd("${lib.getExe pkgs.firefox-bin}", {monitor = "DP-1"}) end'')
             ];
           }
         ];

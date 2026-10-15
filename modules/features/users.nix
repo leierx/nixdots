@@ -21,8 +21,6 @@ in
           "wheel"
           "networkmanager"
           "video"
-          "audio"
-          "input"
         ]
         ++ lib.optional config.virtualisation.podman.enable "podman"
         ++ lib.optional config.virtualisation.incus.enable "incus-admin"
@@ -34,6 +32,8 @@ in
 
       # login shell; the configuration itself lives in the zsh feature
       programs.zsh.enable = true;
+      # oh-my-zsh in the home-manager zsh runs compinit itself
+      programs.zsh.enableGlobalCompInit = false;
       programs.starship.enable = true;
 
       users.users.root.hashedPassword = "!";

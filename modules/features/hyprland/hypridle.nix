@@ -1,16 +1,21 @@
 {
   flake.modules.homeManager.hyprland =
-    { pkgs, lib, ... }:
+    {
+      config,
+      pkgs,
+      lib,
+      ...
+    }:
     {
       services.hypridle = {
         enable = true;
-        systemdTarget = "hyprland-session.target";
         settings = {
           general = {
             before_sleep_cmd = "loginctl lock-session";
             after_sleep_cmd = "hyprctl dispatch dpms on";
             ignore_dbus_inhibit = false;
-            lock_cmd = "${lib.getExe pkgs.hyprlock}";
+            # one locker even when the idle timer and before_sleep_cmd race
+            lock_cmd = "${lib.getExe' pkgs.procps "pidof"} hyprlock || ${lib.getExe config.programs.hyprlock.package}";
             inhibit_sleep = 3;
           };
           listener = [

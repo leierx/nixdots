@@ -1,48 +1,15 @@
 root: {
-
   flake.modules.homeManager.hyprland =
-    {
-      pkgs,
-      lib,
-      ...
-    }:
+    { lib, ... }:
     let
       colors = root.config.palettes.ui;
+      inherit (root.config.hyprland) workspaces;
 
-      vars = [
-        "fg"
-        "focusedBorderColor"
-        "unfocusedBorderColor"
-        "bg1"
-        "bg2"
-        "bg3"
-        "bg4"
-        "bg5"
-        "black"
-        "blackLight"
-        "blue"
-        "blueLight"
-        "cyan"
-        "cyanLight"
-        "gray"
-        "grayLight"
-        "green"
-        "greenLight"
-        "magenta"
-        "magentaLight"
-        "primaryColor"
-        "red"
-        "redLight"
-        "white"
-        "whiteLight"
-        "yellow"
-        "yellowLight"
-      ];
     in
     {
       programs.waybar = {
         enable = true;
-        systemd.enable = false;
+        systemd.enable = true;
         settings = {
           topbar = {
             name = "topbar";
@@ -71,28 +38,10 @@ root: {
             "hyprland/workspaces" = {
               format = "{icon}";
               all-outputs = false;
-              format-icons = {
-                "1" = "1";
-                "2" = "2";
-                "3" = "3";
-                "4" = "4";
-                "5" = "5";
-                "6" = "1";
-                "7" = "2";
-                "8" = "3";
-                "9" = "4";
-                "10" = "5";
-                "11" = "1";
-                "12" = "2";
-                "13" = "3";
-                "14" = "4";
-                "15" = "5";
-                "16" = "1";
-                "17" = "2";
-                "18" = "3";
-                "19" = "4";
-                "20" = "5";
-              };
+              # hyprsplit numbers monitor k's workspaces k*n+1..(k+1)*n; show them as 1..n
+              format-icons = lib.genAttrs (map toString (lib.range 1 (4 * workspaces))) (
+                id: toString (lib.mod (lib.toInt id - 1) workspaces + 1)
+              );
             };
 
             clock = {
@@ -128,9 +77,9 @@ root: {
         };
         style =
           let
-            defs = lib.concatMapStringsSep "\n" (
-              name: "          @define-color ${name} ${colors.${name}};"
-            ) vars;
+            defs = lib.concatMapStringsSep "\n" (name: "          @define-color ${name} ${colors.${name}};") (
+              lib.attrNames colors
+            );
           in
           ''
               ${defs}
@@ -190,23 +139,13 @@ root: {
           '';
       };
 
-      wayland.windowManager.hyprland = {
-        settings = {
-          on = [
-            {
-              _args = [
-                "hyprland.start"
-                (lib.generators.mkLuaInline ''function() hl.exec_cmd("${lib.getExe pkgs.waybar}") end'')
-              ];
-            }
-            {
-              _args = [
-                "monitor.layout_changed"
-                (lib.generators.mkLuaInline "function() hl.exec_cmd(${builtins.toJSON "${pkgs.procps}/bin/pkill -SIGUSR2 -u $(id -u) -x waybar"}) end")
-              ];
-            }
+      wayland.windowManager.hyprland.settings.on = [
+        {
+          _args = [
+            "monitor.layout_changed"
+            (lib.generators.mkLuaInline ''function() hl.exec_cmd("systemctl --user reload waybar") end'')
           ];
-        };
-      };
+        }
+      ];
     };
 }

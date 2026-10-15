@@ -3,6 +3,17 @@
 
   flake.modules.homeManager.gtk =
     { pkgs, ... }:
+    let
+      extraConfig = {
+        gtk-application-prefer-dark-theme = 1;
+        gtk-enable-animations = 1;
+        gtk-enable-primary-paste = 0;
+        gtk-recent-files-enabled = 0;
+        gtk-enable-event-sounds = 0;
+        gtk-enable-input-feedback-sounds = 0;
+        gtk-error-bell = 0;
+      };
+    in
     {
       dconf.enable = true;
 
@@ -14,8 +25,8 @@
         enable = true;
 
         font = {
-          name = "gnome";
-          package = pkgs.cantarell-fonts;
+          name = "Adwaita Sans";
+          package = pkgs.adwaita-fonts;
           size = null;
         };
 
@@ -31,26 +42,10 @@
 
         gtk3 = {
           bookmarks = [ ];
-          extraConfig = {
-            gtk-application-prefer-dark-theme = 1;
-            gtk-enable-animations = 1;
-            gtk-enable-primary-paste = 0;
-            gtk-recent-files-enabled = 0;
-            gtk-enable-event-sounds = 0;
-            gtk-enable-input-feedback-sounds = 0;
-            gtk-error-bell = 0;
-          };
+          inherit extraConfig;
         };
 
-        gtk4.extraConfig = {
-          gtk-application-prefer-dark-theme = 1;
-          gtk-enable-animations = 1;
-          gtk-enable-primary-paste = 0;
-          gtk-recent-files-enabled = 0;
-          gtk-enable-event-sounds = 0;
-          gtk-enable-input-feedback-sounds = 0;
-          gtk-error-bell = 0;
-        };
+        gtk4 = { inherit extraConfig; };
       };
     };
 }
