@@ -2,7 +2,10 @@ root: {
   flake.modules.homeManager."nixosConfigurations/desktop/home" =
     { pkgs, lib, ... }:
     {
-      imports = [ root.config.flake.modules.homeManager.nix-index ];
+      imports = with root.config.flake.modules.homeManager; [
+        homelab
+        nix-index
+      ];
 
       piAgent.settings = {
         defaultProvider = "opencode-go";

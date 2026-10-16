@@ -1,0 +1,21 @@
+root: {
+  flake.modules.homeManager.homelab =
+    { pkgs, ... }:
+    {
+      home.packages = with pkgs; [
+        just
+        kubernetes-helm
+      ];
+
+      programs.ssh = {
+        enable = true;
+        settings.loft01 = {
+          HostName = "10.0.0.1";
+          User = root.config.identity.username;
+          ServerAliveInterval = 30;
+          # k3s API; `ssh -N loft01` is the kubectl tunnel
+          LocalForward = "6443 127.0.0.1:6443";
+        };
+      };
+    };
+}
