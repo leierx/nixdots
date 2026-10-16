@@ -27,7 +27,7 @@ root: {
 
   flake.modules.homeManager.base.imports = with root.config.flake.modules.homeManager; [
     git
-    pig
+    pi-agent
     tmux
     users
     xdg-user-dirs

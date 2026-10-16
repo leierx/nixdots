@@ -1,6 +1,7 @@
 root: {
 
   flake.modules.homeManager.tmux =
+    { config, ... }:
     let
       colors = root.config.palettes.kanagawa;
     in
@@ -44,7 +45,7 @@ root: {
 
           # reload config
           bind-key -T prefix R \
-            source-file "$XDG_CONFIG_HOME/tmux/tmux.conf" \; \
+            source-file "${config.xdg.configHome}/tmux/tmux.conf" \; \
             display-message "Config reloaded"
 
           # sync panes

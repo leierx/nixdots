@@ -29,12 +29,12 @@ individual features by name, as my mac's configuration does:
   imports = with inputs.nixdots.modules.homeManager; [
     wezterm
     neovim
-    pig
+    pi-agent
     tmux
   ];
 
   # knobs an importer may need are options of the aspect itself
-  pig.settings.defaultThinkingLevel = "high";
+  piAgent.settings.defaultThinkingLevel = "high";
   neovim.outOfStorePath = "/Users/me/nixdots/modules/features/neovim";
 }
 ```
@@ -60,7 +60,7 @@ The exception is shared data, which is not an option in that sense: `identity`,
 `palettes`, `hyprland.workspaces` and `systems` are declared once at the top
 level because several modules genuinely read them. Those exist because a value
 is *shared*, not because a value might vary. A value that does vary per host or
-per importer (`pig.settings`, `neovim.outOfStorePath`) is an option of the
+per importer (`piAgent.settings`, `neovim.outOfStorePath`) is an option of the
 aspect that reads it, set from the host's or the importer's own configuration.
 
 ## Building
@@ -89,7 +89,7 @@ modules/
                    identity, checks, offline installer
   features/ one flat file per feature, covering every class it
                    applies to; a directory only when the feature has parts
-                   (hyprland/, neovim/, pig/)
+                   (hyprland/, neovim/, pi-agent/)
   profiles/ base and workstation: named groups of features
   theme/ palette, fonts, gtk, qt, cursor
   hosts/ one directory per machine

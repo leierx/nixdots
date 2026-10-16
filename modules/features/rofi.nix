@@ -1,7 +1,12 @@
 root: {
 
   flake.modules.homeManager.rofi =
-    { pkgs, lib, ... }:
+    {
+      config,
+      pkgs,
+      lib,
+      ...
+    }:
     let
       colors = root.config.palettes.ui;
 
@@ -19,7 +24,7 @@ root: {
         enable = true;
         font = "Hack 16";
         cycle = false;
-        terminal = "wezterm";
+        terminal = lib.getExe config.programs.wezterm.package;
         extraConfig = {
           show-icons = true;
           drun-match-fields = "name,exec,generic,categories,keywords";

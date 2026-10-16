@@ -35,6 +35,8 @@
           defaultEditor = true;
           # on nvim's PATH only, so they don't shadow project dev shells
           extraPackages = with pkgs; [
+            # vim.pack clones and updates plugins with it
+            git
             # nvim-treesitter (main) compiles parsers with these
             tree-sitter
             gcc

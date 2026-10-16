@@ -1,12 +1,15 @@
 root: {
   flake.modules.homeManager.hyprland =
-    { lib, ... }:
+    { lib, pkgs, ... }:
     let
       colors = root.config.palettes.ui;
       inherit (root.config.hyprland) workspaces;
 
     in
     {
+      # the bar's font-family
+      home.packages = [ pkgs.adwaita-fonts ];
+
       programs.waybar = {
         enable = true;
         systemd.enable = true;
