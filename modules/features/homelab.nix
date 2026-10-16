@@ -1,9 +1,7 @@
 root: {
   flake.modules.homeManager.homelab =
-    { config, pkgs, ... }:
+    { pkgs, ... }:
     {
-      home.sessionVariables.KUBECONFIG = "${config.home.homeDirectory}/.kube/loft01";
-
       home.packages = with pkgs; [
         just
         kubernetes-helm

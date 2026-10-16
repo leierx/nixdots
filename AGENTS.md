@@ -179,7 +179,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `git.nix` | nixos, homeManager | `git` | git on; user identity from `identity` |
 | `home-manager.nix` | nixos | `home-manager` | wires HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<hostname>/home` |
 | `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`) | see below |
-| `homelab.nix` | homeManager | `homelab` | `just` + `helm`, `KUBECONFIG=~/.kube/loft01`, and an ssh `loft01` host (10.0.0.1) that forwards local 6443 to the k3s API |
+| `homelab.nix` | homeManager | `homelab` | `just` + `helm`, and an ssh `loft01` host (10.0.0.1) that forwards local 6443 to the k3s API |
 | `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage |
 | `journald.nix` | nixos | `journald` | 90-day retention |
 | `libvirt.nix` | nixos | `libvirt` | libvirtd + unprivileged QEMU/KVM with swtpm, virt-manager, trusted `br0` lab bridge |
