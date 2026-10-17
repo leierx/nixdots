@@ -17,7 +17,6 @@
     };
 
     services = {
-      fprintd.enable = true; # fingerprint reader. See: https://github.com/NixOS/nixpkgs/issues/171136
       fstrim.enable = true; # SSD trimming
       fwupd.enable = true; # firmware update, recommended on thinkpads
       thermald.enable = true; # Thermal management
