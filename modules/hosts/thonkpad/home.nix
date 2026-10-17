@@ -7,5 +7,10 @@ root: {
       defaultModel = "deepseek-v4.1-flash";
       defaultThinkingLevel = "high";
     };
+
+    programs.gh = {
+      enable = true;
+      settings.aliases.co = "pr checkout";
+    };
   };
 }
