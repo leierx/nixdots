@@ -5,6 +5,7 @@ root: {
       home.packages = with pkgs; [
         just
         kubernetes-helm
+        kubevirt
       ];
 
       programs.ssh = {
