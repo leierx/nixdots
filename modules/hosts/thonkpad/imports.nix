@@ -6,5 +6,6 @@
     base
     workstation
     gaming
+    homelab
   ];
 }

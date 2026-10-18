@@ -179,7 +179,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `git.nix` | nixos, homeManager | `git` | git on; user identity from `identity` |
 | `home-manager.nix` | nixos | `home-manager` | wires HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<hostname>/home` |
 | `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`) | see below |
-| `homelab.nix` | homeManager | `homelab` | `just` + `helm` + `virtctl` (`kubevirt`), and an ssh `loft01` host (10.0.0.1) that forwards local 6443 to the k3s API |
+| `homelab.nix` | nixos, homeManager | `homelab` | home: `just` + `helm` + `virtctl` (`kubevirt`) + `kubelogin` (`kubectl oidc-login`), and an ssh `loft01` host (10.0.0.1) that forwards local 6443 to the k3s API. nixos: maps `auth`/`argocd`/`metrics.skinke.net` to 10.0.0.1, for hosts that are WireGuard peers of loft01 |
 | `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage |
 | `journald.nix` | nixos | `journald` | 90-day retention |
 | `libvirt.nix` | nixos | `libvirt` | libvirtd + unprivileged QEMU/KVM with swtpm, virt-manager, trusted `br0` lab bridge |
@@ -291,7 +291,7 @@ Hardware settings (firmware, fstrim, fwupd, zram, microcode, graphics, bluetooth
 stay in each host's `hardware.nix`, even when hosts repeat them: hardware is
 individual by nature, so it is not factored into a shared aspect.
 
-- **`thonkpad`** — imports `base workstation gaming`. Imports the `homelab` home aspect. Intel laptop:
+- **`thonkpad`** — imports `base workstation gaming homelab`. Imports the `homelab` home aspect. Intel laptop:
   microcode, firmware, bluetooth, graphics + `intel-media-driver`, fstrim, fwupd, zram, `fprintd`,
   `thermald`, TLP battery thresholds, disko, single-monitor kanshi profile,
   `treefmt`.

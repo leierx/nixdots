@@ -6,6 +6,8 @@ root: {
         just
         kubernetes-helm
         kubevirt
+        # `kubectl oidc-login`: the homelab kubeconfig logs in through Authentik
+        kubelogin-oidc
       ];
 
       programs.ssh = {
@@ -19,4 +21,14 @@ root: {
         };
       };
     };
+
+  # Hosts that are WireGuard peers of loft01 reach its sites on the wg gateway: Authentik's admin
+  # interface only exists there, and Argo CD and Grafana skip the public login gate.
+  flake.modules.nixos.homelab = {
+    networking.hosts."10.0.0.1" = [
+      "auth.skinke.net"
+      "argocd.skinke.net"
+      "metrics.skinke.net"
+    ];
+  };
 }
