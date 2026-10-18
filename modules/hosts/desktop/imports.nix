@@ -8,5 +8,6 @@
     gaming
     incus
     libvirt
+    homelab
   ];
 }
