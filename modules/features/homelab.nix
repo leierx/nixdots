@@ -28,7 +28,7 @@ root: {
     networking.hosts."10.0.0.1" = [
       "auth.skinke.net"
       "argocd.skinke.net"
-      "metrics.skinke.net"
+      "workflows.skinke.net"
     ];
   };
 }
