@@ -26,6 +26,7 @@ root: {
   # interface only exists there, and Argo CD and Grafana skip the public login gate.
   flake.modules.nixos.homelab = {
     networking.hosts."10.0.0.1" = [
+      "alerta.skinke.net"
       "auth.skinke.net"
       "argocd.skinke.net"
       "workflows.skinke.net"
