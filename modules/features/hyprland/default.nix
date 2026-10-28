@@ -67,28 +67,13 @@ in
         Install.WantedBy = lib.mkForce [ config.wayland.systemd.target ];
       };
 
-      xdg.portal = {
-        # home-manager's hyprland module turns this off when portalPackage is null
-        enable = lib.mkForce true;
-        extraPortals = [
-          pkgs.xdg-desktop-portal-gtk
-          osConfig.programs.hyprland.portalPackage
-        ];
-        config = {
-          hyprland = {
-            default = [
-              "hyprland"
-              "gtk"
-            ];
-          };
-        };
-      };
-
       wayland.windowManager.hyprland = {
         enable = true;
         package = osConfig.programs.hyprland.package;
         # home-manager would pass this to `override { hyprland = …; }`, which the
-        # xdph that Hyprland 0.57 pins no longer accepts.
+        # xdph that Hyprland 0.57 pins no longer accepts. Leaving it null also
+        # keeps home-manager's xdg.portal off, so the NixOS module stays the
+        # single owner of the portals.
         portalPackage = null;
         settings = {
           # Variables
