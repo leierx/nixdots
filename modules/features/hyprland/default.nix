@@ -70,10 +70,7 @@ in
       wayland.windowManager.hyprland = {
         enable = true;
         package = osConfig.programs.hyprland.package;
-        # home-manager would pass this to `override { hyprland = …; }`, which the
-        # xdph that Hyprland 0.57 pins no longer accepts. Leaving it null also
-        # keeps home-manager's xdg.portal off, so the NixOS module stays the
-        # single owner of the portals.
+        # xdph ≥ 0.57 dropped the `hyprland` arg home-manager overrides; NixOS owns the portals.
         portalPackage = null;
         settings = {
           # Variables
