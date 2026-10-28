@@ -12,7 +12,7 @@
         settings = {
           general = {
             before_sleep_cmd = "loginctl lock-session";
-            after_sleep_cmd = "hyprctl dispatch dpms on";
+            after_sleep_cmd = "hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })'";
             ignore_dbus_inhibit = false;
             # one locker even when the idle timer and before_sleep_cmd race
             lock_cmd = "${lib.getExe' pkgs.procps "pidof"} hyprlock || ${lib.getExe config.programs.hyprlock.package}";
@@ -25,8 +25,8 @@
             }
             {
               timeout = 360; # 6 minutes
-              on-timeout = "hyprctl dispatch dpms off";
-              on-resume = "hyprctl dispatch dpms on";
+              on-timeout = "hyprctl dispatch 'hl.dsp.dpms({ action = \"off\" })'";
+              on-resume = "hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })'";
             }
           ];
         };
