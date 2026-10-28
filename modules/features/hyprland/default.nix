@@ -68,7 +68,12 @@ in
       };
 
       xdg.portal = {
-        extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+        # home-manager's hyprland module turns this off when portalPackage is null
+        enable = lib.mkForce true;
+        extraPortals = [
+          pkgs.xdg-desktop-portal-gtk
+          osConfig.programs.hyprland.portalPackage
+        ];
         config = {
           hyprland = {
             default = [
@@ -82,7 +87,9 @@ in
       wayland.windowManager.hyprland = {
         enable = true;
         package = osConfig.programs.hyprland.package;
-        portalPackage = osConfig.programs.hyprland.portalPackage;
+        # home-manager would pass this to `override { hyprland = …; }`, which the
+        # xdph that Hyprland 0.57 pins no longer accepts.
+        portalPackage = null;
         settings = {
           # Variables
           mod._var = "SUPER";

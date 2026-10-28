@@ -31,7 +31,7 @@
     };
 
     hyprland = {
-      url = "github:hyprwm/Hyprland/v0.56.1";
+      url = "github:hyprwm/Hyprland/v0.57.0";
       # dev-only git hooks
       inputs.pre-commit-hooks.follows = "";
     };
