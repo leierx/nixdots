@@ -21,15 +21,4 @@ root: {
         };
       };
     };
-
-  # Hosts that are WireGuard peers of loft01 reach its sites on the wg gateway: Authentik's admin
-  # interface only exists there, and Argo CD and Grafana skip the public login gate.
-  flake.modules.nixos.homelab = {
-    networking.hosts."10.0.0.1" = [
-      "alerta.skinke.net"
-      "auth.skinke.net"
-      "argocd.skinke.net"
-      "workflows.skinke.net"
-    ];
-  };
 }

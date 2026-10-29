@@ -3,8 +3,9 @@
     services.resolved = {
       enable = true;
       settings.Resolve = {
-        DNSSEC = "true";
         DNSOverTLS = "true";
+        Domains = "~."; # route all names to the global DNS servers below
+        FallbackDNS = ""; # never fall back to built-in plaintext servers
       };
     };
 
