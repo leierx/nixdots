@@ -4,7 +4,7 @@
       enable = true;
       settings.Resolve = {
         DNSOverTLS = "true";
-        Domains = "~."; # route all names to the global DNS servers below
+        Domains = "~."; # fallback route only; a link with its own DNS servers is still queried
         FallbackDNS = ""; # never fall back to built-in plaintext servers
       };
     };

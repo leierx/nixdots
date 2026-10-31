@@ -179,7 +179,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `git.nix` | nixos, homeManager | `git` | git on; user identity from `identity` |
 | `home-manager.nix` | nixos | `home-manager` | wires HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<hostname>/home` |
 | `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`) | see below |
-| `homelab.nix` | nixos, homeManager | `homelab` | home: `just` + `helm` + `virtctl` (`kubevirt`) + `kubelogin` (`kubectl oidc-login`), and an ssh `loft01` host (10.0.0.1) that forwards local 6443 to the k3s API. nixos: maps `auth`/`argocd`/`metrics.skinke.net` to 10.0.0.1, for hosts that are WireGuard peers of loft01 |
+| `homelab.nix` | homeManager | `homelab` | `just` + `helm` + `virtctl` (`kubevirt`) + `kubelogin` (`kubectl oidc-login`), and an ssh `loft01` host (10.0.0.1) that forwards local 6443 to the k3s API |
 | `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage |
 | `journald.nix` | nixos | `journald` | 90-day retention |
 | `libvirt.nix` | nixos | `libvirt` | libvirtd + unprivileged QEMU/KVM with swtpm, virt-manager, trusted `br0` lab bridge |
@@ -291,7 +291,7 @@ Hardware settings (firmware, fstrim, fwupd, zram, microcode, graphics, bluetooth
 stay in each host's `hardware.nix`, even when hosts repeat them: hardware is
 individual by nature, so it is not factored into a shared aspect.
 
-- **`thonkpad`** — imports `base workstation gaming homelab`. Imports the `homelab` home aspect. Intel laptop:
+- **`thonkpad`** — imports `base workstation gaming`. Imports the `homelab` home aspect. Intel laptop:
   microcode, firmware, bluetooth, graphics + `intel-media-driver`, fstrim, fwupd, zram, `fprintd`,
   `thermald`, TLP battery thresholds, disko, single-monitor kanshi profile,
   `treefmt`.
@@ -361,6 +361,14 @@ nix fmt                  # formatter = nixfmt-tree
   it is intentional and required for external imports.
 - **`programs.ssh.matchBlocks` is deprecated** in `modules/hosts/desktop/home.nix`;
   migrate to `programs.ssh.settings` when touching it.
+- **`skinke.net` resolves through the `wg0` NetworkManager profile, which this
+  flake does not own.** The profile carries `ipv4.dns 10.0.0.1` and the route-only
+  domain `~skinke.net`, so those names go to loft01's resolver instead of the
+  public one. It is hand-made in `/etc/NetworkManager/system-connections`:
+  `nmcli connection modify` only edits the keyfile, so a change needs
+  `nmcli connection up wg0` (or `nmcli device reapply wg0`) to reach
+  systemd-resolved. With the tunnel down, the global `~.` silently answers from
+  public DNS.
 - **Two nixpkgs channels.** Default `pkgs` comes from `nixpkgs`;
   `pkgs.unstable` comes from the `unstable-nixpkgs` overlay. Prefer the
   default unless a package needs unstable.

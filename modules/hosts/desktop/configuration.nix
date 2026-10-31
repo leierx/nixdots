@@ -2,7 +2,12 @@
   flake.modules.nixos."nixosConfigurations/desktop" =
     { pkgs, ... }:
     {
-      networking.firewall.trustedInterfaces = [ "m3lab0" ];
+      services.sunshine = {
+        enable = true;
+        autoStart = true;
+        capSysAdmin = true; # needed for KMS screen capture on Wayland
+        openFirewall = true;
+      };
 
       environment.systemPackages = with pkgs; [
         kubectl-df-pv
@@ -16,30 +21,6 @@
         meld
         gimp
         unstable.openmw
-
-        # Metal3 / Cluster API lab tooling
-        act
-        butane
-        clusterctl
-        cosign
-        crane
-        cryptsetup
-        erofs-utils
-        gptfdisk
-        just
-        kubeconform
-        kubernetes-helm
-        openssl
-        oras
-        sbsigntool
-        shellcheck
-        skopeo
-        squashfsTools
-        syft
-        systemdUkify
-        xorriso
-        yamllint
-        yq-go
       ];
     };
 }
