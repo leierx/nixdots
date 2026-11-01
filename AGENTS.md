@@ -223,7 +223,8 @@ Notes on specific features:
     ≥ 0.57 starts itself (home-manager's stop/start bounce is off; it only
     imports the environment), so they never start under another compositor:
     waybar (taken off home-manager's extra `tray.target`), cliphist,
-    hyprmoncfgd, hypridle, hyprpolkitagent and nm-applet (whose unit hardcodes
+    hyprmoncfgd, hypridle, hyprpolkitagent, hyprpaper (the wallpaper; a
+    config reload restarts it) and nm-applet (whose unit hardcodes
     `graphical-session.target`, hence a `mkForce`). mako is D-Bus activated
     through its packaged `mako.service` (the D-Bus file gains
     `SystemdService=`), and a drop-in gives that unit

@@ -67,6 +67,19 @@ in
         Install.WantedBy = lib.mkForce [ config.wayland.systemd.target ];
       };
 
+      services.hyprpaper = {
+        enable = true;
+        settings = {
+          splash = false;
+          wallpaper = [
+            {
+              monitor = "*";
+              path = "${./assets/wallpaper.png}";
+            }
+          ];
+        };
+      };
+
       wayland.windowManager.hyprland = {
         enable = true;
         package = osConfig.programs.hyprland.package;
@@ -161,7 +174,8 @@ in
               };
             in
             [
-              (mkExecOn "hyprland.start" "${lib.getExe pkgs.wbg} -s ${./assets/wallpaper.png}")
+              # a reload redraws the wallpaper if it was lost
+              (mkExecOn "config.reloaded" "systemctl --user try-restart hyprpaper.service")
             ];
         };
       };
