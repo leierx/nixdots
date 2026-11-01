@@ -2,13 +2,6 @@
   flake.modules.nixos."nixosConfigurations/desktop" =
     { pkgs, ... }:
     {
-      services.sunshine = {
-        enable = true;
-        autoStart = true;
-        capSysAdmin = true; # needed for KMS screen capture on Wayland
-        openFirewall = true;
-      };
-
       environment.systemPackages = with pkgs; [
         kubectl-df-pv
         pika-backup

@@ -1,6 +1,11 @@
 root: {
   flake.modules.homeManager.hyprland =
-    { lib, pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       colors = root.config.palettes.ui;
       inherit (root.config.hyprland) workspaces;
@@ -142,13 +147,21 @@ root: {
           '';
       };
 
-      wayland.windowManager.hyprland.settings.on = [
-        {
-          _args = [
+      # HM also hangs it on tray.target, which another session's tray applet would pull in
+      systemd.user.services.waybar.Install.WantedBy = lib.mkForce [ config.wayland.systemd.target ];
+
+      # hyprmoncfg switches profiles with a config reload, which only resets waybar's workspaces module
+      wayland.windowManager.hyprland.settings.on =
+        map
+          (event: {
+            _args = [
+              event
+              (lib.generators.mkLuaInline ''function() hl.exec_cmd("systemctl --user reload waybar") end'')
+            ];
+          })
+          [
             "monitor.layout_changed"
-            (lib.generators.mkLuaInline ''function() hl.exec_cmd("systemctl --user reload waybar") end'')
+            "config.reloaded"
           ];
-        }
-      ];
     };
 }

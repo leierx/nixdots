@@ -2,9 +2,14 @@ root: {
   flake.modules.homeManager."nixosConfigurations/desktop/home" =
     { pkgs, lib, ... }:
     {
-      imports = with root.config.flake.modules.homeManager; [
-        homelab
-        nix-index
+      imports = [ root.config.flake.modules.homeManager.nix-index ];
+
+      home.packages = with pkgs; [
+        just
+        kubernetes-helm
+        kubevirt
+        # `kubectl oidc-login`: the homelab kubeconfig logs in through Authentik
+        kubelogin-oidc
       ];
 
       piAgent.settings = {
@@ -23,6 +28,13 @@ root: {
 
       programs.ssh = {
         enable = true;
+        settings.loft01 = {
+          HostName = "10.0.0.1";
+          User = root.config.identity.username;
+          ServerAliveInterval = 30;
+          # k3s API, for kubectl and helm
+          LocalForward = "6443 127.0.0.1:6443";
+        };
         matchBlocks = {
           "github.com" = {
             hostname = "github.com";

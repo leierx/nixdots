@@ -14,6 +14,8 @@ root: {
         {
           key,
           dispatcher,
+          # shown by `hyprctl binds`, for keybind menus
+          desc,
           modifiers ? [ ],
           withMod ? true,
           opts ? { },
@@ -25,8 +27,8 @@ root: {
           _args = [
             (if withMod then mkLuaInline ''mod .. " + ${keys}"'' else keys)
             (mkLuaInline dispatcher)
-          ]
-          ++ lib.optional (opts != { }) opts;
+            (opts // { description = desc; })
+          ];
         };
 
       exec = cmd: "hl.dsp.exec_cmd(${builtins.toJSON cmd})";
@@ -53,67 +55,85 @@ root: {
       };
 
       directions = {
-        h = "l";
-        l = "r";
-        k = "u";
-        j = "d";
+        h = {
+          dir = "l";
+          name = "left";
+        };
+        l = {
+          dir = "r";
+          name = "right";
+        };
+        k = {
+          dir = "u";
+          name = "up";
+        };
+        j = {
+          dir = "d";
+          name = "down";
+        };
       };
     in
     {
       wayland.windowManager.hyprland = {
         settings.bind = [
-          # mouse
           (mkBind {
             key = "mouse:272";
             dispatcher = "hl.dsp.window.drag()";
+            desc = "Move window";
             opts.mouse = true;
           })
           (mkBind {
             key = "mouse:273";
             dispatcher = "hl.dsp.window.resize()";
+            desc = "Resize window";
             opts.mouse = true;
           })
-          # launchers
           (mkBind {
             key = "Return";
             dispatcher = exec (lib.getExe config.programs.wezterm.package);
+            desc = "Terminal";
           })
           (mkBind {
             key = "d";
             dispatcher = exec "${rofi} -modes drun -show drun";
+            desc = "App launcher";
           })
           (mkBind {
-            key = "b";
+            key = "v";
             dispatcher = exec "${cliphist} list | ${rofi} -dmenu -display-columns 2 -theme-str 'window {width: 50%;height: 75%;} entry {placeholder: \"Clipboard\";}' | ${cliphist} decode | ${lib.getExe' config.services.cliphist.clipboardPackage "wl-copy"}";
+            desc = "Clipboard history";
           })
-          # window control
           (mkBind {
             key = "w";
             dispatcher = "hl.dsp.window.close()";
+            desc = "Close window";
           })
           (mkBind {
             key = "s";
             dispatcher = ''hl.dsp.window.float({ action = "toggle" })'';
+            desc = "Toggle floating";
           })
           (mkBind {
             key = "f";
             dispatcher = "hl.dsp.window.fullscreen()";
+            desc = "Fullscreen";
           })
           (mkBind {
             key = "m";
             dispatcher = "hl.dsp.window.fullscreen({ mode = 1 })";
+            desc = "Maximize";
           })
-          # monitors
           (mkBind {
             key = "o";
             dispatcher = ''hl.dsp.focus({ monitor = "+1" })'';
+            desc = "Focus next monitor";
           })
           (mkBind {
             key = "o";
             modifiers = [ "SHIFT" ];
             dispatcher = ''hl.dsp.window.move({ monitor = "+1" })'';
+            desc = "Move window to next monitor";
           })
-          # cycling
           (mkBind {
             key = "c";
             dispatcher = ''
@@ -121,18 +141,21 @@ root: {
                 hl.dispatch(hl.dsp.window.cycle_next())
                 hl.dispatch(hl.dsp.window.bring_to_top())
               end'';
+            desc = "Cycle windows";
           })
-          # screenshot a frozen region (SHIFT: save instead of copy)
+          # a frozen region: SHIFT saves instead of copying
           (mkBind {
             key = "Q";
             dispatcher = exec "${lib.getExe freezeRegion} copy";
+            desc = "Screenshot region to clipboard";
           })
           (mkBind {
             key = "Q";
             modifiers = [ "SHIFT" ];
             dispatcher = exec "${lib.getExe freezeRegion} save";
+            desc = "Screenshot region to file";
           })
-          # system_control submap, left again after 2 s
+          # left again after 2 s
           (mkBind {
             key = "X";
             dispatcher = ''
@@ -141,6 +164,7 @@ root: {
                 hl.timer(function() hl.dispatch(hl.dsp.submap("reset")) end,
                          { timeout = 2000, type = "oneshot" })
               end'';
+            desc = "System controls";
           })
         ]
         # workspaces on the focused monitor, through hyprsplit
@@ -153,36 +177,47 @@ root: {
             (mkBind {
               inherit key;
               dispatcher = "hs.dsp.focus({ workspace = ${key} })";
+              desc = "Focus workspace ${key}";
             })
             (mkBind {
               inherit key;
               modifiers = [ "SHIFT" ];
               dispatcher = "hs.dsp.window.move({ workspace = ${key}, follow = false })";
+              desc = "Move window to workspace ${key}";
             })
           ]
         ) (lib.range 1 workspaces)
-        # focus / move in a direction
         ++ lib.concatLists (
-          lib.mapAttrsToList (key: dir: [
-            (mkBind {
-              inherit key;
-              dispatcher = ''hl.dsp.focus({ direction = "${dir}" })'';
-            })
-            (mkBind {
-              inherit key;
-              modifiers = [ "SHIFT" ];
-              dispatcher = ''hl.dsp.window.move({ direction = "${dir}" })'';
-            })
-          ]) directions
+          lib.mapAttrsToList (
+            key:
+            { dir, name }:
+            [
+              (mkBind {
+                inherit key;
+                dispatcher = ''hl.dsp.focus({ direction = "${dir}" })'';
+                desc = "Focus ${name}";
+              })
+              (mkBind {
+                inherit key;
+                modifiers = [ "SHIFT" ];
+                dispatcher = ''hl.dsp.window.move({ direction = "${dir}" })'';
+                desc = "Move window ${name}";
+              })
+            ]
+          ) directions
         )
         # media and brightness keys, also on the lockscreen
         ++
           lib.mapAttrsToList
             (
               key:
-              { cmd, repeating }:
+              {
+                cmd,
+                desc,
+                repeating,
+              }:
               mkBind {
-                inherit key;
+                inherit key desc;
                 withMod = false;
                 dispatcher = exec cmd;
                 opts = {
@@ -194,42 +229,52 @@ root: {
             {
               XF86AudioRaiseVolume = {
                 cmd = "${wpctl} set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+";
+                desc = "Volume up";
                 repeating = true;
               };
               XF86AudioLowerVolume = {
                 cmd = "${wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%-";
+                desc = "Volume down";
                 repeating = true;
               };
               XF86AudioMute = {
                 cmd = "${wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle";
+                desc = "Mute";
                 repeating = false;
               };
               XF86AudioMicMute = {
                 cmd = "${wpctl} set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
+                desc = "Mute microphone";
                 repeating = false;
               };
               XF86MonBrightnessUp = {
                 cmd = "${brightnessctl} set 5%+";
+                desc = "Brightness up";
                 repeating = true;
               };
               XF86MonBrightnessDown = {
                 cmd = "${brightnessctl} set 5%-";
+                desc = "Brightness down";
                 repeating = true;
               };
               XF86AudioPlay = {
                 cmd = "${playerctl} play-pause";
+                desc = "Play/pause";
                 repeating = false;
               };
               XF86AudioPause = {
                 cmd = "${playerctl} play-pause";
+                desc = "Play/pause";
                 repeating = false;
               };
               XF86AudioNext = {
                 cmd = "${playerctl} next";
+                desc = "Next track";
                 repeating = false;
               };
               XF86AudioPrev = {
                 cmd = "${playerctl} previous";
+                desc = "Previous track";
                 repeating = false;
               };
             };
@@ -237,34 +282,30 @@ root: {
         submaps.system_control = {
           onDispatch = "reset"; # auto-exits the submap after any dispatch
           settings.bind = [
-            # shut down
-            {
-              _args = [
-                "ESCAPE"
-                (mkLuaInline (exec "systemctl poweroff"))
-              ];
-            }
-            # exit hyprland
-            {
-              _args = [
-                "Q"
-                (mkLuaInline "hl.dsp.exit()")
-              ];
-            }
-            # reload the config
-            {
-              _args = [
-                "R"
-                (mkLuaInline (exec "hyprctl reload"))
-              ];
-            }
-            # lockscreen
-            {
-              _args = [
-                "L"
-                (mkLuaInline "hl.dsp.exec_cmd(lockscreen_cmd)")
-              ];
-            }
+            (mkBind {
+              key = "ESCAPE";
+              withMod = false;
+              dispatcher = exec "systemctl poweroff";
+              desc = "Power off";
+            })
+            (mkBind {
+              key = "Q";
+              withMod = false;
+              dispatcher = "hl.dsp.exit()";
+              desc = "Exit Hyprland";
+            })
+            (mkBind {
+              key = "R";
+              withMod = false;
+              dispatcher = exec "${lib.getExe' config.wayland.windowManager.hyprland.package "hyprctl"} reload full-reset";
+              desc = "Reload config (full reset)";
+            })
+            (mkBind {
+              key = "L";
+              withMod = false;
+              dispatcher = "hl.dsp.exec_cmd(lockscreen_cmd)";
+              desc = "Lock screen";
+            })
           ];
         };
       };

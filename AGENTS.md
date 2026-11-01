@@ -22,7 +22,8 @@ is hand-rolled in `flake.nix`, `import-tree.nix` and `modules/flake/`.
 - **Anything a host or an importer sets is an option of the feature's class
   module.** Top-level values are global to every host and baked into the
   exported aspects, so per-host or per-importer knobs are declared inside the
-  aspect itself (home-manager `piAgent.settings`, `neovim.outOfStorePath`) and
+  aspect itself (home-manager `piAgent.settings`, `neovim.outOfStorePath`,
+  `hyprmoncfg.profiles`) and
   set from the host's own home aspect or the importer's config.
 - **Install through the module when one exists.** `programs.<x>.enable` (or
   `services.<x>`) instead of a bare package, so binds and other features can
@@ -54,6 +55,7 @@ modules/features/         one flat file per feature (+ hyprland/, neovim/, pi-ag
 modules/profiles/         base.nix, workstation.nix
 modules/theme/            palette.nix, fonts, gtk, qt, cursor
 modules/hosts/            desktop/, thonkpad/
+dev/                      separate work, not imported (quickshell/: own flake)
 ```
 
 ## The substrate
@@ -173,19 +175,18 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `boot.nix` | nixos | `boot`, `systemd-boot` | GRUB-on-EFI default (theme via `runCommand`); `systemd-boot` aspect `mkForce`s GRUB off |
 | `desktop-apps.nix` | homeManager | `desktop-apps` | GUI apps every workstation gets (browsers, spotify, obsidian, discord, …) |
 | `display-manager.nix` | nixos | `display-manager` | ly |
-| `doas.nix` | nixos | `doas` | doas replaces sudo (via `doas-sudo-shim`), wheel `noPass` without `keepenv`, passing only `LANG` and `NIX_PATH` |
+| `doas.nix` | nixos | `doas` | doas replaces sudo (via `doas-sudo-shim`), wheel `noPass` without `keepenv`, passing only `LANG`, `NIX_PATH` and `SUDO_UID`/`SUDO_GID`/`SUDO_USER` |
 | `documentation.nix` | nixos | `documentation` | disables NixOS manpages |
 | `gaming.nix` | nixos | `gaming` | Steam + proton-ge (Steam also sets 32-bit graphics) |
 | `git.nix` | nixos, homeManager | `git` | git on; user identity from `identity` |
 | `home-manager.nix` | nixos | `home-manager` | wires HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<hostname>/home` |
-| `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`) | see below |
-| `homelab.nix` | homeManager | `homelab` | `just` + `helm` + `virtctl` (`kubevirt`) + `kubelogin` (`kubectl oidc-login`), and an ssh `loft01` host (10.0.0.1) that forwards local 6443 to the k3s API |
-| `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage |
+| `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`, HM option `hyprmoncfg.profiles`) | see below |
+| `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage; no host imports it |
 | `journald.nix` | nixos | `journald` | 90-day retention |
-| `libvirt.nix` | nixos | `libvirt` | libvirtd + unprivileged QEMU/KVM with swtpm, virt-manager, trusted `br0` lab bridge |
+| `libvirt.nix` | nixos | `libvirt` | libvirtd + unprivileged QEMU/KVM with swtpm, virt-manager, trusted `br0` lab bridge; no host imports it |
 | `locale.nix` | nixos | `locale` | `no`/`nodeadkeys`, `en_DK.UTF-8`, Europe/Oslo, timesyncd; hyprland reads the xkb values via `osConfig` |
 | `neovim/` | nixos, homeManager | `neovim` (+ HM option `neovim.outOfStorePath`) | see below |
-| `network.nix` | nixos | `network` | systemd-resolved + DoT/DNSSEC, NetworkManager, nftables, reverse-path filter `loose` (WireGuard full tunnels) |
+| `network.nix` | nixos | `network` | systemd-resolved with DNS-over-TLS to Quad9 and no plaintext fallback, NetworkManager (DHCP DNS ignored, stable MACs), nftables, no ping, reverse-path filter `loose` (WireGuard full tunnels) |
 | `nix.nix` | nixos | `nix` | GC, `auto-optimise-store`, flakes, cache, no global registry; the `nixpkgs` registry entry and `NIX_PATH` come from nixpkgs' own `nixpkgs.flake.source` |
 | `nix-index.nix` | homeManager | `nix-index` | small prebuilt nix-index DB (`nix-index-database` input) + wrapped comma, no full-DB cache symlink |
 | `nixpkgs.nix` | nixos | `nixpkgs`, `unstable-nixpkgs` | `allowUnfree`; overlay exposing `pkgs.unstable` |
@@ -195,6 +196,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `podman.nix` | nixos | `podman` | podman + docker compat, DNS on `podman0` |
 | `rofi.nix` | homeManager | `rofi` | rofi theme generated from `palettes.ui` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
+| `sunshine.nix` | nixos | `sunshine` | Sunshine, started by hand (`systemctl --user start sunshine`) and stopped with the Hyprland session; `wlr` capture + VAAPI; apps "Desktop" and "Steam Big Picture" stream a headless `SUNSHINE` output at the client's mode, with hyprmoncfgd/hypridle/waybar stopped, the physical outputs off and new windows taking over fullscreen until the app quits; on quit Steam shuts down and hyprsplit's `grab_rogue_windows` pulls the stream's windows onto the focused workspace |
 | `tmux.nix` | homeManager | `tmux` | `programs.tmux` (socket under `$XDG_RUNTIME_DIR` on Linux) + own keymap, status from `palettes.kanagawa` |
 | `users.nix` | nixos, homeManager | `users` | primary user, groups, hashed password, zsh (no global compinit; oh-my-zsh runs it) + starship, root locked |
 | `wezterm.nix` | homeManager | `wezterm` | wezterm with an "Adwaita Dark" scheme from `palettes.adwaita_dark`, Hack font |
@@ -205,22 +207,39 @@ Notes on specific features:
 
 - **`hyprland/`** is split across `default.nix` (nixos + HM base),
   `bindings.nix`, `rules.nix`, `mako.nix`, `waybar.nix`, `hypridle.nix`,
-  `hyprlock.nix`, `plugins.nix`, plus `assets/` and `scripts/`. It uses the
+  `hyprlock.nix`, `hyprmoncfg.nix`, `plugins.nix`, plus `assets/` and `scripts/`. It uses the
   pinned Hyprland input and its **Lua-based settings API** — binds and
   events are built with `lib.generators.mkLuaInline` and `_args` rather than
-  the classic string config; `bindings.nix` has a `mkBind` helper and generates
+  the classic string config; `bindings.nix` has a `mkBind` helper (every bind
+  carries a `desc`, shown by `hyprctl binds` for keybind menus) and generates
   the workspace, direction and XF86 media/brightness binds.
   - `plugins.nix` declares `hyprland.workspaces` and loads the `hyprsplit` Lua
     library as the local `hs`; workspace binds use `hs.dsp.focus` /
     `hs.dsp.window.move`. hyprsplit numbers monitor *k*'s workspaces
     `k*n+1 … (k+1)*n`, so waybar's `format-icons` maps them back to `1 … n`.
+    *k* is the monitor id, which Hyprland reuses per connector name.
   - Session daemons are home-manager user services bound to
-    `hyprland-session.target` through `wayland.systemd.target`, so they never
-    start under another compositor: waybar, cliphist, kanshi, hypridle,
-    hyprpolkitagent and nm-applet (whose unit hardcodes
-    `graphical-session.target`, hence a `mkForce`). mako is D-Bus activated.
-  - With kanshi enabled, `config.reloaded` runs `kanshictl reload`, because a
-    Hyprland reload re-applies its own monitor rules.
+    `hyprland-session.target` through `wayland.systemd.target`, which Hyprland
+    ≥ 0.57 starts itself (home-manager's stop/start bounce is off; it only
+    imports the environment), so they never start under another compositor:
+    waybar (taken off home-manager's extra `tray.target`), cliphist,
+    hyprmoncfgd, hypridle, hyprpolkitagent and nm-applet (whose unit hardcodes
+    `graphical-session.target`, hence a `mkForce`). mako is D-Bus activated
+    through its packaged `mako.service` (the D-Bus file gains
+    `SystemdService=`), and a drop-in gives that unit
+    `Requisite=hyprland-session.target`, so a notification can't start it
+    elsewhere.
+  - Monitors are laid out by [hyprmoncfg](https://github.com/crmne/hyprmoncfg)
+    (from `nixpkgs-unstable`, built against the pinned Hyprland so its hyprctl
+    matches). Profiles live in `~/.config/hyprmoncfg/profiles/`: the HM option
+    `hyprmoncfg.profiles` declares some (outputs by EDID make/model/serial,
+    workspace planning off because hyprsplit owns workspaces), the TUI saves
+    the rest. A declared one re-saved from the TUI is backed up and reset on the
+    next switch. SUPER+P (`scripts/monitor-layouts.sh`) applies one through rofi.
+    A catch-all `monitor` rule (preferred, auto, scale 1) covers outputs no
+    profile places. `hyprland.lua` is read-only, so the module
+    appends hyprmoncfg's `dofile` include itself with `lib.mkAfter`; it must stay
+    the file's last line.
   - hyprlock talks to fprintd itself (`auth:fingerprint`, on when
     `services.fprintd` is), so the NixOS half turns `fprintAuth` off for
     hyprlock's PAM service.
@@ -280,6 +299,21 @@ to take.
 value option. `fonts` is nixos; `gtk` is nixos + homeManager; `cursor` and
 `qt` are homeManager.
 
+### Dev (`dev/`)
+
+Work kept apart from the configuration: outside `modules/`, so import-tree
+never loads it, and each project is its own flake with its own lock.
+`quickshell/` is the quickshell bar meant to replace waybar:
+
+```bash
+cd dev/quickshell
+nix develop                            # quickshell + icon/Qt theme env
+quickshell -p ./quickshell/shell.qml   # hot-reloads on save
+nix run                                # one-shot from the store
+```
+
+waybar reserves the same screen edge; stop it while testing.
+
 ### Hosts (`modules/hosts/`)
 
 Each host is a directory; `imports.nix` declares the host and its aspect
@@ -291,16 +325,20 @@ Hardware settings (firmware, fstrim, fwupd, zram, microcode, graphics, bluetooth
 stay in each host's `hardware.nix`, even when hosts repeat them: hardware is
 individual by nature, so it is not factored into a shared aspect.
 
-- **`thonkpad`** — imports `base workstation gaming`. Imports the `homelab` home aspect. Intel laptop:
-  microcode, firmware, bluetooth, graphics + `intel-media-driver`, fstrim, fwupd, zram, `fprintd`,
-  `thermald`, TLP battery thresholds, disko, single-monitor kanshi profile,
-  `treefmt`.
-- **`desktop`** — imports `base workstation gaming incus libvirt`. Imports the `homelab` home aspect. AMD desktop:
+Both hosts' `home.nix` carry the homelab tooling: `just`, `helm`, `virtctl`
+(`kubevirt`), `kubelogin` (`kubectl oidc-login`), and an ssh `loft01` host
+(10.0.0.1) that forwards local 6443 to the k3s API.
+
+- **`thonkpad`** — imports `base workstation gaming`. Intel laptop:
+  microcode, firmware, bluetooth, graphics + `intel-media-driver`/`vpl-gpu-rt`, fstrim, fwupd, zram,
+  `thermald`, TLP battery thresholds, disko, `treefmt`, mDNS and ephemeral UDP
+  ports open for Chromecast discovery.
+- **`desktop`** — imports `base workstation gaming sunshine`. AMD desktop:
   microcode, firmware, RX 6700 XT graphics, `kvm-amd`, fstrim, fwupd, zram, ZSA keyboard udev rules
-  (keymapp), disko, two-monitor kanshi
-  profile, trusted `m3lab0`, nix-index, `programs.gh` (git credential helper
+  (keymapp), disko, hyprmoncfg profiles `default` (both monitors), `left-only` and `right-only`,
+  nix-index, `programs.gh` (git credential helper
   for github.com), quickshell, `piAgent` settings, SSH match blocks,
-  host-specific app list.
+  Hyprland startup apps pinned to monitors, host-specific app list.
 
 ## External consumers
 

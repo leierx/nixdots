@@ -17,23 +17,15 @@
             match.class = ".*";
             suppress_event = "maximize";
           }
-          # smart gaps / no gaps when single client
+          # smart gaps / no gaps when single client (wiki recipe; v counts a group once)
           {
             match = {
-              workspace = "w[t1]";
+              workspace = "w[tv1]";
               float = false;
             };
             border_size = 0;
             rounding = 0;
             no_shadow = true;
-          }
-          {
-            match = {
-              workspace = "w[tg1]";
-              float = false;
-            };
-            border_size = 0;
-            rounding = 0;
           }
           {
             match = {
@@ -47,12 +39,7 @@
 
         workspace_rule = [
           {
-            workspace = "w[t1]";
-            gaps_out = 0;
-            gaps_in = 0;
-          }
-          {
-            workspace = "w[tg1]";
+            workspace = "w[tv1]";
             gaps_out = 0;
             gaps_in = 0;
           }

@@ -1,15 +1,37 @@
 root: {
   flake.modules.homeManager.hyprland =
-    { pkgs, ... }:
+    {
+      config,
+      pkgs,
+      ...
+    }:
     let
       colors = root.config.palettes.ui;
+
+      # D-Bus activates mako.service instead of a bare mako, so the drop-in below applies
+      mako = pkgs.symlinkJoin {
+        name = "mako-systemd";
+        paths = [ pkgs.mako ];
+        postBuild = ''
+          f=share/dbus-1/services/fr.emersion.mako.service
+          rm $out/$f
+          sed '$a SystemdService=mako.service' ${pkgs.mako}/$f >$out/$f
+        '';
+      };
     in
     {
       # dependencies
       home.packages = [ pkgs.hack-font ];
 
+      # notifications never start mako outside Hyprland
+      xdg.configFile."systemd/user/mako.service.d/hyprland.conf".text = ''
+        [Unit]
+        Requisite=${config.wayland.systemd.target}
+      '';
+
       services.mako = {
         enable = true;
+        package = mako;
         settings = {
           # ── Binding options ─────────────────────────────────────────────
           on-button-left = "invoke-default-action";

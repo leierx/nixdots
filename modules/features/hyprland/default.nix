@@ -72,6 +72,8 @@ in
         package = osConfig.programs.hyprland.package;
         # xdph ≥ 0.57 dropped the `hyprland` arg home-manager overrides; NixOS owns the portals.
         portalPackage = null;
+        # Hyprland ≥ 0.57 starts hyprland-session.target itself; keep only the env import
+        systemd.extraCommands = [ ];
         settings = {
           # Variables
           mod._var = "SUPER";
@@ -97,16 +99,13 @@ in
                 nogroup_border = "rgb(${hex ui.magenta})";
                 nogroup_border_active = "rgb(${hex ui.magentaLight})";
               };
-              layout = "dwindle"; # default layout
             };
 
             decoration = {
               rounding = 10;
-              glow.enabled = false;
               blur.enabled = false;
 
               shadow = {
-                enabled = true;
                 range = 40;
                 # render_power = 3;
                 color = "rgba(0, 0, 0, 0.9)";
@@ -123,16 +122,14 @@ in
             misc = {
               disable_hyprland_logo = true;
               disable_splash_rendering = true;
-              font_family = "Sans";
               force_default_wallpaper = 0;
-              disable_autoreload = true;
               focus_on_activate = true;
               background_color = "0x${hex ui.bg1}";
               on_focus_under_fullscreen = 0;
               middle_click_paste = false;
+              # a crashed hyprlock can be restarted instead of leaving the session dead
+              allow_session_lock_restore = true;
             };
-
-            xwayland.enabled = true;
 
             ecosystem = {
               no_update_news = true;
@@ -142,6 +139,16 @@ in
 
             dwindle.force_split = 2;
           };
+
+          # outputs no hyprmoncfg profile has placed; its rules load last and win
+          monitor = [
+            {
+              output = "";
+              mode = "preferred";
+              position = "auto";
+              scale = 1;
+            }
+          ];
 
           on =
             let
@@ -155,11 +162,7 @@ in
             in
             [
               (mkExecOn "hyprland.start" "${lib.getExe pkgs.wbg} -s ${./assets/wallpaper.png}")
-            ]
-            # a config reload resets the outputs to Hyprland's monitor rules
-            ++ lib.optional config.services.kanshi.enable (
-              mkExecOn "config.reloaded" "${lib.getExe' config.services.kanshi.package "kanshictl"} reload"
-            );
+            ];
         };
       };
     };

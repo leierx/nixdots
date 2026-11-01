@@ -93,9 +93,8 @@ modules/
   profiles/ base and workstation: named groups of features
   theme/ palette, fonts, gtk, qt, cursor
   hosts/ one directory per machine
+dev/ separate work with its own flakes, never imported
+  quickshell/ the quickshell bar experiments
 ```
-
-`main` is the configuration. `quickshell` is an unrelated branch holding the
-quickshell bar experiments and their own flake.
 
 Technical notes for agents live in [AGENTS.md](./AGENTS.md).
