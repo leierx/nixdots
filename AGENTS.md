@@ -236,7 +236,9 @@ Notes on specific features:
     `hyprmoncfg.profiles` declares some (outputs by EDID make/model/serial,
     workspace planning off because hyprsplit owns workspaces), the TUI saves
     the rest. A declared one re-saved from the TUI is backed up and reset on the
-    next switch. SUPER+P (`scripts/monitor-layouts.sh`) applies one through rofi.
+    next switch. SUPER+P (`scripts/monitor-layouts.sh`) applies one through rofi;
+    its `auto` entry applies hyprmoncfg's recommended profile, since the daemon
+    keeps a hand-picked one until the next hotplug.
     A catch-all `monitor` rule (preferred, auto, scale 1) covers outputs no
     profile places. `hyprland.lua` is read-only, so the module
     appends hyprmoncfg's `dofile` include itself with `lib.mkAfter`; it must stay
