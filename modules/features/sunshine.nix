@@ -53,7 +53,46 @@
         do = "${lib.getExe virtualDisplay} do";
         undo = "${lib.getExe virtualDisplay} undo";
       };
-      steam = lib.getExe config.programs.steam.package;
+      # runs as long as the Steam client, so quitting Steam ends the stream
+      steamBigPicture = pkgs.writeShellApplication {
+        name = "sunshine-steam-big-picture";
+        runtimeInputs = [
+          config.programs.steam.package
+          pkgs.findutils
+          pkgs.util-linux
+        ];
+        text = ''
+          # steam.sh's own check: the pid holds steam.pipe open, so a recycled pid doesn't count
+          steam_running() {
+            local pid
+            pid=$(cat "$HOME/.steam/steam.pid" 2>/dev/null) || return 1
+            [ -n "$(find "/proc/$pid/fd" -lname "$HOME/.steam/steam.pipe" -print -quit 2>/dev/null)" ]
+          }
+          case "''${1:-}" in
+          open)
+            # outside the app's process group, so ending the stream shuts Steam down through close, not a kill
+            setsid -f steam steam://open/bigpicture
+            tries=120
+            until steam_running; do
+              tries=$((tries - 1))
+              [ "$tries" -gt 0 ] || { echo "Steam did not start" >&2; exit 1; }
+              sleep 1
+            done
+            # Steam restarts itself after updates, briefly leaving no client
+            while steam_running || { sleep 5; steam_running; }; do
+              sleep 2
+            done
+            ;;
+          close)
+            if steam_running; then steam -shutdown; fi
+            ;;
+          *)
+            echo "usage: sunshine-steam-big-picture open|close" >&2
+            exit 2
+            ;;
+          esac
+        '';
+      };
     in
     {
       services.sunshine = {
@@ -76,12 +115,12 @@
         ++ lib.optional config.programs.steam.enable {
           name = "Steam Big Picture";
           image-path = "steam.png";
-          detached = [ "${steam} steam://open/bigpicture" ];
+          cmd = "${lib.getExe steamBigPicture} open";
           prep-cmd = [
             display
             {
               do = "";
-              undo = "${steam} -shutdown";
+              undo = "${lib.getExe steamBigPicture} close";
             }
           ];
         };
