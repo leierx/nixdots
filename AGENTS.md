@@ -37,7 +37,7 @@ is hand-rolled in `flake.nix`, `import-tree.nix` and `modules/flake/`.
   not from env vars another feature exports. Only the base OS (coreutils, curl,
   tar, systemd) is assumed.
 - **`imports` in a host is the whole machine.** Host builders inject only the
-  hostname and platform; nothing else.
+  hostname, platform and a `stateVersion` default; nothing else.
 - **Keep comments minimal.** Comment the *why*, not the *what*. One line.
 - Don't add a flake-parts dependency or reintroduce `specialArgs` plumbing.
 
@@ -146,7 +146,7 @@ module may define `perSystem`; definitions merge.
 - **`nixos-hosts.nix`** — `nixosHosts.<name>` → `lib.nixosSystem`. Injected
   defaults (all `mkDefault`, overridable): `networking.hostId` = first 8 chars
   of `sha256(hostname)`, `networking.hostName`, `nixpkgs.hostPlatform` =
-  `host.system`. Then imports
+  `host.system`, `system.stateVersion` = `lib.trivial.release`. Then imports
   `config.flake.modules.nixos."nixosConfigurations/<name>" or { }`.
 - **`offline-installer.nix`** — for **every** entry in `nixosHosts`,
   generates `nixosConfigurations.offlineInstaller-<host>`: a minimal
@@ -237,7 +237,7 @@ Notes on specific features:
     matches). Profiles live in `~/.config/hyprmoncfg/profiles/`: the HM option
     `hyprmoncfg.profiles` declares some (outputs by EDID make/model/serial,
     workspace planning off because hyprsplit owns workspaces), the TUI saves
-    the rest. A declared one re-saved from the TUI is overwritten on the
+    the rest. A declared one re-saved from the TUI is backed up and reset on the
     next switch. SUPER+P (`scripts/monitor-layouts.sh`) applies one through rofi;
     its `auto` entry applies hyprmoncfg's recommended profile, since the daemon
     keeps a hand-picked one until the next hotplug.
@@ -269,10 +269,8 @@ Notes on specific features:
   - from the read-only store, `init.lua` points `vim.pack` at a copy in
     `~/.local/share/nvim/nvim-pack-config/` and, whenever the committed
     lockfile changes, reseeds that copy and runs
-    `vim.pack.update(nil, { target = "lockfile", force = true })`, again on
-    every start until each plugin sits at its pinned revision.
-  - To update plugins from a store install: `:lua vim.pack.update()`, `:write`
-    the confirm buffer, then
+    `vim.pack.update(nil, { target = "lockfile", force = true })`.
+  - To update plugins from a store install: `:lua vim.pack.update()`, then
     copy `~/.local/share/nvim/nvim-pack-config/nvim-pack-lock.json` into
     `modules/features/neovim/` and commit. Run `:TSUpdate` afterwards.
 - **`pi-agent/`** installs `pi-coding-agent` from `inputs.nixpkgs-unstable`
@@ -394,9 +392,8 @@ nix fmt                  # formatter = nixfmt-tree
   the terminal's, i.e. wezterm's Adwaita Dark background.
 - **Formatters/checks are per-system.** A new `perSystem` definition merges;
   don't redeclare `systems`.
-- **`stateVersion`** is pinned per host in its `configuration.nix`;
-  home-manager's follows it. Do not bump it without understanding the
-  migration implications.
+- **`stateVersion`** defaults to the nixpkgs release (NixOS and home-manager);
+  do not bump it without understanding the migration implications.
 - **`networking.hostId`** is derived from the hostname hash. Renaming a host
   changes it.
 - **The hyprland HM module depends on `osConfig`.** Importing only
