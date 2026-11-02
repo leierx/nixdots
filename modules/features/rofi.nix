@@ -27,6 +27,7 @@ root: {
         terminal = lib.getExe config.programs.wezterm.package;
         extraConfig = {
           show-icons = true;
+          icon-theme = "Papirus-Dark";
           drun-match-fields = "name,exec,generic,categories,keywords";
           drun-display-format = "{name}";
           disable-history = true;
