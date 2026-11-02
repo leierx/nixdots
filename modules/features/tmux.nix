@@ -121,9 +121,9 @@ root: {
 
           # show status only when >1 window
           set -g status off
-          run-shell -b 'tmux if-shell "[ #{session_windows} -gt 1 ]" "set status on"'
-          set-hook -g window-linked 'if-shell "[ #{session_windows} -gt 1 ]" "set status on" ""'
-          set-hook -g window-unlinked 'if-shell "[ #{session_windows} -le 1 ]" "set status off" ""'
+          if -F '#{e|>|:#{session_windows},1}' 'set status on'
+          set-hook -g window-linked 'if -F "#{e|>|:#{session_windows},1}" "set status on"'
+          set-hook -g window-unlinked 'if -F "#{e|<=|:#{session_windows},1}" "set status off"'
 
           set -g @kg_fg "${colors.fg}"
           set -g @kg_muted "${colors.muted}"
