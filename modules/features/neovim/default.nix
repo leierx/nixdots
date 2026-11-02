@@ -33,6 +33,8 @@
           viAlias = true;
           vimAlias = true;
           defaultEditor = true;
+          # loads home-manager's init.lua (providers off) from the wrapper; ~/.config/nvim is ours
+          sideloadInitLua = true;
           # on nvim's PATH only, so they don't shadow project dev shells
           extraPackages = with pkgs; [
             # vim.pack clones and updates plugins with it
