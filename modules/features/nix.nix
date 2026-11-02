@@ -14,7 +14,6 @@
           auto-optimise-store = true;
           flake-registry = lib.mkForce ""; # Disable global registry
           warn-dirty = false;
-          max-jobs = "auto";
           builders-use-substitutes = true;
           experimental-features = [
             "nix-command"

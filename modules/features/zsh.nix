@@ -7,7 +7,6 @@
       enable = true;
 
       oh-my-zsh.enable = true;
-      enableCompletion = true;
       syntaxHighlighting.enable = true;
 
       history.size = 100000;

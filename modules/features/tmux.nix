@@ -18,7 +18,6 @@ root: {
         focusEvents = true;
         aggressiveResize = true;
         historyLimit = 500000;
-        clock24 = true;
 
         extraConfig = ''
           # remove default keybindings

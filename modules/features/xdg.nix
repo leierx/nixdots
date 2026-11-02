@@ -1,22 +1,13 @@
 {
-  flake.modules.homeManager.xdg-user-dirs =
-    { config, lib, ... }:
-    {
-      xdg = {
+  flake.modules.homeManager.xdg-user-dirs = {
+    xdg = {
+      enable = true;
+
+      userDirs = {
         enable = true;
-
-        userDirs = {
-          enable = true;
-          createDirectories = true;
-
-          desktop = "${config.home.homeDirectory}/Desktop";
-          download = "${config.home.homeDirectory}/Downloads";
-          music = "${config.home.homeDirectory}/Music";
-          pictures = "${config.home.homeDirectory}/Pictures";
-          videos = "${config.home.homeDirectory}/Videos";
-          documents = "${config.home.homeDirectory}/Documents";
-          publicShare = lib.mkForce null;
-        };
+        createDirectories = true;
+        publicShare = null;
       };
     };
+  };
 }

@@ -8,7 +8,6 @@
 
       kernelParams = [
         "quiet"
-        "splash"
         "systemd.show_status=false"
         "rd.systemd.show_status=false"
       ];
