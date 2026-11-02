@@ -123,7 +123,11 @@
 
         xdg.configFile = lib.mapAttrs' (
           name: outputs:
-          lib.nameValuePair "hyprmoncfg/profiles/${name}.json" { text = toProfile name outputs; }
+          lib.nameValuePair "hyprmoncfg/profiles/${name}.json" {
+            text = toProfile name outputs;
+            # a TUI save replaces the link with a file; replace it back rather than pile up backups
+            force = true;
+          }
         ) config.hyprmoncfg.profiles;
 
         systemd.user.services.hyprmoncfgd = {
