@@ -1,5 +1,5 @@
 # Builds `flake.nixosConfigurations` from `nixosHosts.<hostname>`: a host is
-# its own aspect imports plus an injected hostId, hostname and platform.
+# its own aspect imports plus an injected hostId/hostname and stateVersion default.
 {
   config,
   lib,
@@ -12,6 +12,7 @@ let
     networking.hostId = lib.mkDefault (builtins.substring 0 8 (builtins.hashString "sha256" hostname));
     networking.hostName = lib.mkDefault hostname;
     nixpkgs.hostPlatform = lib.mkDefault host.system;
+    system.stateVersion = lib.mkDefault lib.trivial.release;
   };
 
   mkHost =
