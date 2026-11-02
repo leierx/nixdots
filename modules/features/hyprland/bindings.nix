@@ -2,6 +2,7 @@ root: {
   flake.modules.homeManager.hyprland =
     {
       config,
+      osConfig,
       pkgs,
       lib,
       ...
@@ -35,7 +36,7 @@ root: {
 
       rofi = lib.getExe config.programs.rofi.finalPackage;
       cliphist = lib.getExe config.services.cliphist.package;
-      wpctl = lib.getExe' pkgs.wireplumber "wpctl";
+      wpctl = lib.getExe' osConfig.services.pipewire.wireplumber.package "wpctl";
       brightnessctl = lib.getExe pkgs.brightnessctl;
       playerctl = lib.getExe pkgs.playerctl;
 

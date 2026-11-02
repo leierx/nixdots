@@ -3,8 +3,11 @@ shopt -s nullglob
 profiles=("$profiles_dir"/*.json)
 ((${#profiles[@]})) || exit 0
 
-if ! status=$(hyprmoncfg status --json 2>&1); then
-  notify-send -u critical "hyprmoncfg status" "$status"
+# stderr apart: a warning there would break the JSON
+err=$(mktemp)
+trap 'rm -f "$err"' EXIT
+if ! status=$(hyprmoncfg status --json 2>"$err"); then
+  notify-send -u critical "hyprmoncfg status" "$(<"$err")"
   exit 1
 fi
 recommended=$(jq -r '.recommended_profile.name // empty' <<<"$status")
