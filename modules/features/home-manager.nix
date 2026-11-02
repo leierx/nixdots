@@ -13,7 +13,7 @@ root@{ inputs, lib, ... }:
         backupFileExtension = "hm-bak";
 
         users.${root.config.identity.username}.imports = [
-          { home.stateVersion = lib.mkDefault lib.trivial.release; }
+          { home.stateVersion = lib.mkDefault config.system.stateVersion; }
           (root.config.flake.modules.homeManager."nixosConfigurations/${config.networking.hostName}/home"
             or { }
           )
