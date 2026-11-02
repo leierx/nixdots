@@ -34,12 +34,8 @@ in
             path = "${./assets/lockscreen-background.jpg}";
           };
 
-          general = {
-            no_fade_in = true;
-            no_fade_out = true;
-            disable_loading_bar = true;
-            hide_cursor = true;
-          };
+          general.hide_cursor = true;
+          animations.enabled = false;
 
           label = [
             (
