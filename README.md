@@ -81,20 +81,20 @@ nix fmt # nixfmt-tree
 ## Layout
 
 ```
-flake.nix evaluates modules/ and returns config.flake
-import-tree.nix imports every .nix file under a directory
+flake.nix          evaluates modules/ and returns config.flake
+import-tree.nix    imports every .nix file under a directory
 
 modules/
-  flake/ the substrate: output surface, perSystem, host builders,
+  flake/           the substrate: output surface, perSystem, host builders,
                    identity, checks, offline installer
-  features/ one flat file per feature, covering every class it
+  features/        one flat file per feature, covering every class it
                    applies to; a directory only when the feature has parts
                    (hyprland/, neovim/, pi-agent/)
-  profiles/ base and workstation: named groups of features
-  theme/ palette, fonts, gtk, qt, cursor
-  hosts/ one directory per machine
-dev/ separate work with its own flakes, never imported
-  quickshell/ the quickshell bar experiments
+  profiles/        base and workstation: named groups of features
+  theme/           palette, fonts, gtk, qt, cursor
+  hosts/           one directory per machine
+dev/               separate work with its own flakes, never imported
+  quickshell/      the quickshell bar experiments
 ```
 
 Technical notes for agents live in [AGENTS.md](./AGENTS.md).

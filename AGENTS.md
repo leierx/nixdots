@@ -37,7 +37,7 @@ is hand-rolled in `flake.nix`, `import-tree.nix` and `modules/flake/`.
   not from env vars another feature exports. Only the base OS (coreutils, curl,
   tar, systemd) is assumed.
 - **`imports` in a host is the whole machine.** Host builders inject only the
-  hostname, platform and a `stateVersion` default; nothing else.
+  hostname and platform; nothing else.
 - **Keep comments minimal.** Comment the *why*, not the *what*. One line.
 - Don't add a flake-parts dependency or reintroduce `specialArgs` plumbing.
 
@@ -100,6 +100,7 @@ skipped — **`_`-prefixed paths are the escape hatch for non-module Nix code**
 
 ```nix
 { ... }: {
+  key = "flake.modules.${class}.${name}";
   _class = class;                              # nixos | homeManager
   _file = "flake.modules.${class}.${name}";
   imports = [ module ];
@@ -108,7 +109,8 @@ skipped — **`_`-prefixed paths are the escape hatch for non-module Nix code**
 
 The `_class` tag makes loading a home-manager module into a NixOS
 configuration a plain type error instead of "undeclared option" noise. The
-`_file` tag gives readable error locations.
+`_file` tag gives readable error locations, and the `key` makes an aspect
+imported along two paths (a profile and a host) apply once.
 
 The registry is exported verbatim as the flake output `modules`
 (hence Nix's harmless `unknown flake output 'modules'` warning), which is what
@@ -144,7 +146,7 @@ module may define `perSystem`; definitions merge.
 - **`nixos-hosts.nix`** — `nixosHosts.<name>` → `lib.nixosSystem`. Injected
   defaults (all `mkDefault`, overridable): `networking.hostId` = first 8 chars
   of `sha256(hostname)`, `networking.hostName`, `nixpkgs.hostPlatform` =
-  `host.system`, `system.stateVersion` = `lib.trivial.release`. Then imports
+  `host.system`. Then imports
   `config.flake.modules.nixos."nixosConfigurations/<name>" or { }`.
 - **`offline-installer.nix`** — for **every** entry in `nixosHosts`,
   generates `nixosConfigurations.offlineInstaller-<host>`: a minimal
@@ -172,7 +174,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | Feature | Classes | Aspect(s) | What it does |
 | --- | --- | --- | --- |
 | `bluetooth.nix` | homeManager | `bluetooth` | `bluetui` when the host enables `hardware.bluetooth` (via `osConfig`) |
-| `boot.nix` | nixos | `boot`, `systemd-boot` | GRUB-on-EFI default (theme via `runCommand`); `systemd-boot` aspect `mkForce`s GRUB off |
+| `boot.nix` | nixos | `boot`, `systemd-boot` | GRUB-on-EFI default (theme via `runCommand`); `systemd-boot` aspect `mkForce`s GRUB off; no host imports it |
 | `desktop-apps.nix` | homeManager | `desktop-apps` | GUI apps every workstation gets (browsers, spotify, obsidian, discord, …) |
 | `display-manager.nix` | nixos | `display-manager` | ly |
 | `doas.nix` | nixos | `doas` | doas replaces sudo (via `doas-sudo-shim`), wheel `noPass` without `keepenv`, passing only `LANG`, `NIX_PATH` and `SUDO_UID`/`SUDO_GID`/`SUDO_USER` |
@@ -235,7 +237,7 @@ Notes on specific features:
     matches). Profiles live in `~/.config/hyprmoncfg/profiles/`: the HM option
     `hyprmoncfg.profiles` declares some (outputs by EDID make/model/serial,
     workspace planning off because hyprsplit owns workspaces), the TUI saves
-    the rest. A declared one re-saved from the TUI is backed up and reset on the
+    the rest. A declared one re-saved from the TUI is overwritten on the
     next switch. SUPER+P (`scripts/monitor-layouts.sh`) applies one through rofi;
     its `auto` entry applies hyprmoncfg's recommended profile, since the daemon
     keeps a hand-picked one until the next hotplug.
@@ -259,14 +261,18 @@ Notes on specific features:
   `programs.neovim.extraPackages`,
   so they are on nvim's PATH only; ripgrep and fd come from `programs.ripgrep` /
   `programs.fd` for the shell too. Per-server LSP overrides live in `after/lsp/`.
+  home-manager's own `init.lua` (providers off) is sideloaded through the
+  wrapper (`sideloadInitLua`), since the whole `~/.config/nvim` is the module's.
   Neovim 0.12+ `vim.pack` is the plugin manager; `nvim-pack-lock.json` is
   committed and pins every plugin:
   - in a writable checkout, `vim.pack` reads and writes it in place;
   - from the read-only store, `init.lua` points `vim.pack` at a copy in
     `~/.local/share/nvim/nvim-pack-config/` and, whenever the committed
     lockfile changes, reseeds that copy and runs
-    `vim.pack.update(nil, { target = "lockfile", force = true })`.
-  - To update plugins from a store install: `:lua vim.pack.update()`, then
+    `vim.pack.update(nil, { target = "lockfile", force = true })`, again on
+    every start until each plugin sits at its pinned revision.
+  - To update plugins from a store install: `:lua vim.pack.update()`, `:write`
+    the confirm buffer, then
     copy `~/.local/share/nvim/nvim-pack-config/nvim-pack-lock.json` into
     `modules/features/neovim/` and commit. Run `:TSUpdate` afterwards.
 - **`pi-agent/`** installs `pi-coding-agent` from `inputs.nixpkgs-unstable`
@@ -329,8 +335,9 @@ stay in each host's `hardware.nix`, even when hosts repeat them: hardware is
 individual by nature, so it is not factored into a shared aspect.
 
 Both hosts' `home.nix` carry the homelab tooling: `just`, `helm`, `virtctl`
-(`kubevirt`), `kubelogin` (`kubectl oidc-login`), and an ssh `loft01` host
-(10.0.0.1) that forwards local 6443 to the k3s API.
+(`kubevirt`), `kubelogin` (`kubectl oidc-login`), `programs.gh`, `piAgent`
+settings, and an ssh `loft01` host (10.0.0.1) that forwards local 6443 to the
+k3s API.
 
 - **`thonkpad`** — imports `base workstation gaming`. Intel laptop:
   microcode, firmware, bluetooth, graphics + `intel-media-driver`/`vpl-gpu-rt`, fstrim, fwupd, zram,
@@ -339,8 +346,8 @@ Both hosts' `home.nix` carry the homelab tooling: `just`, `helm`, `virtctl`
 - **`desktop`** — imports `base workstation gaming sunshine`. AMD desktop:
   microcode, firmware, RX 6700 XT graphics, `kvm-amd`, fstrim, fwupd, zram, ZSA keyboard udev rules
   (keymapp), disko, hyprmoncfg profiles `default` (both monitors), `left-only` and `right-only`,
-  nix-index, `programs.gh` (git credential helper
-  for github.com), quickshell, `piAgent` settings, SSH match blocks,
+  nix-index, `programs.gh` as git credential helper
+  for github.com, quickshell, SSH match blocks,
   Hyprland startup apps pinned to monitors, host-specific app list.
 
 ## External consumers
@@ -387,8 +394,9 @@ nix fmt                  # formatter = nixfmt-tree
   the terminal's, i.e. wezterm's Adwaita Dark background.
 - **Formatters/checks are per-system.** A new `perSystem` definition merges;
   don't redeclare `systems`.
-- **`stateVersion`** defaults to the nixpkgs release (NixOS and home-manager);
-  do not bump it without understanding the migration implications.
+- **`stateVersion`** is pinned per host in its `configuration.nix`;
+  home-manager's follows it. Do not bump it without understanding the
+  migration implications.
 - **`networking.hostId`** is derived from the hostname hash. Renaming a host
   changes it.
 - **The hyprland HM module depends on `osConfig`.** Importing only
@@ -397,7 +405,7 @@ nix fmt                  # formatter = nixfmt-tree
   is `hyprland-session.target` for the whole user; a service meant for another
   compositor needs its own target.
 - **`boot` and `systemd-boot` conflict by design** — `systemd-boot`
-  `mkForce`s GRUB off; a host adds it on top of `base`.
+  `mkForce`s GRUB off; a host would add it on top of `base` (none does now).
 - **The `modules` flake output is not a standard output.** Nix warns about it;
   it is intentional and required for external imports.
 - **`programs.ssh.matchBlocks` is deprecated** in `modules/hosts/desktop/home.nix`;
