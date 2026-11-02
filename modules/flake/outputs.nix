@@ -14,11 +14,13 @@ let
     };
 
   # Tag stored modules with class and origin, so a wrong-class import is a
-  # plain type error instead of "undeclared option" noise.
+  # plain type error instead of "undeclared option" noise. The key dedups an
+  # aspect imported along two paths.
   tag =
     class: name: module:
     { ... }:
     {
+      key = "flake.modules.${class}.${name}";
       _class = class;
       _file = "flake.modules.${class}.${name}";
       imports = [ module ];
