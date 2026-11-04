@@ -1,4 +1,4 @@
-{
+root: {
   flake.modules.nixos.sunshine =
     {
       config,
@@ -15,31 +15,32 @@
         config.systemd.package
         pkgs.jq
       ];
-      # streams a headless output at the client's mode, the only screen while it lasts
+      # streams a headless output at the client's mode, next to the physical ones
       display = {
         do = script "sunshine-display-do" hyprland ''
-          # hyprmoncfgd would re-lay the outputs out, hypridle lock the stream, waybar sit on it
-          systemctl --user stop hyprmoncfgd.service hypridle.service waybar.service
+          # hyprmoncfgd would re-lay the outputs out, hypridle lock the stream
+          systemctl --user stop hyprmoncfgd.service hypridle.service
           # a game started from fullscreen Big Picture would otherwise map behind it
           hyprctl eval 'hl.config({ misc = { on_focus_under_fullscreen = "take_over", exit_window_retains_fullscreen = "enable" } })'
-          hyprctl eval "hl.monitor({ output = \"SUNSHINE\", mode = \"''${SUNSHINE_CLIENT_WIDTH}x''${SUNSHINE_CLIENT_HEIGHT}@''${SUNSHINE_CLIENT_FPS}\", position = \"auto\", scale = 1 })"
+          # past the physical outputs with a gap, so the cursor stays on the stream
+          x=$(hyprctl monitors -j | jq '[.[] | .x + .width / .scale] | max + 1000 | floor')
+          hyprctl eval "hl.monitor({ output = \"SUNSHINE\", mode = \"''${SUNSHINE_CLIENT_WIDTH}x''${SUNSHINE_CLIENT_HEIGHT}@''${SUNSHINE_CLIENT_FPS}\", position = \"''${x}x0\", scale = 1 })"
           hyprctl output create headless SUNSHINE
-          for output in $(hyprctl monitors -j | jq -r '.[].name | select(. != "SUNSHINE")'); do
-            hyprctl eval "hl.monitor({ output = \"$output\", disabled = true })"
-          done
-        '';
-        undo = script "sunshine-display-undo" hyprland ''
-          # drops the rules above, bringing the outputs back; hyprmoncfgd then re-applies its profile
-          hyprctl reload
           tries=50
-          until hyprctl monitors -j | jq -e 'any(.[]; .name != "SUNSHINE")' >/dev/null; do
-            ((--tries)) || { echo "no output besides SUNSHINE after reload" >&2; exit 1; }
+          until hyprctl monitors -j | jq -e 'any(.[]; .name == "SUNSHINE")' >/dev/null; do
+            ((--tries)) || { echo "SUNSHINE output did not appear" >&2; exit 1; }
             sleep 0.1
           done
+          # new windows open on the focused monitor
+          hyprctl dispatch 'hl.dsp.focus({ monitor = "SUNSHINE" })'
+        '';
+        undo = script "sunshine-display-undo" hyprland ''
           hyprctl output remove SUNSHINE
+          # drops the rules above
+          hyprctl reload
           # the stream's workspaces are outside every monitor's hyprsplit range
           hyprctl eval 'require("hyprsplit").dsp.grab_rogue_windows()()'
-          systemctl --user start hyprmoncfgd.service hypridle.service waybar.service
+          systemctl --user start hyprmoncfgd.service hypridle.service
         '';
       };
       steam = [
@@ -110,5 +111,12 @@
         partOf = lib.mkForce [ "hyprland-session.target" ];
         after = lib.mkForce [ "hyprland-session.target" ];
       };
+
+      home-manager.users.${root.config.identity.username}.imports = [
+        root.config.flake.modules.homeManager.sunshine
+      ];
     };
+
+  # keeps the bar off the stream
+  flake.modules.homeManager.sunshine.programs.waybar.settings.topbar.output = "!SUNSHINE";
 }
