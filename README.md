@@ -30,7 +30,6 @@ individual features by name, as my mac's configuration does:
     wezterm
     neovim
     pi-agent
-    tmux
   ];
 
   # knobs an importer may need are options of the aspect itself

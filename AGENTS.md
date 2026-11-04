@@ -123,7 +123,7 @@ importer changes behaviour through the aspect's own options or `lib.mkForce`.
 | Option | Type | Notes |
 | --- | --- | --- |
 | `identity` | `{ username, fullName, email }` | Primary user; read by `users`, `git`, `home-manager`, profiles. |
-| `palettes` | `attrsOf (attrsOf str)` | `ui` (rofi, mako, waybar, hyprland, hyprlock), `adwaita_dark` (wezterm), `kanagawa` (tmux). |
+| `palettes` | `attrsOf (attrsOf str)` | `ui` (rofi, mako, waybar, hyprland, hyprlock), `adwaita_dark` (wezterm). |
 | `hyprland.workspaces` | positive int | Workspaces per monitor; read by hyprsplit's config, the binds and waybar's labels. |
 | `nixosHosts.<name>` | submodule `{ system }` | Drives `flake.nixosConfigurations`. |
 | `systems` | `listOf str` | Option default `[ ]`; `per-system.nix` defines `[ "x86_64-linux" "aarch64-darwin" ]`. Drives `perSystem`. |
@@ -199,9 +199,8 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `rofi.nix` | homeManager | `rofi` | rofi theme generated from `palettes.ui` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
 | `sunshine.nix` | nixos | `sunshine` | Sunshine, started by hand (`systemctl --user start sunshine`) and stopped with the Hyprland session; `wlr` capture + VAAPI; apps "Desktop" and "Steam Big Picture" stream a headless `SUNSHINE` output at the client's mode, placed past the physical outputs with a gap (the shared cursor can't cross) and focused, with hyprmoncfgd/hypridle stopped, waybar kept off it and new windows taking over fullscreen until the app quits; quitting Steam ends the stream, and ending the stream shuts Steam down; on quit hyprsplit's `grab_rogue_windows` pulls the stream's windows onto the focused workspace |
-| `tmux.nix` | homeManager | `tmux` | `programs.tmux` (socket under `$XDG_RUNTIME_DIR` on Linux) + own keymap, status from `palettes.kanagawa` |
 | `users.nix` | nixos, homeManager | `users` | primary user, groups, hashed password, zsh (no global compinit; oh-my-zsh runs it) + starship, root locked |
-| `wezterm.nix` | homeManager | `wezterm` | wezterm with an "Adwaita Dark" scheme from `palettes.adwaita_dark`, Hack font |
+| `wezterm.nix` | homeManager | `wezterm` | wezterm with an "Adwaita Dark" scheme from `palettes.adwaita_dark`, Hack font; the multiplexer (replaced tmux): panes live in the built-in `unix` domain (`default_domain`), tmux-style keymap on a CTRL+b leader |
 | `xdg.nix` | homeManager | `xdg-user-dirs` | XDG user dirs (created; projects = HM default `~/Projects`) |
 | `zsh.nix` | homeManager | `zsh` | oh-my-zsh, autosuggestions, syntax highlight, 100k history, `programs.fzf` keybindings (Ctrl-R/Ctrl-T/Alt-C) |
 
@@ -295,7 +294,7 @@ to take.
 - `base` — nixos imports `boot doas documentation git home-manager journald
   locale network neovim nix nixpkgs packages podman unstable-nixpkgs
   users` and wires `homeManager.base`; `homeManager.base` imports `git
-  pi-agent tmux users xdg-user-dirs zsh`.
+  pi-agent users xdg-user-dirs zsh`.
 - `workstation` — nixos imports `display-manager fonts gtk hyprland plymouth
   sound`; `homeManager.workstation` imports `bluetooth cursor desktop-apps gtk
   hyprland neovim qt rofi wezterm`. Its NixOS half pulls in the HM half.
@@ -351,7 +350,7 @@ k3s API.
 ## External consumers
 
 The mac (a separate nix-darwin flake) imports `modules.homeManager.{wezterm,
-neovim, pi-agent, tmux}`. Keep those aspects platform-neutral (no
+neovim, pi-agent}`. Keep those aspects platform-neutral (no
 Linux-only packages without a guard), and expose anything the mac must set as
 an option of the aspect.
 

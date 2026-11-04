@@ -63,13 +63,4 @@
     color14 = "#4fd2fd";
     color15 = "#f6f5f4";
   };
-
-  # Matches the neovim colorscheme
-  config.palettes.kanagawa = {
-    fg = "#dcd7ba";
-    muted = "#727169";
-    blue = "#7e9cd8";
-    red = "#e82424";
-    sel = "#223249";
-  };
 }
