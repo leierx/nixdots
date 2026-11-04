@@ -95,6 +95,13 @@ root: {
             desc = "Terminal";
           })
           (mkBind {
+            key = "Return";
+            modifiers = [ "SHIFT" ];
+            # closing any of its windows detaches them all; panes live on in wezterm-mux-server
+            dispatcher = exec "${lib.getExe config.programs.wezterm.package} connect unix";
+            desc = "Terminal session (persistent)";
+          })
+          (mkBind {
             key = "d";
             dispatcher = exec "${rofi} -modes drun -show drun";
             desc = "App launcher";

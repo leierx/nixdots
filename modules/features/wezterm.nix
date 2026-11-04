@@ -27,10 +27,6 @@ root: {
           config.enable_kitty_graphics = true
           config.enable_kitty_keyboard = true -- modified keys like Shift+Enter for pi/claude; apps opt in
 
-          -- panes live in wezterm-mux-server so they survive the GUI; it reads this file only at its start,
-          -- so `pkill -x wezterm-mux-server` (killing its panes) applies changes
-          config.default_domain = "unix"
-
           config.enable_tab_bar = true
           config.hide_tab_bar_if_only_one_tab = true
           config.show_new_tab_button_in_tab_bar = false
