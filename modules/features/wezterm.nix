@@ -23,17 +23,15 @@ root: {
           config.exit_behavior = "Close"
           config.window_close_confirmation = "NeverPrompt"
           config.mux_enable_ssh_agent = false
+          config.ssh_domains = {} -- else every ~/.ssh/config host shows up in the launcher
           config.alternate_buffer_wheel_scroll_speed = 1
           config.enable_kitty_graphics = true
           config.enable_kitty_keyboard = true -- modified keys like Shift+Enter for pi/claude; apps opt in
 
           config.enable_tab_bar = true
+          config.use_fancy_tab_bar = false
           config.hide_tab_bar_if_only_one_tab = true
           config.show_new_tab_button_in_tab_bar = false
-          config.window_frame = {
-            active_titlebar_bg = "${palette.background}",
-            inactive_titlebar_bg = "${palette.background}",
-          }
           config.enable_scroll_bar = false
           config.adjust_window_size_when_changing_font_size = false
           config.hide_mouse_cursor_when_typing = false
@@ -77,6 +75,7 @@ root: {
             { key = "l", mods = "LEADER", action = act.ActivatePaneDirection "Right" },
             { key = "m", mods = "LEADER", action = act.TogglePaneZoomState },
             { key = "x", mods = "LEADER", action = act.CloseCurrentPane { confirm = true } },
+            { key = "a", mods = "LEADER", action = act.AttachDomain "unix" },
             { key = "d", mods = "LEADER", action = act.DetachDomain "CurrentPaneDomain" },
             { key = "t", mods = "LEADER", action = act.ShowLauncherArgs { flags = "FUZZY|WORKSPACES|TABS|DOMAINS" } },
             { key = ":", mods = "LEADER|SHIFT", action = act.ActivateCommandPalette },
@@ -93,10 +92,6 @@ root: {
             table.insert(leader_keys, { key = tostring(i), mods = "LEADER", action = act.ActivateTab(i - 1) })
           end
           for _, k in ipairs(leader_keys) do table.insert(config.keys, k) end
-          wezterm.on("update-status", function(window, pane)
-            local mode = window:leader_is_active() and "LEADER" or window:active_key_table() or ""
-            window:set_right_status(mode .. "  " .. window:active_workspace() .. " ")
-          end)
           config.key_tables = {
             resize = {
               { key = "h", action = act.AdjustPaneSize { "Left", 5 } },
@@ -164,6 +159,7 @@ root: {
               },
               split = "${palette.color8}",
               tab_bar = {
+                background = "${palette.background}",
                 inactive_tab_edge = "${palette.color8}",
                 active_tab = { bg_color = "${palette.color8}", fg_color = "${palette.foreground}" },
                 inactive_tab = { bg_color = "${palette.background}", fg_color = "${palette.color7}" },
