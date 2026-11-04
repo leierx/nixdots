@@ -139,6 +139,7 @@ in
               background_color = "0x${hex ui.bg1}";
               on_focus_under_fullscreen = 0;
               middle_click_paste = false;
+              disable_autoreload = true;
               # a crashed hyprlock can be restarted instead of leaving the session dead
               allow_session_lock_restore = true;
             };
