@@ -10,6 +10,7 @@ root: {
         kubevirt
         # `kubectl oidc-login`: the homelab kubeconfig logs in through Authentik
         kubelogin-oidc
+        unstable.claude-code
       ];
 
       piAgent.settings = {
