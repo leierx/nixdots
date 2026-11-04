@@ -11,7 +11,7 @@
           type = "gpt";
           partitions = {
             ESP = {
-              type = "EF00"; # EFI System
+              type = "EF00";
               size = "500M";
               content = {
                 type = "filesystem";
@@ -25,7 +25,7 @@
               };
             };
             root = {
-              type = "8300"; # Linux Filesystem
+              type = "8300";
               size = "100%";
               content = {
                 type = "filesystem";

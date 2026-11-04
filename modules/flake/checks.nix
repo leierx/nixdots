@@ -1,4 +1,3 @@
-# Formatting and evaluation checks, expressed through `perSystem`.
 { config, ... }:
 {
   perSystem =
@@ -19,7 +18,7 @@
             '';
       }
       // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-        # instantiate every host and installer; the discarded context keeps them from being built
+        # the discarded context keeps the hosts from being built
         eval =
           pkgs.runCommand "eval-check"
             {

@@ -4,7 +4,6 @@ vim.filetype.add({
     tfvars = "opentofu-vars",
   },
   pattern = {
-    -- ansible inventory/layout dirs
     [".*/host_vars/.*%.ya?ml"] = "yaml.ansible",
     [".*/group_vars/.*%.ya?ml"] = "yaml.ansible",
     [".*/tasks/.*%.ya?ml"] = "yaml.ansible",

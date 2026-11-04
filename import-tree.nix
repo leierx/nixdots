@@ -1,5 +1,4 @@
-# Turns a directory into a module importing every `.nix` beneath it; `.`/`_`
-# prefixed paths are skipped, so `_` can hold non-module Nix code.
+# `_`-prefixed paths are skipped so they can hold non-module Nix code
 modulesPath:
 let
   isHidden = name: builtins.substring 0 1 name == "." || builtins.substring 0 1 name == "_";

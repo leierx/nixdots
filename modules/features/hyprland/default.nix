@@ -87,7 +87,6 @@ in
         # Hyprland ≥ 0.57 starts hyprland-session.target itself; keep only the env import
         systemd.extraCommands = [ ];
         settings = {
-          # Variables
           mod._var = "SUPER";
 
           config = {
@@ -119,7 +118,6 @@ in
 
               shadow = {
                 range = 40;
-                # render_power = 3;
                 color = "rgba(0, 0, 0, 0.9)";
               };
             };
@@ -147,7 +145,7 @@ in
             ecosystem = {
               no_update_news = true;
               no_donation_nag = true;
-              enforce_permissions = false; # I want to eventually! its a cool feature
+              enforce_permissions = false;
             };
 
             dwindle.force_split = 2;

@@ -1,5 +1,3 @@
-# A minimal `perSystem`: one deferred module evaluated per `systems` entry,
-# producing the system-keyed outputs. Definitions merge like any module.
 {
   config,
   inputs,

@@ -8,7 +8,7 @@ fzf_lua.setup({
   keymap = {
     fzf = {
       true,
-      ["ctrl-q"] = "select-all+accept", -- Use <c-q> to select all items and add them to the quickfix list
+      ["ctrl-q"] = "select-all+accept",
     },
   },
 })

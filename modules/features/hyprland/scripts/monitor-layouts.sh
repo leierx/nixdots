@@ -1,4 +1,4 @@
-# usage: monitor-layouts; $profiles_dir is set by the nix wrapper
+# $profiles_dir is set by the nix wrapper
 shopt -s nullglob
 profiles=("$profiles_dir"/*.json)
 ((${#profiles[@]})) || exit 0

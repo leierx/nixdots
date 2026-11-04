@@ -1,5 +1,3 @@
-# Default is GRUB on EFI. `systemd-boot` is the alternative and forces GRUB
-# off, so a host can import it on top of `base` without touching the profile.
 {
   flake.modules.nixos.boot =
     { pkgs, ... }:
@@ -37,6 +35,7 @@
   flake.modules.nixos.systemd-boot =
     { lib, ... }:
     {
+      # forced so a host can add it on top of base's GRUB
       boot.loader.grub.enable = lib.mkForce false;
 
       boot.loader.systemd-boot = {

@@ -5,9 +5,6 @@
   ...
 }:
 let
-  # Every nixosHosts entry also gets an `offlineInstaller-<host>` ISO system
-  # carrying its toplevel + disko destroy-format-mount script:
-  #   nix build .#nixosConfigurations.offlineInstaller-<host>.config.system.build.isoImage
   installerHosts = lib.attrNames config.nixosHosts;
 
   mkInstaller =

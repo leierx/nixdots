@@ -1,4 +1,4 @@
--- cache compiled Lua modules; must run before any require
+-- must run before any require
 vim.loader.enable()
 
 -- nvim-pack-lock.json pins plugins; from the read-only store vim.pack uses a writable copy, resynced when it changes
@@ -66,7 +66,6 @@ end
 require("config")
 require("plugins")
 
--- move installed plugins to a newly committed lockfile's revisions
 if resync then
   vim.pack.update(nil, { target = "lockfile", force = true })
 end

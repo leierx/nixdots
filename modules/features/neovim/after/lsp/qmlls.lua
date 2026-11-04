@@ -1,7 +1,6 @@
 ---@type vim.lsp.Config
 return {
-  -- -E makes qmlls read QML_IMPORT_PATH; quickshell additionally writes a
-  -- .qmlls.ini (with its importPaths) next to shell.qml on first launch.
+  -- -E reads QML_IMPORT_PATH; quickshell also writes a .qmlls.ini next to shell.qml
   cmd = { "qmlls", "-E" },
   filetypes = { "qml", "qmljs" },
   root_markers = { ".qmlls.ini", "shell.qml", ".git" },

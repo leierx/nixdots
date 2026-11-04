@@ -144,7 +144,6 @@ root: {
               end'';
             desc = "Cycle windows";
           })
-          # a frozen region: SHIFT saves instead of copying
           (mkBind {
             key = "Q";
             dispatcher = exec "${lib.getExe freezeRegion} copy";
@@ -156,7 +155,6 @@ root: {
             dispatcher = exec "${lib.getExe freezeRegion} save";
             desc = "Screenshot region to file";
           })
-          # left again after 2 s
           (mkBind {
             key = "X";
             dispatcher = ''
@@ -168,7 +166,6 @@ root: {
             desc = "System controls";
           })
         ]
-        # workspaces on the focused monitor, through hyprsplit
         ++ lib.concatMap (
           n:
           let
@@ -207,7 +204,6 @@ root: {
             ]
           ) directions
         )
-        # media and brightness keys, also on the lockscreen
         ++
           lib.mapAttrsToList
             (
@@ -281,7 +277,7 @@ root: {
             };
 
         submaps.system_control = {
-          onDispatch = "reset"; # auto-exits the submap after any dispatch
+          onDispatch = "reset";
           settings.bind = [
             (mkBind {
               key = "ESCAPE";

@@ -1,4 +1,3 @@
--- highlight yank
 vim.api.nvim_create_autocmd("TextYankPost", {
   callback = function()
     vim.hl.on_yank({ timeout = 200 })
@@ -16,14 +15,12 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
--- no auto-continue comments
 vim.api.nvim_create_autocmd({ "FileType" }, {
   callback = function()
     vim.opt_local.formatoptions:remove({ "r", "o" })
   end,
 })
 
--- restore cursor to file position in previous editing session
 vim.api.nvim_create_autocmd("BufReadPost", {
   callback = function(args)
     local mark = vim.api.nvim_buf_get_mark(args.buf, '"')
@@ -35,7 +32,6 @@ vim.api.nvim_create_autocmd("BufReadPost", {
   end,
 })
 
--- toggle cursorline only for the active window
 vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter", "WinLeave", "BufLeave" }, {
   callback = function(args)
     local on = (args.event == "WinEnter" or args.event == "BufEnter")
@@ -43,7 +39,6 @@ vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter", "WinLeave", "BufLeave" }, 
   end,
 })
 
--- equalize splits when terminal window is resized (across tabs)
 vim.api.nvim_create_autocmd("VimResized", {
   desc = "Equalize splits on resize",
   callback = function()
@@ -51,7 +46,6 @@ vim.api.nvim_create_autocmd("VimResized", {
   end,
 })
 
--- close utility buffers with q / <Esc>
 vim.api.nvim_create_autocmd("FileType", {
   desc = "Close some buffers with q / <Esc>",
   pattern = { "help", "qf", "checkhealth", "startuptime" },

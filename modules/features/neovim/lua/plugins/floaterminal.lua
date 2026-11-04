@@ -45,8 +45,6 @@ local function create()
 
   vim.cmd.startinsert()
 
-  -- double-tap Esc detection in terminal mode:
-  -- two quick Esc -> normal mode; single Esc (after timeout) -> close
   local esc_timer = nil
   vim.keymap.set("t", "<Esc>", function()
     if esc_timer then

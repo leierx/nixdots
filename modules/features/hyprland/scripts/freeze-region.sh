@@ -1,4 +1,4 @@
-# usage: freeze-region copy|save; $screenshot_dir is set by the nix wrapper
+# $screenshot_dir is set by the nix wrapper
 mode=${1:-}
 case "$mode" in
 copy | save) ;;

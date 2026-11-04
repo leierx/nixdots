@@ -27,8 +27,7 @@ require("oil-git").setup({
   show_ignored_files = false,
 })
 
--- Open the preview when oil is entered from a file, but respect a manual close
--- while browsing within oil.
+-- auto-preview only when entering oil from a file, so a manual close sticks while browsing
 local oil_aug = vim.api.nvim_create_augroup("OilAutoPreview", {})
 vim.api.nvim_create_autocmd("BufLeave", {
   group = oil_aug,

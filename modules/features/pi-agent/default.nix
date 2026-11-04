@@ -19,8 +19,7 @@
 
       config.home = {
         packages = [
-          # nixpkgs' wrapper already prefixes ripgrep and fd; git (worktrees, commits) and node
-          # (npm install scripts) are suffixed so project shells win
+          # suffixed so a project shell's git and node win; nixpkgs' wrapper already prefixes rg and fd
           (pkgs.symlinkJoin {
             name = "pi-wrapped";
             paths = [

@@ -1,4 +1,3 @@
-# NixOS wiring for the primary user's home-manager configuration on this host.
 root@{ inputs, lib, ... }:
 {
   flake.modules.nixos.home-manager =

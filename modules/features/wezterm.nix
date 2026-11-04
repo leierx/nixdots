@@ -17,9 +17,8 @@ root: {
 
           local config = {}
 
-          -- Core behavior
           config.check_for_updates = false
-          config.automatically_reload_config = false -- perf: don’t auto-reload on save
+          config.automatically_reload_config = false -- perf
           config.quit_when_all_windows_are_closed = true
           config.exit_behavior = "Close"
           config.window_close_confirmation = "NeverPrompt"
@@ -28,12 +27,10 @@ root: {
           config.enable_kitty_graphics = true
           config.enable_kitty_keyboard = true -- modified keys like Shift+Enter for pi/claude; apps opt in
 
-          -- Multiplexer: panes live in wezterm-mux-server (the built-in "unix" domain), so they survive the GUI.
-          -- Closing any window detaches the whole domain in that GUI; the next `wezterm` re-attaches.
-          -- The server reads this file only at its own start: `pkill -x wezterm-mux-server` (kills its panes) to apply changes.
+          -- panes live in wezterm-mux-server so they survive the GUI; it reads this file only at its start,
+          -- so `pkill -x wezterm-mux-server` (killing its panes) applies changes
           config.default_domain = "unix"
 
-          -- UI
           config.enable_tab_bar = true
           config.hide_tab_bar_if_only_one_tab = true
           config.show_new_tab_button_in_tab_bar = false
@@ -47,25 +44,20 @@ root: {
           config.audible_bell = "Disabled"
           config.window_padding = { left = "0.5cell", right = "0.5cell", top = "0.25cell", bottom = "0.25cell" }
 
-          -- Cursor
           config.default_cursor_style = "SteadyBlock"
           config.cursor_blink_rate = 0
 
-          -- Input
           config.disable_default_mouse_bindings = true
           config.disable_default_key_bindings = true
           config.disable_default_quick_select_patterns = true
-          config.bypass_mouse_reporting_modifiers = "SHIFT" -- bypass app mouse mode
+          config.bypass_mouse_reporting_modifiers = "SHIFT"
 
-          -- Scrollback
           config.scrollback_lines = 500000
 
-          -- Font
           config.font = wezterm.font "Hack"
           config.font_size = 16.0
           config.font_dirs = { "${pkgs.hack-font}/share/fonts/truetype" } -- CoreText cannot see the HM profile on macOS
 
-          -- Keybinds
           config.keys = {
             { key = "C", mods = "CTRL|SHIFT", action = act.CopyTo("Clipboard") },
             { key = "V", mods = "CTRL|SHIFT", action = act.PasteFrom("Clipboard") },
@@ -97,8 +89,6 @@ root: {
             { key = "<", mods = "LEADER", action = act.MoveTabRelative(-1) },
             { key = ">", mods = "LEADER|SHIFT", action = act.MoveTabRelative(1) },
             { key = "b", mods = "LEADER|CTRL", action = act.ActivateTabRelative(1) },
-            -- alternative for C-b C-b: send a real C-b to the shell (zsh backward-char) instead
-            -- { key = "b", mods = "LEADER|CTRL", action = act.SendKey { key = "b", mods = "CTRL" } },
             -- "/" is shifted on Nordic layouts and unshifted on US, so bind both
             { key = "/", mods = "LEADER", action = act.Search { CaseInSensitiveString = "" } },
             { key = "/", mods = "LEADER|SHIFT", action = act.Search { CaseInSensitiveString = "" } },
@@ -122,7 +112,6 @@ root: {
             },
           }
 
-          -- Mousebinds
           config.mouse_bindings = {
             { event = { Down = { streak = 1, button = { WheelUp = 1 } } }, mods = "NONE", action = act.ScrollByCurrentEventWheelDelta },
             { event = { Down = { streak = 1, button = { WheelDown = 1 } } }, mods = "NONE", action = act.ScrollByCurrentEventWheelDelta },
@@ -134,8 +123,7 @@ root: {
             { event = { Down = { streak = 2, button = "Left" } }, mods = "NONE", action = act.SelectTextAtMouseCursor("Word") },
             { event = { Down = { streak = 3, button = "Left" } }, mods = "NONE", action = act.SelectTextAtMouseCursor("Line") },
 
-            -- Ctrl-click opens the link under the cursor; the Down bind keeps the
-            -- press from leaking to apps that track the mouse.
+            -- keeps the press from leaking to apps that track the mouse
             { event = { Down = { streak = 1, button = "Left" } }, mods = "CTRL", action = act.Nop },
             { event = { Up = { streak = 1, button = "Left" } }, mods = "CTRL", action = act.OpenLinkAtMouseCursor },
 
@@ -144,11 +132,11 @@ root: {
             { event = { Up = { streak = 1, button = "Left" } }, mods = "CTRL|SHIFT", action = act.CompleteSelection("PrimarySelection") },
           }
 
-          -- macOS-only; wezterm parses but ignores these on other platforms.
-          config.native_macos_fullscreen_mode = false -- fullscreen is a fast borderless window, not a macOS Space
-          config.macos_fullscreen_extend_behind_notch = false -- fullscreen stops at the notch instead of drawing behind it
-          config.macos_window_background_blur = 0 -- no blur; only takes effect with window_background_opacity < 1
-          config.macos_forward_to_ime_modifier_mask = "SHIFT" -- Shift combos go to the system IME, Ctrl/Alt reach wezterm binds and nvim
+          -- macOS-only; ignored elsewhere
+          config.native_macos_fullscreen_mode = false
+          config.macos_fullscreen_extend_behind_notch = false
+          config.macos_window_background_blur = 0
+          config.macos_forward_to_ime_modifier_mask = "SHIFT" -- Ctrl/Alt combos reach wezterm and nvim, not the IME
 
           config.color_schemes = {
             ["Adwaita Dark"] = {
@@ -191,36 +179,6 @@ root: {
           }
           config.color_scheme = "Adwaita Dark"
 
-          -- Check binds with `wezterm show-keys --lua`; see raw key names with
-          -- config.debug_key_events = true + `wezterm start` from a terminal.
-          --
-          -- M8. Panes.
-          -- config.inactive_pane_hsb = { hue = 1.0, saturation = 0.9, brightness = 0.8 } -- dim unfocused panes; all 1.0 = no dimming
-          -- config.pane_focus_follows_mouse = false
-          -- config.unzoom_on_switch_pane = true         -- false = ActivatePaneDirection does nothing while zoomed
-          -- config.swallow_mouse_click_on_pane_focus = false -- true = the click that focuses a pane isn't sent to it
-          -- config.quick_select_alphabet = "asdfqwerzxcvjklmiuopghtybn" -- also PaneSelect's labels
-          -- config.pane_select_font_size = 36
-          -- config.pane_select_font = nil               -- default: window_frame.font
-          -- config.pane_select_fg_color = nil           -- default 75% grey
-          -- config.pane_select_bg_color = nil           -- default black at 50% alpha
-          --
-          -- M9. Leader and key tables.
-          -- config.leader = nil                         -- { key, mods, timeout_milliseconds = 1000 }
-          -- config.key_tables = {}                      -- named modes for ActivateKeyTable { name, one_shot = true, timeout_milliseconds, replace_current, until_unknown, prevent_fallback }
-          --   copy_mode and search_mode tables are built in; defining either replaces it whole
-          --   (`wezterm show-keys --lua --key-table copy_mode` dumps the default to start from).
-          --
-          -- M10. Startup layouts (tmuxinator-style).
-          -- wezterm.on("gui-startup", function(cmd)     -- `wezterm start` only, not `connect`
-          --   local tab, pane, window = wezterm.mux.spawn_window(cmd or { workspace = "main" })
-          --   pane:split { direction = "Right", size = 0.4 }
-          -- end)
-          -- wezterm.on("mux-startup", function()        -- runs once when a mux server starts; panes it makes replace the default shell
-          --   local tab, pane, window = wezterm.mux.spawn_window { workspace = "nixdots", cwd = wezterm.home_dir .. "/Projects/nixdots" }
-          --   wezterm.mux.set_active_workspace("nixdots")
-          -- end)
-          --
           return config
         '';
       };

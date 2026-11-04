@@ -17,7 +17,6 @@
       };
 
       initContent = ''
-        # Execute autosuggestion with Ctrl+Space
         bindkey '^ ' autosuggest-execute
       '';
     };

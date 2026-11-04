@@ -25,8 +25,7 @@ PanelWindow {
   readonly property color hoverBg: "#26ffffff"
   readonly property int fontSize: 16
 
-  // hyprsplit gives every monitor its own index-numbered workspace block,
-  // so each bar shows only the workspaces bound to its monitor, numbered 1..N.
+  // hyprsplit gives each monitor its own workspace block, renumbered 1..N here
   readonly property string myMonitorName: {
     const m = Hyprland.monitorFor(modelData)
     return m ? m.name : ""

@@ -20,7 +20,7 @@ root: {
       };
     in
     {
-      # dependencies
+      # the popups' font
       home.packages = [ pkgs.hack-font ];
 
       # notifications never start mako outside Hyprland
@@ -33,31 +33,29 @@ root: {
         enable = true;
         package = mako;
         settings = {
-          # ── Binding options ─────────────────────────────────────────────
           on-button-left = "invoke-default-action";
           on-button-middle = "none";
           on-button-right = "dismiss";
           on-touch = "dismiss";
-          # ── Style options ───────────────────────────────────────────────
           font = "Hack 12";
           background-color = colors.bg1;
           text-color = colors.fg;
           width = 500;
-          height = 150; # max popup height in px (shrinks to fit)
-          outer-margin = 10; # margin outside the whole notification list
-          margin = "10,0"; # margin around each individual notification
-          padding = 20; # inner padding on each side
+          height = 150;
+          outer-margin = 10;
+          margin = "10,0";
+          padding = 20;
           border-size = 2;
-          border-color = colors.primaryColor; # border color
+          border-color = colors.primaryColor;
           border-radius = 10;
-          progress-color = "over ${colors.bg3}"; # progress indicator: "over" overlays, "source" replaces bg
+          progress-color = "over ${colors.bg3}";
           icons = true;
           icon-path = "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark";
           history = true;
-          format = ''<b>%s</b>\n%b''; # notification format string (grouped default: (%g) <b>%s</b>\n%b)
+          format = ''<b>%s</b>\n%b'';
           default-timeout = 20000;
-          ignore-timeout = true; # ignore app-sent expire timeout, use default-timeout
-          max-visible = 8; # max visible notifications (-1 = unlimited)
+          ignore-timeout = true;
+          max-visible = 8;
         };
       };
     };

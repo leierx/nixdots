@@ -25,11 +25,11 @@
           };
           listener = [
             {
-              timeout = 300; # 5 minutes
+              timeout = 300;
               on-timeout = "loginctl lock-session";
             }
             {
-              timeout = 360; # 6 minutes
+              timeout = 360;
               on-timeout = dpms "off";
               on-resume = dpms "on";
             }

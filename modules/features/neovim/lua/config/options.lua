@@ -1,46 +1,39 @@
 local o = vim.opt
 
--- Editing
-o.expandtab = true -- insert spaces instead of literal tabs
-o.shiftwidth = 2 -- indent size for << and >>, autoindent, etc.
-o.softtabstop = 2 -- <Tab>/<BS> behave like 2-space indent steps
-o.tabstop = 2 -- visual width of a tab character
+o.expandtab = true
+o.shiftwidth = 2
+o.softtabstop = 2
+o.tabstop = 2
 
--- Wrapping
-o.linebreak = true -- wrap at word boundaries (not mid-word)
-o.showbreak = "↳ " -- prefix for wrapped lines
-o.breakindent = true -- keep indentation on wrapped lines
-o.breakindentopt = "shift:2" -- extra indent for wrapped lines
+o.linebreak = true
+o.showbreak = "↳ "
+o.breakindent = true
+o.breakindentopt = "shift:2"
 
--- Line numbers & scrolling
 o.number = true
 o.relativenumber = true
-o.scrolloff = 4 -- keep a little context above/below the cursor
-o.smoothscroll = true -- scroll wrapped lines by screen line
+o.scrolloff = 4
+o.smoothscroll = true
 
--- Search
-o.ignorecase = true -- case-insensitive search...
-o.smartcase = true -- ...unless the pattern contains uppercase
+o.ignorecase = true
+o.smartcase = true
 
--- UI
-o.termguicolors = true -- 24-bit colors
-o.laststatus = 3 -- global statusline
-o.winborder = "rounded" -- default border for floating windows
-o.list = true -- show tabs, trailing spaces, nbsp (default listchars)
-o.updatetime = 250 -- faster CursorHold for diagnostics, gitsigns, etc.
+o.termguicolors = true
+o.laststatus = 3
+o.winborder = "rounded"
+o.list = true
+o.updatetime = 250 -- CursorHold for diagnostics and gitsigns
 
--- Splits
-o.splitbelow = true -- new horizontal splits go below
-o.splitright = true -- new vertical splits go right
+o.splitbelow = true
+o.splitright = true
 
--- Files & undo
-o.swapfile = false -- disable swapfile
-o.undofile = true -- persistent undo across sessions
-o.confirm = true -- ask to save instead of erroring on :q
+o.swapfile = false
+o.undofile = true
+o.confirm = true
 
--- Input
-o.mouse = "" -- disable mouse
+o.mouse = ""
 
+-- deferred: the clipboard provider check slows startup
 vim.schedule(function()
-  o.clipboard = "unnamedplus" -- system clipboard (deferred for startup speed)
+  o.clipboard = "unnamedplus"
 end)

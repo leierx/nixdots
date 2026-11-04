@@ -38,7 +38,6 @@ root: {
         theme = "${pkgs.writeText "rofi-theme.rasi" ''
           * {
             ${varBlock}
-            // standard names
             foreground: @fg;
             background: @bg1;
 
@@ -115,7 +114,6 @@ root: {
               lines: 7;
           }
 
-          // Disabled above
           scrollbar { enabled: false; }
 
           mode-switcher {

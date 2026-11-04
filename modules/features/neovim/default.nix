@@ -42,7 +42,7 @@
             # nvim-treesitter (main) compiles parsers with these
             tree-sitter
             gcc
-            # LSP servers (defaults from nvim-lspconfig, overrides in after/lsp/)
+            # LSP servers
             lua-language-server
             nixd
             marksman
@@ -50,7 +50,7 @@
             vscode-langservers-extracted
             yaml-language-server
             tofu-ls
-            qt6.qtdeclarative # QML: qmlls, qmlformat, qmllint (quickshell configs)
+            qt6.qtdeclarative # qmlls
             gopls
             fzf # fzf-lua
             # conform formatters

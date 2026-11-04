@@ -1,14 +1,10 @@
 require("kanagawa").setup({
-  -- Fix the blink.cmp groups kanagawa misses (it defines BlinkCmpLabelDetails,
-  -- which blink never uses, and no LabelDescription/Source/DocSeparator).
   overrides = function(colors)
     local theme = colors.theme
     local palette = colors.palette
     return {
-      -- slightly brighter linenumbers
       LineNr = { fg = theme.ui.fg_dim },
 
-      -- make MiniIndentscope match theme
       MiniIndentscopeSymbol = { link = "NonText" },
       MiniIndentscopeSymbolOff = { link = "NonText" },
 

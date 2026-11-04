@@ -7,16 +7,15 @@
       # udev uaccess rules so keymapp can flash the ZSA keyboard
       keyboard.zsa.enable = true;
 
-      # Radeon RX 6700 XT
       graphics = {
         enable = true;
-        enable32Bit = true; # required by Steam/Proton; explicit for clarity
+        enable32Bit = true;
       };
     };
 
     services = {
-      fstrim.enable = true; # weekly TRIM for the NVMe
-      fwupd.enable = true; # UEFI updates via LVFS
+      fstrim.enable = true;
+      fwupd.enable = true;
     };
 
     zramSwap = {
@@ -24,7 +23,7 @@
       memoryPercent = 20;
     };
 
-    # For incus/podman/qemu virtualization on Ryzen.
+    # for incus/podman/qemu VMs
     boot.kernelModules = [ "kvm-amd" ];
   };
 }

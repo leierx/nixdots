@@ -1,5 +1,3 @@
-# The baseline every machine of mine gets. Hosts import it explicitly; the
-# builders inject nothing.
 root: {
   flake.modules.nixos.base = {
     imports = with root.config.flake.modules.nixos; [

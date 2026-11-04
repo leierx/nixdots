@@ -1,8 +1,6 @@
 {
   description = "leier's NixOS / home-manager configurations";
 
-  # Homemade flake-parts: every file under `modules/` is a module of one
-  # top-level configuration, whose `flake` option set is the flake output.
   outputs =
     inputs:
     (inputs.nixpkgs.lib.evalModules {

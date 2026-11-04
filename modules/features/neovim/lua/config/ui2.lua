@@ -3,7 +3,7 @@ vim.opt.cmdheight = 0
 require("vim._core.ui2").enable({
   enable = true,
   msg = {
-    targets = "msg", -- floating message window (bottom right)
+    targets = "msg",
     cmd = { height = 0.5 },
     dialog = { height = 0.5 },
     msg = { height = 0.3, timeout = 5000 },
@@ -11,7 +11,6 @@ require("vim._core.ui2").enable({
   },
 })
 
--- Move ui2's msg window to the top-right corner (hooks internal API)
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "msg",
   callback = function()

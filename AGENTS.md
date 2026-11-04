@@ -38,7 +38,9 @@ is hand-rolled in `flake.nix`, `import-tree.nix` and `modules/flake/`.
   tar, systemd) is assumed.
 - **`imports` in a host is the whole machine.** Host builders inject only the
   hostname, platform and a `stateVersion` default; nothing else.
-- **Keep comments minimal.** Comment the *why*, not the *what*. One line.
+- **No comment is the best comment.** If one is needed, it's one line for the
+  operator: why it's done this way, never what the code does. Longer only for
+  a hard reason.
 - Don't add a flake-parts dependency or reintroduce `specialArgs` plumbing.
 
 ## Repo map

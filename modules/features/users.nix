@@ -1,5 +1,3 @@
-# The primary user, across every class: the NixOS account, the home-manager
-# identity, and root's locked password.
 root@{ lib, ... }:
 let
   inherit (root.config.identity) username;

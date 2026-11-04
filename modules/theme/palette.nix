@@ -1,5 +1,3 @@
-# Colour palettes, declared once at the top level and read by any class: the
-# dendritic way to share values between files, without specialArgs or imports.
 { lib, ... }:
 {
   options.palettes = lib.mkOption {

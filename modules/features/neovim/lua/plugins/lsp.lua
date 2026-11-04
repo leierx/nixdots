@@ -18,7 +18,6 @@ vim.api.nvim_create_autocmd("LspAttach", {
   desc = "Workspace diagnostics",
   callback = function(args)
     local client = assert(vim.lsp.get_client_by_id(args.data.client_id))
-    -- some clients support workspace diagnostics natively
     if client:supports_method("workspace/diagnostic", args.buf) then
       vim.lsp.buf.workspace_diagnostics({ client_id = client.id })
     else

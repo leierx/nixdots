@@ -15,7 +15,6 @@ root: {
         config.systemd.package
         pkgs.jq
       ];
-      # streams a headless output at the client's mode, next to the physical ones
       display = {
         do = script "sunshine-display-do" hyprland ''
           # hyprmoncfgd would re-lay the outputs out, hypridle lock the stream

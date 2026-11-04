@@ -1,4 +1,3 @@
-# Keyboard, locale and time for the console and xkb; hyprland reads xkb via osConfig.
 let
   layout = "no";
   variant = "nodeadkeys";

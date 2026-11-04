@@ -1,5 +1,3 @@
-# Who this flake is for. Declared once at the top level so users, git,
-# home-manager and anything else can read it instead of hardcoding it.
 { lib, ... }:
 let
   inherit (lib) mkOption types;

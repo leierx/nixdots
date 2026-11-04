@@ -1,6 +1,3 @@
-# The flake output surface: `flake.nix` returns `config.flake`, so every option
-# declared here is an output. `flake.modules.<class>.<aspect>` is the dendritic
-# registry storing class-tagged modules as values, merged by name.
 { lib, ... }:
 let
   inherit (lib) mkOption types;
@@ -13,9 +10,7 @@ let
       inherit description;
     };
 
-  # Tag stored modules with class and origin, so a wrong-class import is a
-  # plain type error instead of "undeclared option" noise. The key dedups an
-  # aspect imported along two paths.
+  # the class makes a wrong-class import a type error; the key dedups an aspect imported twice
   tag =
     class: name: module:
     { ... }:
