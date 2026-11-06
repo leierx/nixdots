@@ -74,6 +74,22 @@
         "type": "github"
       }
     },
+    "home-manager-unstable": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793757180,
+        "narHash": "sha256-gyV7AtCwLnOImcrfSETP4J3Ie96bz19DY47B7m7Y3HM=",
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "rev": "b787c48e2ec57a9d098f5c2721882a3bc1e16f97",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "type": "github"
+      }
+    },
     "hyprcursor": {
       "inputs": {
         "hyprlang": [
@@ -487,6 +503,7 @@
       "inputs": {
         "disko": "disko",
         "home-manager": "home-manager",
+        "home-manager-unstable": "home-manager-unstable",
         "hyprland": "hyprland",
         "hyprsplit": "hyprsplit",
         "nix-index-database": "nix-index-database",

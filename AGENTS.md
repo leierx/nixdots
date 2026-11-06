@@ -79,7 +79,9 @@ One evaluation, class `"flake"`, `inputs` passed as a `specialArg`. Its
 a module of the same configuration and may freely read `config`, `lib` and
 `inputs` at the top level.
 
-Inputs: `nixpkgs` (26.05), `nixpkgs-unstable`, `home-manager`, `disko`,
+Inputs: `nixpkgs` (26.05), `nixpkgs-unstable`, `home-manager`,
+`home-manager-unstable` (master as plain source, `flake = false`, for single
+modules lifted onto the release branch), `disko`,
 `nix-index-database`, `hyprland` (pinned tag; its dev-only `pre-commit-hooks`
 is pruned with `follows = ""`) and `hyprsplit` (its `nixpkgs` follows
 `hyprland/nixpkgs`, which is what it builds with anyway).
@@ -183,6 +185,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `documentation.nix` | nixos | `documentation` | disables NixOS manpages |
 | `gaming.nix` | nixos | `gaming` | Steam + proton-ge (Steam also sets 32-bit graphics) |
 | `git.nix` | nixos, homeManager | `git` | git on; user identity from `identity` |
+| `herdr.nix` | homeManager | `herdr` | [herdr](https://herdr.dev) from `nixpkgs-unstable` through home-manager master's `programs.herdr` (lifted onto 26.05, its two missing `lib.hm.generators` injected); every `settings` key laid out in comments; no host imports it |
 | `home-manager.nix` | nixos | `home-manager` | wires HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<hostname>/home` |
 | `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`, HM option `hyprmoncfg.profiles`) | see below |
 | `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage; no host imports it |
