@@ -36,16 +36,14 @@ root: {
           # k3s API, for kubectl and helm
           LocalForward = "6443 127.0.0.1:6443";
         };
-        matchBlocks = {
-          "github.com" = {
-            hostname = "github.com";
-            user = "git";
-            identityFile = [ "~/.ssh/id_ed25519" ];
-          };
-          "*.rsync.net" = {
-            identityFile = [ "~/.ssh/id_rsync_net" ];
-            identitiesOnly = true;
-          };
+        settings."github.com" = {
+          HostName = "github.com";
+          User = "git";
+          IdentityFile = [ "~/.ssh/id_ed25519" ];
+        };
+        settings."*.rsync.net" = {
+          IdentityFile = [ "~/.ssh/id_rsync_net" ];
+          IdentitiesOnly = true;
         };
       };
 
