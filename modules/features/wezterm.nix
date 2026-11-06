@@ -32,6 +32,37 @@ root: {
           config.use_fancy_tab_bar = false
           config.hide_tab_bar_if_only_one_tab = true
           config.show_new_tab_button_in_tab_bar = false
+          config.tab_max_width = 32
+
+          local function tab_parts(index, tab_title, process, pane_title, zoomed)
+            local name = tab_title ~= "" and tab_title or process:match("[^/]+$") or pane_title
+            return index > 0 and " • " or "", (index + 1) .. " " .. name, zoomed and " ⛶" or ""
+          end
+
+          wezterm.on("format-tab-title", function(tab)
+            local pane = tab.active_pane
+            local sep, label, zoom = tab_parts(tab.tab_index, tab.tab_title, pane.foreground_process_name, pane.title, pane.is_zoomed)
+            return {
+              { Foreground = { Color = "${palette.color8}" } }, { Text = sep },
+              { Foreground = { Color = tab.is_active and "${palette.foreground}" or "${palette.color8}" } }, { Text = label },
+              { Foreground = { Color = "${palette.color12}" } }, { Text = zoom },
+            }
+          end)
+
+          -- wezterm can't center tabs, so pad the left status to half the free cells
+          wezterm.on("update-status", function(window, pane)
+            local width = 0
+            for _, t in ipairs(window:mux_window():tabs_with_info()) do
+              local p = t.tab:active_pane()
+              local zoomed = false
+              for _, info in ipairs(t.tab:panes_with_info()) do zoomed = zoomed or info.is_zoomed end
+              local sep, label, zoom = tab_parts(t.index, t.tab:get_title(), p:get_foreground_process_name() or "", p:get_title(), zoomed)
+              width = width + math.min(wezterm.column_width(sep .. label .. zoom), config.tab_max_width)
+            end
+            local dims = pane:get_dimensions()
+            local cols = math.floor(window:get_dimensions().pixel_width * dims.cols / dims.pixel_width)
+            window:set_left_status(string.rep(" ", math.max(0, math.floor((cols - width) / 2))))
+          end)
           config.enable_scroll_bar = false
           config.adjust_window_size_when_changing_font_size = false
           config.hide_mouse_cursor_when_typing = false
@@ -161,9 +192,9 @@ root: {
               tab_bar = {
                 background = "${palette.background}",
                 inactive_tab_edge = "${palette.color8}",
-                active_tab = { bg_color = "${palette.color8}", fg_color = "${palette.foreground}" },
+                active_tab = { bg_color = "${palette.background}", fg_color = "${palette.foreground}" },
                 inactive_tab = { bg_color = "${palette.background}", fg_color = "${palette.color7}" },
-                inactive_tab_hover = { bg_color = "${palette.color0}", fg_color = "${palette.foreground}" },
+                inactive_tab_hover = { bg_color = "${palette.background}", fg_color = "${palette.foreground}" },
                 new_tab = { bg_color = "${palette.background}", fg_color = "${palette.color7}" },
                 new_tab_hover = { bg_color = "${palette.color0}", fg_color = "${palette.foreground}" },
               },
