@@ -6,7 +6,7 @@
         mousepad
         spotify
         pavucontrol
-        brave
+        unstable.brave-origin
         firefox-bin
         obsidian
         discord-canary
