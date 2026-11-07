@@ -193,7 +193,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `libvirt.nix` | nixos | `libvirt` | libvirtd + unprivileged QEMU/KVM with swtpm, virt-manager, trusted `br0` lab bridge; no host imports it |
 | `locale.nix` | nixos | `locale` | `no`/`nodeadkeys`, `en_DK.UTF-8`, Europe/Oslo, timesyncd; hyprland reads the xkb values via `osConfig` |
 | `neovim/` | nixos, homeManager | `neovim` (+ HM option `neovim.outOfStorePath`) | see below |
-| `network.nix` | nixos | `network` | systemd-resolved with DNS-over-TLS to Quad9 and no plaintext fallback, NetworkManager (DHCP DNS ignored, stable MACs), nftables, no ping, reverse-path filter `loose` (WireGuard full tunnels) |
+| `network.nix` | nixos | `network` | systemd-resolved with DNS-over-TLS to Quad9 and no plaintext fallback, NetworkManager (DHCP DNS ignored, stable MACs, wifi powersave off, no automatic wired profile), nftables, no ping, reverse-path filter `loose` (WireGuard full tunnels) |
 | `nix.nix` | nixos | `nix` | GC, `auto-optimise-store`, flakes, cache, no global registry; the `nixpkgs` registry entry and `NIX_PATH` come from nixpkgs' own `nixpkgs.flake.source` |
 | `nix-index.nix` | homeManager | `nix-index` | small prebuilt nix-index DB (`nix-index-database` input) + wrapped comma, no full-DB cache symlink |
 | `nixpkgs.nix` | nixos | `nixpkgs`, `unstable-nixpkgs` | `allowUnfree`; overlay exposing `pkgs.unstable` |
@@ -341,7 +341,8 @@ stay in each host's `hardware.nix`, even when hosts repeat them: hardware is
 individual by nature, so it is not factored into a shared aspect.
 
 Both hosts' `home.nix` carry the homelab tooling: `just`, `helm`, `virtctl`
-(`kubevirt`), `kubelogin` (`kubectl oidc-login`), `programs.gh`, `piAgent`
+(`kubevirt`), `kubelogin` (`kubectl oidc-login`), `programs.gh` (also git's
+credential helper for github.com), `piAgent`
 settings, and an ssh `loft01` host (10.0.0.1) that forwards local 6443 to the
 k3s API.
 
@@ -352,8 +353,7 @@ k3s API.
 - **`desktop`** — imports `base workstation gaming sunshine`. AMD desktop:
   microcode, firmware, RX 6700 XT graphics, fstrim, fwupd, zram, ZSA keyboard udev rules
   (keymapp), disko, hyprmoncfg profiles `default` (both monitors), `left-only` and `right-only`,
-  nix-index, `programs.gh` as git credential helper
-  for github.com, quickshell, ssh hosts for github.com and rsync.net,
+  nix-index, quickshell, ssh hosts for github.com and rsync.net,
   Hyprland startup apps pinned to monitors, host-specific app list.
 
 ## External consumers
