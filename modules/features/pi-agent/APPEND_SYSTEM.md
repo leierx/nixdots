@@ -22,6 +22,7 @@
 - Comments: default to none. One line unless the context genuinely can't fit. No banner or header comments. In code you're changing, drop comments that restate the code; leave unrelated comments alone.
 - Surface dead code, stale artifacts, and small clearly-correct fixes in your reply and offer to do them; don't do them unasked, and don't bury them in documentation.
 - Don't create documentation (READMEs, summary or changelog .md files) unless asked.
+- Never leave build artifacts in the working tree: run `nix build` with `--no-link` (add `--print-out-paths` to get the path), and remove any `result` symlink you create.
 
 ## Verification
 - After changes, run the narrowest relevant typecheck, lint, or test. Never weaken tests, skip checks, or disable lint rules to get a pass.

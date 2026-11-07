@@ -288,8 +288,7 @@ Notes on specific features:
   project shell's versions win. It writes `settings.json`, `APPEND_SYSTEM.md`
   and the `commit-style` skill into `~/.pi/agent` (pi ignores XDG), merging its
   home-manager option `piAgent.settings` over the defaults; both hosts set it
-  to pin their provider, model and thinking level. The defaults exclude
-  herdr's auto-discovered `extensions/herdr-*` integration. pi packages
+  to pin their provider, model and thinking level. pi packages
   (`@tintinweb/pi-subagents`, `rpiv-ask-user-question`, `rpiv-todo`) are
   pinned in `packages` and installed by pi itself with nixpkgs' `npm`
   (`npmCommand`) into `~/.pi/agent/npm`. home-manager's own
@@ -369,9 +368,9 @@ an option of the aspect.
 host=thonkpad
 
 sudo nixos-rebuild switch --flake ".#$host"
-nix build ".#nixosConfigurations.$host.config.system.build.toplevel"
+nix build --no-link --print-out-paths ".#nixosConfigurations.$host.config.system.build.toplevel"
 
-nix build ".#nixosConfigurations.offlineInstaller-$host.config.system.build.isoImage"
+nix build --no-link --print-out-paths ".#nixosConfigurations.offlineInstaller-$host.config.system.build.isoImage"
 
 nix flake check          # runs both checks below
 nix fmt                  # formatter = nixfmt-tree
@@ -387,6 +386,9 @@ nix fmt                  # formatter = nixfmt-tree
   string context is discarded).
 
 `nix flake check` skips `aarch64-darwin` unless `--all-systems`.
+
+Agents always pass `--no-link` to `nix build`; never leave a `result` symlink
+in the tree.
 
 ## Sharp edges
 

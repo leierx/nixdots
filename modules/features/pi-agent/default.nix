@@ -49,9 +49,6 @@
 
               npmCommand = [ (lib.getExe' pkgs.nodejs "npm") ];
 
-              # herdr drops its integration here; it is not wanted by default
-              extensions = [ "!extensions/herdr-*" ];
-
               defaultTools = [
                 "read"
                 "bash"
@@ -63,9 +60,9 @@
               ];
 
               packages = [
-                "npm:@tintinweb/pi-subagents@0.22.0"
-                "npm:@juicesharp/rpiv-ask-user-question@2.13.8"
-                "npm:@juicesharp/rpiv-todo@2.13.8"
+                "npm:@tintinweb/pi-subagents@0.23.1"
+                "npm:@juicesharp/rpiv-ask-user-question@2.15.0"
+                "npm:@juicesharp/rpiv-todo@2.15.0"
               ];
             } config.piAgent.settings
           );
