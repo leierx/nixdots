@@ -350,7 +350,7 @@ k3s API.
   `thermald`, TLP battery thresholds, disko, `treefmt`, mDNS and ephemeral UDP
   ports open for Chromecast discovery.
 - **`desktop`** — imports `base workstation gaming sunshine`. AMD desktop:
-  microcode, firmware, RX 6700 XT graphics, `kvm-amd`, fstrim, fwupd, zram, ZSA keyboard udev rules
+  microcode, firmware, RX 6700 XT graphics, fstrim, fwupd, zram, ZSA keyboard udev rules
   (keymapp), disko, hyprmoncfg profiles `default` (both monitors), `left-only` and `right-only`,
   nix-index, `programs.gh` as git credential helper
   for github.com, quickshell, ssh hosts for github.com and rsync.net,

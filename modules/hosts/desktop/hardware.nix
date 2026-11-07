@@ -22,8 +22,5 @@
       enable = true;
       memoryPercent = 20;
     };
-
-    # for incus/podman/qemu VMs
-    boot.kernelModules = [ "kvm-amd" ];
   };
 }
