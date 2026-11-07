@@ -149,19 +149,5 @@ root: {
 
       # HM also hangs it on tray.target, which another session's tray applet would pull in
       systemd.user.services.waybar.Install.WantedBy = lib.mkForce [ config.wayland.systemd.target ];
-
-      # hyprmoncfg switches profiles with a config reload, which only resets waybar's workspaces module
-      wayland.windowManager.hyprland.settings.on =
-        map
-          (event: {
-            _args = [
-              event
-              (lib.generators.mkLuaInline ''function() hl.exec_cmd("systemctl --user reload waybar") end'')
-            ];
-          })
-          [
-            "monitor.layout_changed"
-            "config.reloaded"
-          ];
     };
 }
