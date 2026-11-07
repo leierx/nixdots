@@ -185,7 +185,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `documentation.nix` | nixos | `documentation` | disables NixOS manpages |
 | `gaming.nix` | nixos | `gaming` | Steam + proton-ge (Steam also sets 32-bit graphics) |
 | `git.nix` | nixos, homeManager | `git` | git on; user identity from `identity` |
-| `herdr.nix` | homeManager | `herdr` | [herdr](https://herdr.dev) from `nixpkgs-unstable` through home-manager master's `programs.herdr` (lifted onto 26.05, its two missing `lib.hm.generators` injected); every `settings` key laid out in comments; no host imports it |
+| `herdr.nix` | homeManager | `herdr` | [herdr](https://herdr.dev) from `nixpkgs-unstable` through home-manager master's `programs.herdr` (lifted onto 26.05, its two missing `lib.hm.generators` injected); T3 Code's dark colours over `vesper`, every pane a framed card with gaps, and a vim-style `ctrl+b` keymap (`v`/`s` split, `h/j/k/l`, the built-in Go To on `f`, no `[`/`]` chords for the no layout) |
 | `home-manager.nix` | nixos | `home-manager` | wires HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<hostname>/home` |
 | `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`, HM option `hyprmoncfg.profiles`) | see below |
 | `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage; no host imports it |
