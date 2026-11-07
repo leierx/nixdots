@@ -260,7 +260,8 @@ Notes on specific features:
 - **`neovim/`** ships a Lua config in-tree. `homeManager.neovim` symlinks
   `xdg.configFile."nvim".source` to the module dir, or to the home-manager
   option `neovim.outOfStorePath` (a checkout) for live editing. git (for
-  `vim.pack`), LSP servers, formatters, `gcc`, `tree-sitter` and `fzf` are
+  `vim.pack`), LSP servers, formatters, `gcc`, `tree-sitter`, `fzf` and, on
+  Linux, `wl-clipboard` (for `unnamedplus`) are
   `programs.neovim.extraPackages`,
   so they are on nvim's PATH only; ripgrep and fd come from `programs.ripgrep` /
   `programs.fd` for the shell too. Per-server LSP overrides live in `after/lsp/`.

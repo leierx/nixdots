@@ -36,28 +36,32 @@
           # loads home-manager's init.lua (providers off) from the wrapper; ~/.config/nvim is ours
           sideloadInitLua = true;
           # on nvim's PATH only, so they don't shadow project dev shells
-          extraPackages = with pkgs; [
-            # vim.pack clones and updates plugins with it
-            git
-            # nvim-treesitter (main) compiles parsers with these
-            tree-sitter
-            gcc
-            # LSP servers
-            lua-language-server
-            nixd
-            marksman
-            typescript-language-server
-            vscode-langservers-extracted
-            yaml-language-server
-            tofu-ls
-            qt6.qtdeclarative # qmlls
-            gopls
-            fzf # fzf-lua
-            # conform formatters
-            nixfmt
-            gotools # goimports
-            gofumpt
-          ];
+          extraPackages =
+            with pkgs;
+            [
+              # vim.pack clones and updates plugins with it
+              git
+              # nvim-treesitter (main) compiles parsers with these
+              tree-sitter
+              gcc
+              # LSP servers
+              lua-language-server
+              nixd
+              marksman
+              typescript-language-server
+              vscode-langservers-extracted
+              yaml-language-server
+              tofu-ls
+              qt6.qtdeclarative # qmlls
+              gopls
+              fzf # fzf-lua
+              # conform formatters
+              nixfmt
+              gotools # goimports
+              gofumpt
+            ]
+            # clipboard = "unnamedplus"; macOS has pbcopy built in
+            ++ lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.wl-clipboard;
         };
 
         xdg.configFile."nvim".source =
