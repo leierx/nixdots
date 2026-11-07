@@ -251,6 +251,10 @@ Notes on specific features:
   - hyprlock talks to fprintd itself (`auth:fingerprint`, on when
     `services.fprintd` is), so the NixOS half turns `fprintAuth` off for
     hyprlock's PAM service.
+  - Every lock (idle, sleep, the SUPER+X L bind) goes through
+    `loginctl lock-session`, so hypridle's `lock_cmd`, which never starts a
+    second hyprlock, is the only thing that runs it; while hypridle is stopped
+    (a Sunshine stream) nothing locks.
   - The screenshot binds call one `writeShellApplication` (`scripts/freeze-region.sh`,
     `copy|save`) that carries its own runtime inputs.
   - Binds reference configured packages (`config.programs.wezterm.package`,

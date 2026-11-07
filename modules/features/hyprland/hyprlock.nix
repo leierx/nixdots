@@ -6,7 +6,6 @@ in
 {
   flake.modules.homeManager.hyprland =
     {
-      config,
       pkgs,
       lib,
       osConfig,
@@ -23,9 +22,6 @@ in
       };
     in
     {
-      wayland.windowManager.hyprland.settings.lockscreen_cmd._var =
-        lib.getExe config.programs.hyprlock.package;
-
       programs.hyprlock = {
         enable = true;
         settings = {
@@ -74,7 +70,7 @@ in
             inner_color = "rgba(${hex ui.white}1a)";
             font_color = "rgb(${hex ui.fg})";
             font_family = "Hack";
-            # hyprlang treats an unescaped # as a comment; ## is a literal #.
+            # hyprlang treats an unescaped # as a comment; ## is a literal #
             placeholder_text = "<i><span foreground=\"##${hex ui.fg}99\">Enter Pass</span></i>";
             fail_text = "<i><span foreground=\"##${hex ui.redLight}cc\">$FAIL</span> <b>($ATTEMPTS)</b></i>";
             hide_input = false;

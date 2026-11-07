@@ -300,7 +300,7 @@ root: {
             (mkBind {
               key = "L";
               withMod = false;
-              dispatcher = "hl.dsp.exec_cmd(lockscreen_cmd)";
+              dispatcher = exec "loginctl lock-session";
               desc = "Lock screen";
             })
           ];
