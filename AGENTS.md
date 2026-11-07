@@ -238,11 +238,10 @@ Notes on specific features:
     elsewhere.
   - Monitors are laid out by [hyprmoncfg](https://github.com/crmne/hyprmoncfg)
     (from `nixpkgs-unstable`, built against the pinned Hyprland so its hyprctl
-    matches). Profiles live in `~/.config/hyprmoncfg/profiles/`: the HM option
-    `hyprmoncfg.profiles` declares some (outputs by EDID make/model/serial,
-    workspace planning off because hyprsplit owns workspaces), the TUI saves
-    the rest. A declared one re-saved from the TUI is backed up and reset on the
-    next switch. SUPER+P (`scripts/monitor-layouts.sh`) applies one through rofi;
+    matches). Profiles are declared only: the HM option `hyprmoncfg.profiles`
+    (outputs by EDID make/model/serial, workspace planning off because hyprsplit
+    owns workspaces) becomes `~/.config/hyprmoncfg/profiles`, one read-only store
+    directory, so the TUI cannot save a profile. SUPER+P (`scripts/monitor-layouts.sh`) applies one through rofi;
     its `auto` entry applies hyprmoncfg's recommended profile, since the daemon
     keeps a hand-picked one until the next hotplug.
     A catch-all `monitor` rule (preferred, auto, scale 1) covers outputs no

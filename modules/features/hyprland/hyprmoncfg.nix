@@ -113,18 +113,20 @@
         description = ''
           hyprmoncfg profiles by name, outputs identified by EDID make, model and
           serial as `hyprctl monitors` reports them. hyprmoncfg picks the profile
-          enabling the most connected outputs. Saving one from the TUI lasts until
-          the next home-manager switch.
+          enabling the most connected outputs. The profiles directory is a read-only
+          store path, so these are the only profiles and the TUI cannot save one.
         '';
       };
 
       config = {
         home.packages = [ hyprmoncfg ];
 
-        xdg.configFile = lib.mapAttrs' (
-          name: outputs:
-          lib.nameValuePair "hyprmoncfg/profiles/${name}.json" { text = toProfile name outputs; }
-        ) config.hyprmoncfg.profiles;
+        xdg.configFile."hyprmoncfg/profiles".source = pkgs.linkFarm "hyprmoncfg-profiles" (
+          lib.mapAttrsToList (name: outputs: {
+            name = "${name}.json";
+            path = pkgs.writeText "${name}.json" (toProfile name outputs);
+          }) config.hyprmoncfg.profiles
+        );
 
         systemd.user.services.hyprmoncfgd = {
           Unit = {
