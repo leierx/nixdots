@@ -38,10 +38,7 @@ in
       ...
     }:
     {
-      home.packages = with pkgs; [
-        wl-clipboard
-        wdisplays
-      ];
+      home.packages = [ pkgs.wl-clipboard ];
 
       # session services run under Hyprland only
       wayland.systemd.target = "hyprland-session.target";
@@ -50,7 +47,7 @@ in
         enable = true;
         allowImages = true;
       };
-      # cliphist's history persists in the cache dir; drop it on every login.
+      # cliphist's history persists in the cache dir; drop it on every login
       systemd.user.tmpfiles.rules = [ "R %C/cliphist" ];
 
       services.hyprpolkitagent.enable = true;
@@ -82,7 +79,7 @@ in
       wayland.windowManager.hyprland = {
         enable = true;
         package = osConfig.programs.hyprland.package;
-        # xdph ≥ 0.57 dropped the `hyprland` arg home-manager overrides; NixOS owns the portals.
+        # xdph ≥ 0.57 dropped the `hyprland` arg home-manager overrides; NixOS owns the portals
         portalPackage = null;
         # Hyprland ≥ 0.57 starts hyprland-session.target itself; keep only the env import
         systemd.extraCommands = [ ];

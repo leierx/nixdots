@@ -85,22 +85,22 @@ root: {
         };
         style =
           let
-            defs = lib.concatMapStringsSep "\n" (name: "          @define-color ${name} ${colors.${name}};") (
+            defs = lib.concatMapStringsSep "\n" (name: "@define-color ${name} ${colors.${name}};") (
               lib.attrNames colors
             );
           in
           ''
-              ${defs}
+            ${defs}
 
-              * {
-                font-family: 'Adwaita Sans';
+            * {
+              font-family: 'Adwaita Sans';
               font-size: 12pt;
               color: @fg;
             }
 
             window#waybar.topbar {
-                all: unset;
-                background: #000;
+              all: unset;
+              background: #000;
             }
 
             window#waybar.topbar > box { margin: 4pt 2pt; }
