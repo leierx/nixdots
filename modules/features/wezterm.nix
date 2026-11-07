@@ -23,46 +23,10 @@ root: {
           config.exit_behavior = "Close"
           config.window_close_confirmation = "NeverPrompt"
           config.mux_enable_ssh_agent = false
-          config.ssh_domains = {} -- else every ~/.ssh/config host shows up in the launcher
           config.alternate_buffer_wheel_scroll_speed = 1
-          config.enable_kitty_graphics = true
-          config.enable_kitty_keyboard = true -- modified keys like Shift+Enter for pi/claude; apps opt in
+          config.enable_kitty_graphics = false
 
-          config.enable_tab_bar = true
-          config.use_fancy_tab_bar = false
-          config.hide_tab_bar_if_only_one_tab = true
-          config.show_new_tab_button_in_tab_bar = false
-          config.tab_max_width = 32
-
-          local function tab_parts(index, tab_title, process, pane_title, zoomed)
-            local name = tab_title ~= "" and tab_title or process:match("[^/]+$") or pane_title
-            return index > 0 and " • " or "", (index + 1) .. " " .. name, zoomed and " ⛶" or ""
-          end
-
-          wezterm.on("format-tab-title", function(tab)
-            local pane = tab.active_pane
-            local sep, label, zoom = tab_parts(tab.tab_index, tab.tab_title, pane.foreground_process_name, pane.title, pane.is_zoomed)
-            return {
-              { Foreground = { Color = "${palette.color8}" } }, { Text = sep },
-              { Foreground = { Color = tab.is_active and "${palette.foreground}" or "${palette.color8}" } }, { Text = label },
-              { Foreground = { Color = "${palette.color12}" } }, { Text = zoom },
-            }
-          end)
-
-          -- wezterm can't center tabs, so pad the left status to half the free cells
-          wezterm.on("update-status", function(window, pane)
-            local width = 0
-            for _, t in ipairs(window:mux_window():tabs_with_info()) do
-              local p = t.tab:active_pane()
-              local zoomed = false
-              for _, info in ipairs(t.tab:panes_with_info()) do zoomed = zoomed or info.is_zoomed end
-              local sep, label, zoom = tab_parts(t.index, t.tab:get_title(), p:get_foreground_process_name() or "", p:get_title(), zoomed)
-              width = width + math.min(wezterm.column_width(sep .. label .. zoom), config.tab_max_width)
-            end
-            local dims = pane:get_dimensions()
-            local cols = math.floor(window:get_dimensions().pixel_width * dims.cols / dims.pixel_width)
-            window:set_left_status(string.rep(" ", math.max(0, math.floor((cols - width) / 2))))
-          end)
+          config.enable_tab_bar = false
           config.enable_scroll_bar = false
           config.adjust_window_size_when_changing_font_size = false
           config.hide_mouse_cursor_when_typing = false
@@ -77,7 +41,7 @@ root: {
           config.disable_default_quick_select_patterns = true
           config.bypass_mouse_reporting_modifiers = "SHIFT"
 
-          config.scrollback_lines = 500000
+          config.scrollback_lines = 10000
 
           config.font = wezterm.font "Hack"
           config.font_size = 16.0
@@ -93,45 +57,6 @@ root: {
 
             { key = "PageUp", mods = "SHIFT", action = act.ScrollByPage(-0.5) },
             { key = "PageDown", mods = "SHIFT", action = act.ScrollByPage(0.5) },
-          }
-
-          config.leader = { key = "b", mods = "CTRL", timeout_milliseconds = 1000 }
-          local leader_keys = {
-            { key = "v", mods = "LEADER", action = act.SplitPane { direction = "Right" } },
-            { key = "s", mods = "LEADER", action = act.SplitPane { direction = "Down" } },
-            { key = "c", mods = "LEADER", action = act.SpawnTab "CurrentPaneDomain" },
-            { key = "h", mods = "LEADER", action = act.ActivatePaneDirection "Left" },
-            { key = "j", mods = "LEADER", action = act.ActivatePaneDirection "Down" },
-            { key = "k", mods = "LEADER", action = act.ActivatePaneDirection "Up" },
-            { key = "l", mods = "LEADER", action = act.ActivatePaneDirection "Right" },
-            { key = "m", mods = "LEADER", action = act.TogglePaneZoomState },
-            { key = "x", mods = "LEADER", action = act.CloseCurrentPane { confirm = true } },
-            { key = "a", mods = "LEADER", action = act.AttachDomain "unix" },
-            { key = "d", mods = "LEADER", action = act.DetachDomain "CurrentPaneDomain" },
-            { key = "t", mods = "LEADER", action = act.ShowLauncherArgs { flags = "FUZZY|WORKSPACES|TABS|DOMAINS" } },
-            { key = ":", mods = "LEADER|SHIFT", action = act.ActivateCommandPalette },
-            { key = "r", mods = "LEADER", action = act.ActivateKeyTable { name = "resize", one_shot = false } },
-            { key = "p", mods = "LEADER", action = act.ActivateCopyMode },
-            { key = "<", mods = "LEADER", action = act.MoveTabRelative(-1) },
-            { key = ">", mods = "LEADER|SHIFT", action = act.MoveTabRelative(1) },
-            { key = "b", mods = "LEADER|CTRL", action = act.ActivateTabRelative(1) },
-            -- "/" is shifted on Nordic layouts and unshifted on US, so bind both
-            { key = "/", mods = "LEADER", action = act.Search { CaseInSensitiveString = "" } },
-            { key = "/", mods = "LEADER|SHIFT", action = act.Search { CaseInSensitiveString = "" } },
-          }
-          for i = 1, 9 do
-            table.insert(leader_keys, { key = tostring(i), mods = "LEADER", action = act.ActivateTab(i - 1) })
-          end
-          for _, k in ipairs(leader_keys) do table.insert(config.keys, k) end
-          config.key_tables = {
-            resize = {
-              { key = "h", action = act.AdjustPaneSize { "Left", 5 } },
-              { key = "j", action = act.AdjustPaneSize { "Down", 5 } },
-              { key = "k", action = act.AdjustPaneSize { "Up", 5 } },
-              { key = "l", action = act.AdjustPaneSize { "Right", 5 } },
-              { key = "Escape", action = "PopKeyTable" },
-              { key = "Enter", action = "PopKeyTable" },
-            },
           }
 
           config.mouse_bindings = {
@@ -187,16 +112,6 @@ root: {
                 "${palette.color13}",
                 "${palette.color14}",
                 "${palette.color15}",
-              },
-              split = "${palette.color8}",
-              tab_bar = {
-                background = "${palette.background}",
-                inactive_tab_edge = "${palette.color8}",
-                active_tab = { bg_color = "${palette.background}", fg_color = "${palette.foreground}" },
-                inactive_tab = { bg_color = "${palette.background}", fg_color = "${palette.color7}" },
-                inactive_tab_hover = { bg_color = "${palette.background}", fg_color = "${palette.foreground}" },
-                new_tab = { bg_color = "${palette.background}", fg_color = "${palette.color7}" },
-                new_tab_hover = { bg_color = "${palette.color0}", fg_color = "${palette.foreground}" },
               },
             },
           }
