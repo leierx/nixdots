@@ -349,7 +349,7 @@ k3s API.
   microcode, firmware, RX 6700 XT graphics, `kvm-amd`, fstrim, fwupd, zram, ZSA keyboard udev rules
   (keymapp), disko, hyprmoncfg profiles `default` (both monitors), `left-only` and `right-only`,
   nix-index, `programs.gh` as git credential helper
-  for github.com, quickshell, SSH match blocks,
+  for github.com, quickshell, ssh hosts for github.com and rsync.net,
   Hyprland startup apps pinned to monitors, host-specific app list.
 
 ## External consumers
@@ -409,8 +409,6 @@ nix fmt                  # formatter = nixfmt-tree
   `mkForce`s GRUB off; a host would add it on top of `base` (none does now).
 - **The `modules` flake output is not a standard output.** Nix warns about it;
   it is intentional and required for external imports.
-- **`programs.ssh.matchBlocks` is deprecated** in `modules/hosts/desktop/home.nix`;
-  migrate to `programs.ssh.settings` when touching it.
 - **`skinke.net` resolves through the `wg0` NetworkManager profile, which this
   flake does not own.** The profile carries `ipv4.dns 10.0.0.1` and the route-only
   domain `~skinke.net`, so those names go to loft01's resolver instead of the

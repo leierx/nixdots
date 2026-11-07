@@ -23,6 +23,7 @@ root: {
 
       programs.ssh = {
         enable = true;
+        enableDefaultConfig = false;
         settings.loft01 = {
           HostName = "10.0.0.1";
           User = root.config.identity.username;
