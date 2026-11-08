@@ -201,7 +201,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `rofi.nix` | homeManager | `rofi` | rofi theme generated from `palettes.ui` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
 | `sunshine.nix` | nixos | `sunshine` | Sunshine, started by hand (`systemctl --user start sunshine`) and stopped with the Hyprland session; `wlr` capture + VAAPI; apps "Desktop" and "Steam Big Picture" stream a headless `SUNSHINE` output at the client's mode, placed past the physical outputs with a gap (the shared cursor can't cross) and focused, with hyprmoncfgd/hypridle stopped, waybar kept off it and new windows taking over fullscreen until the app quits; quitting Steam ends the stream, and ending the stream shuts Steam down; on quit hyprsplit's `grab_rogue_windows` pulls the stream's windows onto the focused workspace |
-| `tmux/` | homeManager | `tmux` | tmux on built-ins, themed from `palettes.adwaita_dark`: a vim keymap on `C-b` (prefix table reset, no arrows), `choose-tree` for jumping, framed pane titles, rounded popups/menus, bells only mark their window and never beep the terminal (pi rings one), `prefix o` jumps there; copies go out by OSC 52, plus `pbcopy` on macOS for Terminal.app and iTerm2; resurrect + continuum loaded last by `run-shell`, since home-manager's `plugins` load before `extraConfig` |
+| `tmux/` | homeManager | `tmux` | tmux on built-ins, themed from `palettes.adwaita_dark`: a vim keymap on `C-b` (prefix table reset, no arrows), `choose-tree` for jumping, framed pane titles, rounded popups/menus, bells from background windows marked (pi rings one) and `prefix o` to jump; resurrect + continuum loaded last by `run-shell`, since home-manager's `plugins` load before `extraConfig` |
 | `users.nix` | nixos, homeManager | `users` | primary user, groups, hashed password, zsh (no global compinit; oh-my-zsh runs it) + starship, root locked |
 | `wezterm.nix` | homeManager | `wezterm` | wezterm with an "Adwaita Dark" scheme from `palettes.adwaita_dark`, Hack font, notifications only while its window is unfocused |
 | `xdg.nix` | homeManager | `xdg-user-dirs` | XDG user dirs (created; projects = HM default `~/Projects`) |
@@ -358,7 +358,7 @@ k3s API.
 ## External consumers
 
 The mac (a separate nix-darwin flake) imports `modules.homeManager.{wezterm,
-neovim, pi-agent, tmux}`. Keep those aspects platform-neutral (no
+neovim, pi-agent}`. Keep those aspects platform-neutral (no
 Linux-only packages without a guard), and expose anything the mac must set as
 an option of the aspect.
 
