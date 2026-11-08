@@ -47,8 +47,9 @@ in
         enable = true;
         allowImages = true;
       };
-      # cliphist's history persists in the cache dir; drop it on every login
-      systemd.user.tmpfiles.rules = [ "R %C/cliphist" ];
+      # the history persists in the cache dir; each Hyprland session starts with it empty
+      systemd.user.services.cliphist.Service.ExecStartPre =
+        "${lib.getExe config.services.cliphist.package} wipe";
 
       services.hyprpolkitagent.enable = true;
 

@@ -226,7 +226,8 @@ Notes on specific features:
     `hyprland-session.target` through `wayland.systemd.target`, which Hyprland
     ≥ 0.57 starts itself (home-manager's stop/start bounce is off; it only
     imports the environment), so they never start under another compositor:
-    waybar (taken off home-manager's extra `tray.target`), cliphist,
+    waybar (taken off home-manager's extra `tray.target`), cliphist (wiped
+    as it starts, so each session begins empty),
     hyprmoncfgd, hypridle, hyprpolkitagent, hyprpaper (the wallpaper; a
     config reload restarts it) and nm-applet (whose unit hardcodes
     `graphical-session.target`, hence a `mkForce`). mako is D-Bus activated
