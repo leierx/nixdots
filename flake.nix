@@ -17,11 +17,6 @@
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # source only: single modules lifted from master onto the release branch
-    home-manager-unstable = {
-      url = "github:nix-community/home-manager";
-      flake = false;
-    };
 
     disko = {
       url = "github:nix-community/disko";

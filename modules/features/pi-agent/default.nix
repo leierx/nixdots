@@ -70,6 +70,8 @@
           ".pi/agent/APPEND_SYSTEM.md".source = ./APPEND_SYSTEM.md;
 
           ".pi/agent/skills/commit-style/SKILL.md".source = ./skills/commit-style/SKILL.md;
+
+          ".pi/agent/extensions/bell.ts".source = ./extensions/bell.ts;
         };
       };
     };

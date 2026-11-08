@@ -53,7 +53,7 @@ README.md                 brief user-facing doc
 AGENTS.md                 this file
 
 modules/flake/            the substrate (see below)
-modules/features/         one flat file per feature (+ hyprland/, neovim/, pi-agent/)
+modules/features/         one flat file per feature (+ hyprland/, neovim/, pi-agent/, tmux/)
 modules/profiles/         base.nix, workstation.nix
 modules/theme/            palette.nix, fonts, gtk, qt, cursor
 modules/hosts/            desktop/, thonkpad/
@@ -79,9 +79,7 @@ One evaluation, class `"flake"`, `inputs` passed as a `specialArg`. Its
 a module of the same configuration and may freely read `config`, `lib` and
 `inputs` at the top level.
 
-Inputs: `nixpkgs` (26.05), `nixpkgs-unstable`, `home-manager`,
-`home-manager-unstable` (master as plain source, `flake = false`, for single
-modules lifted onto the release branch), `disko`,
+Inputs: `nixpkgs` (26.05), `nixpkgs-unstable`, `home-manager`, `disko`,
 `nix-index-database`, `hyprland` (pinned tag; its dev-only `pre-commit-hooks`
 is pruned with `follows = ""`) and `hyprsplit` (its `nixpkgs` follows
 `hyprland/nixpkgs`, which is what it builds with anyway).
@@ -127,7 +125,7 @@ importer changes behaviour through the aspect's own options or `lib.mkForce`.
 | Option | Type | Notes |
 | --- | --- | --- |
 | `identity` | `{ username, fullName, email }` | Primary user; read by `users`, `git`, `home-manager`, profiles. |
-| `palettes` | `attrsOf (attrsOf str)` | `ui` (rofi, mako, waybar, hyprland, hyprlock), `adwaita_dark` (wezterm). |
+| `palettes` | `attrsOf (attrsOf str)` | `ui` (rofi, mako, waybar, hyprland, hyprlock), `adwaita_dark` (wezterm, tmux). |
 | `hyprland.workspaces` | positive int | Workspaces per monitor; read by hyprsplit's config, the binds and waybar's labels. |
 | `nixosHosts.<name>` | submodule `{ system }` | Drives `flake.nixosConfigurations`. |
 | `systems` | `listOf str` | Option default `[ ]`; `per-system.nix` defines `[ "x86_64-linux" "aarch64-darwin" ]`. Drives `perSystem`. |
@@ -185,7 +183,6 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `documentation.nix` | nixos | `documentation` | disables NixOS manpages |
 | `gaming.nix` | nixos | `gaming` | Steam + proton-ge (Steam also sets 32-bit graphics) |
 | `git.nix` | nixos, homeManager | `git` | git on; user identity from `identity` |
-| `herdr.nix` | homeManager | `herdr` | [herdr](https://herdr.dev) from `nixpkgs-unstable` through home-manager master's `programs.herdr` (lifted onto 26.05, its two missing `lib.hm.generators` injected); T3 Code's dark colours over `vesper`, every pane a framed card with gaps, and a vim-style `ctrl+b` keymap (`v`/`s` split, `h/j/k/l`, the built-in Go To on `f`, no `[`/`]` chords for the no layout) |
 | `home-manager.nix` | nixos | `home-manager` | wires HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<hostname>/home` |
 | `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`, HM option `hyprmoncfg.profiles`) | see below |
 | `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage; no host imports it |
@@ -204,8 +201,9 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `rofi.nix` | homeManager | `rofi` | rofi theme generated from `palettes.ui` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
 | `sunshine.nix` | nixos | `sunshine` | Sunshine, started by hand (`systemctl --user start sunshine`) and stopped with the Hyprland session; `wlr` capture + VAAPI; apps "Desktop" and "Steam Big Picture" stream a headless `SUNSHINE` output at the client's mode, placed past the physical outputs with a gap (the shared cursor can't cross) and focused, with hyprmoncfgd/hypridle stopped, waybar kept off it and new windows taking over fullscreen until the app quits; quitting Steam ends the stream, and ending the stream shuts Steam down; on quit hyprsplit's `grab_rogue_windows` pulls the stream's windows onto the focused workspace |
+| `tmux/` | homeManager | `tmux` | tmux on built-ins, themed from `palettes.adwaita_dark`: a vim keymap on `C-b` (prefix table reset, no arrows), `choose-tree` for jumping, framed pane titles, rounded popups/menus, bells from background windows marked (pi rings one) and `prefix o` to jump; resurrect + continuum loaded last by `run-shell`, since home-manager's `plugins` load before `extraConfig` |
 | `users.nix` | nixos, homeManager | `users` | primary user, groups, hashed password, zsh (no global compinit; oh-my-zsh runs it) + starship, root locked |
-| `wezterm.nix` | homeManager | `wezterm` | wezterm with an "Adwaita Dark" scheme from `palettes.adwaita_dark`, Hack font |
+| `wezterm.nix` | homeManager | `wezterm` | wezterm with an "Adwaita Dark" scheme from `palettes.adwaita_dark`, Hack font, notifications only while its window is unfocused |
 | `xdg.nix` | homeManager | `xdg-user-dirs` | XDG user dirs (created; projects = HM default `~/Projects`) |
 | `zsh.nix` | homeManager | `zsh` | oh-my-zsh, autosuggestions, syntax highlight, 100k history, `programs.fzf` keybindings (Ctrl-R/Ctrl-T/Alt-C) |
 
@@ -285,8 +283,10 @@ Notes on specific features:
   directly (not `pkgs.unstable`, which the mac lacks). nixpkgs' wrapper prefixes
   ripgrep and fd onto pi's PATH; the feature's own wrapper suffixes git
   (worktree isolation, the commit skill) and node (npm install scripts), so a
-  project shell's versions win. It writes `settings.json`, `APPEND_SYSTEM.md`
-  and the `commit-style` skill into `~/.pi/agent` (pi ignores XDG), merging its
+  project shell's versions win. It writes `settings.json`, `APPEND_SYSTEM.md`,
+  the `commit-style` skill and a `bell` extension (BEL on a finished run or a
+  prompt, which tmux marks on a background window) into `~/.pi/agent` (pi
+  ignores XDG), merging its
   home-manager option `piAgent.settings` over the defaults; both hosts set it
   to pin their provider, model and thinking level. pi packages
   (`@tintinweb/pi-subagents`, `rpiv-ask-user-question`, `rpiv-todo`) are
@@ -302,7 +302,7 @@ to take.
 - `base` — nixos imports `boot doas documentation git home-manager journald
   locale network neovim nix nixpkgs packages podman unstable-nixpkgs
   users` and wires `homeManager.base`; `homeManager.base` imports `git
-  pi-agent users xdg-user-dirs zsh`.
+  pi-agent tmux users xdg-user-dirs zsh`.
 - `workstation` — nixos imports `display-manager fonts gtk hyprland plymouth
   sound`; `homeManager.workstation` imports `bluetooth cursor desktop-apps gtk
   hyprland neovim qt rofi wezterm`. Its NixOS half pulls in the HM half.

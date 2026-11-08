@@ -31,6 +31,7 @@ root: {
           config.adjust_window_size_when_changing_font_size = false
           config.hide_mouse_cursor_when_typing = false
           config.audible_bell = "Disabled"
+          config.notification_handling = "SuppressFromFocusedWindow"
           config.window_padding = { left = "0.5cell", right = "0.5cell", top = "0.25cell", bottom = "0.25cell" }
 
           config.default_cursor_style = "SteadyBlock"

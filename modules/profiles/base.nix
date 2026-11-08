@@ -26,7 +26,7 @@ root: {
   flake.modules.homeManager.base.imports = with root.config.flake.modules.homeManager; [
     git
     pi-agent
-    herdr
+    tmux
     users
     xdg-user-dirs
     zsh
