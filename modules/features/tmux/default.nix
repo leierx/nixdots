@@ -22,7 +22,8 @@ root: {
         clock24 = true;
 
         extraConfig = ''
-          set -as terminal-features ",xterm-256color:RGB:hyperlinks"
+          # WezTerm's XTVERSION reply covers RGB and extkeys; OSC 8 needs declaring for its TERM
+          set -as terminal-features "xterm-256color:hyperlinks"
           set -g extended-keys on
           set -g extended-keys-format csi-u
 
@@ -30,7 +31,7 @@ root: {
           set -g detach-on-destroy off
           set -g set-titles on
           set -g set-titles-string "#{host_short}: #S"
-          set -g automatic-rename-format "#{?#{m:*sh,#{pane_current_command}},#{b:pane_current_path},#{pane_current_command}}"
+          set -g automatic-rename-format "#{?#{m/r:^(sh|bash|zsh|fish)$,#{pane_current_command}},#{b:pane_current_path},#{pane_current_command}}"
           set -g copy-mode-line-numbers hybrid
 
           # a bell from a background window marks it; prefix o jumps there
