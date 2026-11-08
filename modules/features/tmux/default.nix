@@ -33,9 +33,13 @@ root: {
           set -g set-titles-string "#{host_short}: #S"
           set -g automatic-rename-format "#{?#{m/r:^(sh|bash|zsh|fish)$,#{pane_current_command}},#{b:pane_current_path},#{pane_current_command}}"
           set -g copy-mode-line-numbers hybrid
+          ${lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+            # Terminal.app has no OSC 52 and iTerm2 gates it behind a preference
+            set -g copy-command /usr/bin/pbcopy
+          ''}
 
-          # a bell from a background window marks it; prefix o jumps there
-          set -g bell-action other
+          # a bell only marks its window, so no terminal beeps or bounces; prefix o jumps there
+          set -g bell-action none
 
           unbind -a -T prefix
           bind -N "Send the prefix to the application" C-b send-prefix
@@ -96,7 +100,7 @@ root: {
 
           bind -T copy-mode-vi v send -X begin-selection
           bind -T copy-mode-vi C-v send -X rectangle-toggle
-          bind -T copy-mode-vi y send -X copy-selection-and-cancel
+          bind -T copy-mode-vi y send -X copy-pipe-and-cancel
           bind -T copy-mode-vi Escape send -X cancel
           # upstream copies and drops back to the prompt; this keeps the scroll position and the highlight
           bind -T copy-mode-vi MouseDragEnd1Pane send -X copy-pipe-no-clear
