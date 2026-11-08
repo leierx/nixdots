@@ -9,11 +9,32 @@ root: {
     let
       c = root.config.palettes.adwaita_dark;
       paneLabel = "#{?#{==:#{pane_title},#{host}},#{pane_current_command} · #{b:pane_current_path},#{pane_title}}";
+      tmux = lib.getExe pkgs.tmux;
+      scrollback = pkgs.writeShellScript "tmux-scrollback" ''
+        { ${tmux} save-buffer -b scrollback - && ${tmux} delete-buffer -b scrollback; } |
+          ${lib.getExe config.programs.neovim.finalPackage} -R + -
+      '';
     in
     {
       programs.tmux = {
         enable = true;
-        prefix = "C-a";
+        # a bare `tmux` attaches to the default session, creating it if needed
+        package = pkgs.symlinkJoin {
+          inherit (pkgs.tmux) pname version;
+          paths = [
+            pkgs.tmux
+            pkgs.tmux.man
+          ];
+          meta.mainProgram = "tmux";
+          postBuild = ''
+            ln -sf ${pkgs.writeShellScript "tmux" ''
+              if [ $# -eq 0 ]; then
+                exec ${tmux} new-session -A -s main
+              fi
+              exec ${tmux} "$@"
+            ''} $out/bin/tmux
+          '';
+        };
         terminal = "tmux-256color";
         baseIndex = 1;
         keyMode = "vi";
@@ -39,19 +60,8 @@ root: {
           # a bell from a background window marks it; prefix o jumps there
           set -g bell-action other
 
-          ${lib.concatMapStringsSep "\n"
-            (
-              hook:
-              ''set-hook -g ${hook} { if -F "#{==:#{session_windows},1}" { set status off } { set status on } }''
-            )
-            [
-              "window-linked"
-              "window-unlinked"
-            ]
-          }
-
           unbind -a -T prefix
-          bind -N "Send the prefix to the application" a send-prefix
+          bind -N "Send the prefix to the application" b send-prefix
           bind -N "List key bindings" ? list-keys -N
           bind -N "Command prompt" : command-prompt
           bind -N "Detach" d detach-client
@@ -71,7 +81,7 @@ root: {
           bind -N "Kill the window" X kill-window
           bind -N "Previous window" p previous-window
           bind -N "Next window" n next-window
-          bind -N "Last window" C-a last-window
+          bind -N "Last window" C-b last-window
           ${lib.concatMapStringsSep "\n" (
             i: ''bind -N "Window ${toString i}" ${toString i} select-window -t :=${toString i}''
           ) (lib.range 1 9)}
@@ -84,6 +94,7 @@ root: {
           bind -N "Synchronize the window's panes" z set synchronize-panes
           bind -N "Clear the pane and its history" C-l { send-keys C-l; clear-history }
           bind -N "Copy mode" y copy-mode
+          ${lib.optionalString config.programs.neovim.enable ''bind -N "The pane's scrollback in nvim" e { capture-pane -J -S - -b scrollback; display-popup -E -w 90% -h 90% -T " scrollback " ${scrollback} }''}
           bind -N "Next pane" Tab select-pane -t :.+
           bind -N "Pane left" h select-pane -L
           bind -N "Pane down" j select-pane -D
@@ -99,12 +110,15 @@ root: {
           bind -T resize k { resize-pane -U 5; switch-client -T resize }
           bind -T resize l { resize-pane -R 5; switch-client -T resize }
 
+          # wezterm's word boundary, so a double-click takes paths, URLs and flags whole
+          set -g word-separators "\"'\`()[]{}<>|,;"
           bind -T copy-mode-vi v send -X begin-selection
           bind -T copy-mode-vi C-v send -X rectangle-toggle
           bind -T copy-mode-vi y send -X copy-selection-and-cancel
           bind -T copy-mode-vi Escape send -X cancel
           # upstream copies and drops back to the prompt; this keeps the scroll position and the highlight
           bind -T copy-mode-vi MouseDragEnd1Pane send -X copy-pipe-no-clear
+          bind -T copy-mode-vi MouseDown2Pane { select-pane; send -X copy-pipe-and-cancel }
 
           set -g status-position top
           set -g status-justify left
@@ -142,6 +156,7 @@ root: {
 
           # last, as TPM orders them: resurrect binds into the reset prefix table, continuum hooks the final status-right
           set -g @resurrect-capture-pane-contents on
+          set -g @resurrect-processes '"pi->pi -c"'
           set -g @continuum-restore on
           run-shell ${pkgs.tmuxPlugins.resurrect.rtp}
           run-shell ${pkgs.tmuxPlugins.continuum.rtp}
