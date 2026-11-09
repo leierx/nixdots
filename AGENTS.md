@@ -201,7 +201,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `rofi.nix` | homeManager | `rofi` | rofi theme generated from `palettes.ui` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
 | `sunshine.nix` | nixos | `sunshine` | Sunshine, started by hand (`systemctl --user start sunshine`) and stopped with the Hyprland session; `wlr` capture + VAAPI; apps "Desktop" and "Steam Big Picture" stream a headless `SUNSHINE` output at the client's mode, placed past the physical outputs with a gap (the shared cursor can't cross) and focused, with hyprmoncfgd/hypridle stopped, waybar kept off it and new windows taking over fullscreen until the app quits; quitting Steam ends the stream, and ending the stream shuts Steam down; on quit hyprsplit's `grab_rogue_windows` pulls the stream's windows onto the focused workspace |
-| `tmux/` | homeManager | `tmux` | tmux on built-ins, themed from `palettes.adwaita_dark`: a bare `tmux` attaching to the session `main` (a package wrapper), a vim keymap on `C-b` (prefix table reset, no arrows), `choose-tree` for jumping, `prefix e` opening the scrollback in nvim (only with `programs.neovim`), framed pane titles, rounded popups/menus, bells from background windows marked (pi rings one) and `prefix o` to jump; resurrect + continuum loaded last by `run-shell`, since home-manager's `plugins` load before `extraConfig` |
+| `tmux/` | homeManager | `tmux` | tmux on built-ins, themed from `palettes.adwaita_dark`: a bare `tmux` attaching to the session `main` (a package wrapper), a vim keymap on `C-b` (prefix table reset, no arrows), `choose-tree` for jumping, `prefix e` opening the scrollback in nvim (only with `programs.neovim`), framed pane titles, rounded popups/menus, bells from background windows marked (pi rings one) and `prefix o` to jump; resurrect + continuum loaded last by `run-shell`, since home-manager's `plugins` load before `extraConfig`; a post-save-layout hook saves each pi pane as `pi --session <its @pi_session>`, so panes sharing a directory each get their own session back |
 | `users.nix` | nixos, homeManager | `users` | primary user, groups, hashed password, zsh (no global compinit; oh-my-zsh runs it) + starship, root locked |
 | `wezterm.nix` | homeManager | `wezterm` | wezterm with an "Adwaita Dark" scheme from `palettes.adwaita_dark`, Hack font, notifications only while its window is unfocused |
 | `xdg.nix` | homeManager | `xdg-user-dirs` | XDG user dirs (created; projects = HM default `~/Projects`) |
@@ -285,8 +285,9 @@ Notes on specific features:
   ripgrep and fd onto pi's PATH; the feature's own wrapper suffixes git
   (worktree isolation, the commit skill) and node (npm install scripts), so a
   project shell's versions win. It writes `settings.json`, `APPEND_SYSTEM.md`,
-  the `commit-style` skill and a `bell` extension (BEL on a finished run or a
-  prompt, which tmux marks on a background window) into `~/.pi/agent` (pi
+  the `commit-style` skill, a `bell` extension (BEL on a finished run or a
+  prompt, which tmux marks on a background window) and a `tmux-session`
+  extension (the session file in the pane option `@pi_session`) into `~/.pi/agent` (pi
   ignores XDG), merging its
   home-manager option `piAgent.settings` over the defaults; both hosts set it
   to pin their provider, model and thinking level. pi packages

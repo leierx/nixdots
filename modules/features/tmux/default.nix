@@ -14,6 +14,27 @@ root: {
         { ${tmux} save-buffer -b scrollback - && ${tmux} delete-buffer -b scrollback; } |
           ${lib.getExe config.programs.neovim.finalPackage} -R + -
       '';
+      # resurrect saves every pi pane as `pi`; the pi-agent extension records each pane's session in @pi_session
+      piSessions = pkgs.writeShellApplication {
+        name = "tmux-resurrect-pi-sessions";
+        runtimeInputs = [
+          pkgs.tmux
+          pkgs.gawk
+        ];
+        text = ''
+          file=$1
+          t=$'\t'
+          tmux list-panes -a -F "#{session_name}$t#{window_index}$t#{pane_index}$t#{@pi_session}" |
+            awk -F '\t' -v OFS='\t' -v q="'" '
+              NR == FNR { if ($4 != "") session[$1, $2, $3] = $4; next }
+              $1 == "pane" && $11 ~ /^:pi( |$)/ && ($2, $3, $6) in session {
+                s = session[$2, $3, $6]; gsub(q, q "\\" q q, s); $11 = ":pi --session " q s q
+              }
+              { print }
+            ' - "$file" > "$file.tmp"
+          mv "$file.tmp" "$file"
+        '';
+      };
     in
     {
       programs.tmux = {
@@ -157,7 +178,8 @@ root: {
 
           # last, as TPM orders them: resurrect binds into the reset prefix table, continuum hooks the final status-right
           set -g @resurrect-capture-pane-contents on
-          set -g @resurrect-processes '"pi->pi -c"'
+          set -g @resurrect-processes 'pi'
+          set -g @resurrect-hook-post-save-layout '${lib.getExe piSessions}'
           set -g @continuum-restore on
           run-shell ${pkgs.tmuxPlugins.resurrect.rtp}
           run-shell ${pkgs.tmuxPlugins.continuum.rtp}

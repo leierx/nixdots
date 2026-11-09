@@ -72,6 +72,10 @@
           ".pi/agent/skills/commit-style/SKILL.md".source = ./skills/commit-style/SKILL.md;
 
           ".pi/agent/extensions/bell.ts".source = ./extensions/bell.ts;
+
+          ".pi/agent/extensions/tmux-session.ts".source = pkgs.replaceVars ./extensions/tmux-session.ts {
+            tmux = lib.getExe config.programs.tmux.package;
+          };
         };
       };
     };
