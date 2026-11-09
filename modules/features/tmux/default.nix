@@ -127,8 +127,9 @@ root: {
           set -g status-left "#[fg=${c.foreground},bold] #S #[fg=${c.color8},nobold]│"
           set -g status-right "#{?client_prefix,#[fg=${c.color12}]prefix ,}#{?pane_in_mode,#[fg=${c.color3}]#{pane_mode} ,}"
           set -g window-status-separator ""
-          set -g window-status-format " #I #W#{?window_bell_flag, #[fg=${c.color3}]●,}#{?pane_synchronized, #[fg=${c.color3}]⇄,}#{?window_zoomed_flag, #[fg=${c.color12}]⛶,} "
-          set -g window-status-current-format "#[fg=${c.foreground},bg=${c.color0}] #I #W#{?pane_synchronized, #[fg=${c.color3}]⇄,}#{?window_zoomed_flag, #[fg=${c.color12}]⛶,} "
+          set -g window-status-format " #I #W#{?window_bell_flag, #[fg=${c.color3}]●#[fg=${c.color7}],}#{?pane_synchronized, #[fg=${c.color3}]⇄#[fg=${c.color7}],}#{?window_zoomed_flag, #[fg=${c.color12}]⛶#[fg=${c.color7}],} "
+          set -g window-status-current-style "fg=${c.foreground},bg=${c.color0}"
+          set -g window-status-current-format " #[underscore]#I #W#{?pane_synchronized, #[fg=${c.color3}]⇄#[fg=${c.foreground}],}#{?window_zoomed_flag, #[fg=${c.color12}]⛶#[fg=${c.foreground}],}#[nounderscore] "
           set -g window-status-bell-style default
           set -g window-status-activity-style default
 
