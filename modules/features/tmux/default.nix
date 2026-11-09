@@ -35,6 +35,28 @@ root: {
           mv "$file.tmp" "$file"
         '';
       };
+      paneSearch = pkgs.writeShellApplication {
+        name = "tmux-pane-search";
+        runtimeInputs = [
+          pkgs.tmux
+          pkgs.fzf
+        ];
+        text = ''
+          t=$'\t'
+          target=$(
+            tmux list-panes -a -F "#{pane_id}$t#{session_name}:#{window_index}.#{pane_index}" |
+              while IFS=$t read -r id loc; do
+                tmux capture-pane -p -J -t "$id" | while IFS= read -r line; do
+                  if [[ $line =~ [^[:space:]] ]]; then printf '%s\t%s\t%s\n' "$id" "$loc" "$line"; fi
+                done
+              done |
+              fzf --delimiter "$t" --with-nth 2.. --tiebreak index \
+                --preview 'tmux capture-pane -ep -t {1}' --preview-window right,55% |
+              cut -f1
+          ) || exit 0
+          tmux switch-client -t "$target"
+        '';
+      };
     in
     {
       programs.tmux = {
@@ -90,6 +112,7 @@ root: {
 
           bind -N "Go to any pane" f choose-tree -Z
           bind -N "Pick a session" F choose-tree -Zs
+          bind -N "Search the visible text of every pane" / display-popup -E -w 90% -h 90% -T " search panes " ${lib.getExe paneSearch}
           bind -N "Next window with an alert" o next-window -a
           bind -N "New session" C command-prompt -p "session:" { new-session -s "%%" -c "#{pane_current_path}" }
           bind -N "Rename the session" W command-prompt -I "#S" { rename-session "%%" }
@@ -139,6 +162,8 @@ root: {
           bind -T copy-mode-vi Escape send -X cancel
           # upstream copies and drops back to the prompt; this keeps the scroll position and the highlight
           bind -T copy-mode-vi MouseDragEnd1Pane send -X copy-pipe-no-clear
+          # a click drops the kept selection, so the next drag starts a new one instead of extending a word/line pick
+          bind -T copy-mode-vi MouseDown1Pane { select-pane; send -X clear-selection }
           bind -T copy-mode-vi MouseDown2Pane { select-pane; send -X copy-pipe-and-cancel }
 
           set -g status-position top
