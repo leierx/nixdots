@@ -55,6 +55,9 @@ root: {
             { key = "-", mods = "CTRL", action = act.DecreaseFontSize },
             { key = "+", mods = "CTRL", action = act.IncreaseFontSize },
             { key = "0", mods = "CTRL", action = act.ResetFontSize },
+            { key = "-", mods = "SUPER", action = act.DecreaseFontSize },
+            { key = "+", mods = "SUPER", action = act.IncreaseFontSize },
+            { key = "0", mods = "SUPER", action = act.ResetFontSize },
 
             { key = "PageUp", mods = "SHIFT", action = act.ScrollByPage(-0.5) },
             { key = "PageDown", mods = "SHIFT", action = act.ScrollByPage(0.5) },
