@@ -35,26 +35,23 @@ root: {
           mv "$file.tmp" "$file"
         '';
       };
-      paneSearch = pkgs.writeShellApplication {
-        name = "tmux-pane-search";
+      palette = pkgs.writeShellApplication {
+        name = "tmux-command-palette";
         runtimeInputs = [
           pkgs.tmux
+          pkgs.gawk
           pkgs.fzf
         ];
         text = ''
           t=$'\t'
-          target=$(
-            tmux list-panes -a -F "#{pane_id}$t#{session_name}:#{window_index}.#{pane_index}" |
-              while IFS=$t read -r id loc; do
-                tmux capture-pane -p -J -t "$id" | while IFS= read -r line; do
-                  if [[ $line =~ [^[:space:]] ]]; then printf '%s\t%s\t%s\n' "$id" "$loc" "$line"; fi
-                done
-              done |
-              fzf --delimiter "$t" --with-nth 2.. --tiebreak index \
-                --preview 'tmux capture-pane -ep -t {1}' --preview-window right,55% |
+          key=$(
+            tmux list-keys -T prefix -F "#{key_string}$t#{key_note}$t#{key_command}" |
+              awk -F '\t' '$2 != "" { printf "%s\t%-50s %s\t%s\n", $1, $2, $1, $3 }' |
+              fzf --delimiter "$t" --with-nth 2 --reverse --no-info \
+                --preview 'printf "%s\n" {3}' --preview-window down,3,wrap |
               cut -f1
           ) || exit 0
-          tmux switch-client -t "$target"
+          tmux set -g @palette_key "$key"
         '';
       };
     in
@@ -105,14 +102,18 @@ root: {
 
           unbind -a -T prefix
           bind -N "Send the prefix to the application" b send-prefix
-          bind -N "List key bindings" ? list-keys -N
+          bind -N "Command palette" ? {
+            set -gu @palette_key
+            display-popup -E -w 70% -h 60% -T " commands " ${lib.getExe palette}
+            if -F "#{@palette_key}" { run -C "switch-client -T prefix ; send -K '#{@palette_key}'" }
+          }
           bind -N "Command prompt" : command-prompt
           bind -N "Detach" d detach-client
           bind -N "Reload the config" R { source-file "${config.xdg.configHome}/tmux/tmux.conf"; display-message "config reloaded" }
 
           bind -N "Go to any pane" f choose-tree -Z
           bind -N "Pick a session" F choose-tree -Zs
-          bind -N "Search the visible text of every pane" / display-popup -E -w 90% -h 90% -T " search panes " ${lib.getExe paneSearch}
+          bind -N "Grab words, paths and URLs from the window" / run-shell "${pkgs.tmuxPlugins.extrakto}/share/tmux-plugins/extrakto/scripts/open.sh '#{pane_id}'"
           bind -N "Next window with an alert" o next-window -a
           bind -N "New session" C command-prompt -p "session:" { new-session -s "%%" -c "#{pane_current_path}" }
           bind -N "Rename the session" W command-prompt -I "#S" { rename-session "%%" }
@@ -200,6 +201,9 @@ root: {
           set -g display-panes-colour "${c.color8}"
           set -g display-panes-active-colour "${c.color4}"
           set -g clock-mode-colour "${c.color4}"
+
+          # copy through tmux, which sets the terminal clipboard over OSC 52
+          set -g @extrakto_clip_tool_run tmux_osc52
 
           # last, as TPM orders them: resurrect binds into the reset prefix table, continuum hooks the final status-right
           set -g @resurrect-capture-pane-contents on
