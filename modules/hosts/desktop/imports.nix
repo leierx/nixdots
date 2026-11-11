@@ -6,6 +6,6 @@
     base
     workstation
     gaming
-    sunshine
+    moonshine
   ];
 }

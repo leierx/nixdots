@@ -415,6 +415,26 @@
         "type": "github"
       }
     },
+    "moonshine": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794389687,
+        "narHash": "sha256-9JDULRYR55u21PgWKv+VDSxWGf7uLNGQud+GLjPTFOQ=",
+        "owner": "hgaiser",
+        "repo": "moonshine",
+        "rev": "01fb1b7dd9d52731051766de4241bbb88b15a3c8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hgaiser",
+        "repo": "moonshine",
+        "type": "github"
+      }
+    },
     "nix-index-database": {
       "inputs": {
         "nixpkgs": [
@@ -489,6 +509,7 @@
         "home-manager": "home-manager",
         "hyprland": "hyprland",
         "hyprsplit": "hyprsplit",
+        "moonshine": "moonshine",
         "nix-index-database": "nix-index-database",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-unstable": "nixpkgs-unstable"

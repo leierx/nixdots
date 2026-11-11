@@ -39,5 +39,11 @@
       # unused: hyprsplit builds with hyprland's nixpkgs
       inputs.nixpkgs.follows = "hyprland/nixpkgs";
     };
+
+    moonshine = {
+      url = "github:hgaiser/moonshine";
+      # unused: the package is built against the system's nixpkgs
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 }

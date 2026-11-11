@@ -53,7 +53,7 @@ README.md                 brief user-facing doc
 AGENTS.md                 this file
 
 modules/flake/            the substrate (see below)
-modules/features/         one flat file per feature (+ hyprland/, neovim/, pi-agent/, tmux/)
+modules/features/         one flat file per feature (+ hyprland/, moonshine/, neovim/, pi-agent/, tmux/)
 modules/profiles/         base.nix, workstation.nix
 modules/theme/            palette.nix, fonts, gtk, qt, cursor
 modules/hosts/            desktop/, thonkpad/
@@ -81,8 +81,10 @@ a module of the same configuration and may freely read `config`, `lib` and
 
 Inputs: `nixpkgs` (26.05), `nixpkgs-unstable`, `home-manager`, `disko`,
 `nix-index-database`, `hyprland` (pinned tag; its dev-only `pre-commit-hooks`
-is pruned with `follows = ""`) and `hyprsplit` (its `nixpkgs` follows
-`hyprland/nixpkgs`, which is what it builds with anyway).
+is pruned with `follows = ""`), `hyprsplit` (its `nixpkgs` follows
+`hyprland/nixpkgs`, which is what it builds with anyway) and `moonshine`
+(tracks upstream `main`; its `nixpkgs` follows ours, though only its sources
+are used).
 
 ### `import-tree.nix`
 
@@ -181,6 +183,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `display-manager.nix` | nixos | `display-manager` | ly |
 | `doas.nix` | nixos | `doas` | doas replaces sudo (via `doas-sudo-shim`), wheel `noPass` without `keepenv`, passing only `LANG`, `NIX_PATH` and `SUDO_UID`/`SUDO_GID`/`SUDO_USER` |
 | `documentation.nix` | nixos | `documentation` | disables NixOS manpages |
+| `game-mode.nix` | nixos | `game-mode` (+ option `gameMode.output`) | a whole-machine mode, meant for a `specialisation` (boot entry): greetd autologins into gamescope + Steam (`-gamepadui`, the Deck UI) on `gameMode.output`, a free connector forced on with a generated 4K60 EDID, so the physical monitors go dark; Sunshine (user service on `default.target`, since gamescope never starts `graphical-session.target`) streams it with `kms` capture + `capSysAdmin`, a prep-cmd setting gamescope's `GAMESCOPE_COMPOSITE_FORCE` root property per stream so KMS capture sees one plane (Steam resets `--force-composition`), and `--xwayland-count 2` giving games their own Xwayland (as on SteamOS; sharing Steam's, a game loses X focus to the overlay, minimizes and never comes back; with two, Big Picture `-tenfoot` swaps the base layer across them and the picture froze on the game, so the Deck UI, which shows its menus as overlays); `uhid` loaded for Sunshine's pads; agreety relaunches the session after Steam quits |
 | `gaming.nix` | nixos | `gaming` | Steam + proton-ge (Steam also sets 32-bit graphics) |
 | `git.nix` | nixos, homeManager | `git` | git on; user identity from `identity` |
 | `home-manager.nix` | nixos | `home-manager` | wires HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<hostname>/home` |
@@ -189,6 +192,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `journald.nix` | nixos | `journald` | 90-day retention |
 | `libvirt.nix` | nixos | `libvirt` | libvirtd + unprivileged QEMU/KVM with swtpm, virt-manager, trusted `br0` lab bridge; no host imports it |
 | `locale.nix` | nixos | `locale` | `no`/`nodeadkeys`, `en_DK.UTF-8`, Europe/Oslo, timesyncd; hyprland reads the xkb values via `osConfig` |
+| `moonshine/` | nixos | `moonshine` | [Moonshine](https://github.com/hgaiser/moonshine) from its own flake input, locked to upstream `main` (its NixOS module, which disables nixpkgs'; the package built against the system's nixpkgs, since its implicit Vulkan layer loads into every Vulkan app, and patched to TLS-handshake per connection with a timeout, since upstream handshakes in the accept loop and one stalled client hangs pairing and launches until a restart): a system service that gives each Moonlight stream its own headless compositor at the client's mode, leaving the desktop alone; one app, Steam `-gamepadui` in gamescope at the client's mode with the ferriscope WSI layer off (`DISABLE_FERRISCOPE_WSI`) and `--xwayland-count 2` (see `game-mode`); the user joins `input` (virtual pads without a seat) and `moonshine` (sleep-inhibit polkit rule); a desktop Steam is shut down first, since Steam is single-instance; app output goes to `journalctl --user -u moonshine-session`; the host sets `services.moonshine.openFirewall` and `uid` (the module needs it; the user's is allocated, not declared) |
 | `neovim/` | nixos, homeManager | `neovim` (+ HM option `neovim.outOfStorePath`) | see below |
 | `network.nix` | nixos | `network` | systemd-resolved with DNS-over-TLS to Quad9 and no plaintext fallback, NetworkManager (DHCP DNS ignored, stable MACs, wifi powersave off, no automatic wired profile), nftables, no ping, reverse-path filter `loose` (WireGuard full tunnels) |
 | `nix.nix` | nixos | `nix` | GC, `auto-optimise-store`, flakes, cache, no global registry; the `nixpkgs` registry entry and `NIX_PATH` come from nixpkgs' own `nixpkgs.flake.source` |
@@ -200,7 +204,6 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `podman.nix` | nixos | `podman` | podman + docker compat, DNS on `podman0` |
 | `rofi.nix` | homeManager | `rofi` | rofi theme generated from `palettes.ui` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
-| `sunshine.nix` | nixos | `sunshine` | Sunshine, started by hand (`systemctl --user start sunshine`) and stopped with the Hyprland session; `wlr` capture + VAAPI; apps "Desktop" and "Steam Big Picture" stream a headless `SUNSHINE` output at the client's mode, placed past the physical outputs with a gap (the shared cursor can't cross) and focused, with hyprmoncfgd/hypridle stopped, waybar kept off it and new windows taking over fullscreen until the app quits; quitting Steam ends the stream, and ending the stream shuts Steam down; on quit hyprsplit's `grab_rogue_windows` pulls the stream's windows onto the focused workspace |
 | `tmux/` | homeManager | `tmux` | tmux on built-ins, themed from `palettes.adwaita_dark`: a bare `tmux` attaching to the session `main` (a package wrapper), a vim keymap on `C-b` (prefix table reset, no arrows), `choose-tree` for jumping, `prefix e` opening the scrollback in nvim (only with `programs.neovim`), framed pane titles, rounded popups/menus, bells from background windows marked (pi rings one) and `prefix o` to jump; resurrect + continuum loaded last by `run-shell`, since home-manager's `plugins` load before `extraConfig`; a post-save-layout hook saves each pi pane as `pi --session <its @pi_session>`, so panes sharing a directory each get their own session back |
 | `users.nix` | nixos, homeManager | `users` | primary user, groups, hashed password, zsh (no global compinit; oh-my-zsh runs it) + starship, root locked |
 | `wezterm.nix` | homeManager | `wezterm` | wezterm with an "Adwaita Dark" scheme from `palettes.adwaita_dark`, Hack font, notifications only while its window is unfocused |
@@ -252,8 +255,7 @@ Notes on specific features:
     hyprlock's PAM service.
   - Every lock (idle, sleep, the SUPER+X L bind) goes through
     `loginctl lock-session`, so hypridle's `lock_cmd`, which never starts a
-    second hyprlock, is the only thing that runs it; while hypridle is stopped
-    (a Sunshine stream) nothing locks.
+    second hyprlock, is the only thing that runs it.
   - The screenshot binds call one `writeShellApplication` (`scripts/freeze-region.sh`,
     `copy|save`) that carries its own runtime inputs.
   - Binds reference configured packages (`config.programs.wezterm.package`,
@@ -351,7 +353,8 @@ k3s API.
   microcode, firmware, bluetooth, graphics + `intel-media-driver`/`vpl-gpu-rt`, fstrim, fwupd, zram,
   `thermald`, TLP battery thresholds, disko, `treefmt`, mDNS and ephemeral UDP
   ports open for Chromecast discovery.
-- **`desktop`** — imports `base workstation gaming sunshine`. AMD desktop:
+- **`desktop`** — imports `base workstation gaming moonshine`, plus the
+  `game-mode` specialisation on `DP-3` with Moonshine off (`streaming.nix`). AMD desktop:
   microcode, firmware, RX 6700 XT graphics, fstrim, fwupd, zram, ZSA keyboard udev rules
   (keymapp), disko, hyprmoncfg profiles `default` (both monitors), `left-only` and `right-only`,
   nix-index, quickshell, ssh hosts for github.com and rsync.net,
