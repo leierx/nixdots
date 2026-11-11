@@ -126,7 +126,7 @@ root: {
           bind -N "Kill the window" X kill-window
           bind -N "Previous window" p previous-window
           bind -N "Next window" n next-window
-          bind -N "Last window" C-b last-window
+          bind -N "Next window" C-b next-window
           ${lib.concatMapStringsSep "\n" (
             i: ''bind -N "Window ${toString i}" ${toString i} select-window -t :=${toString i}''
           ) (lib.range 1 9)}
