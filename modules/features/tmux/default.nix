@@ -35,6 +35,34 @@ root: {
           mv "$file.tmp" "$file"
         '';
       };
+      paneMenu = lib.concatStringsSep " " [
+        "display-menu -t= -xM -yM -T '#[align=centre]#{pane_index} (#{pane_id})'"
+        "'#{?#{m/r:(copy|view)-mode,#{pane_mode}},Go To Top,}' '<' { send -X history-top }"
+        "'#{?#{m/r:(copy|view)-mode,#{pane_mode}},Go To Bottom,}' '>' { send -X history-bottom }"
+        "''"
+        "'#{?#{&&:#{buffer_size},#{!:#{pane_in_mode}}},Paste,}' 'p' { paste-buffer }"
+        "''"
+        "'#{?mouse_word,Search For #[underscore]#{=/9/...:mouse_word},}' 'C-r' { if -F '#{?#{m/r:(copy|view)-mode,#{pane_mode}},0,1}' 'copy-mode -t='; send -Xt= search-backward -- \"#{q:mouse_word}\" }"
+        "'#{?mouse_word,Type #[underscore]#{=/9/...:mouse_word},}' 'C-y' { copy-mode -q; send-keys -l -- \"#{q:mouse_word}\" }"
+        "'#{?mouse_word,Copy #[underscore]#{=/9/...:mouse_word},}' 'c' { copy-mode -q; set-buffer -- \"#{q:mouse_word}\" }"
+        "'#{?mouse_line,Copy Line,}' 'l' { copy-mode -q; set-buffer -- \"#{q:mouse_line}\" }"
+        "''"
+        "'#{?mouse_hyperlink,Type #[underscore]#{=/9/...:mouse_hyperlink},}' 'C-h' { copy-mode -q; send-keys -l -- \"#{q:mouse_hyperlink}\" }"
+        "'#{?mouse_hyperlink,Copy #[underscore]#{=/9/...:mouse_hyperlink},}' 'h' { copy-mode -q; set-buffer -- \"#{q:mouse_hyperlink}\" }"
+        "''"
+        "'New Window' 'w' { new-window -c '#{pane_current_path}' }"
+        "'#{?#{!:#{pane_floating_flag}},Horizontal Split,}' 'h' { split-window -h }"
+        "'#{?#{!:#{pane_floating_flag}},Vertical Split,}' 'v' { split-window -v }"
+        "''"
+        "'#{?#{&&:#{!:#{pane_floating_flag}},#{>:#{window_panes},1}},Swap Up,}' 'u' { swap-pane -U }"
+        "'#{?#{&&:#{!:#{pane_floating_flag}},#{>:#{window_panes},1}},Swap Down,}' 'd' { swap-pane -D }"
+        "'#{?pane_marked_set,,-}Swap Marked' 's' { swap-pane }"
+        "''"
+        "'Kill' 'X' { kill-pane }"
+        "'Respawn' 'R' { respawn-pane -k }"
+        "'#{?pane_marked,Unmark,Mark}' 'm' { select-pane -m }"
+        "'#{?#{>:#{window_panes},1},,-}#{?window_zoomed_flag,Unzoom,Zoom}' 'z' { resize-pane -Z }"
+      ];
       palette = pkgs.writeShellApplication {
         name = "tmux-command-palette";
         runtimeInputs = [
@@ -166,6 +194,9 @@ root: {
           # a click drops the kept selection, so the next drag starts a new one instead of extending a word/line pick
           bind -T copy-mode-vi MouseDown1Pane { select-pane; send -X clear-selection }
           bind -T copy-mode-vi MouseDown2Pane { select-pane; send -X copy-pipe-and-cancel }
+          # upstream's pane menu, with a plain Paste label (its buffer preview shows newlines as \n) and a New Window entry
+          bind -n MouseDown3Pane { if -Ft= '#{||:#{mouse_any_flag},#{&&:#{pane_in_mode},#{?#{m/r:(copy|view)-mode,#{pane_mode}},0,1}}}' { select-pane -t=; send -M } { ${paneMenu} } }
+          bind -n M-MouseDown3Pane { ${paneMenu} }
 
           set -g status-position top
           set -g status-justify left
@@ -192,8 +223,8 @@ root: {
           set -g menu-border-style "fg=${c.color8}"
           set -g menu-selected-style "fg=${c.foreground},bg=${c.color4}"
           # fill blanks the bar under status-line prompts, as upstream's default does; pane and mode prompts stay unfilled
-          set -g message-style 'fg=${c.foreground},bg=${c.color0},#{?#{m/r:(^|#,)IS(PANE|MODE)($|#,),#{prompt_flags}},,fill=${c.color0}}'
-          set -g message-command-style 'fg=${c.foreground},bg=${c.color0},#{?#{m/r:(^|#,)IS(PANE|MODE)($|#,),#{prompt_flags}},,fill=${c.color0}}'
+          set -g message-style 'fg=${c.foreground},bg=${c.background},#{?#{m/r:(^|#,)IS(PANE|MODE)($|#,),#{prompt_flags}},,fill=${c.background}}'
+          set -g message-command-style 'fg=${c.foreground},bg=${c.background},#{?#{m/r:(^|#,)IS(PANE|MODE)($|#,),#{prompt_flags}},,fill=${c.background}}'
           set -g mode-style "fg=${c.selection_foreground},bg=${c.selection_background}"
           set -g copy-mode-match-style "fg=${c.foreground},bg=${c.color8}"
           set -g copy-mode-current-match-style "fg=${c.foreground},bg=${c.color4}"
