@@ -191,8 +191,9 @@ root: {
           set -g menu-border-lines rounded
           set -g menu-border-style "fg=${c.color8}"
           set -g menu-selected-style "fg=${c.foreground},bg=${c.color4}"
-          set -g message-style "fg=${c.foreground},bg=${c.color0}"
-          set -g message-command-style "fg=${c.foreground},bg=${c.color0}"
+          # fill blanks the bar under status-line prompts, as upstream's default does; pane and mode prompts stay unfilled
+          set -g message-style 'fg=${c.foreground},bg=${c.color0},#{?#{m/r:(^|#,)IS(PANE|MODE)($|#,),#{prompt_flags}},,fill=${c.color0}}'
+          set -g message-command-style 'fg=${c.foreground},bg=${c.color0},#{?#{m/r:(^|#,)IS(PANE|MODE)($|#,),#{prompt_flags}},,fill=${c.color0}}'
           set -g mode-style "fg=${c.selection_foreground},bg=${c.selection_background}"
           set -g copy-mode-match-style "fg=${c.foreground},bg=${c.color8}"
           set -g copy-mode-current-match-style "fg=${c.foreground},bg=${c.color4}"
