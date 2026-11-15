@@ -1,3 +1,4 @@
+import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.common
@@ -7,6 +8,13 @@ import qs.common
 // created when it opens and destroyed when it closes, so every open starts
 // from an empty search.
 Scope {
+  // Loads the desktop entries and icon theme at startup: on the first open the
+  // entries arrived one by one, each rebuilding the list, and held the picker up.
+  Component.onCompleted: {
+    DesktopEntries.applications.values;
+    Quickshell.hasThemeIcon("application-x-executable");
+  }
+
   IpcHandler {
     target: "launcher"
 

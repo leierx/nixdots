@@ -278,9 +278,10 @@ Notes on specific features:
       toggle apps|clipboard|monitors`), keyboard driven and snappy, without
       animations: `MenuWindow` + `MenuList` (+ `MenuCommand` to read a
       command's output) and `search.js`; a picker is a `<Name>Menu.qml` plus a
-      `LazyLoader` in `Launcher.qml`. Apps start in their own
-      `systemd-run --user --scope`, so restarting the service leaves them
-      running. Hyprland's `quickshell:launcher` layer rule dims behind it.
+      `LazyLoader` in `Launcher.qml`, which also loads the desktop entries and
+      icon theme at startup so the first open is as quick as the rest. Apps
+      start in their own `systemd-run --user --scope`, so restarting the
+      service leaves them running. Hyprland's `quickshell:launcher` layer rule dims behind it.
     - `notifications/` is the notification daemon (no mako) and its popups:
       `Notifs.qml` owns `org.freedesktop.Notifications` and keeps every
       notification as a `NotifEntry` until it is dismissed; the entry holds a
