@@ -1,10 +1,13 @@
 import QtQuick
+import Quickshell
 import qs.common
 
 // A search field above a list of results, driven by the keyboard. `results`
-// is an array of rows, each with a `title`, optionally a `subtitle` and an
-// `icon` image source, plus whatever the picker wants handed back when the row
-// is picked with `activated(row)`.
+// is an array of rows, each with a unique `key`, a `title`, optionally a
+// `subtitle` and an `icon` or a picture's `thumbnail` as an image source,
+// plus whatever the picker wants handed back when the row is picked with
+// `activated(row)`, or with Shift+Delete, `removed(row)`. Rows are matched by
+// `key` as the results change, so a row that stays keeps its delegate and icon.
 //
 // The search field holds the keyboard focus. Keys it has no use for, like Up
 // and Down, travel up to this item, and Escape on to MenuWindow.
@@ -27,6 +30,10 @@ Column {
   readonly property real fullHeight: input.height + (peakRows > 0 ? spacing : 0) + peakRows * rowHeight
 
   signal activated(var row)
+  signal removed(var row)
+
+  // Set while a row goes, which keeps the selection where it is.
+  property bool removing: false
 
   // The children take their width from the column, so it needs its own.
   width: parent.width
@@ -43,6 +50,13 @@ Column {
 
   function activate(index) {
     if (index >= 0 && index < results.length) activated(results[index]);
+  }
+
+  function remove(index) {
+    if (index < 0 || index >= results.length) return;
+    removing = true;
+    removed(results[index]);
+    removing = false;
   }
 
   Keys.onUpPressed: select(list.currentIndex - 1)
@@ -65,6 +79,13 @@ Column {
       visible: input.cursorVisible
     }
     onAccepted: root.activate(list.currentIndex)
+    // Before the field's own Shift+Delete, which cuts.
+    Keys.onPressed: event => {
+      if (event.key === Qt.Key_Delete && event.modifiers & Qt.ShiftModifier) {
+        root.remove(list.currentIndex);
+        event.accepted = true;
+      }
+    }
 
     Text {
       x: input.leftPadding
@@ -83,9 +104,12 @@ Column {
     height: Math.min(count, root.maxRows) * root.rowHeight
     visible: count > 0
     clip: true
-    model: root.results
-    // A new search starts at its best match.
-    onModelChanged: root.select(0)
+    model: ScriptModel {
+      values: root.results
+      objectProp: "key"
+      // A new search starts at its best match.
+      onValuesChanged: root.select(root.removing ? list.currentIndex : 0)
+    }
     // No dragging or kinetic scrolling: the list only ever jumps to keep the
     // selected row in view.
     interactive: false

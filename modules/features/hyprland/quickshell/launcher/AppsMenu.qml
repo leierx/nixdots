@@ -3,7 +3,8 @@ import qs.common
 import "search.js" as Search
 
 // The application launcher, like rofi's drun: desktop entries matched on
-// name, generic name, keywords, executable and categories, best match first.
+// name, generic name, keywords, executable and categories, best match first
+// and the apps used most first among equal matches.
 MenuWindow {
   id: root
 
@@ -28,7 +29,7 @@ MenuWindow {
     const rows = [];
     for (const entry of DesktopEntries.applications.values) {
       const score = Search.scoreFields(query, [
-        [1.0, entry.name],
+        [1.0, entry.name, true],
         [0.8, entry.genericName],
         [0.6, entry.keywords.join(" ")],
         [0.6, (entry.command[0] ?? "").split("/").pop()],
@@ -36,7 +37,10 @@ MenuWindow {
       ]);
       if (score >= 0) {
         rows.push({
-          score: score,
+          key: entry.id,
+          // Use adds less than half a step between kinds of match (search.js),
+          // ordering apps matched alike without lifting one past a better one.
+          score: score + 50 * AppUsage.use(entry.id),
           title: entry.name,
           subtitle: entry.genericName,
           icon: Quickshell.iconPath(entry.icon, "application-x-executable"),
@@ -45,13 +49,14 @@ MenuWindow {
       }
     }
 
-    // Equal scores, which is all of them before anything is typed, sort by name.
+    // Equal scores, like unused apps before anything is typed, sort by name.
     rows.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
     return rows;
   }
 
   // Each app gets its own scope, so restarting the shell's service leaves it running.
   function launch(entry) {
+    AppUsage.launched(entry.id);
     const command = entry.runInTerminal ? [...root.terminal, ...entry.command] : entry.command;
     Quickshell.execDetached({
       command: ["systemd-run", "--user", "--scope", "--quiet", ...command],

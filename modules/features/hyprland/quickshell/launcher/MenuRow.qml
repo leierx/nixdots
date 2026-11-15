@@ -3,8 +3,8 @@ import QtQuick.Layouts
 import Quickshell.Widgets
 import qs.common
 
-// One row of a MenuList: an icon if the row has one, a title and an optional
-// subtitle, highlighted while it is the selected row.
+// One row of a MenuList: an icon or a picture's thumbnail if the row has one,
+// a title and an optional subtitle, highlighted while it is the selected row.
 Rectangle {
   id: root
 
@@ -38,6 +38,23 @@ Rectangle {
       visible: !!root.modelData.icon
       source: root.modelData.icon ?? ""
       implicitSize: 32
+    }
+
+    ClippingRectangle {
+      visible: !!root.modelData.thumbnail
+      implicitWidth: 64
+      implicitHeight: 36
+      radius: 6
+      color: Theme.card
+
+      Image {
+        anchors.fill: parent
+        source: root.modelData.thumbnail ?? ""
+        sourceSize.width: 128
+        fillMode: Image.PreserveAspectCrop
+        // Pictures can be large; the row shows without waiting for one.
+        asynchronous: true
+      }
     }
 
     ColumnLayout {

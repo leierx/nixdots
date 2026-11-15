@@ -280,10 +280,20 @@ Notes on specific features:
       toggle apps|clipboard|monitors`), keyboard driven and snappy, without
       animations: `MenuWindow` + `MenuList` (+ `MenuCommand` to read a
       command's output) and `search.js`; a picker is a `<Name>Menu.qml` plus a
-      `LazyLoader` in `Launcher.qml`, which also loads the desktop entries and
-      icon theme at startup so the first open is as quick as the rest. Apps
-      start in their own `systemd-run --user --scope`, so restarting the
-      service leaves them running. Hyprland's `quickshell:launcher` layer rule dims behind it.
+      `LazyLoader` in `Launcher.qml`, which also loads the desktop entries,
+      icon theme and app use at startup so the first open is as quick as the
+      rest. Rows carry a unique `key`, by which a `ScriptModel` keeps their
+      delegates as a search changes; Shift+Delete removes a row where the
+      picker allows it. Search matches every typed word as a substring, or in
+      a loose field (an app's name) as its letters in order (`ffx` finds
+      Firefox) for a lower score. Apps used most come first among equal
+      matches: `AppUsage.qml` keeps one frecency number per app in the state
+      dir, log2 of the sum of 2^(launch time in weeks), so a launch counts
+      half a week later and nothing ever needs decaying. Apps start in their
+      own `systemd-run --user --scope`, so restarting the service leaves them
+      running. The clipboard picker decodes images into Quickshell's cache
+      (pruned to what cliphist still lists) and shows them as thumbnails.
+      Hyprland's `quickshell:launcher` layer rule dims behind it.
     - `notifications/` is the notification daemon (no mako) and its popups:
       `Notifs.qml` owns `org.freedesktop.Notifications` and keeps every
       notification as a `NotifEntry` until it is dismissed; the entry holds a

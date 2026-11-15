@@ -16,15 +16,17 @@ MenuWindow {
       const status = JSON.parse(output);
       const profiles = (status.profiles ?? [])
         .map(profile => ({
+          key: profile.name,
           title: profile.name,
           subtitle: profile.active ? "Active" : "",
           profile: profile.name,
         }))
         .sort((a, b) => a.title.localeCompare(b.title));
       const recommended = status.recommended_profile?.name;
-      // the daemon keeps a hand-picked profile until the next hotplug; this applies what it would pick
+      // the daemon keeps a hand-picked profile until the next hotplug; this
+      // applies what it would pick, keyed "", a name no profile has
       root.rows = recommended
-        ? [{ title: "Auto", subtitle: recommended, profile: recommended }, ...profiles]
+        ? [{ key: "", title: "Auto", subtitle: recommended, profile: recommended }, ...profiles]
         : profiles;
     }
   }
