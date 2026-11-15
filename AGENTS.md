@@ -304,9 +304,9 @@ Notes on specific features:
     - `center/` is the notification center (`qs ipc -c shell call center
       toggle`), GNOME's layout, dropping down from the middle of the bar with
       a short fade and slide: notifications on the left, a Do Not Disturb
-      switch and Clear below, and `Calendar.qml` on the right (locale's first
-      weekday, ISO week numbers, arrows or wheel for months, the date returns
-      to today). Opening it puts the popups away. Notifications are grouped
+      switch and Clear (which also closes it) below, and `Calendar.qml` on
+      the right (locale's first weekday, ISO week numbers, arrows or wheel for
+      months, the date returns to today). Opening it puts the popups away. Notifications are grouped
       per app the way end-4's dots do (`NotificationGroup`,
       `NotificationItem`): one card with the app's icon, name and count, and a
       flat arrow button, over its two newest notifications a line each with

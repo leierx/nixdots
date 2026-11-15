@@ -420,7 +420,10 @@ PanelWindow {
             // Hidden without leaving the layout, so the footer keeps its height.
             opacity: Notifs.entries.length > 0 ? 1 : 0
             enabled: opacity === 1
-            onClicked: Notifs.clear()
+            onClicked: {
+              Notifs.clear();
+              Panels.close();
+            }
           }
         }
       }
