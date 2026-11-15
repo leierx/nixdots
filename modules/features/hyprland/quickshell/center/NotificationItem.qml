@@ -25,6 +25,8 @@ Item {
   signal swipeEnded()
 
   readonly property bool boxed: expanded && !single
+  // If the collapsed line cuts the body short.
+  readonly property bool truncated: line.truncated
   readonly property int pad: 12
 
   implicitHeight: box.height
@@ -144,6 +146,8 @@ Item {
         }
 
         Text {
+          id: line
+
           Layout.fillWidth: true
           text: root.entry.notification.body.replace(/\n/g, " ")
           textFormat: Text.StyledText

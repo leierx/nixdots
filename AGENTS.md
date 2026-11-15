@@ -310,7 +310,9 @@ Notes on specific features:
       per app the way end-4's dots do (`NotificationGroup`,
       `NotificationItem`): one card with the app's icon, name and count, and a
       flat arrow button, over its two newest notifications a line each with
-      their own age (a lone notification has its age in the header); expanded,
+      their own age (a lone notification has its age in the header, and the
+      arrow only when expanding shows more: buttons, progress or a cut-off
+      body); expanded,
       each gets an inset card with its image, whole body and actions. Left
       click on a notification (a lone one, or one in an expanded group) runs
       its default action, or dismisses it when it has none and at most one

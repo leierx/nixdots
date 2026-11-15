@@ -39,6 +39,9 @@ Item {
   readonly property bool single: shown.length === 1
   readonly property bool critical: shown.some(e => e.critical)
   readonly property bool showImage: single && newest.notification.image !== ""
+  // Expanding shows more: other notifications, or a lone one's buttons,
+  // progress or the rest of its body.
+  readonly property bool expandable: !single || newest.buttons.length > 0 || newest.progress !== undefined || (items.count > 0 && items.itemAt(0).truncated)
   readonly property int iconSize: 40
   readonly property int pad: 12
 
@@ -234,6 +237,7 @@ Item {
 
           // A flat button: just the arrow, with a circle under the pointer.
           Rectangle {
+            visible: root.expandable || root.expanded
             implicitWidth: 24
             implicitHeight: 24
             radius: height / 2
@@ -256,6 +260,8 @@ Item {
         }
 
         Repeater {
+          id: items
+
           model: ScriptModel {
             values: root.expanded ? root.shown : root.shown.slice(0, 2)
           }
