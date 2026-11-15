@@ -4,26 +4,26 @@ import QtQuick
 import Quickshell
 import qs.nix
 
-// libadwaita's dark style, 1:1: its named colours, the foreground overlays it
-// draws states with, its type scale and its radii. Sizes that belong to one
-// component live in that component.
+// libadwaita's dark style, 1:1, which shell.qml scales: its named colours,
+// the foreground overlays it draws states with, its type scale and its radii.
+// Sizes that belong to one component live in that component.
 Singleton {
   id: root
 
-  // Every shell surface floats over windows, like a popover.
-  readonly property color bg: Colors.popoverBg
-  readonly property color fg: Colors.popoverFg
+  // Shell surfaces are views, the darkest of libadwaita's backgrounds.
+  readonly property color bg: Colors.view_bg_color
+  readonly property color fg: Colors.view_fg_color
   readonly property color fgDim: overlay(0.55)
-  readonly property color accentBg: Colors.accentBg
-  readonly property color accentFg: Colors.accentFg
+  readonly property color accentBg: Colors.accent_bg_color
+  readonly property color accentFg: Colors.accent_fg_color
   // For text and lines on bg, where accentBg is too dark.
-  readonly property color accent: Colors.accent
-  readonly property color destructiveBg: Colors.destructiveBg
-  readonly property color destructive: Colors.destructive
+  readonly property color accent: Colors.accent_color
+  readonly property color destructiveBg: Colors.destructive_bg_color
+  readonly property color destructive: Colors.destructive_color
 
   readonly property color outline: overlay(0.07)
   readonly property color border: overlay(0.15)
-  readonly property color card: overlay(0.08)
+  readonly property color card: Colors.card_bg_color
   readonly property color cardHover: overlay(0.11)
   readonly property color hover: overlay(0.07)
   readonly property color selected: overlay(0.10)
@@ -31,7 +31,7 @@ Singleton {
   readonly property color button: overlay(0.10)
   readonly property color buttonHover: overlay(0.15)
   readonly property color trough: overlay(0.15)
-  readonly property color slider: Qt.tint(Colors.viewBg, overlay(0.8))
+  readonly property color slider: Qt.tint(Colors.view_bg_color, overlay(0.8))
 
   readonly property font body: Qt.font({ family: "Adwaita Sans", pointSize: 11 })
   readonly property font heading: Qt.font({ family: "Adwaita Sans", pointSize: 11, weight: Font.Bold })

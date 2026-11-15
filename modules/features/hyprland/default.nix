@@ -1,6 +1,6 @@
 root@{ inputs, lib, ... }:
 let
-  adw = root.config.palettes.adwaita;
+  adw = root.config.palettes.adwaita_dark;
   hex = lib.removePrefix "#";
 in
 {
@@ -94,10 +94,10 @@ in
               gaps_out = 15;
               col = {
                 # libadwaita's border: the foreground at 15%
-                inactive_border = "rgba(${hex adw.windowFg}26)";
-                active_border = "rgb(${hex adw.accentBg})";
-                nogroup_border = "rgb(${hex adw.warningBg})";
-                nogroup_border_active = "rgb(${hex adw.warning})";
+                inactive_border = "rgba(${hex adw.window_fg_color}26)";
+                active_border = "rgb(${hex adw.accent_bg_color})";
+                nogroup_border = "rgb(${hex adw.warning_bg_color})";
+                nogroup_border_active = "rgb(${hex adw.warning_color})";
               };
             };
 
@@ -123,7 +123,7 @@ in
               disable_splash_rendering = true;
               force_default_wallpaper = 0;
               focus_on_activate = true;
-              background_color = "0x${hex adw.windowBg}";
+              background_color = "0x${hex adw.window_bg_color}";
               on_focus_under_fullscreen = 0;
               middle_click_paste = false;
               disable_autoreload = true;

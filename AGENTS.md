@@ -126,7 +126,7 @@ importer changes behaviour through the aspect's own options or `lib.mkForce`.
 | Option | Type | Notes |
 | --- | --- | --- |
 | `identity` | `{ username, fullName, email }` | Primary user; read by `users`, `git`, `home-manager`, profiles. |
-| `palettes` | `attrsOf (attrsOf str)` | `adwaita` (libadwaita's dark named colours: quickshell, hyprland, hyprlock), `ui` (waybar), `adwaita_dark` (wezterm, tmux). |
+| `palettes` | `attrsOf (attrsOf str)` | `adwaita_dark` (libadwaita 1.9's dark style under its own names: every named colour, translucent ones as CSS `#rrggbbaa`, the accent swatches and the GNOME palette, plus ghostty's terminal colours; quickshell, hyprland, hyprlock, wezterm, tmux), `ui` (waybar). |
 | `hyprland.workspaces` | positive int | Workspaces per monitor; read by hyprsplit's config, the binds and waybar's labels. |
 | `nixosHosts.<name>` | submodule `{ system }` | Drives `flake.nixosConfigurations`. |
 | `systems` | `listOf str` | Option default `[ ]`; `per-system.nix` defines `[ "x86_64-linux" "aarch64-darwin" ]`. Drives `perSystem`. |
@@ -255,17 +255,21 @@ Notes on specific features:
     all share: `Theme` and `Panels`, the one open panel by name: opening any
     panel (a picker, the notification center, later the bar's) closes the
     others, and any IPC `close` closes whichever is open.
-    - `Theme` is libadwaita's dark style 1:1, unscaled: its named colours
-      (`palettes.adwaita`, popover surfaces), hover/selection/card/border as
-      the foreground at libadwaita's alphas over any surface, its type scale
-      as `font` values (`Theme.body`, `heading`, `caption`, `title4`, …;
-      Adwaita Sans at GTK's 11pt) and its radii (button 9, card 12, window 15).
+    - `Theme` is libadwaita's dark style 1:1: its named colours
+      (`palettes.adwaita_dark`, `view_bg_color` surfaces), hover/selection/
+      border as the foreground at libadwaita's alphas over any surface, its
+      type scale as `font` values (`Theme.body`, `heading`, `caption`,
+      `title4`, …; Adwaita Sans at GTK's 11pt) and its radii (button 9, card
+      12, window 15). `shell.qml` sets `QT_SCALE_FACTOR=1.2` (an `Env`
+      pragma), Qt's own high-DPI scaling, so it all draws 1.2× and sharp;
+      apps and links the shell opens get the variable removed.
     - The shell is written like any Hyprland rice, so it works on other
       setups: the QML runs its tools by name from PATH (`cliphist`, `wl-copy`,
       `pw-play`, `notify-send`, `xdg-open`, `systemd-run`, `hyprmoncfg`,
       `wezterm`) rather than store paths, an exception to the rule above;
       `quickshell.nix` installs the ones no other feature does. The only Nix
-      in the QML is `palettes.adwaita` as the `Colors` singleton in a `qs.nix`
+      in the QML is `palettes.adwaita_dark` as the `Colors` singleton (translucent
+      colours turned into Qt's `#aarrggbb`) in a `qs.nix`
       module added to the store copy, so it only runs from the built copy
       (`programs.quickshell.configs.shell`), not the checkout. A new component
       is a directory with a `Scope` holding its `IpcHandler`, a line in

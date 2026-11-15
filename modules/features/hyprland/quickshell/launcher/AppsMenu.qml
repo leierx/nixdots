@@ -56,6 +56,8 @@ MenuWindow {
     Quickshell.execDetached({
       command: ["systemd-run", "--user", "--scope", "--quiet", ...command],
       workingDirectory: entry.workingDirectory,
+      // The shell's own scale, from shell.qml, is not the app's.
+      environment: ({ QT_SCALE_FACTOR: null }),
     });
   }
 }

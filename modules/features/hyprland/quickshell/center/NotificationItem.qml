@@ -150,6 +150,7 @@ Item {
           text: root.entry.notification.body.replace(/\n/g, " ")
           textFormat: Text.StyledText
           color: Theme.fg
+          linkColor: Theme.accent
           // Eliding StyledText takes wrapping to one line.
           wrapMode: Text.Wrap
           maximumLineCount: 1

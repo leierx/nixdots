@@ -62,7 +62,11 @@ Singleton {
   }
 
   function openUrl(url) {
-    Quickshell.execDetached(["systemd-run", "--user", "--scope", "--quiet", "xdg-open", url]);
+    Quickshell.execDetached({
+      command: ["systemd-run", "--user", "--scope", "--quiet", "xdg-open", url],
+      // The shell's own scale, from shell.qml, is not the browser's.
+      environment: ({ QT_SCALE_FACTOR: null }),
+    });
   }
 
   // The app's own sound if it sends one; low urgency is silent.

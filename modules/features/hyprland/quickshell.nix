@@ -9,6 +9,14 @@ root: {
     let
       inherit (lib.generators) mkLuaInline;
 
+      # Qt reads #aarrggbb where the palette has CSS's #rrggbbaa
+      qtColor =
+        value:
+        if lib.stringLength value == 9 then
+          "#${lib.substring 7 2 value}${lib.substring 1 6 value}"
+        else
+          value;
+
       colors = pkgs.writeText "Colors.qml" ''
         pragma Singleton
 
@@ -19,8 +27,8 @@ root: {
         ${
           lib.concatStrings (
             lib.mapAttrsToList (
-              name: value: "  readonly property color ${name}: ${builtins.toJSON value}\n"
-            ) root.config.palettes.adwaita
+              name: value: "  readonly property color ${name}: ${builtins.toJSON (qtColor value)}\n"
+            ) root.config.palettes.adwaita_dark
           )
         }}
       '';
