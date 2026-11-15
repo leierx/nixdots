@@ -155,6 +155,13 @@ Item {
           elide: Text.ElideRight
           font: Theme.body
         }
+
+        Text {
+          visible: !root.single
+          text: Notifs.age(root.entry.time)
+          color: Theme.fgDim
+          font: Theme.caption
+        }
       }
 
       // Expanded: the whole notification.

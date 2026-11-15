@@ -209,14 +209,15 @@ Item {
           }
         }
 
+        // A lone notification's summary and age, or the app's name and how
+        // many it sent; each of several shows its own age on its line.
         RowLayout {
           Layout.fillWidth: true
           Layout.minimumHeight: 24
-          spacing: 8
+          spacing: 6
 
-          // A lone notification's summary, or the app's name over several.
           Text {
-            Layout.fillWidth: true
+            Layout.fillWidth: root.single
             text: (root.single ? root.newest.notification.summary : root.newest?.notification.appName) || "Notification"
             textFormat: Text.PlainText
             color: root.single ? Theme.fg : Theme.fgDim
@@ -225,43 +226,26 @@ Item {
           }
 
           Text {
-            text: root.newest ? Notifs.age(root.newest.time) : ""
+            Layout.fillWidth: !root.single
+            text: root.single ? Notifs.age(root.newest.time) : root.shown.length
             color: Theme.fgDim
             font: Theme.caption
           }
 
-          // GTK's menu button: the count and the arrow, as libadwaita draws a
-          // label with an arrow; with no count it is an image button.
+          // A flat button: just the arrow, with a circle under the pointer.
           Rectangle {
-            implicitWidth: pill.implicitWidth
-            implicitHeight: 34
-            radius: Theme.buttonRadius
-            color: pillArea.containsMouse ? Theme.buttonHover : Theme.button
+            implicitWidth: 24
+            implicitHeight: 24
+            radius: height / 2
+            color: arrowArea.containsMouse ? Theme.buttonHover : "transparent"
 
-            Row {
-              id: pill
-
+            ExpanderArrow {
               anchors.centerIn: parent
-              leftPadding: root.single ? 9 : 10
-              rightPadding: root.single ? 9 : 10
-              spacing: 6
-
-              Text {
-                visible: !root.single
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.shown.length
-                color: Theme.fg
-                font: Theme.heading
-              }
-
-              ExpanderArrow {
-                anchors.verticalCenter: parent.verticalCenter
-                open: root.expanded
-              }
+              open: root.expanded
             }
 
             MouseArea {
-              id: pillArea
+              id: arrowArea
 
               anchors.fill: parent
               hoverEnabled: true
