@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import qs.common
+import qs.notifications
 import "swipe.js" as Swipe
 
 // The notification center, dropping down from the middle of the bar like
@@ -15,18 +16,11 @@ import "swipe.js" as Swipe
 PanelWindow {
   id: root
 
-  readonly property bool open: Panels.active === "notifications"
+  readonly property bool open: Panels.active === "center"
   // Apps in the order of their newest notification.
-  readonly property var apps: {
-    const keys = [];
-    for (const entry of Notifs.entries) {
-      const key = appKey(entry);
-      if (!keys.includes(key)) keys.push(key);
-    }
-    return keys;
-  }
-  readonly property int listWidth: Theme.px(420)
-  readonly property int maxListHeight: Theme.px(520)
+  readonly property var apps: [...new Set(Notifs.entries.map(entry => root.appKey(entry)))]
+  readonly property int padding: 12
+  readonly property int maxListHeight: 520
 
   // After the closing animation, for the loader to unload it.
   signal hidden()
@@ -63,7 +57,7 @@ PanelWindow {
   mask: open ? null : nothing
 
   WlrLayershell.layer: WlrLayer.Overlay
-  WlrLayershell.namespace: "quickshell:notification-center"
+  WlrLayershell.namespace: "quickshell:center"
   WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
   Region {
@@ -106,7 +100,7 @@ PanelWindow {
     NumberAnimation {
       target: slide
       property: "y"
-      to: -Theme.px(12)
+      to: -12
       duration: 120
       easing.type: Easing.InCubic
     }
@@ -118,47 +112,52 @@ PanelWindow {
     onClicked: Panels.close()
   }
 
-  component Toggle: Rectangle {
+  // libadwaita's switch.
+  component Switch: Rectangle {
     id: toggle
 
     property bool checked: false
 
     signal clicked()
 
-    implicitWidth: Theme.px(44)
-    implicitHeight: Theme.px(24)
+    implicitWidth: 46
+    implicitHeight: 26
     radius: height / 2
-    color: checked ? Theme.accent : Theme.selected
+    color: checked ? Theme.accentBg : Theme.trough
 
     Behavior on color {
       ColorAnimation {
-        duration: 150
+        duration: 200
       }
     }
 
     Rectangle {
-      x: toggle.checked ? toggle.width - width - Theme.px(3) : Theme.px(3)
+      x: toggle.checked ? toggle.width - width - 3 : 3
       anchors.verticalCenter: parent.verticalCenter
-      width: toggle.height - Theme.px(6)
-      height: width
+      width: 20
+      height: 20
       radius: width / 2
-      color: Theme.fg
+      color: toggle.checked || area.containsMouse ? Theme.fg : Theme.slider
 
       Behavior on x {
         NumberAnimation {
-          duration: 150
+          duration: 200
           easing.type: Easing.OutCubic
         }
       }
     }
 
     MouseArea {
+      id: area
+
       anchors.fill: parent
+      hoverEnabled: true
       cursorShape: Qt.PointingHandCursor
       onClicked: toggle.clicked()
     }
   }
 
+  // libadwaita's text button.
   component Button: Rectangle {
     id: button
 
@@ -166,20 +165,17 @@ PanelWindow {
 
     signal clicked()
 
-    implicitWidth: label.implicitWidth + Theme.px(32)
-    implicitHeight: Theme.px(32)
-    radius: Theme.px(8)
-    color: area.containsMouse ? Theme.selected : Theme.raised
+    implicitWidth: label.implicitWidth + 34
+    implicitHeight: 34
+    radius: Theme.buttonRadius
+    color: area.containsMouse ? Theme.buttonHover : Theme.button
 
     Text {
       id: label
 
       anchors.centerIn: parent
       color: Theme.fg
-      font {
-        family: Theme.fontFamily
-        pixelSize: Theme.fontBody
-      }
+      font: Theme.heading
     }
 
     MouseArea {
@@ -200,18 +196,18 @@ PanelWindow {
       topMargin: Theme.gap
       horizontalCenter: parent.horizontalCenter
     }
-    width: columns.implicitWidth + Theme.padding * 2
-    height: columns.implicitHeight + Theme.padding * 2
-    radius: Theme.radius * 1.5
+    width: columns.implicitWidth + root.padding * 2
+    height: columns.implicitHeight + root.padding * 2
+    radius: Theme.windowRadius
     color: Theme.bg
     border.width: 1
-    border.color: Theme.border
+    border.color: Theme.outline
     opacity: 0
     focus: true
     transform: Translate {
       id: slide
 
-      y: -Theme.px(12)
+      y: -12
     }
 
     Keys.onEscapePressed: Panels.close()
@@ -227,19 +223,19 @@ PanelWindow {
       anchors {
         top: parent.top
         left: parent.left
-        margins: Theme.padding
+        margins: root.padding
       }
-      spacing: Theme.padding
+      spacing: root.padding
 
       ColumnLayout {
         Layout.alignment: Qt.AlignTop
-        Layout.preferredWidth: root.listWidth
-        spacing: Theme.padding
+        Layout.preferredWidth: 420
+        spacing: root.padding
 
         Item {
           Layout.fillWidth: true
           // As tall as the calendar at least, so the panel keeps its shape.
-          Layout.preferredHeight: Math.max(calendar.implicitHeight - footer.implicitHeight - Theme.padding, Math.min(list.contentHeight, root.maxListHeight))
+          Layout.preferredHeight: Math.max(calendar.implicitHeight - footer.implicitHeight - root.padding, Math.min(list.contentHeight, root.maxListHeight))
 
           ListView {
             id: list
@@ -249,7 +245,7 @@ PanelWindow {
             property real swipeDistance: 0
 
             anchors.fill: parent
-            spacing: Theme.px(8)
+            spacing: 8
             clip: true
             flickableDirection: Flickable.VerticalFlick
             maximumFlickVelocity: 3500
@@ -265,7 +261,7 @@ PanelWindow {
 
               width: ListView.view.width
               entries: Notifs.entries.filter(entry => root.appKey(entry) === modelData)
-              lean: Swipe.lean(index, list.swiped, list.swipeDistance, Theme.px(70))
+              lean: Swipe.lean(index, list.swiped, list.swipeDistance, 70)
               onSwipeMoved: distance => {
                 list.swiped = index;
                 list.swipeDistance = distance;
@@ -324,10 +320,10 @@ PanelWindow {
               const top = list.originY;
               const bottom = top + Math.max(0, list.contentHeight - list.height);
               const from = scroll.running ? scroll.to : list.contentY;
-              const to = from - wheel.angleDelta.y / 120 * Theme.px(120);
+              const to = from - wheel.angleDelta.y;
               if ((to < top && list.contentY <= top) || (to > bottom && list.contentY >= bottom)) {
                 bounce.edge = to < top ? top : bottom;
-                bounce.overshoot = to < top ? -Theme.px(36) : Theme.px(36);
+                bounce.overshoot = to < top ? -36 : 36;
                 if (!bounce.running) bounce.restart();
                 return;
               }
@@ -372,12 +368,12 @@ PanelWindow {
           Rectangle {
             anchors.right: parent.right
             y: list.visibleArea.yPosition * list.height
-            width: Theme.px(4)
+            width: 4
             height: list.visibleArea.heightRatio * list.height
             radius: width / 2
             color: Theme.fgDim
             visible: list.contentHeight > list.height
-            opacity: list.moving || scroll.running ? 0.8 : 0
+            opacity: list.moving || scroll.running ? 1 : 0
 
             Behavior on opacity {
               NumberAnimation {
@@ -391,11 +387,7 @@ PanelWindow {
             visible: Notifs.entries.length === 0
             text: "No Notifications"
             color: Theme.fgDim
-            font {
-              family: Theme.fontFamily
-              pixelSize: Theme.fontTitle
-              weight: Font.DemiBold
-            }
+            font: Theme.title4
           }
         }
 
@@ -403,20 +395,16 @@ PanelWindow {
           id: footer
 
           Layout.fillWidth: true
-          Layout.leftMargin: Theme.px(4)
-          spacing: Theme.px(10)
+          Layout.leftMargin: 6
+          spacing: 12
 
           Text {
             text: "Do Not Disturb"
             color: Theme.fg
-            font {
-              family: Theme.fontFamily
-              pixelSize: Theme.fontBody
-              weight: Font.DemiBold
-            }
+            font: Theme.body
           }
 
-          Toggle {
+          Switch {
             checked: Notifs.dnd
             onClicked: Notifs.dnd = !Notifs.dnd
           }

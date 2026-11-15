@@ -126,7 +126,7 @@ importer changes behaviour through the aspect's own options or `lib.mkForce`.
 | Option | Type | Notes |
 | --- | --- | --- |
 | `identity` | `{ username, fullName, email }` | Primary user; read by `users`, `git`, `home-manager`, profiles. |
-| `palettes` | `attrsOf (attrsOf str)` | `ui` (quickshell, waybar, hyprland, hyprlock), `adwaita_dark` (wezterm, tmux). |
+| `palettes` | `attrsOf (attrsOf str)` | `adwaita` (libadwaita's dark named colours: quickshell, hyprland, hyprlock), `ui` (waybar), `adwaita_dark` (wezterm, tmux). |
 | `hyprland.workspaces` | positive int | Workspaces per monitor; read by hyprsplit's config, the binds and waybar's labels. |
 | `nixosHosts.<name>` | submodule `{ system }` | Drives `flake.nixosConfigurations`. |
 | `systems` | `listOf str` | Option default `[ ]`; `per-system.nix` defines `[ "x86_64-linux" "aarch64-darwin" ]`. Drives `perSystem`. |
@@ -245,23 +245,27 @@ Notes on specific features:
     appends hyprmoncfg's `dofile` include itself with `lib.mkAfter`; it must stay
     the file's last line.
   - The desktop components (SUPER+D apps, SUPER+V clipboard, SUPER+P monitor
-    layouts, SUPER+N notifications) are a [Quickshell](https://quickshell.org)
+    layouts, SUPER+N notification center) are a [Quickshell](https://quickshell.org)
     shell in `quickshell/`, wired by `quickshell.nix`: one `quickshell.service`
     session daemon (restarted when the shell changes, via `X-Restart-Triggers`).
     Quickshell comes from `pkgs.unstable` (0.3.2), since 0.3.1 fixed crashes on
     freed objects in a `ScriptModel`, which the notification lists hold. Each
-    component is its own directory owning its windows, widgets and IPC target,
-    and `shell.qml` only instantiates them; `common/` holds what all share,
-    `Theme` (colours, fonts, `px()`, spacing; a size used by one component lives
-    in it) and `Panels`, the one open panel by name: opening any panel (a
-    picker, the notification center, later the bar's) closes the others, and
-    any IPC `close` closes whichever is open.
+    component is its own directory owning its windows, widgets, sizes and IPC
+    target, and `shell.qml` only instantiates them; `common/` holds only what
+    all share: `Theme` and `Panels`, the one open panel by name: opening any
+    panel (a picker, the notification center, later the bar's) closes the
+    others, and any IPC `close` closes whichever is open.
+    - `Theme` is libadwaita's dark style 1:1, unscaled: its named colours
+      (`palettes.adwaita`, popover surfaces), hover/selection/card/border as
+      the foreground at libadwaita's alphas over any surface, its type scale
+      as `font` values (`Theme.body`, `heading`, `caption`, `title4`, …;
+      Adwaita Sans at GTK's 11pt) and its radii (button 9, card 12, window 15).
     - The shell is written like any Hyprland rice, so it works on other
       setups: the QML runs its tools by name from PATH (`cliphist`, `wl-copy`,
       `pw-play`, `notify-send`, `xdg-open`, `systemd-run`, `hyprmoncfg`,
       `wezterm`) rather than store paths, an exception to the rule above;
       `quickshell.nix` installs the ones no other feature does. The only Nix
-      in the QML is `palettes.ui` as the `Colors` singleton in a `qs.nix`
+      in the QML is `palettes.adwaita` as the `Colors` singleton in a `qs.nix`
       module added to the store copy, so it only runs from the built copy
       (`programs.quickshell.configs.shell`), not the checkout. A new component
       is a directory with a `Scope` holding its `IpcHandler`, a line in
@@ -273,36 +277,43 @@ Notes on specific features:
       `LazyLoader` in `Launcher.qml`. Apps start in their own
       `systemd-run --user --scope`, so restarting the service leaves them
       running. Hyprland's `quickshell:launcher` layer rule dims behind it.
-    - `notifications/` is the notification daemon (no mako): `Notifs.qml` owns
-      `org.freedesktop.Notifications` and keeps every notification until it is
-      dismissed. Popups stack top right on the monitor focused when each
-      arrived, below the bar, sliding in and out; the app's timeout or 8 s,
-      critical never, hovering holds it; click runs the default action, right
-      click or a swipe dismisses; more than three actions fold into a "More"
-      dropdown. The center (`qs ipc -c shell call notifications toggle`) is
-      GNOME's layout, dropping down from the middle of the bar with a short
-      fade and slide: notifications on the left, a Do Not Disturb switch and
-      Clear below, and `Calendar.qml` on the right (locale's first weekday,
-      ISO week numbers, arrows or wheel for months, the date returns to
-      today). Notifications are grouped per app the way end-4's dots do
-      (`NotificationGroup`, `NotificationItem`): one card with the app's icon,
-      name, latest time and a count pill over its two newest notifications a
-      line each; expanded, each gets an inset card with its image, whole body
-      and actions. Left click expands (or runs a lone notification's default
-      action), right click expands and collapses, middle click or a swipe
-      dismisses the group, or once expanded, one notification; while one is
-      swiped its neighbours lean along (`swipe.js`). Mouse only, and unlike
-      the pickers it is smooth: the list drags and flicks with Qt's overshoot,
-      a wheel notch glides 150 px (Qt's own moves the 15 px Wayland reports)
-      and bounces at the ends, and groups animate their height. Escape or a
-      click outside closes it. Do not disturb is saved in
-      Quickshell's state dir and lets only critical notifications pop up.
-      Sounds are elementary OS's (Unlicense) in `sounds/`, played with
-      `pw-play` (Quickshell has no QtMultimedia) when a popup shows; low
-      urgency is silent, and `suppress-sound` and `sound-file` hints are
-      honoured. Scripts use `qs ipc -c shell call notifications
+    - `notifications/` is the notification daemon (no mako) and its popups:
+      `Notifs.qml` owns `org.freedesktop.Notifications` and keeps every
+      notification as a `NotifEntry` until it is dismissed; the entry holds a
+      `RetainableLock` and outlives the close by a second, so views slide a
+      closed notification away whole. Popups stack top right on the monitor
+      focused when each arrived, below the bar, sliding in and out (the
+      window stays mapped with an empty input region, so the last one does
+      too); the app's timeout or 8 s, critical never, hovering holds it;
+      click runs the default action, right or middle click or a swipe towards
+      the edge dismisses; more than three actions fold into a "More" dropdown.
+      `NotificationActions`, `NotificationImage` and `SwipeArea` are shared
+      with the center. Do not disturb is saved in Quickshell's state dir and
+      lets only critical notifications pop up. Sounds are elementary OS's
+      (Unlicense) in `sounds/`, played with `pw-play` (Quickshell has no
+      QtMultimedia) when a popup shows; low urgency is silent, and
+      `suppress-sound` and `sound-file` hints are honoured. Scripts use
+      `qs ipc -c shell call notifications
       <toggleDnd|setDnd|dnd|count|clear|hidePopups>`. History lives in memory;
       a restart of the service empties it, by design.
+    - `center/` is the notification center (`qs ipc -c shell call center
+      toggle`), GNOME's layout, dropping down from the middle of the bar with
+      a short fade and slide: notifications on the left, a Do Not Disturb
+      switch and Clear below, and `Calendar.qml` on the right (locale's first
+      weekday, ISO week numbers, arrows or wheel for months, the date returns
+      to today). Opening it puts the popups away. Notifications are grouped
+      per app the way end-4's dots do (`NotificationGroup`,
+      `NotificationItem`): one card with the app's icon, name, latest time and
+      a count pill over its two newest notifications a line each; expanded,
+      each gets an inset card with its image, whole body and actions. Left
+      click expands (or runs a lone notification's default action), right
+      click expands and collapses, middle click or a swipe dismisses the
+      group, or once expanded, one notification; while one is swiped its
+      neighbours lean along (`swipe.js`). Mouse only, and unlike the pickers
+      it is smooth: the list drags and flicks with Qt's overshoot, a wheel
+      notch glides 120 px (Qt's own moves the 15 px Wayland reports) and
+      bounces at the ends, and groups animate their height. Escape or a click
+      outside closes it.
   - hyprlock talks to fprintd itself (`auth:fingerprint`, on when
     `services.fprintd` is), so the NixOS half turns `fprintAuth` off for
     hyprlock's PAM service.

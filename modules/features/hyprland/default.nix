@@ -1,6 +1,6 @@
 root@{ inputs, lib, ... }:
 let
-  ui = root.config.palettes.ui;
+  adw = root.config.palettes.adwaita;
   hex = lib.removePrefix "#";
 in
 {
@@ -93,20 +93,11 @@ in
               gaps_in = 10;
               gaps_out = 15;
               col = {
-                inactive_border = "rgb(${hex ui.unfocusedBorderColor})";
-                active_border = {
-                  colors = [
-                    "rgb(${hex ui.green})"
-                    "rgb(${hex ui.green})"
-                    "rgb(${hex ui.green})"
-                    "rgb(${hex ui.focusedBorderColor})"
-                    "rgb(${hex ui.focusedBorderColor})"
-                    "rgb(${hex ui.focusedBorderColor})"
-                  ];
-                  angle = 30;
-                };
-                nogroup_border = "rgb(${hex ui.magenta})";
-                nogroup_border_active = "rgb(${hex ui.magentaLight})";
+                # libadwaita's border: the foreground at 15%
+                inactive_border = "rgba(${hex adw.windowFg}26)";
+                active_border = "rgb(${hex adw.accentBg})";
+                nogroup_border = "rgb(${hex adw.warningBg})";
+                nogroup_border_active = "rgb(${hex adw.warning})";
               };
             };
 
@@ -132,7 +123,7 @@ in
               disable_splash_rendering = true;
               force_default_wallpaper = 0;
               focus_on_activate = true;
-              background_color = "0x${hex ui.bg1}";
+              background_color = "0x${hex adw.windowBg}";
               on_focus_under_fullscreen = 0;
               middle_click_paste = false;
               disable_autoreload = true;

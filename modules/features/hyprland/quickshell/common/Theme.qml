@@ -4,38 +4,53 @@ import QtQuick
 import Quickshell
 import qs.nix
 
-// The colours, fonts and spacing every part of the shell draws with. Sizes
-// that belong to one part live in that part.
+// libadwaita's dark style, 1:1: its named colours, the foreground overlays it
+// draws states with, its type scale and its radii. Sizes that belong to one
+// component live in that component.
 Singleton {
-  readonly property color bg: Colors.bg1
-  readonly property color raised: Colors.bg2
-  readonly property color selected: Colors.bg3
-  // Hover on something already selected.
-  readonly property color highlight: Colors.bg4
-  readonly property color border: Colors.bg3
-  readonly property color fg: Colors.fg
-  readonly property color fgDim: Colors.gray
-  readonly property color fgSoft: Colors.grayLight
-  readonly property color accent: Colors.primaryColor
-  readonly property color urgent: Colors.red
+  id: root
 
-  // Sizes are written for 1920×1080; this enlarges them all.
-  readonly property real scale: 1.25
+  // Every shell surface floats over windows, like a popover.
+  readonly property color bg: Colors.popoverBg
+  readonly property color fg: Colors.popoverFg
+  readonly property color fgDim: overlay(0.55)
+  readonly property color accentBg: Colors.accentBg
+  readonly property color accentFg: Colors.accentFg
+  // For text and lines on bg, where accentBg is too dark.
+  readonly property color accent: Colors.accent
+  readonly property color destructiveBg: Colors.destructiveBg
+  readonly property color destructive: Colors.destructive
 
-  function px(size) {
-    return Math.round(size * scale);
+  readonly property color outline: overlay(0.07)
+  readonly property color border: overlay(0.15)
+  readonly property color card: overlay(0.08)
+  readonly property color cardHover: overlay(0.11)
+  readonly property color hover: overlay(0.07)
+  readonly property color selected: overlay(0.10)
+  readonly property color selectedHover: overlay(0.13)
+  readonly property color button: overlay(0.10)
+  readonly property color buttonHover: overlay(0.15)
+  readonly property color trough: overlay(0.15)
+  readonly property color slider: Qt.tint(Colors.viewBg, overlay(0.8))
+
+  readonly property font body: Qt.font({ family: "Adwaita Sans", pointSize: 11 })
+  readonly property font heading: Qt.font({ family: "Adwaita Sans", pointSize: 11, weight: Font.Bold })
+  readonly property font caption: Qt.font({ family: "Adwaita Sans", pointSize: 9 })
+  readonly property font captionHeading: Qt.font({ family: "Adwaita Sans", pointSize: 9, weight: Font.Bold })
+  readonly property font title4: Qt.font({ family: "Adwaita Sans", pointSize: 13, weight: Font.Bold })
+  readonly property font title2: Qt.font({ family: "Adwaita Sans", pointSize: 15, weight: Font.ExtraBold })
+  // For ▾, which Adwaita Sans lacks.
+  readonly property font glyph: Qt.font({ family: "Adwaita Mono", pointSize: 9 })
+
+  readonly property int buttonRadius: 9
+  readonly property int cardRadius: 12
+  readonly property int windowRadius: 15
+
+  // Between a surface and the screen's edge or the bar.
+  readonly property int gap: 10
+
+  // The foreground over whatever lies below, as libadwaita mixes currentColor.
+  function overlay(alpha: real): color {
+    return Qt.rgba(root.fg.r, root.fg.g, root.fg.b, alpha);
   }
-
-  readonly property string fontFamily: "Adwaita Sans"
-  // For ▾ and ▴, which Adwaita Sans lacks.
-  readonly property string glyphFamily: "Adwaita Mono"
-  readonly property int fontLarge: px(19)
-  readonly property int fontTitle: px(16)
-  readonly property int fontBody: px(14)
-  readonly property int fontSmall: px(12)
-
-  readonly property int radius: px(12)
-  readonly property int padding: px(12)
-  // Between a window and the screen's edge or the bar.
-  readonly property int gap: px(10)
 }

@@ -17,14 +17,14 @@ ColumnLayout {
   property date month: new Date(today.getFullYear(), today.getMonth(), 1)
 
   // The six weeks shown, from the first day of the week holding the 1st.
-  readonly property var days: {
+  readonly property var weeks: {
     const lead = (month.getDay() - locale.firstDayOfWeek + 7) % 7;
-    return Array.from({ length: 42 }, (_, i) => new Date(month.getFullYear(), month.getMonth(), 1 - lead + i));
+    return Array.from({ length: 6 }, (_, week) => Array.from({ length: 7 }, (_, day) => new Date(month.getFullYear(), month.getMonth(), 1 - lead + week * 7 + day)));
   }
 
-  readonly property int cell: Theme.px(36)
+  readonly property int cell: 36
 
-  spacing: Theme.px(4)
+  spacing: 4
 
   function shift(months) {
     month = new Date(month.getFullYear(), month.getMonth() + months, 1);
@@ -57,17 +57,14 @@ ColumnLayout {
     implicitWidth: root.cell
     implicitHeight: root.cell
     radius: width / 2
-    color: area.containsMouse ? Theme.selected : "transparent"
+    color: area.containsMouse ? Theme.buttonHover : "transparent"
 
     Text {
       id: label
 
       anchors.centerIn: parent
       color: Theme.fg
-      font {
-        family: Theme.fontFamily
-        pixelSize: Theme.fontLarge
-      }
+      font: Theme.title4
     }
 
     MouseArea {
@@ -80,29 +77,28 @@ ColumnLayout {
     }
   }
 
+  component Cell: Text {
+    width: root.cell
+    height: root.cell
+    horizontalAlignment: Text.AlignHCenter
+    verticalAlignment: Text.AlignVCenter
+  }
+
   ColumnLayout {
-    Layout.leftMargin: Theme.px(8)
-    Layout.bottomMargin: Theme.px(8)
+    Layout.leftMargin: 8
+    Layout.bottomMargin: 8
     spacing: 0
 
     Text {
       text: root.locale.toString(root.today, "dddd")
       color: Theme.fgDim
-      font {
-        family: Theme.fontFamily
-        pixelSize: Theme.fontBody
-        weight: Font.DemiBold
-      }
+      font: Theme.heading
     }
 
     Text {
       text: root.locale.toString(root.today, "d MMMM yyyy")
       color: Theme.fg
-      font {
-        family: Theme.fontFamily
-        pixelSize: Theme.fontLarge
-        weight: Font.Bold
-      }
+      font: Theme.title2
 
       MouseArea {
         anchors.fill: parent
@@ -125,11 +121,7 @@ ColumnLayout {
       horizontalAlignment: Text.AlignHCenter
       text: root.locale.toString(root.month, root.month.getFullYear() === root.today.getFullYear() ? "MMMM" : "MMMM yyyy")
       color: Theme.fg
-      font {
-        family: Theme.fontFamily
-        pixelSize: Theme.fontBody
-        weight: Font.DemiBold
-      }
+      font: Theme.heading
     }
 
     Arrow {
@@ -138,78 +130,82 @@ ColumnLayout {
     }
   }
 
-  Grid {
-    columns: 8
-    rowSpacing: Theme.px(2)
+  Column {
+    spacing: 2
 
-    // The corner above the week numbers.
-    Item {
-      width: root.cell
-      height: root.cell
-    }
-
-    Repeater {
-      model: 7
-
-      Text {
-        required property int index
-
+    Row {
+      // The corner above the week numbers.
+      Item {
         width: root.cell
         height: root.cell
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
-        text: root.locale.dayName((root.locale.firstDayOfWeek + index) % 7, Locale.NarrowFormat)
-        color: Theme.fgDim
-        font {
-          family: Theme.fontFamily
-          pixelSize: Theme.fontSmall
-          weight: Font.DemiBold
+      }
+
+      Repeater {
+        model: 7
+
+        Cell {
+          required property int index
+
+          text: root.locale.dayName((root.locale.firstDayOfWeek + index) % 7, Locale.NarrowFormat)
+          color: Theme.fgDim
+          font: Theme.captionHeading
         }
       }
     }
 
     Repeater {
-      model: 48
+      model: root.weeks
 
-      Item {
-        id: cell
+      Row {
+        id: week
 
-        required property int index
+        required property var modelData
 
-        readonly property bool isWeek: index % 8 === 0
-        readonly property date day: root.days[index - Math.floor(index / 8) - 1] ?? new Date()
-        readonly property bool inMonth: day.getMonth() === root.month.getMonth()
-        readonly property bool isToday: !isWeek && root.sameDay(day, root.today)
+        Item {
+          width: root.cell
+          height: root.cell
 
-        width: root.cell
-        height: root.cell
+          Rectangle {
+            anchors.centerIn: parent
+            width: 26
+            height: 22
+            radius: 6
+            color: Theme.card
+          }
 
-        Rectangle {
-          anchors.centerIn: parent
-          width: cell.isWeek ? Theme.px(26) : parent.width
-          height: cell.isWeek ? Theme.px(22) : parent.height
-          radius: cell.isWeek ? Theme.px(6) : width / 2
-          color: cell.isWeek ? Theme.raised : cell.isToday ? Theme.accent : dayArea.containsMouse ? Theme.selected : "transparent"
-        }
-
-        Text {
-          anchors.centerIn: parent
-          // The week of the row's Monday, wherever the locale starts it.
-          text: cell.isWeek ? root.isoWeek(root.days[index - Math.floor(index / 8) + (8 - root.locale.firstDayOfWeek) % 7]) : cell.day.getDate()
-          color: cell.isWeek || !cell.inMonth ? Theme.fgDim : Theme.fg
-          font {
-            family: Theme.fontFamily
-            pixelSize: cell.isWeek ? Theme.fontSmall : Theme.fontBody
-            weight: cell.isToday ? Font.Bold : Font.Normal
+          Cell {
+            // The week of the row's Monday, wherever the locale starts it.
+            text: root.isoWeek(week.modelData[(8 - root.locale.firstDayOfWeek) % 7])
+            color: Theme.fgDim
+            font: Theme.caption
           }
         }
 
-        MouseArea {
-          id: dayArea
+        Repeater {
+          model: week.modelData
 
-          anchors.fill: parent
-          enabled: !cell.isWeek
-          hoverEnabled: true
+          Item {
+            id: day
+
+            required property date modelData
+            readonly property bool isToday: root.sameDay(modelData, root.today)
+
+            width: root.cell
+            height: root.cell
+
+            Rectangle {
+              anchors.fill: parent
+              radius: width / 2
+              color: Theme.accentBg
+              visible: day.isToday
+            }
+
+            Cell {
+              text: day.modelData.getDate()
+              color: day.isToday ? Theme.accentFg : day.modelData.getMonth() === root.month.getMonth() ? Theme.fg : Theme.fgDim
+              font: day.isToday ? Theme.heading : Theme.body
+            }
+          }
         }
       }
     }

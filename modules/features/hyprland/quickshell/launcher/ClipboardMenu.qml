@@ -8,7 +8,7 @@ MenuWindow {
 
   property var entries: []
 
-  cardWidth: Theme.px(960)
+  cardWidth: 960
   fullHeight: list.fullHeight
 
   MenuCommand {

@@ -7,7 +7,8 @@ import qs.common
 
 // Popups stacked in the top right corner, below the bar, newest on top. Each
 // stays on the monitor that was focused when it arrived. Only the cards take
-// clicks; the rest of the column passes them through to the windows below.
+// clicks; the rest of the window passes them through to the windows below.
+// The window stays mapped while empty, so the last popup still slides out.
 Variants {
   model: Quickshell.screens
 
@@ -15,16 +16,14 @@ Variants {
     id: window
 
     required property ShellScreen modelData
-    readonly property var popups: Notifs.popups.filter(e => e.screen === modelData.name)
 
     screen: modelData
-    visible: popups.length > 0
     anchors {
       top: true
       right: true
       bottom: true
     }
-    implicitWidth: Theme.px(400) + Theme.gap * 2
+    implicitWidth: 400 + Theme.gap * 2
     exclusiveZone: 0
     color: "transparent"
     mask: Region {
@@ -43,7 +42,7 @@ Variants {
       spacing: Theme.gap
       interactive: false
       model: ScriptModel {
-        values: window.popups
+        values: Notifs.popups.filter(e => e.screen === window.modelData.name)
       }
 
       delegate: NotificationCard {

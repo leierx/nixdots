@@ -28,7 +28,7 @@ Singleton {
   property date now: new Date()
 
   function wantsPopup(critical) {
-    return Panels.active !== "notifications" && (!dnd || critical);
+    return Panels.active !== "center" && (!dnd || critical);
   }
 
   function hidePopups() {
@@ -69,11 +69,10 @@ Singleton {
   function playSound(notification) {
     const hints = notification.hints;
     if (hints["suppress-sound"]) return;
-    const file = hints["sound-file"]?.replace(/^file:\/\//, "")
-      || ["", "sounds/notification.oga", "sounds/critical.ogg"][notification.urgency];
-    if (!file) return;
-    const path = file.startsWith("/") ? file : Qt.resolvedUrl(file).toString().replace(/^file:\/\//, "");
-    Quickshell.execDetached(["pw-play", path]);
+    const own = hints["sound-file"]?.replace(/^file:\/\//, "");
+    const ours = ["", "notification.oga", "critical.ogg"][notification.urgency];
+    const file = own || (ours && Quickshell.shellPath(`notifications/sounds/${ours}`));
+    if (file) Quickshell.execDetached(["pw-play", file]);
   }
 
   // The monitor a new popup goes to.
@@ -126,7 +125,7 @@ Singleton {
       const tag = notification.hints["x-canonical-private-synchronous"];
       if (tag) {
         for (const entry of root.entries.slice()) {
-          if (entry.notification.hints["x-canonical-private-synchronous"] === tag) entry.notification.dismiss();
+          if (entry.notification.hints["x-canonical-private-synchronous"] === tag) entry.notification.expire();
         }
       }
 
@@ -136,12 +135,13 @@ Singleton {
       });
       notification.closed.connect(() => {
         root.entries = root.entries.filter(e => e !== entry);
-        entry.destroy();
+        // Once the views have slid it away.
+        entry.destroy(1000);
       });
       root.entries = [entry, ...root.entries];
       entry.popup = root.wantsPopup(entry.critical);
       if (entry.popup) root.playSound(notification);
-      if (!entry.popup && notification.transient) notification.expire();
+      else if (notification.transient) notification.expire();
 
       for (const old of root.popups.slice(root.maxPopups)) old.popup = false;
     }

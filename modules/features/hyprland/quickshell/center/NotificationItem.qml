@@ -2,9 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import Quickshell.Services.Notifications
-import Quickshell.Widgets
 import qs.common
+import qs.notifications
 
 // One notification inside a group. Collapsed, a line of its summary and body;
 // expanded, a card of its own with the image, the whole body and the actions,
@@ -25,18 +24,14 @@ Item {
   signal swipeEnded()
   signal collapse()
 
-  readonly property Notification notification: entry?.notification ?? null
-  readonly property NotificationAction defaultAction: notification?.actions.find(a => a.identifier === "default") ?? null
-  readonly property var progress: notification?.hints.value
   readonly property bool boxed: expanded && !single
-  readonly property int pad: Theme.px(10)
-  readonly property int imageSize: Theme.px(40)
+  readonly property int pad: 12
 
   implicitHeight: box.height
 
   function slideAway(left) {
     box.x = box.x;
-    away.to = (left ? -1 : 1) * (width + Theme.px(20));
+    away.to = (left ? -1 : 1) * (width + 20);
     away.start();
   }
 
@@ -47,7 +42,7 @@ Item {
     property: "x"
     duration: 200
     easing.type: Easing.InCubic
-    onFinished: root.notification.dismiss()
+    onFinished: root.entry.notification.dismiss()
   }
 
   SwipeArea {
@@ -68,8 +63,8 @@ Item {
         root.slideAway(false);
       } else if (button === Qt.RightButton) {
         root.collapse();
-      } else if (root.defaultAction) {
-        root.defaultAction.invoke();
+      } else if (root.entry.defaultAction) {
+        root.entry.defaultAction.invoke();
         Panels.close();
       }
     }
@@ -81,11 +76,11 @@ Item {
     x: root.lean
     width: root.width
     height: content.implicitHeight + (root.boxed ? root.pad * 2 : 0)
-    radius: Theme.px(8)
-    color: !root.boxed ? "transparent" : hover.hovered ? Theme.highlight : Theme.selected
-    border.width: root.boxed && root.entry?.critical ? 1 : 0
-    border.color: Theme.urgent
-    opacity: root.dimmed ? 0.5 : 1
+    radius: Theme.buttonRadius
+    color: !root.boxed ? "transparent" : hover.hovered ? Theme.cardHover : Theme.card
+    border.width: root.boxed && root.entry.critical ? 1 : 0
+    border.color: Theme.destructive
+    opacity: root.dimmed ? 0.55 : 1
     clip: true
 
     Behavior on x {
@@ -120,7 +115,7 @@ Item {
       id: hover
 
       enabled: root.expanded
-      cursorShape: root.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
+      cursorShape: root.entry.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     }
 
     ColumnLayout {
@@ -132,41 +127,34 @@ Item {
         right: parent.right
         margins: root.boxed ? root.pad : 0
       }
-      spacing: Theme.px(8)
+      spacing: 8
 
       // Collapsed: summary and body on one line.
       RowLayout {
-        visible: !root.expanded && !(root.single && !root.notification?.body)
+        visible: !root.expanded && !(root.single && root.entry.notification.body === "")
         Layout.fillWidth: true
-        spacing: Theme.px(8)
+        spacing: 8
 
         Text {
           visible: !root.single
           Layout.maximumWidth: content.width * 0.6
-          text: root.notification?.summary ?? ""
+          text: root.entry.notification.summary
           textFormat: Text.PlainText
           color: Theme.fg
           elide: Text.ElideRight
-          font {
-            family: Theme.fontFamily
-            pixelSize: Theme.fontBody
-            weight: Font.DemiBold
-          }
+          font: Theme.heading
         }
 
         Text {
           Layout.fillWidth: true
-          text: (root.notification?.body ?? "").replace(/\n/g, " ")
+          text: root.entry.notification.body.replace(/\n/g, " ")
           textFormat: Text.StyledText
-          color: Theme.fgSoft
+          color: Theme.fg
           // Eliding StyledText takes wrapping to one line.
           wrapMode: Text.Wrap
           maximumLineCount: 1
           elide: Text.ElideRight
-          font {
-            family: Theme.fontFamily
-            pixelSize: Theme.fontBody
-          }
+          font: Theme.body
         }
       }
 
@@ -174,62 +162,41 @@ Item {
       RowLayout {
         visible: root.expanded
         Layout.fillWidth: true
-        spacing: Theme.px(10)
+        spacing: 12
 
-        ClippingRectangle {
+        NotificationImage {
           // A lone notification's image is the group's icon.
-          visible: !root.single && !!root.notification?.image
+          visible: !root.single && source != ""
           Layout.alignment: Qt.AlignTop
-          implicitWidth: root.imageSize
-          implicitHeight: root.imageSize
-          radius: Theme.px(8)
-          color: "transparent"
-
-          Image {
-            anchors.fill: parent
-            source: root.single ? "" : root.notification?.image ?? ""
-            sourceSize {
-              width: root.imageSize * 2
-              height: root.imageSize * 2
-            }
-            fillMode: Image.PreserveAspectCrop
-            // The image provider reuses URLs for different notifications.
-            cache: false
-          }
+          source: root.single ? "" : root.entry.notification.image
+          radius: Theme.buttonRadius
         }
 
         ColumnLayout {
           Layout.fillWidth: true
-          spacing: Theme.px(2)
+          spacing: 2
 
           RowLayout {
             visible: !root.single
             Layout.fillWidth: true
-            spacing: Theme.px(8)
+            spacing: 8
 
             Text {
               Layout.fillWidth: true
-              text: root.notification?.summary ?? ""
+              text: root.entry.notification.summary
               textFormat: Text.PlainText
               color: Theme.fg
               wrapMode: Text.Wrap
               maximumLineCount: 2
               elide: Text.ElideRight
-              font {
-                family: Theme.fontFamily
-                pixelSize: Theme.fontBody
-                weight: Font.DemiBold
-              }
+              font: Theme.heading
             }
 
             Text {
               Layout.alignment: Qt.AlignTop
-              text: Notifs.age(root.entry?.time ?? Notifs.now)
+              text: Notifs.age(root.entry.time)
               color: Theme.fgDim
-              font {
-                family: Theme.fontFamily
-                pixelSize: Theme.fontSmall
-              }
+              font: Theme.caption
             }
           }
 
@@ -238,15 +205,12 @@ Item {
 
             Layout.fillWidth: true
             visible: text !== ""
-            text: root.notification?.body ?? ""
+            text: root.entry.notification.body
             textFormat: Text.StyledText
-            color: Theme.fgSoft
+            color: Theme.fg
             linkColor: Theme.accent
             wrapMode: Text.Wrap
-            font {
-              family: Theme.fontFamily
-              pixelSize: Theme.fontBody
-            }
+            font: Theme.body
             onLinkActivated: link => {
               Notifs.openUrl(link);
               Panels.close();
@@ -261,25 +225,23 @@ Item {
 
       Rectangle {
         Layout.fillWidth: true
-        visible: root.expanded && root.progress !== undefined
-        implicitHeight: Theme.px(6)
+        visible: root.expanded && root.entry.progress !== undefined
+        implicitHeight: 8
         radius: height / 2
-        color: Theme.bg
+        color: Theme.trough
 
         Rectangle {
-          width: parent.width * Math.max(0, Math.min(100, root.progress ?? 0)) / 100
+          width: parent.width * Math.max(0, Math.min(100, root.entry.progress ?? 0)) / 100
           height: parent.height
           radius: parent.radius
-          color: Theme.accent
+          color: Theme.accentBg
         }
       }
 
       NotificationActions {
         Layout.fillWidth: true
         visible: root.expanded && actions.length > 0
-        actions: root.notification?.actions.filter(a => a.identifier !== "default") ?? []
-        base: root.boxed ? Theme.raised : Theme.selected
-        hover: root.boxed ? Theme.selected : Theme.highlight
+        actions: root.entry.buttons
       }
     }
   }

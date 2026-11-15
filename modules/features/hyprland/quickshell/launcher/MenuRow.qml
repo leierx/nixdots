@@ -13,12 +13,15 @@ Rectangle {
 
   signal clicked()
 
-  radius: Theme.px(8)
+  radius: Theme.buttonRadius
   // ListView attaches isCurrentItem to the delegate itself, which this is.
-  color: ListView.isCurrentItem ? Theme.selected : "transparent"
+  color: ListView.isCurrentItem ? (area.containsMouse ? Theme.selectedHover : Theme.selected) : area.containsMouse ? Theme.hover : "transparent"
 
   MouseArea {
+    id: area
+
     anchors.fill: parent
+    hoverEnabled: true
     onClicked: root.clicked()
   }
 
@@ -26,42 +29,38 @@ Rectangle {
   RowLayout {
     anchors {
       fill: parent
-      leftMargin: Theme.px(12)
-      rightMargin: Theme.px(12)
+      leftMargin: 12
+      rightMargin: 12
     }
-    spacing: Theme.px(14)
+    spacing: 12
 
     IconImage {
       visible: !!root.modelData.icon
       source: root.modelData.icon ?? ""
-      implicitSize: Theme.px(28)
+      implicitSize: 32
     }
 
-    Column {
+    ColumnLayout {
       Layout.fillWidth: true
-      spacing: Theme.px(2)
+      spacing: 0
 
       Text {
-        width: parent.width
+        Layout.fillWidth: true
         text: root.modelData.title
+        textFormat: Text.PlainText
         color: Theme.fg
         elide: Text.ElideRight
-        font {
-          family: Theme.fontFamily
-          pixelSize: Theme.fontLarge
-        }
+        font: Theme.body
       }
 
       Text {
-        width: parent.width
+        Layout.fillWidth: true
         text: root.modelData.subtitle ?? ""
+        textFormat: Text.PlainText
         visible: text !== ""
         color: Theme.fgDim
         elide: Text.ElideRight
-        font {
-          family: Theme.fontFamily
-          pixelSize: Theme.fontBody
-        }
+        font: Theme.caption
       }
     }
   }

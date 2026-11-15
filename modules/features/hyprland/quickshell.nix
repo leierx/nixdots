@@ -20,7 +20,7 @@ root: {
           lib.concatStrings (
             lib.mapAttrsToList (
               name: value: "  readonly property color ${name}: ${builtins.toJSON value}\n"
-            ) root.config.palettes.ui
+            ) root.config.palettes.adwaita
           )
         }}
       '';
@@ -71,7 +71,7 @@ root: {
         (ipcBind "v" "launcher toggle clipboard" "Clipboard history")
         # SUPER+P, after Windows' display "Project" switcher
         (ipcBind "P" "launcher toggle monitors" "Monitor layouts")
-        (ipcBind "n" "notifications toggle" "Notifications")
+        (ipcBind "n" "center toggle" "Notification center")
       ];
     };
 }

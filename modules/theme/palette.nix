@@ -36,6 +36,36 @@
     yellowLight = "#FECF0F";
   };
 
+  # libadwaita 1.9's dark named colours, as its doc/css-variables.md lists them
+  config.palettes.adwaita = {
+    accentBg = "#3584e4";
+    accentFg = "#ffffff";
+    accent = "#81d0ff";
+    destructiveBg = "#c01c28";
+    destructiveFg = "#ffffff";
+    destructive = "#ff938c";
+    successBg = "#26a269";
+    successFg = "#ffffff";
+    success = "#78e9ab";
+    warningBg = "#cd9309";
+    warning = "#ffc252";
+    errorBg = "#c01c28";
+    errorFg = "#ffffff";
+    error = "#ff938c";
+    windowBg = "#222226";
+    windowFg = "#ffffff";
+    viewBg = "#1d1d20";
+    viewFg = "#ffffff";
+    headerbarBg = "#2e2e32";
+    headerbarFg = "#ffffff";
+    sidebarBg = "#2e2e32";
+    sidebarFg = "#ffffff";
+    dialogBg = "#36363a";
+    dialogFg = "#ffffff";
+    popoverBg = "#36363a";
+    popoverFg = "#ffffff";
+  };
+
   # ghostty's "Adwaita Dark"
   config.palettes.adwaita_dark = {
     background = "#1d1d20";

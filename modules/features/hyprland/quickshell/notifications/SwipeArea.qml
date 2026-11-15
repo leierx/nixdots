@@ -1,5 +1,4 @@
 import QtQuick
-import qs.common
 
 // Tells a sideways drag from a click. Once the pointer has moved sideways,
 // `distance` follows it and the list stops scrolling; letting go past
@@ -7,7 +6,7 @@ import qs.common
 MouseArea {
   id: root
 
-  readonly property int threshold: Theme.px(70)
+  readonly property int threshold: 70
   property bool swipeEnabled: true
   property bool dragging: false
   property real distance: 0
@@ -27,7 +26,7 @@ MouseArea {
   onPositionChanged: mouse => {
     if (!swipeEnabled || !(pressedButtons & Qt.LeftButton)) return;
     const dx = mouse.x - start.x;
-    if (!dragging && Math.abs(dx) > Theme.px(8) && Math.abs(dx) > Math.abs(mouse.y - start.y)) dragging = true;
+    if (!dragging && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(mouse.y - start.y)) dragging = true;
     if (dragging) distance = dx;
   }
   onReleased: {

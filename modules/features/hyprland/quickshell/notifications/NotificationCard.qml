@@ -2,90 +2,62 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import Quickshell
-import Quickshell.Services.Notifications
 import Quickshell.Widgets
 import qs.common
 
 // One popup: its app and age, then the image, summary and body, a progress bar
 // if the app sends one, and the actions. A click runs the default action, or
-// just puts the popup away; a right click or a swipe dismisses it.
+// just puts the popup away; a right or middle click or a swipe towards the
+// screen's edge dismisses it.
 Item {
   id: root
 
   required property NotifEntry entry
 
-  readonly property Notification notification: entry?.notification ?? null
-  readonly property NotificationAction defaultAction: notification?.actions.find(a => a.identifier === "default") ?? null
-  readonly property var progress: notification?.hints.value
-  readonly property string appIcon: Notifs.appIcon(notification)
-  readonly property int imageSize: Theme.px(40)
-
   property bool expanded: false
 
-  implicitHeight: card.implicitHeight
+  implicitHeight: card.height
 
-  function activate() {
-    if (defaultAction) defaultAction.invoke();
-    else entry.popup = false;
+  SwipeArea {
+    id: swipe
+
+    anchors.fill: parent
+    onSwiped: left => {
+      if (left) return;
+      // Leaves the card where the swipe let go, for the list to slide it out.
+      card.x = card.x;
+      root.entry.notification.dismiss();
+    }
+    onTapped: button => {
+      if (button !== Qt.LeftButton) root.entry.notification.dismiss();
+      else if (root.entry.defaultAction) root.entry.defaultAction.invoke();
+      else root.entry.popup = false;
+    }
+  }
+
+  HoverHandler {
+    onHoveredChanged: root.entry.hovered = hovered
   }
 
   Rectangle {
     id: card
 
+    // Popups only leave towards the screen's edge.
+    x: Math.max(0, swipe.distance)
     width: root.width
-    implicitHeight: content.implicitHeight + Theme.padding * 2
-    radius: Theme.radius
+    height: content.implicitHeight + 24
+    radius: Theme.windowRadius
     color: Theme.bg
     border.width: 1
-    border.color: root.entry?.critical ? Theme.urgent : Theme.border
-    opacity: 1 - Math.abs(x) / width
+    border.color: root.entry.critical ? Theme.destructive : Theme.outline
+    opacity: 1 - x / width
 
     Behavior on x {
-      enabled: !swipe.drag.active
+      enabled: !swipe.dragging
 
       NumberAnimation {
         duration: 150
         easing.type: Easing.OutCubic
-      }
-    }
-
-    HoverHandler {
-      id: hover
-
-      onHoveredChanged: {
-        root.entry.hovered = hovered;
-      }
-    }
-
-    // Under the buttons and links, so they get their clicks first.
-    MouseArea {
-      id: swipe
-
-      property bool swiped: false
-
-      anchors.fill: parent
-      acceptedButtons: Qt.LeftButton | Qt.RightButton
-      drag {
-        target: card
-        axis: Drag.XAxis
-        // Popups only leave towards the screen edge.
-        minimumX: 0
-        maximumX: card.width
-      }
-      onPressed: swiped = false
-      onPositionChanged: {
-        if (drag.active) swiped = true;
-      }
-      onReleased: {
-        if (!swiped) return;
-        if (Math.abs(card.x) > card.width / 3) root.notification.dismiss();
-        else card.x = 0;
-      }
-      onClicked: mouse => {
-        if (swiped) return;
-        if (mouse.button === Qt.RightButton) root.notification.dismiss();
-        else root.activate();
       }
     }
 
@@ -96,83 +68,59 @@ Item {
         top: parent.top
         left: parent.left
         right: parent.right
-        margins: Theme.padding
+        margins: 12
       }
-      spacing: Theme.px(8)
+      spacing: 8
 
       RowLayout {
         Layout.fillWidth: true
-        spacing: Theme.px(8)
+        spacing: 6
 
         IconImage {
-          visible: root.appIcon !== ""
-          source: root.appIcon
-          implicitSize: Theme.px(16)
+          visible: root.entry.appIcon !== ""
+          source: root.entry.appIcon
+          implicitSize: 16
         }
 
         Text {
           Layout.fillWidth: true
-          text: root.notification?.appName || "Notification"
+          text: root.entry.notification.appName || "Notification"
           color: Theme.fgDim
           elide: Text.ElideRight
-          font {
-            family: Theme.fontFamily
-            pixelSize: Theme.fontSmall
-          }
+          font: Theme.caption
         }
 
         Text {
-          text: Notifs.age(root.entry?.time ?? Notifs.now)
+          text: Notifs.age(root.entry.time)
           color: Theme.fgDim
-          font {
-            family: Theme.fontFamily
-            pixelSize: Theme.fontSmall
-          }
+          font: Theme.caption
         }
       }
 
       RowLayout {
         Layout.fillWidth: true
-        spacing: Theme.px(12)
+        spacing: 12
 
-        ClippingRectangle {
-          visible: !!root.notification?.image
+        NotificationImage {
+          visible: source != ""
           Layout.alignment: Qt.AlignTop
-          implicitWidth: root.imageSize
-          implicitHeight: root.imageSize
-          radius: Theme.px(8)
-          color: "transparent"
-
-          Image {
-            anchors.fill: parent
-            source: root.notification?.image ?? ""
-            sourceSize {
-              width: root.imageSize * 2
-              height: root.imageSize * 2
-            }
-            fillMode: Image.PreserveAspectCrop
-            // The image provider reuses URLs for different notifications.
-            cache: false
-          }
+          source: root.entry.notification.image
+          radius: Theme.buttonRadius
         }
 
         ColumnLayout {
           Layout.fillWidth: true
-          spacing: Theme.px(2)
+          spacing: 2
 
           Text {
             Layout.fillWidth: true
-            text: root.notification?.summary ?? ""
+            text: root.entry.notification.summary
             textFormat: Text.PlainText
             color: Theme.fg
             wrapMode: Text.Wrap
             maximumLineCount: 2
             elide: Text.ElideRight
-            font {
-              family: Theme.fontFamily
-              pixelSize: Theme.fontTitle
-              weight: Font.DemiBold
-            }
+            font: Theme.heading
           }
 
           Text {
@@ -180,17 +128,14 @@ Item {
 
             Layout.fillWidth: true
             visible: text !== ""
-            text: root.notification?.body ?? ""
+            text: root.entry.notification.body
             textFormat: Text.StyledText
-            color: Theme.fgSoft
+            color: Theme.fg
             linkColor: Theme.accent
             wrapMode: Text.Wrap
             maximumLineCount: root.expanded ? 1000 : 4
             elide: Text.ElideRight
-            font {
-              family: Theme.fontFamily
-              pixelSize: Theme.fontBody
-            }
+            font: Theme.body
             onLinkActivated: link => Notifs.openUrl(link)
 
             HoverHandler {
@@ -202,10 +147,7 @@ Item {
             visible: body.truncated || root.expanded
             text: root.expanded ? "Show less" : "Show more"
             color: Theme.accent
-            font {
-              family: Theme.fontFamily
-              pixelSize: Theme.fontSmall
-            }
+            font: Theme.caption
 
             MouseArea {
               anchors.fill: parent
@@ -218,22 +160,22 @@ Item {
 
       Rectangle {
         Layout.fillWidth: true
-        visible: root.progress !== undefined
-        implicitHeight: Theme.px(6)
+        visible: root.entry.progress !== undefined
+        implicitHeight: 8
         radius: height / 2
-        color: Theme.selected
+        color: Theme.trough
 
         Rectangle {
-          width: parent.width * Math.max(0, Math.min(100, root.progress ?? 0)) / 100
+          width: parent.width * Math.max(0, Math.min(100, root.entry.progress ?? 0)) / 100
           height: parent.height
           radius: parent.radius
-          color: Theme.accent
+          color: Theme.accentBg
         }
       }
 
       NotificationActions {
         Layout.fillWidth: true
-        actions: root.notification?.actions.filter(a => a.identifier !== "default") ?? []
+        actions: root.entry.buttons
       }
     }
   }

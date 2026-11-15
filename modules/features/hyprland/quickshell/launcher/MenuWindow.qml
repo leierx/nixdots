@@ -3,21 +3,13 @@ import Quickshell
 import Quickshell.Wayland
 import qs.common
 
-// The frame every menu shares: a transparent surface over the whole monitor,
-// with a card for the menu's widgets. Escape or a click outside the card
-// closes the menu.
+// The frame every picker shares: a transparent surface over the whole monitor,
+// with a card for the picker's widgets. Escape or a click outside the card
+// closes it.
 //
 // No screen is set, so Hyprland opens it on the focused monitor. Hyprland's
-// layer rule for the "quickshell:launcher" namespace dims everything behind it and
-// turns its animations off.
-//
-//   MenuWindow {
-//     fullHeight: list.fullHeight
-//
-//     MenuList {
-//       id: list
-//     }
-//   }
+// layer rule for the "quickshell:launcher" namespace dims everything behind it
+// and turns its animations off.
 PanelWindow {
   id: root
 
@@ -25,10 +17,10 @@ PanelWindow {
   // where content this tall would be centred, so when a search shortens the
   // list only the bottom edge moves and the search field stays put.
   property real fullHeight: body.implicitHeight
+  property int cardWidth: 640
+  readonly property int padding: 8
 
-  property int cardWidth: Theme.px(640)
-
-  // The menu's widgets, stacked top to bottom inside the card.
+  // The picker's widgets, stacked top to bottom inside the card.
   default property alias content: body.data
 
   color: "transparent"
@@ -52,21 +44,19 @@ PanelWindow {
   }
 
   Rectangle {
-    id: card
-
     anchors.horizontalCenter: parent.horizontalCenter
-    y: Math.round((parent.height - root.fullHeight) / 2) - Theme.padding
+    y: Math.round((parent.height - root.fullHeight) / 2) - root.padding
     width: root.cardWidth
-    height: body.implicitHeight + Theme.padding * 2
-    radius: Theme.radius
+    height: body.implicitHeight + root.padding * 2
+    radius: Theme.windowRadius
     color: Theme.bg
     border.width: 1
-    border.color: Theme.border
+    border.color: Theme.outline
 
     // Keys the search field does not use travel up to here.
     Keys.onEscapePressed: Panels.close()
 
-    // Keeps clicks on the card's padding from closing the menu.
+    // Keeps clicks on the card's padding from closing the picker.
     MouseArea {
       anchors.fill: parent
     }
@@ -78,7 +68,7 @@ PanelWindow {
         top: parent.top
         left: parent.left
         right: parent.right
-        margins: Theme.padding
+        margins: root.padding
       }
     }
   }

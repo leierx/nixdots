@@ -1,6 +1,6 @@
 root@{ lib, ... }:
 let
-  ui = root.config.palettes.ui;
+  adw = root.config.palettes.adwaita;
   hex = lib.removePrefix "#";
 in
 {
@@ -15,13 +15,16 @@ in
       fingerprint = osConfig.services.fprintd.enable;
       label = {
         monitor = "";
-        color = "rgba(${hex ui.fg}bf)";
-        font_family = "Hack";
+        color = "rgb(${hex adw.windowFg})";
+        font_family = "Adwaita Sans";
         halign = "center";
         valign = "center";
       };
     in
     {
+      # the labels' font_family
+      home.packages = [ pkgs.adwaita-fonts ];
+
       programs.hyprlock = {
         enable = true;
         settings = {
@@ -67,12 +70,14 @@ in
             dots_size = 0.2;
             dots_spacing = 0.2;
             outer_color = "rgba(00000000)";
-            inner_color = "rgba(${hex ui.white}1a)";
-            font_color = "rgb(${hex ui.fg})";
-            font_family = "Hack";
+            inner_color = "rgba(${hex adw.windowFg}1a)";
+            check_color = "rgb(${hex adw.accentBg})";
+            fail_color = "rgb(${hex adw.errorBg})";
+            font_color = "rgb(${hex adw.windowFg})";
+            font_family = "Adwaita Sans";
             # hyprlang treats an unescaped # as a comment; ## is a literal #
-            placeholder_text = "<i><span foreground=\"##${hex ui.fg}99\">Enter Pass</span></i>";
-            fail_text = "<i><span foreground=\"##${hex ui.redLight}cc\">$FAIL</span> <b>($ATTEMPTS)</b></i>";
+            placeholder_text = "<i><span foreground=\"##${hex adw.windowFg}8c\">Enter Pass</span></i>";
+            fail_text = "<i><span foreground=\"##${hex adw.error}\">$FAIL</span> <b>($ATTEMPTS)</b></i>";
             hide_input = false;
             position = "0, -100";
             halign = "center";
