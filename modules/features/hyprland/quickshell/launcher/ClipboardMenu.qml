@@ -1,7 +1,6 @@
 import Quickshell
-import qs.components
+import qs.common
 import qs.nix
-import qs.services
 import "search.js" as Search
 
 // cliphist's history, newest first; the picked entry goes back on the clipboard.
@@ -31,7 +30,7 @@ MenuWindow {
     results: root.search(list.query)
     onActivated: row => {
       Quickshell.execDetached([Bin.cliphistCopy, row.id]);
-      MenuState.close();
+      Panels.close();
     }
   }
 

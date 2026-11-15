@@ -51,7 +51,7 @@
         ];
         layer_rule = [
           {
-            match.namespace = "^quickshell:menu$";
+            match.namespace = "^quickshell:launcher$";
             dim_around = true;
             no_anim = true;
           }

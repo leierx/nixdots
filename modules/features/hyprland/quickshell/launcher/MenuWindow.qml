@@ -1,14 +1,14 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import qs.services
+import qs.common
 
 // The frame every menu shares: a transparent surface over the whole monitor,
 // with a card for the menu's widgets. Escape or a click outside the card
 // closes the menu.
 //
 // No screen is set, so Hyprland opens it on the focused monitor. Hyprland's
-// layer rule for the "quickshell:menu" namespace dims everything behind it and
+// layer rule for the "quickshell:launcher" namespace dims everything behind it and
 // turns its animations off.
 //
 //   MenuWindow {
@@ -26,7 +26,7 @@ PanelWindow {
   // list only the bottom edge moves and the search field stays put.
   property real fullHeight: body.implicitHeight
 
-  property int cardWidth: Theme.cardWidth
+  property int cardWidth: Theme.px(640)
 
   // The menu's widgets, stacked top to bottom inside the card.
   default property alias content: body.data
@@ -42,29 +42,29 @@ PanelWindow {
   exclusionMode: ExclusionMode.Ignore
 
   WlrLayershell.layer: WlrLayer.Overlay
-  WlrLayershell.namespace: "quickshell:menu"
+  WlrLayershell.namespace: "quickshell:launcher"
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
   // Everywhere outside the card.
   MouseArea {
     anchors.fill: parent
-    onClicked: MenuState.close()
+    onClicked: Panels.close()
   }
 
   Rectangle {
     id: card
 
     anchors.horizontalCenter: parent.horizontalCenter
-    y: Math.round((parent.height - root.fullHeight) / 2) - Theme.cardPadding
+    y: Math.round((parent.height - root.fullHeight) / 2) - Theme.padding
     width: root.cardWidth
-    height: body.implicitHeight + Theme.cardPadding * 2
-    radius: Theme.cardRadius
+    height: body.implicitHeight + Theme.padding * 2
+    radius: Theme.radius
     color: Theme.bg
     border.width: 1
     border.color: Theme.border
 
     // Keys the search field does not use travel up to here.
-    Keys.onEscapePressed: MenuState.close()
+    Keys.onEscapePressed: Panels.close()
 
     // Keeps clicks on the card's padding from closing the menu.
     MouseArea {
@@ -78,7 +78,7 @@ PanelWindow {
         top: parent.top
         left: parent.left
         right: parent.right
-        margins: Theme.cardPadding
+        margins: Theme.padding
       }
     }
   }

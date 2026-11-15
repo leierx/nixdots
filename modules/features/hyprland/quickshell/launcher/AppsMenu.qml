@@ -1,7 +1,6 @@
 import Quickshell
-import qs.components
+import qs.common
 import qs.nix
-import qs.services
 import "search.js" as Search
 
 // The application launcher, like rofi's drun: desktop entries matched on
@@ -22,7 +21,7 @@ MenuWindow {
     results: root.search(list.query)
     onActivated: row => {
       root.launch(row.entry);
-      MenuState.close();
+      Panels.close();
     }
   }
 

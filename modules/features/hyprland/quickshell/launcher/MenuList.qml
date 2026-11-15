@@ -1,4 +1,5 @@
 import QtQuick
+import qs.common
 
 // A search field above a list of results, driven by the keyboard. It knows
 // nothing about what it lists: `results` is an array of rows, each with a
@@ -14,7 +15,8 @@ Column {
   property string placeholder: ""
   property var results: []
   // Rows shown before the list starts scrolling.
-  property int maxRows: Theme.maxRows
+  property int maxRows: 7
+  readonly property int rowHeight: Theme.px(56)
 
   // The most rows shown since the menu opened, so narrowing a search leaves
   // the card where it is.
@@ -22,7 +24,7 @@ Column {
 
   // The height at peakRows, for MenuWindow.fullHeight. The column leaves out
   // the spacing while the list is hidden.
-  readonly property real fullHeight: input.height + (peakRows > 0 ? spacing : 0) + peakRows * Theme.rowHeight
+  readonly property real fullHeight: input.height + (peakRows > 0 ? spacing : 0) + peakRows * root.rowHeight
 
   signal activated(var row)
 
@@ -64,7 +66,7 @@ Column {
     color: Theme.fg
     font {
       family: Theme.fontFamily
-      pixelSize: Theme.fontSize
+      pixelSize: Theme.fontLarge
     }
     // The default cursor blinks; this one stays lit.
     cursorDelegate: Rectangle {
@@ -88,7 +90,7 @@ Column {
     id: list
 
     width: parent.width
-    height: Math.min(count, root.maxRows) * Theme.rowHeight
+    height: Math.min(count, root.maxRows) * root.rowHeight
     visible: count > 0
     clip: true
     model: root.results
@@ -114,6 +116,7 @@ Column {
 
     delegate: MenuRow {
       width: list.width
+      height: root.rowHeight
       onClicked: root.activate(index)
     }
   }

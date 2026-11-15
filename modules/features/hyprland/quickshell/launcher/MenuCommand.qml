@@ -1,7 +1,7 @@
 import Quickshell
 import Quickshell.Io
+import qs.common
 import qs.nix
-import qs.services
 
 // Runs `command` once, as the menu holding it opens, and hands its output to
 // `done`. A failure is sent as a notification and closes the menu.
@@ -31,6 +31,6 @@ Process {
     }
     const name = [root.command[0].split("/").pop(), ...root.command.slice(1)].join(" ");
     Quickshell.execDetached([Bin.notifySend, "-u", "critical", name, err.text]);
-    MenuState.close();
+    Panels.close();
   }
 }

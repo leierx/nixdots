@@ -5,19 +5,21 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.Notifications
 import Quickshell.Widgets
-import qs.components
-import qs.services
+import qs.common
 
-// One notification: its app, age and a close button, then the image, summary
-// and body, a progress bar if the app sends one, and the actions. A click runs
-// the default action; a right click or a swipe dismisses it.
+// One notification: its app and age, then the image, summary and body, a
+// progress bar if the app sends one, and the actions. A click runs the default
+// action; a right click or a swipe dismisses it.
 Item {
   id: root
 
   required property NotifEntry entry
-  // In the notification center, cards sit flat on the center's own card.
+  // In the notification center, cards sit flat on the center's panel.
   property bool flat: false
-  property bool selected: false
+  // On top of a folded stack, a click unfolds the stack instead.
+  property bool folded: false
+
+  signal unfold()
 
   readonly property Notification notification: entry?.notification ?? null
   readonly property NotificationAction defaultAction: notification?.actions.find(a => a.identifier === "default") ?? null
@@ -26,6 +28,7 @@ Item {
   readonly property bool overflow: actions.length > 3
   readonly property var progress: notification?.hints.value
   readonly property string appIcon: iconSource(notification?.appIcon) || (notification?.appName ? iconSource(DesktopEntries.heuristicLookup(notification.appName)?.icon) : "")
+  readonly property int imageSize: Theme.px(48)
 
   readonly property string age: {
     const seconds = (Notifs.now - (entry?.time ?? Notifs.now)) / 1000;
@@ -48,9 +51,11 @@ Item {
   }
 
   function activate() {
-    if (defaultAction) {
+    if (folded) {
+      unfold();
+    } else if (defaultAction) {
       defaultAction.invoke();
-      if (flat) MenuState.close();
+      if (flat) Panels.close();
     } else if (!flat) {
       entry.popup = false;
     }
@@ -80,7 +85,7 @@ Item {
         elide: Text.ElideRight
         font {
           family: Theme.fontFamily
-          pixelSize: Theme.subtitleSize
+          pixelSize: Theme.fontBody
         }
       }
 
@@ -93,7 +98,7 @@ Item {
         color: Theme.fgSoft
         font {
           family: Theme.glyphFamily
-          pixelSize: Theme.subtitleSize
+          pixelSize: Theme.fontBody
         }
       }
     }
@@ -112,9 +117,9 @@ Item {
     id: card
 
     width: root.width
-    implicitHeight: content.implicitHeight + Theme.cardPadding * 2
-    radius: Theme.cardRadius
-    color: !root.flat ? Theme.bg : root.selected ? Theme.selected : Theme.raised
+    implicitHeight: content.implicitHeight + Theme.padding * 2
+    radius: Theme.radius
+    color: !root.flat ? Theme.bg : hover.hovered ? Theme.selected : Theme.raised
     border.width: root.flat && !root.entry?.critical ? 0 : 1
     border.color: root.entry?.critical ? Theme.urgent : Theme.border
     opacity: 1 - Math.abs(x) / width
@@ -129,6 +134,8 @@ Item {
     }
 
     HoverHandler {
+      id: hover
+
       onHoveredChanged: {
         if (!root.flat) root.entry.hovered = hovered;
       }
@@ -142,6 +149,7 @@ Item {
 
       anchors.fill: parent
       acceptedButtons: Qt.LeftButton | Qt.RightButton
+      cursorShape: root.flat ? Qt.PointingHandCursor : Qt.ArrowCursor
       drag {
         target: card
         axis: Drag.XAxis
@@ -172,7 +180,7 @@ Item {
         top: parent.top
         left: parent.left
         right: parent.right
-        margins: Theme.cardPadding
+        margins: Theme.padding
       }
       spacing: Theme.px(8)
 
@@ -193,7 +201,7 @@ Item {
           elide: Text.ElideRight
           font {
             family: Theme.fontFamily
-            pixelSize: Theme.smallSize
+            pixelSize: Theme.fontSmall
           }
         }
 
@@ -202,33 +210,7 @@ Item {
           color: Theme.fgDim
           font {
             family: Theme.fontFamily
-            pixelSize: Theme.smallSize
-          }
-        }
-
-        Rectangle {
-          implicitWidth: Theme.px(24)
-          implicitHeight: Theme.px(24)
-          radius: width / 2
-          color: closeArea.containsMouse ? Theme.selected : "transparent"
-
-          Text {
-            anchors.centerIn: parent
-            text: "✕"
-            color: closeArea.containsMouse ? Theme.fg : Theme.fgDim
-            font {
-              family: Theme.glyphFamily
-              pixelSize: Theme.smallSize
-            }
-          }
-
-          MouseArea {
-            id: closeArea
-
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.notification.dismiss()
+            pixelSize: Theme.fontSmall
           }
         }
       }
@@ -240,8 +222,8 @@ Item {
         ClippingRectangle {
           visible: !!root.notification?.image
           Layout.alignment: Qt.AlignTop
-          implicitWidth: Theme.imageSize
-          implicitHeight: Theme.imageSize
+          implicitWidth: root.imageSize
+          implicitHeight: root.imageSize
           radius: Theme.px(8)
           color: "transparent"
 
@@ -249,8 +231,8 @@ Item {
             anchors.fill: parent
             source: root.notification?.image ?? ""
             sourceSize {
-              width: Theme.imageSize * 2
-              height: Theme.imageSize * 2
+              width: root.imageSize * 2
+              height: root.imageSize * 2
             }
             fillMode: Image.PreserveAspectCrop
             // The image provider reuses URLs for different notifications.
@@ -272,7 +254,7 @@ Item {
             elide: Text.ElideRight
             font {
               family: Theme.fontFamily
-              pixelSize: Theme.summarySize
+              pixelSize: Theme.fontTitle
               weight: Font.DemiBold
             }
           }
@@ -291,12 +273,12 @@ Item {
             elide: Text.ElideRight
             font {
               family: Theme.fontFamily
-              pixelSize: Theme.subtitleSize
+              pixelSize: Theme.fontBody
             }
             onLinkActivated: link => Notifs.openUrl(link)
 
             HoverHandler {
-              cursorShape: body.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
+              cursorShape: body.hoveredLink ? Qt.PointingHandCursor : undefined
             }
           }
 
@@ -306,7 +288,7 @@ Item {
             color: Theme.accent
             font {
               family: Theme.fontFamily
-              pixelSize: Theme.smallSize
+              pixelSize: Theme.fontSmall
             }
 
             MouseArea {

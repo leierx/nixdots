@@ -185,7 +185,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `gaming.nix` | nixos | `gaming` | Steam + proton-ge (Steam also sets 32-bit graphics) |
 | `git.nix` | nixos, homeManager | `git` | git on; user identity from `identity` |
 | `home-manager.nix` | nixos | `home-manager` | wires HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<hostname>/home` |
-| `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`, HM options `hyprmoncfg.profiles`, `quickshell.bin`, `quickshell.notificationSounds`) | see below |
+| `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`, HM option `hyprmoncfg.profiles`) | see below |
 | `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage; no host imports it |
 | `journald.nix` | nixos | `journald` | 90-day retention |
 | `libvirt.nix` | nixos | `libvirt` | libvirtd + unprivileged QEMU/KVM with swtpm, virt-manager, trusted `br0` lab bridge; no host imports it |
@@ -238,43 +238,55 @@ Notes on specific features:
     (outputs by EDID make/model/serial, workspace planning off because hyprsplit
     owns workspaces) becomes `~/.config/hyprmoncfg/profiles`, one read-only store
     directory, so the TUI cannot save a profile. SUPER+P applies one through the
-    quickshell `monitors` menu; its `Auto` entry applies hyprmoncfg's recommended profile, since the daemon
+    quickshell `monitors` picker; its `Auto` entry applies hyprmoncfg's recommended profile, since the daemon
     keeps a hand-picked one until the next hotplug.
     A catch-all `monitor` rule (preferred, auto, scale 1) covers outputs no
     profile places. `hyprland.lua` is read-only, so the module
     appends hyprmoncfg's `dofile` include itself with `lib.mkAfter`; it must stay
     the file's last line.
-  - The menus (SUPER+D apps, SUPER+V clipboard, SUPER+P monitor layouts,
-    SUPER+N notifications) are
-    a [Quickshell](https://quickshell.org) shell in `quickshell/`, wired by
-    `quickshell.nix`: one `quickshell.service` session daemon (restarted when the
-    shell changes, via `X-Restart-Triggers`), driven over IPC
-    (`qs ipc -c shell call menu toggle <name>`). Quickshell comes from
-    `pkgs.unstable` (0.3.2), since 0.3.1 fixed crashes on freed objects in a
-    `ScriptModel`, which the notification lists hold. Nix adds a `qs.nix` module to
-    the store copy: `Colors` (`palettes.ui`), `Sounds` (the HM option
-    `quickshell.notificationSounds`) and `Bin`, the store paths of the HM
-    option `quickshell.bin`, which any part of the feature extends
-    (`hyprmoncfg.nix` adds its own). A new menu is a `menus/<Name>Menu.qml` on
-    `MenuWindow` + `MenuList` (+ `MenuCommand` to read a command's output), a
-    `LazyLoader` in `shell.qml`, and a `menuBind` in `quickshell.nix`. Apps start
-    in their own `systemd-run --user --scope`, so restarting the service leaves
-    them running. The QML imports `qs.nix`, so it only runs from the built
-    store copy (`programs.quickshell.configs.shell`), not the checkout.
-  - The same shell is the notification daemon (no mako): `services/Notifs.qml`
-    owns `org.freedesktop.Notifications` and keeps every notification until
-    it is dismissed. Popups (`notifications/`) stack top right on the monitor
-    focused when each arrived, below the bar; the app's timeout or 8 s,
-    critical never, hovering holds it; click runs the default action, right
-    click or a swipe dismisses; more than three actions fold into a "More"
-    dropdown. SUPER+N opens the history (`menus/NotificationsMenu.qml`) with
-    do not disturb, which is saved in Quickshell's state dir and lets only
-    critical ones pop up. Sounds play through `pw-play` (Quickshell has no
-    QtMultimedia) when a popup shows, honouring `suppress-sound`,
-    `sound-file` and `sound-name` (freedesktop theme). Scripts use
-    `qs ipc -c shell call notifications <toggleDnd|setDnd|dnd|count|clear|hidePopups>`.
-    History lives in memory: a restart of the service (every rebuild that
-    changes the shell) empties it.
+  - The desktop components (SUPER+D apps, SUPER+V clipboard, SUPER+P monitor
+    layouts, SUPER+N notifications) are a [Quickshell](https://quickshell.org)
+    shell in `quickshell/`, wired by `quickshell.nix`: one `quickshell.service`
+    session daemon (restarted when the shell changes, via `X-Restart-Triggers`).
+    Quickshell comes from `pkgs.unstable` (0.3.2), since 0.3.1 fixed crashes on
+    freed objects in a `ScriptModel`, which the notification lists hold. Each
+    component is its own directory owning its windows, widgets and IPC target,
+    and `shell.qml` only instantiates them; `common/` holds what all share,
+    `Theme` (colours, fonts, `px()`, spacing; a size used by one component lives
+    in it) and `Panels` (the one open panel, so opening one closes the others).
+    The Nix side has no options: a plain `bin` attrset in `quickshell.nix`
+    becomes the `Bin` singleton of store paths (it builds the same hyprmoncfg
+    derivation as `hyprmoncfg.nix`), and `palettes.ui` becomes `Colors`, both in
+    a `qs.nix` module added to the store copy, so the QML only runs from the
+    built copy (`programs.quickshell.configs.shell`), not the checkout. A new
+    component is a directory with a `Scope` holding its `IpcHandler`, a line in
+    `shell.qml`, and a bind in `quickshell.nix`.
+    - `launcher/` is the rofi-style pickers (`qs ipc -c shell call launcher
+      toggle apps|clipboard|monitors`), keyboard driven: `MenuWindow` +
+      `MenuList` (+ `MenuCommand` to read a command's output) and `search.js`;
+      a picker is a `<Name>Menu.qml` plus a `LazyLoader` in `Launcher.qml`.
+      Apps start in their own `systemd-run --user --scope`, so restarting the
+      service leaves them running. Hyprland's `quickshell:launcher` layer rule
+      dims behind it.
+    - `notifications/` is the notification daemon (no mako): `Notifs.qml` owns
+      `org.freedesktop.Notifications` and keeps every notification until it is
+      dismissed. Popups stack top right on the monitor focused when each
+      arrived, below the bar; the app's timeout or 8 s, critical never,
+      hovering holds it; click runs the default action, right click or a swipe
+      dismisses; more than three actions fold into a "More" dropdown. The
+      center (`qs ipc -c shell call notifications toggle`) drops down from the
+      same corner, mouse only: notifications stacked per app (several fold
+      into one card with the others' edges showing; click unfolds, the header
+      folds, Dismiss clears the app), the wheel moving a fixed step a notch
+      (Qt's own scrolls Wayland's 15 px), and do not disturb, saved in
+      Quickshell's state dir, letting only critical ones pop up. Escape or a
+      click outside closes it. Sounds are elementary OS's (Unlicense) in
+      `sounds/`, played with `pw-play` (Quickshell has no QtMultimedia) when a
+      popup shows; low urgency is silent, and `suppress-sound` and
+      `sound-file` hints are honoured. Scripts use `qs ipc -c shell call
+      notifications <toggleDnd|setDnd|dnd|count|clear|hidePopups>`. History
+      lives in memory: a restart of the service (every rebuild that changes
+      the shell) empties it.
   - hyprlock talks to fprintd itself (`auth:fingerprint`, on when
     `services.fprintd` is), so the NixOS half turns `fprintAuth` off for
     hyprlock's PAM service.

@@ -3,8 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import qs.components
-import qs.services
+import qs.common
 
 // Popups stacked in the top right corner, below the bar, newest on top. Each
 // stays on the monitor that was focused when it arrived. Only the cards take
@@ -25,7 +24,7 @@ Variants {
       right: true
       bottom: true
     }
-    implicitWidth: Theme.notificationWidth + Theme.notificationGap * 2
+    implicitWidth: Theme.px(400) + Theme.gap * 2
     exclusiveZone: 0
     color: "transparent"
     mask: Region {
@@ -39,9 +38,9 @@ Variants {
 
       anchors {
         fill: parent
-        margins: Theme.notificationGap
+        margins: Theme.gap
       }
-      spacing: Theme.notificationGap
+      spacing: Theme.gap
       interactive: false
       model: ScriptModel {
         values: window.popups

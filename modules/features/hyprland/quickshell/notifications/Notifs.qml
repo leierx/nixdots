@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.Notifications
+import qs.common
 import qs.nix
 
 // The notification daemon. Every notification stays in `entries`, the
@@ -28,7 +29,7 @@ Singleton {
   property date now: new Date()
 
   function wantsPopup(critical) {
-    return MenuState.activeMenu !== "notifications" && (!dnd || critical);
+    return Panels.active !== "notifications" && (!dnd || critical);
   }
 
   function hidePopups() {
@@ -44,14 +45,15 @@ Singleton {
     Quickshell.execDetached([Bin.systemdRun, "--user", "--scope", "--quiet", Bin.xdgOpen, url]);
   }
 
-  // The app's own sound if it names one, else the one for its urgency.
+  // The app's own sound if it sends one; low urgency is silent.
   function playSound(notification) {
     const hints = notification.hints;
     if (hints["suppress-sound"]) return;
     const file = hints["sound-file"]?.replace(/^file:\/\//, "")
-      || (hints["sound-name"] ? `${Sounds.theme}/${hints["sound-name"]}.oga` : "")
-      || [Sounds.low, Sounds.normal, Sounds.critical][notification.urgency];
-    if (file) Quickshell.execDetached([Bin.pwPlay, file]);
+      || ["", "sounds/notification.oga", "sounds/critical.ogg"][notification.urgency];
+    if (!file) return;
+    const path = file.startsWith("/") ? file : Qt.resolvedUrl(file).toString().replace(/^file:\/\//, "");
+    Quickshell.execDetached([Bin.pwPlay, path]);
   }
 
   // The monitor a new popup goes to.

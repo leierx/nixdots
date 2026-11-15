@@ -1,7 +1,6 @@
 import Quickshell
-import qs.components
+import qs.common
 import qs.nix
-import qs.services
 import "search.js" as Search
 
 // hyprmoncfg's profiles, led by the one it recommends for the connected outputs.
@@ -38,7 +37,7 @@ MenuWindow {
     results: root.rows.filter(row => Search.scoreFields(list.query, [[1.0, row.title], [0.8, row.subtitle]]) >= 0)
     onActivated: row => {
       Quickshell.execDetached([Bin.applyMonitorLayout, row.profile]);
-      MenuState.close();
+      Panels.close();
     }
   }
 }

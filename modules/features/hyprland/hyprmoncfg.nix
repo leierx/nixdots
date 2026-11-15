@@ -88,19 +88,6 @@
           workspaces.enabled = false;
           exec = "";
         };
-
-      applyLayout = pkgs.writeShellApplication {
-        name = "apply-monitor-layout";
-        runtimeInputs = [
-          hyprmoncfg
-          pkgs.libnotify
-        ];
-        text = ''
-          if ! out=$(hyprmoncfg apply --confirm-timeout 0 "$1" 2>&1); then
-            notify-send -u critical "hyprmoncfg: $1" "$out"
-          fi
-        '';
-      };
     in
     {
       options.hyprmoncfg.profiles = lib.mkOption {
@@ -116,11 +103,6 @@
 
       config = {
         home.packages = [ hyprmoncfg ];
-
-        quickshell.bin = {
-          hyprmoncfg = lib.getExe hyprmoncfg;
-          applyMonitorLayout = lib.getExe applyLayout;
-        };
 
         xdg.configFile."hyprmoncfg/profiles".source = pkgs.linkFarm "hyprmoncfg-profiles" (
           lib.mapAttrsToList (name: outputs: {
