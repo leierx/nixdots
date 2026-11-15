@@ -16,14 +16,26 @@ Column {
   // Rows shown before the list starts scrolling.
   property int maxRows: Theme.maxRows
 
-  // The height with a full page of rows, for MenuWindow.fullHeight.
-  readonly property real fullHeight: input.height + spacing + maxRows * Theme.rowHeight
+  // The most rows shown since the menu opened, so narrowing a search leaves
+  // the card where it is.
+  property int peakRows: 0
+
+  // The height at peakRows, for MenuWindow.fullHeight. The column leaves out
+  // the spacing while the list is hidden.
+  readonly property real fullHeight: input.height + (peakRows > 0 ? spacing : 0) + peakRows * Theme.rowHeight
 
   signal activated(var row)
 
   // The children take their width from the column, so it needs its own.
   width: parent.width
   spacing: 4
+
+  function updatePeak() {
+    peakRows = Math.max(peakRows, Math.min(results.length, maxRows));
+  }
+
+  Component.onCompleted: updatePeak()
+  onResultsChanged: updatePeak()
 
   // Select a row, clamped to the list, and scroll it into view.
   function select(index) {
