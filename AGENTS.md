@@ -294,6 +294,12 @@ Notes on specific features:
       too); the app's timeout or 8 s, critical never, hovering holds it;
       click runs the default action, right or middle click or a swipe towards
       the edge dismisses; more than three actions fold into a "More" dropdown.
+      Like GNOME, while the focused window is fullscreen (Wayland's
+      foreign-toplevel state, so maximised windows don't count) only critical
+      notifications pop up, on the overlay layer above it, and going
+      fullscreen puts the others away. Ages read "now", "5m", the time today,
+      "Yesterday", the weekday within a week, then the date. Bodies drop the
+      link to the site Chromium puts first, and stray blank lines.
       `NotificationActions`, `NotificationImage` and `SwipeArea` are shared
       with the center. Do not disturb is saved in Quickshell's state dir and
       lets only critical notifications pop up. Sounds are elementary OS's

@@ -17,6 +17,7 @@ QtObject {
 
   readonly property bool critical: notification.urgency === NotificationUrgency.Critical
   readonly property string appIcon: Notifs.appIcon(notification)
+  readonly property string body: Notifs.cleanBody(notification.body)
   readonly property NotificationAction defaultAction: notification.actions.find(a => a.identifier === "default") ?? null
   // The actions shown as buttons.
   readonly property var buttons: notification.actions.filter(a => a.identifier !== "default")

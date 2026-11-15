@@ -131,7 +131,7 @@ Item {
 
       // Collapsed: summary and body on one line.
       RowLayout {
-        visible: !root.expanded && !(root.single && root.entry.notification.body === "")
+        visible: !root.expanded && !(root.single && root.entry.body === "")
         Layout.fillWidth: true
         spacing: 8
 
@@ -149,7 +149,7 @@ Item {
           id: line
 
           Layout.fillWidth: true
-          text: root.entry.notification.body.replace(/\n/g, " ")
+          text: root.entry.body.replace(/\n/g, " ")
           textFormat: Text.StyledText
           color: Theme.fg
           linkColor: Theme.accent
@@ -215,7 +215,7 @@ Item {
 
             Layout.fillWidth: true
             visible: text !== ""
-            text: root.entry.notification.body
+            text: root.entry.body
             textFormat: Text.StyledText
             color: Theme.fg
             linkColor: Theme.accent

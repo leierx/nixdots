@@ -31,6 +31,8 @@ Variants {
       item: list.contentItem
     }
 
+    // Above fullscreen windows, where critical notifications still pop up.
+    WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell:notifications"
 
     ListView {

@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.Notifications
+import Quickshell.Wayland
 import qs.common
 
 // The notification daemon. Every notification stays in `entries`, the
@@ -24,11 +25,23 @@ Singleton {
   readonly property int defaultTimeout: 8000
   readonly property int maxPopups: 5
 
-  // Ticks the "5m" ages on the cards.
+  // Ticks the ages on the cards.
   property date now: new Date()
 
+  // The focused window is fullscreen, a game or a video: like GNOME, only
+  // critical notifications pop up over it, and going fullscreen puts the
+  // others away.
+  readonly property bool fullscreen: ToplevelManager.activeToplevel?.fullscreen ?? false
+  onFullscreenChanged: {
+    if (fullscreen) {
+      for (const entry of entries) {
+        if (!entry.critical) entry.popup = false;
+      }
+    }
+  }
+
   function wantsPopup(critical) {
-    return Panels.active !== "center" && (!dnd || critical);
+    return Panels.active !== "center" && (critical || (!dnd && !fullscreen));
   }
 
   function hidePopups() {
@@ -40,13 +53,27 @@ Singleton {
     for (const entry of entries.slice()) entry.notification.dismiss();
   }
 
-  // "now", "5m", "3h", then the date; ticks with `now`.
+  // "now" and "5m" while fresh, then the time today, "Yesterday", the weekday
+  // within a week and the date before that; ticks with `now`.
   function age(time) {
-    const seconds = (now - time) / 1000;
-    if (seconds < 60) return "now";
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-    return Qt.formatDate(time, "d MMM");
+    const minutes = Math.floor((now - time) / 60000);
+    if (minutes < 1) return "now";
+    if (minutes < 60) return `${minutes}m`;
+    const day = date => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    // Rounded, since a day with a clock change is not 24 hours long.
+    const days = Math.round((day(now) - day(time)) / 86400000);
+    if (days === 0) return time.toLocaleTimeString(Qt.locale(), Locale.ShortFormat);
+    if (days === 1) return "Yesterday";
+    if (days < 7) return Qt.locale().toString(time, "dddd");
+    return Qt.locale().toString(time, time.getFullYear() === now.getFullYear() ? "d MMM" : "d MMM yyyy");
+  }
+
+  // A body as shown: without the link to the site Chromium puts first, and
+  // without blank lines around it or more than one between paragraphs.
+  function cleanBody(body) {
+    const origin = /^<a href="([^"]*)">([^<]*)<\/a>(?:\n|$)/.exec(body);
+    if (origin && origin[1].includes(origin[2])) body = body.slice(origin[0].length);
+    return body.trim().replace(/\n{3,}/g, "\n\n");
   }
 
   // The app's icon: the one it sends, else its desktop entry's.
@@ -95,7 +122,8 @@ Singleton {
     path: Quickshell.statePath("notifications.json")
     // Until do not disturb is first switched, there is no file, which is fine.
     printErrors: false
-    onAdapterUpdated: writeAdapter()
+    // Deferred: writing at once loses a second change made in the same turn.
+    onAdapterUpdated: Qt.callLater(writeAdapter)
     onLoadFailed: error => {
       if (error !== FileViewError.FileNotFound) console.warn(`Reading ${path} failed: ${FileViewError.toString(error)}`);
     }

@@ -130,7 +130,7 @@ Item {
 
             Layout.fillWidth: true
             visible: text !== ""
-            text: root.entry.notification.body
+            text: root.entry.body
             textFormat: Text.StyledText
             color: Theme.fg
             linkColor: Theme.accent
