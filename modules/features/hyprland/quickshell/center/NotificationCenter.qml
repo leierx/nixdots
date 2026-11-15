@@ -157,7 +157,7 @@ PanelWindow {
     }
   }
 
-  // libadwaita's text button.
+  // libadwaita's text button, in regular weight.
   component Button: Rectangle {
     id: button
 
@@ -175,7 +175,7 @@ PanelWindow {
 
       anchors.centerIn: parent
       color: Theme.fg
-      font: Theme.heading
+      font: Theme.body
     }
 
     MouseArea {
@@ -209,6 +209,8 @@ PanelWindow {
 
       y: -12
     }
+
+    Shadow {}
 
     Keys.onEscapePressed: Panels.close()
 

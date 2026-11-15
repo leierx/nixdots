@@ -310,14 +310,18 @@ Notes on specific features:
       `NotificationItem`): one card with the app's icon, name, latest time and
       a count pill over its two newest notifications a line each; expanded,
       each gets an inset card with its image, whole body and actions. Left
-      click expands (or runs a lone notification's default action), right
-      click expands and collapses, middle click or a swipe dismisses the
-      group, or once expanded, one notification; while one is swiped its
+      click on a notification (a lone one, or one in an expanded group) runs
+      its default action, or dismisses it when it has none and at most one
+      action (`NotifEntry.clickDismisses`); on a group of several it expands
+      and collapses. Right or middle click or a swipe dismisses the group,
+      or once expanded, one notification; while one is swiped its
       neighbours lean along (`swipe.js`). Mouse only, and unlike the pickers
       it is smooth: the list drags and flicks with Qt's overshoot, a wheel
       notch glides 120 px (Qt's own moves the 15 px Wayland reports) and
       bounces at the ends, and groups animate their height. Escape or a click
-      outside closes it.
+      outside closes it, and its `quickshell:center` layer rule dims behind
+      it. The popups and the center cast libadwaita's window shadow
+      (`common/Shadow.qml`, Qt's `RectangularShadow`).
   - hyprlock talks to fprintd itself (`auth:fingerprint`, on when
     `services.fprintd` is), so the NixOS half turns `fprintAuth` off for
     hyprlock's PAM service.

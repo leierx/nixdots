@@ -20,6 +20,9 @@ QtObject {
   readonly property NotificationAction defaultAction: notification.actions.find(a => a.identifier === "default") ?? null
   // The actions shown as buttons.
   readonly property var buttons: notification.actions.filter(a => a.identifier !== "default")
+  // A click in the center dismisses it: it has no default action to run and
+  // no choice of buttons.
+  readonly property bool clickDismisses: !defaultAction && notification.actions.length <= 1
   // A percentage, if the app sends one.
   readonly property var progress: notification.hints.value
 

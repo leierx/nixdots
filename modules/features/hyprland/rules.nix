@@ -55,6 +55,10 @@
             dim_around = true;
             no_anim = true;
           }
+          {
+            match.namespace = "^quickshell:center$";
+            dim_around = true;
+          }
         ];
       };
 

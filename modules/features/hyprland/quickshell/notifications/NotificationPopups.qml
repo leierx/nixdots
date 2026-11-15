@@ -23,7 +23,8 @@ Variants {
       right: true
       bottom: true
     }
-    implicitWidth: 400 + Theme.gap * 2
+    // Room on the left for the cards' shadows.
+    implicitWidth: 24 + 400 + Theme.gap
     exclusiveZone: 0
     color: "transparent"
     mask: Region {
@@ -38,6 +39,7 @@ Variants {
       anchors {
         fill: parent
         margins: Theme.gap
+        leftMargin: 24
       }
       spacing: Theme.gap
       interactive: false

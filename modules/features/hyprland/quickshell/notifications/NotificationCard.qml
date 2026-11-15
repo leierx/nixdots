@@ -52,6 +52,8 @@ Item {
     border.color: root.entry.critical ? Theme.destructive : Theme.outline
     opacity: 1 - x / width
 
+    Shadow {}
+
     Behavior on x {
       enabled: !swipe.dragging
 

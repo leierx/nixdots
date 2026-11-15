@@ -6,10 +6,11 @@ import qs.common
 import qs.notifications
 
 // One notification inside a group. Collapsed, a line of its summary and body;
-// expanded, a card of its own with the image, the whole body and the actions,
-// which a click runs the default action of, a middle click or a swipe
-// dismisses, and a right click collapses the group again. A group's only
-// notification has its summary in the group's header and goes without a card.
+// expanded, a card of its own with the image, the whole body and the actions.
+// A click on the card runs its default action, or dismisses it if it has none
+// and no buttons to choose from; a right or middle click or a swipe dismisses
+// it. A group's only notification has its summary in the group's header and
+// goes without a card.
 Item {
   id: root
 
@@ -22,7 +23,6 @@ Item {
 
   signal swipeMoved(real distance)
   signal swipeEnded()
-  signal collapse()
 
   readonly property bool boxed: expanded && !single
   readonly property int pad: 12
@@ -59,10 +59,8 @@ Item {
     }
     onSwiped: left => root.slideAway(left)
     onTapped: button => {
-      if (button === Qt.MiddleButton) {
+      if (button !== Qt.LeftButton || root.entry.clickDismisses) {
         root.slideAway(false);
-      } else if (button === Qt.RightButton) {
-        root.collapse();
       } else if (root.entry.defaultAction) {
         root.entry.defaultAction.invoke();
         Panels.close();
@@ -115,7 +113,7 @@ Item {
       id: hover
 
       enabled: root.expanded
-      cursorShape: root.entry.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
+      cursorShape: root.entry.defaultAction || root.entry.clickDismisses ? Qt.PointingHandCursor : Qt.ArrowCursor
     }
 
     ColumnLayout {

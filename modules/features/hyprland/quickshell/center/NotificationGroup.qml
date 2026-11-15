@@ -11,9 +11,10 @@ import "swipe.js" as Swipe
 // One app's notifications in the center, grouped the way end-4's dots do: the
 // app's icon and name, the latest time and a count over its two newest
 // notifications, a line each. Expanded, each notification gets its own card.
-// A click expands the group, or runs a lone notification's default action; a
-// right click expands and collapses it; a swipe or a middle click dismisses
-// it, and once expanded, the same on a notification dismisses just that one.
+// A click on a lone notification runs its default action, or dismisses it if
+// it has none and no buttons to choose from; a click on several expands or
+// collapses them. A right or middle click or a swipe dismisses the group, and
+// once expanded, the same on a notification dismisses just that one.
 Item {
   id: root
 
@@ -85,15 +86,15 @@ Item {
     }
     onSwiped: left => root.slideAway(left)
     onTapped: button => {
-      if (button === Qt.MiddleButton) {
+      if (button !== Qt.LeftButton) {
         root.slideAway(false);
-      } else if (button === Qt.RightButton || root.expanded) {
+      } else if (!root.single) {
         root.expanded = !root.expanded;
-      } else if (root.single && root.newest.defaultAction) {
+      } else if (root.newest.defaultAction) {
         root.newest.defaultAction.invoke();
         Panels.close();
-      } else {
-        root.expanded = true;
+      } else if (root.newest.clickDismisses) {
+        root.slideAway(false);
       }
     }
   }
@@ -135,7 +136,7 @@ Item {
     HoverHandler {
       id: hover
 
-      cursorShape: root.expanded ? Qt.ArrowCursor : Qt.PointingHandCursor
+      cursorShape: !root.single || root.newest?.defaultAction || root.newest?.clickDismisses ? Qt.PointingHandCursor : Qt.ArrowCursor
     }
 
     RowLayout {
@@ -300,7 +301,6 @@ Item {
               root.swiped = -1;
               root.swipeDistance = 0;
             }
-            onCollapse: root.expanded = false
           }
         }
       }
