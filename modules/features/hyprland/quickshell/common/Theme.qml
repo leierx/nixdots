@@ -39,8 +39,6 @@ Singleton {
   readonly property font captionHeading: Qt.font({ family: "Adwaita Sans", pointSize: 9, weight: Font.Bold })
   readonly property font title4: Qt.font({ family: "Adwaita Sans", pointSize: 13, weight: Font.Bold })
   readonly property font title2: Qt.font({ family: "Adwaita Sans", pointSize: 15, weight: Font.ExtraBold })
-  // For ▾, which Adwaita Sans lacks.
-  readonly property font glyph: Qt.font({ family: "Adwaita Mono", pointSize: 9 })
 
   readonly property int buttonRadius: 9
   readonly property int cardRadius: 12

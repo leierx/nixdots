@@ -231,38 +231,32 @@ Item {
           }
 
           Rectangle {
-            implicitWidth: Math.max(implicitHeight, pill.implicitWidth + 14)
+            implicitWidth: pill.implicitWidth
             implicitHeight: 24
             radius: height / 2
             color: pillArea.containsMouse ? Theme.buttonHover : Theme.button
 
+            // The arrow's 16 px leave 4 above and below; a lone arrow gets the
+            // same at its sides, which makes a circle.
             Row {
               id: pill
 
               anchors.centerIn: parent
-              spacing: 4
+              leftPadding: root.single ? 4 : 9
+              rightPadding: 4
+              spacing: 1
 
               Text {
                 visible: !root.single
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.shown.length
                 color: Theme.fg
-                font: Theme.captionHeading
+                font: Theme.caption
               }
 
-              Text {
+              ExpanderArrow {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "▾"
-                color: Theme.fg
-                rotation: root.expanded ? 180 : 0
-                font: Theme.glyph
-
-                Behavior on rotation {
-                  NumberAnimation {
-                    duration: 200
-                    easing.type: Easing.OutCubic
-                  }
-                }
+                open: root.expanded
               }
             }
 

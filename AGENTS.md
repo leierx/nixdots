@@ -321,7 +321,9 @@ Notes on specific features:
       bounces at the ends, and groups animate their height. Escape or a click
       outside closes it, and its `quickshell:center` layer rule dims behind
       it. The popups and the center cast libadwaita's window shadow
-      (`common/Shadow.qml`, Qt's `RectangularShadow`).
+      (`common/Shadow.qml`, Qt's `RectangularShadow`), and their expand
+      toggles use libadwaita's arrow (`common/ExpanderArrow.qml`, Adwaita's
+      `pan-down-symbolic` as a `Shape`).
   - hyprlock talks to fprintd itself (`auth:fingerprint`, on when
     `services.fprintd` is), so the NixOS half turns `fprintAuth` off for
     hyprlock's PAM service.

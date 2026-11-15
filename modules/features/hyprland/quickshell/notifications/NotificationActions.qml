@@ -22,7 +22,9 @@ ColumnLayout {
     id: button
 
     property alias text: label.text
-    property string glyph: ""
+    // An expander arrow after the text, pointing up while open.
+    property bool expander: false
+    property bool open: false
 
     signal clicked()
 
@@ -38,20 +40,18 @@ ColumnLayout {
       Text {
         id: label
 
-        width: Math.min(implicitWidth, button.width - 20 - (glyph.visible ? glyph.width + parent.spacing : 0))
+        width: Math.min(implicitWidth, button.width - 20 - (arrow.visible ? arrow.width + parent.spacing : 0))
         color: Theme.fg
         elide: Text.ElideRight
         font: Theme.heading
       }
 
-      Text {
-        id: glyph
+      ExpanderArrow {
+        id: arrow
 
-        visible: button.glyph !== ""
+        visible: button.expander
         anchors.verticalCenter: parent.verticalCenter
-        text: button.glyph
-        color: Theme.fg
-        font: Theme.glyph
+        open: button.open
       }
     }
 
@@ -83,7 +83,8 @@ ColumnLayout {
     ActionButton {
       visible: root.overflow
       text: "More"
-      glyph: root.moreOpen ? "▴" : "▾"
+      expander: true
+      open: root.moreOpen
       onClicked: root.moreOpen = !root.moreOpen
     }
   }
