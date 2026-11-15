@@ -20,7 +20,9 @@ PanelWindow {
   // Apps in the order of their newest notification.
   readonly property var apps: [...new Set(Notifs.entries.map(entry => root.appKey(entry)))]
   readonly property int padding: 12
-  readonly property int maxListHeight: 520
+  // A lone notification and the gap after it.
+  readonly property int oneMore: 76
+  readonly property int maxListHeight: 520 + oneMore
 
   // After the closing animation, for the loader to unload it.
   signal hidden()
@@ -236,8 +238,9 @@ PanelWindow {
 
         Item {
           Layout.fillWidth: true
-          // As tall as the calendar at least, so the panel keeps its shape.
-          Layout.preferredHeight: Math.max(calendar.implicitHeight - footer.implicitHeight - root.padding, Math.min(list.contentHeight, root.maxListHeight))
+          // A notification taller than the calendar at least, so the panel keeps
+          // its shape; the calendar stays at the top.
+          Layout.preferredHeight: Math.max(calendar.implicitHeight - footer.implicitHeight - root.padding + root.oneMore, Math.min(list.contentHeight, root.maxListHeight))
 
           ListView {
             id: list
