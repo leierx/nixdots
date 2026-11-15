@@ -1,0 +1,96 @@
+root: {
+  flake.modules.homeManager.hyprland =
+    {
+      config,
+      osConfig,
+      pkgs,
+      lib,
+      ...
+    }:
+    let
+      inherit (lib) types;
+      inherit (lib.generators) mkLuaInline;
+
+      singleton = name: type: values: ''
+        pragma Singleton
+
+        import QtQuick
+        import Quickshell
+
+        Singleton {
+        ${
+          lib.concatStrings (
+            lib.mapAttrsToList (n: v: "  readonly property ${type} ${n}: ${builtins.toJSON v}\n") values
+          )
+        }}
+      '';
+
+      shell = pkgs.runCommand "quickshell-shell" { } ''
+        cp -r ${./quickshell} $out
+        chmod -R u+w $out
+        mkdir $out/nix
+        cp ${
+          pkgs.writeText "Colors.qml" (singleton "Colors" "color" root.config.palettes.ui)
+        } $out/nix/Colors.qml
+        cp ${pkgs.writeText "Bin.qml" (singleton "Bin" "string" config.quickshell.bin)} $out/nix/Bin.qml
+      '';
+
+      menuBind = key: menu: desc: {
+        _args = [
+          (mkLuaInline ''mod .. " + ${key}"'')
+          (mkLuaInline "hl.dsp.exec_cmd(${builtins.toJSON "${lib.getExe config.programs.quickshell.package} ipc -c shell call menu toggle ${menu}"})")
+          { description = desc; }
+        ];
+      };
+    in
+    {
+      options.quickshell.bin = lib.mkOption {
+        type = types.attrsOf types.str;
+        default = { };
+        description = "Executables the shell runs, read in QML as `Bin.<name>`.";
+      };
+
+      config = {
+        # Theme.qml's font and shell.qml's icon theme
+        home.packages = [
+          pkgs.adwaita-fonts
+          pkgs.papirus-icon-theme
+        ];
+
+        quickshell.bin = {
+          terminal = lib.getExe config.programs.wezterm.package;
+          systemdRun = lib.getExe' osConfig.systemd.package "systemd-run";
+          notifySend = lib.getExe' pkgs.libnotify "notify-send";
+          cliphist = lib.getExe config.services.cliphist.package;
+          cliphistCopy = lib.getExe (
+            pkgs.writeShellApplication {
+              name = "cliphist-copy";
+              runtimeInputs = [
+                config.services.cliphist.package
+                config.services.cliphist.clipboardPackage
+              ];
+              text = ''cliphist decode "$1" | wl-copy'';
+            }
+          );
+        };
+
+        programs.quickshell = {
+          enable = true;
+          configs.shell = shell;
+          activeConfig = "shell";
+          systemd.enable = true;
+        };
+        systemd.user.services.quickshell.Unit = {
+          PartOf = [ config.wayland.systemd.target ];
+          X-Restart-Triggers = [ "${shell}" ];
+        };
+
+        wayland.windowManager.hyprland.settings.bind = [
+          (menuBind "d" "apps" "App launcher")
+          (menuBind "v" "clipboard" "Clipboard history")
+          # SUPER+P, after Windows' display "Project" switcher
+          (menuBind "P" "monitors" "Monitor layouts")
+        ];
+      };
+    };
+}

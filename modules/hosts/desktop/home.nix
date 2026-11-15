@@ -19,8 +19,6 @@ root: {
         defaultThinkingLevel = "high";
       };
 
-      programs.quickshell.enable = true;
-
       # also git's credential helper for github.com over https
       programs.gh = {
         enable = true;

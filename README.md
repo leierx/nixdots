@@ -92,8 +92,6 @@ modules/
   profiles/        base and workstation: named groups of features
   theme/           palette, fonts, gtk, qt, cursor
   hosts/           one directory per machine
-dev/               separate work with its own flakes, never imported
-  quickshell/      the quickshell bar experiments
 ```
 
 Technical notes for agents live in [AGENTS.md](./AGENTS.md).

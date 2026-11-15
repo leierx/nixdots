@@ -51,10 +51,6 @@
         ];
         layer_rule = [
           {
-            match.namespace = "rofi";
-            dim_around = true;
-          }
-          {
             match.namespace = "^quickshell:menu$";
             dim_around = true;
             no_anim = true;

@@ -15,8 +15,6 @@
         inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.hyprmoncfg.override
           { hyprland = config.wayland.windowManager.hyprland.package; };
 
-      profilesDir = "${config.xdg.configHome}/hyprmoncfg/profiles";
-
       outputModule = types.submodule {
         options = {
           make = lib.mkOption { type = types.str; };
@@ -91,19 +89,17 @@
           exec = "";
         };
 
-      layoutPicker = pkgs.writeShellApplication {
-        name = "monitor-layouts";
+      applyLayout = pkgs.writeShellApplication {
+        name = "apply-monitor-layout";
         runtimeInputs = [
           hyprmoncfg
-          config.programs.rofi.finalPackage
-          pkgs.jq
           pkgs.libnotify
-          pkgs.coreutils
         ];
         text = ''
-          profiles_dir=${lib.escapeShellArg profilesDir}
-        ''
-        + builtins.readFile ./scripts/monitor-layouts.sh;
+          if ! out=$(hyprmoncfg apply --confirm-timeout 0 "$1" 2>&1); then
+            notify-send -u critical "hyprmoncfg: $1" "$out"
+          fi
+        '';
       };
     in
     {
@@ -120,6 +116,11 @@
 
       config = {
         home.packages = [ hyprmoncfg ];
+
+        quickshell.bin = {
+          hyprmoncfg = lib.getExe hyprmoncfg;
+          applyMonitorLayout = lib.getExe applyLayout;
+        };
 
         xdg.configFile."hyprmoncfg/profiles".source = pkgs.linkFarm "hyprmoncfg-profiles" (
           lib.mapAttrsToList (name: outputs: {
@@ -142,23 +143,10 @@
           Install.WantedBy = [ config.wayland.systemd.target ];
         };
 
-        wayland.windowManager.hyprland = {
-          # SUPER+P, after Windows' display "Project" switcher
-          settings.bind = [
-            {
-              _args = [
-                (lib.generators.mkLuaInline ''mod .. " + P"'')
-                (lib.generators.mkLuaInline "hl.dsp.exec_cmd(${builtins.toJSON (lib.getExe layoutPicker)})")
-                { description = "Monitor layouts"; }
-              ];
-            }
-          ];
-
-          # hyprland.lua is read-only, so hyprmoncfg can't append its include; it must be the last line
-          extraConfig = lib.mkAfter ''
-            do local path = "${config.xdg.configHome}/hypr/hyprmoncfg-monitors.lua"; local file = io.open(path, "r"); if file then file:close(); dofile(path) end end
-          '';
-        };
+        # hyprland.lua is read-only, so hyprmoncfg can't append its include; it must be the last line
+        wayland.windowManager.hyprland.extraConfig = lib.mkAfter ''
+          do local path = "${config.xdg.configHome}/hypr/hyprmoncfg-monitors.lua"; local file = io.open(path, "r"); if file then file:close(); dofile(path) end end
+        '';
       };
     };
 }

@@ -34,8 +34,6 @@ root: {
 
       exec = cmd: "hl.dsp.exec_cmd(${builtins.toJSON cmd})";
 
-      rofi = lib.getExe config.programs.rofi.finalPackage;
-      cliphist = lib.getExe config.services.cliphist.package;
       wpctl = lib.getExe' osConfig.services.pipewire.wireplumber.package "wpctl";
       brightnessctl = lib.getExe pkgs.brightnessctl;
       playerctl = lib.getExe pkgs.playerctl;
@@ -93,16 +91,6 @@ root: {
             key = "Return";
             dispatcher = exec (lib.getExe config.programs.wezterm.package);
             desc = "Terminal";
-          })
-          (mkBind {
-            key = "d";
-            dispatcher = exec "${rofi} -modes drun -show drun";
-            desc = "App launcher";
-          })
-          (mkBind {
-            key = "v";
-            dispatcher = exec "${cliphist} list | ${rofi} -dmenu -display-columns 2 -theme-str 'window {width: 50%;height: 75%;} entry {placeholder: \"Clipboard\";}' | ${cliphist} decode | ${lib.getExe' config.services.cliphist.clipboardPackage "wl-copy"}";
-            desc = "Clipboard history";
           })
           (mkBind {
             key = "w";

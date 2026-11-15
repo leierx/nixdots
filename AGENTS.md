@@ -57,7 +57,6 @@ modules/features/         one flat file per feature (+ hyprland/, moonshine/, ne
 modules/profiles/         base.nix, workstation.nix
 modules/theme/            palette.nix, fonts, gtk, qt, cursor
 modules/hosts/            desktop/, thonkpad/
-dev/                      separate work, not imported (quickshell/: own flake)
 ```
 
 ## The substrate
@@ -127,7 +126,7 @@ importer changes behaviour through the aspect's own options or `lib.mkForce`.
 | Option | Type | Notes |
 | --- | --- | --- |
 | `identity` | `{ username, fullName, email }` | Primary user; read by `users`, `git`, `home-manager`, profiles. |
-| `palettes` | `attrsOf (attrsOf str)` | `ui` (rofi, mako, waybar, hyprland, hyprlock), `adwaita_dark` (wezterm, tmux). |
+| `palettes` | `attrsOf (attrsOf str)` | `ui` (quickshell, mako, waybar, hyprland, hyprlock), `adwaita_dark` (wezterm, tmux). |
 | `hyprland.workspaces` | positive int | Workspaces per monitor; read by hyprsplit's config, the binds and waybar's labels. |
 | `nixosHosts.<name>` | submodule `{ system }` | Drives `flake.nixosConfigurations`. |
 | `systems` | `listOf str` | Option default `[ ]`; `per-system.nix` defines `[ "x86_64-linux" "aarch64-darwin" ]`. Drives `perSystem`. |
@@ -186,7 +185,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `gaming.nix` | nixos | `gaming` | Steam + proton-ge (Steam also sets 32-bit graphics) |
 | `git.nix` | nixos, homeManager | `git` | git on; user identity from `identity` |
 | `home-manager.nix` | nixos | `home-manager` | wires HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<hostname>/home` |
-| `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`, HM option `hyprmoncfg.profiles`) | see below |
+| `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`, HM options `hyprmoncfg.profiles`, `quickshell.bin`) | see below |
 | `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage; no host imports it |
 | `journald.nix` | nixos | `journald` | 90-day retention |
 | `libvirt.nix` | nixos | `libvirt` | libvirtd + unprivileged QEMU/KVM with swtpm, virt-manager, trusted `br0` lab bridge; no host imports it |
@@ -201,7 +200,6 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `pi-agent/` | homeManager | `pi-agent` (+ HM option `piAgent.settings`) | [pi](https://pi.dev) from `nixpkgs-unstable`, plus its `~/.pi/agent` settings, `APPEND_SYSTEM.md` and skills |
 | `plymouth.nix` | nixos | `plymouth` | plymouth + quiet boot params |
 | `podman.nix` | nixos | `podman` | podman + docker compat, DNS on `podman0` |
-| `rofi.nix` | homeManager | `rofi` | rofi theme generated from `palettes.ui` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
 | `tmux/` | homeManager | `tmux` | tmux on built-ins, themed from `palettes.adwaita_dark`: a bare `tmux` attaching to the session `main` (a package wrapper), a vim keymap on `C-b` (prefix table reset, no arrows), `choose-tree` for jumping, `prefix e` opening the scrollback in nvim (only with `programs.neovim`), framed pane titles, rounded popups/menus, bells from background windows marked (pi rings one) and `prefix o` to jump; resurrect + continuum loaded last by `run-shell`, since home-manager's `plugins` load before `extraConfig`; a post-save-layout hook saves each pi pane as `pi --session <its @pi_session>`, so panes sharing a directory each get their own session back |
 | `users.nix` | nixos, homeManager | `users` | primary user, groups, hashed password, zsh (no global compinit; oh-my-zsh runs it) + starship, root locked |
@@ -213,7 +211,8 @@ Notes on specific features:
 
 - **`hyprland/`** is split across `default.nix` (nixos + HM base),
   `bindings.nix`, `rules.nix`, `mako.nix`, `waybar.nix`, `hypridle.nix`,
-  `hyprlock.nix`, `hyprmoncfg.nix`, `plugins.nix`, plus `assets/` and `scripts/`. It uses the
+  `hyprlock.nix`, `hyprmoncfg.nix`, `plugins.nix`, `quickshell.nix`, plus `assets/`, `scripts/`
+  and `quickshell/`. It uses the
   pinned Hyprland input and its **Lua-based settings API** — binds and
   events are built with `lib.generators.mkLuaInline` and `_args` rather than
   the classic string config; `bindings.nix` has a `mkBind` helper (every bind
@@ -228,7 +227,7 @@ Notes on specific features:
     `hyprland-session.target` through `wayland.systemd.target`, which Hyprland
     ≥ 0.57 starts itself (home-manager's stop/start bounce is off; it only
     imports the environment), so they never start under another compositor:
-    waybar (taken off home-manager's extra `tray.target`), cliphist (wiped
+    waybar (taken off home-manager's extra `tray.target`), quickshell, cliphist (wiped
     as it starts, so each session begins empty),
     hyprmoncfgd, hypridle, hyprpolkitagent, hyprpaper (the wallpaper; a
     config reload restarts it) and nm-applet (whose unit hardcodes
@@ -242,13 +241,26 @@ Notes on specific features:
     matches). Profiles are declared only: the HM option `hyprmoncfg.profiles`
     (outputs by EDID make/model/serial, workspace planning off because hyprsplit
     owns workspaces) becomes `~/.config/hyprmoncfg/profiles`, one read-only store
-    directory, so the TUI cannot save a profile. SUPER+P (`scripts/monitor-layouts.sh`) applies one through rofi;
-    its `auto` entry applies hyprmoncfg's recommended profile, since the daemon
+    directory, so the TUI cannot save a profile. SUPER+P applies one through the
+    quickshell `monitors` menu; its `Auto` entry applies hyprmoncfg's recommended profile, since the daemon
     keeps a hand-picked one until the next hotplug.
     A catch-all `monitor` rule (preferred, auto, scale 1) covers outputs no
     profile places. `hyprland.lua` is read-only, so the module
     appends hyprmoncfg's `dofile` include itself with `lib.mkAfter`; it must stay
     the file's last line.
+  - The menus (SUPER+D apps, SUPER+V clipboard, SUPER+P monitor layouts) are
+    a [Quickshell](https://quickshell.org) shell in `quickshell/`, wired by
+    `quickshell.nix`: one `quickshell.service` session daemon (restarted when the
+    shell changes, via `X-Restart-Triggers`), driven over IPC
+    (`qs ipc -c shell call menu toggle <name>`). Nix adds a `qs.nix` module to
+    the store copy: `Colors` (`palettes.ui`) and `Bin`, the store paths of the HM
+    option `quickshell.bin`, which any part of the feature extends
+    (`hyprmoncfg.nix` adds its own). A new menu is a `menus/<Name>Menu.qml` on
+    `MenuWindow` + `MenuList` (+ `MenuCommand` to read a command's output), a
+    `LazyLoader` in `shell.qml`, and a `menuBind` in `quickshell.nix`. Apps start
+    in their own `systemd-run --user --scope`, so restarting the service leaves
+    them running. The QML imports `qs.nix`, so it only runs from the built
+    store copy (`programs.quickshell.configs.shell`), not the checkout.
   - hyprlock talks to fprintd itself (`auth:fingerprint`, on when
     `services.fprintd` is), so the NixOS half turns `fprintAuth` off for
     hyprlock's PAM service.
@@ -258,7 +270,7 @@ Notes on specific features:
   - The screenshot binds call one `writeShellApplication` (`scripts/freeze-region.sh`,
     `copy|save`) that carries its own runtime inputs.
   - Binds reference configured packages (`config.programs.wezterm.package`,
-    `config.programs.rofi.finalPackage`, …) rather than `pkgs.*`.
+    `config.programs.quickshell.package`, …) rather than `pkgs.*`.
   - The HM half reads `osConfig` (compositor package, xkb layout, fprintd,
     NetworkManager), so it requires the NixOS half.
 - **`neovim/`** ships a Lua config in-tree. `homeManager.neovim` symlinks
@@ -308,28 +320,13 @@ to take.
   pi-agent tmux users xdg-user-dirs zsh`.
 - `workstation` — nixos imports `display-manager fonts gtk hyprland plymouth
   sound`; `homeManager.workstation` imports `bluetooth cursor desktop-apps gtk
-  hyprland neovim qt rofi wezterm`. Its NixOS half pulls in the HM half.
+  hyprland neovim qt wezterm`. Its NixOS half pulls in the HM half.
 
 ### Theme (`modules/theme/`)
 
 `palette.nix` declares `palettes` and is the canonical example of a top-level
 value option. `fonts` is nixos; `gtk` is nixos + homeManager; `cursor` and
 `qt` are homeManager.
-
-### Dev (`dev/`)
-
-Work kept apart from the configuration: outside `modules/`, so import-tree
-never loads it, and each project is its own flake with its own lock.
-`quickshell/` is the quickshell bar meant to replace waybar:
-
-```bash
-cd dev/quickshell
-nix develop                            # quickshell + icon/Qt theme env
-quickshell -p ./quickshell/shell.qml   # hot-reloads on save
-nix run                                # one-shot from the store
-```
-
-waybar reserves the same screen edge; stop it while testing.
 
 ### Hosts (`modules/hosts/`)
 
@@ -355,7 +352,7 @@ k3s API.
 - **`desktop`** — imports `base workstation gaming moonshine`. AMD desktop:
   microcode, firmware, RX 6700 XT graphics, fstrim, fwupd, zram, ZSA keyboard udev rules
   (keymapp), disko, hyprmoncfg profiles `default` (both monitors), `left-only` and `right-only`,
-  nix-index, quickshell, ssh hosts for github.com and rsync.net,
+  nix-index, ssh hosts for github.com and rsync.net,
   Hyprland startup apps pinned to monitors, host-specific app list.
 
 ## External consumers

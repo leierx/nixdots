@@ -2,15 +2,15 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import qs.nix
 
-// Every colour and size the menus draw with. The colours are copied from
-// `palettes.ui` in the main flake.
+// Every colour and size the menus draw with.
 Singleton {
-  readonly property color bg: "#1c1c1c"
-  readonly property color selected: "#3a3a3a"
-  readonly property color border: "#3a3a3a"
-  readonly property color fg: "#f1f1f1"
-  readonly property color fgDim: "#818589"
+  readonly property color bg: Colors.bg1
+  readonly property color selected: Colors.bg3
+  readonly property color border: Colors.bg3
+  readonly property color fg: Colors.fg
+  readonly property color fgDim: Colors.gray
 
   readonly property string fontFamily: "Adwaita Sans"
   readonly property int fontSize: 19

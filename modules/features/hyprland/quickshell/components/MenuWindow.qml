@@ -26,6 +26,8 @@ PanelWindow {
   // list only the bottom edge moves and the search field stays put.
   property real fullHeight: body.implicitHeight
 
+  property int cardWidth: Theme.cardWidth
+
   // The menu's widgets, stacked top to bottom inside the card.
   default property alias content: body.data
 
@@ -54,7 +56,7 @@ PanelWindow {
 
     anchors.horizontalCenter: parent.horizontalCenter
     y: Math.round((parent.height - root.fullHeight) / 2) - Theme.cardPadding
-    width: Theme.cardWidth
+    width: root.cardWidth
     height: body.implicitHeight + Theme.cardPadding * 2
     radius: Theme.cardRadius
     color: Theme.bg

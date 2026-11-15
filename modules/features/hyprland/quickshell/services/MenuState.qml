@@ -2,7 +2,7 @@ pragma Singleton
 
 import Quickshell
 
-// Which menu is open, by name ("apps", later "clipboard", …). Only one menu
+// Which menu is open, by name ("apps", "clipboard", …). Only one menu
 // is open at a time, so opening one closes any other.
 Singleton {
   property string activeMenu: ""

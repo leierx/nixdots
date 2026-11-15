@@ -22,7 +22,6 @@ root: {
     hyprland
     neovim
     qt
-    rofi
     wezterm
   ];
 }

@@ -1,7 +1,7 @@
 //@ pragma IconTheme Papirus-Dark
 
 // The shell: one process holding every window. Keybinds and scripts drive it
-// over IPC, for example `qs ipc call menu toggle apps`.
+// over IPC, for example `qs ipc -c shell call menu toggle apps`.
 
 import Quickshell
 import Quickshell.Io
@@ -31,5 +31,17 @@ ShellRoot {
     active: MenuState.activeMenu === "apps"
 
     AppsMenu {}
+  }
+
+  LazyLoader {
+    active: MenuState.activeMenu === "clipboard"
+
+    ClipboardMenu {}
+  }
+
+  LazyLoader {
+    active: MenuState.activeMenu === "monitors"
+
+    MonitorsMenu {}
   }
 }

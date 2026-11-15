@@ -1,17 +1,17 @@
 import Quickshell
 import qs.components
+import qs.nix
 import qs.services
 import "search.js" as Search
 
-// The application launcher, like rofi's drun: desktop entries matched on the
-// fields the rofi config matches (name, generic name, keywords, executable and
-// categories), best match first.
+// The application launcher, like rofi's drun: desktop entries matched on
+// name, generic name, keywords, executable and categories, best match first.
 MenuWindow {
   id: root
 
-  // Entries with Terminal=true are run inside this, since
-  // DesktopEntry.execute() would start them without one.
-  property list<string> terminal: ["wezterm", "start", "--"]
+  // Entries with Terminal=true are run inside this, since their command
+  // would start them without one.
+  readonly property list<string> terminal: [Bin.terminal, "start", "--"]
 
   fullHeight: list.fullHeight
 
@@ -52,11 +52,12 @@ MenuWindow {
     return rows;
   }
 
+  // Each app gets its own scope, so restarting the shell's service leaves it running.
   function launch(entry) {
-    if (entry.runInTerminal) {
-      Quickshell.execDetached([...root.terminal, ...entry.command]);
-    } else {
-      entry.execute();
-    }
+    const command = entry.runInTerminal ? [...root.terminal, ...entry.command] : entry.command;
+    Quickshell.execDetached({
+      command: [Bin.systemdRun, "--user", "--scope", "--quiet", ...command],
+      workingDirectory: entry.workingDirectory,
+    });
   }
 }
