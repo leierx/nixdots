@@ -260,7 +260,9 @@ Notes on specific features:
       border as the foreground at libadwaita's alphas over any surface, its
       type scale as `font` values (`Theme.body`, `heading`, `caption`,
       `title4`, …; Adwaita Sans at GTK's 11pt) and its radii (button 9, card
-      12, window 15). `shell.qml` sets `QT_SCALE_FACTOR=1.2` (an `Env`
+      12, window 15). Panel widths follow GNOME Shell's, in em of the body
+      font (`Theme.em`): 34em popups, a 29em message list, its calendar
+      days. `shell.qml` sets `QT_SCALE_FACTOR=1.2` (an `Env`
       pragma), Qt's own high-DPI scaling, so it all draws 1.2× and sharp;
       apps and links the shell opens get the variable removed.
     - The shell is written like any Hyprland rice, so it works on other

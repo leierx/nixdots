@@ -233,7 +233,8 @@ PanelWindow {
 
       ColumnLayout {
         Layout.alignment: Qt.AlignTop
-        Layout.preferredWidth: 420
+        // GNOME Shell's message list.
+        Layout.preferredWidth: Math.round(29 * Theme.em)
         spacing: root.padding
 
         Item {

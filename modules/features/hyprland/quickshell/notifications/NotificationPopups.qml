@@ -23,8 +23,8 @@ Variants {
       right: true
       bottom: true
     }
-    // Room on the left for the cards' shadows.
-    implicitWidth: 24 + 400 + Theme.gap
+    // GNOME Shell's 34em banners, with room on the left for their shadows.
+    implicitWidth: 24 + Math.round(34 * Theme.em) + Theme.gap
     exclusiveZone: 0
     color: "transparent"
     mask: Region {

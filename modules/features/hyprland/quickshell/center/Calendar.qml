@@ -22,7 +22,8 @@ ColumnLayout {
     return Array.from({ length: 6 }, (_, week) => Array.from({ length: 7 }, (_, day) => new Date(month.getFullYear(), month.getMonth(), 1 - lead + week * 7 + day)));
   }
 
-  readonly property int cell: 36
+  // GNOME Shell's day button, 3em of its smaller font, and its 2 px margins.
+  readonly property int cell: Math.round(2.5 * Theme.em) + 4
 
   spacing: 4
 
@@ -195,6 +196,7 @@ ColumnLayout {
 
             Rectangle {
               anchors.fill: parent
+              anchors.margins: 2
               radius: width / 2
               color: Theme.accentBg
               visible: day.isToday

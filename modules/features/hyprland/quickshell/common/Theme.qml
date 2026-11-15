@@ -44,6 +44,9 @@ Singleton {
   readonly property int cardRadius: 12
   readonly property int windowRadius: 15
 
+  // The body font's size in px, the unit GNOME Shell sizes its panels in.
+  readonly property real em: 11 * 96 / 72
+
   // Between a surface and the screen's edge or the bar.
   readonly property int gap: 10
 
