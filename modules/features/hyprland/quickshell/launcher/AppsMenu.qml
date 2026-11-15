@@ -1,6 +1,5 @@
 import Quickshell
 import qs.common
-import qs.nix
 import "search.js" as Search
 
 // The application launcher, like rofi's drun: desktop entries matched on
@@ -10,7 +9,7 @@ MenuWindow {
 
   // Entries with Terminal=true are run inside this, since their command
   // would start them without one.
-  readonly property list<string> terminal: [Bin.terminal, "start", "--"]
+  readonly property list<string> terminal: ["wezterm", "start", "--"]
 
   fullHeight: list.fullHeight
 
@@ -55,7 +54,7 @@ MenuWindow {
   function launch(entry) {
     const command = entry.runInTerminal ? [...root.terminal, ...entry.command] : entry.command;
     Quickshell.execDetached({
-      command: [Bin.systemdRun, "--user", "--scope", "--quiet", ...command],
+      command: ["systemd-run", "--user", "--scope", "--quiet", ...command],
       workingDirectory: entry.workingDirectory,
     });
   }

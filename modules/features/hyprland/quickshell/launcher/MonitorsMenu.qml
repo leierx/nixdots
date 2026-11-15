@@ -1,6 +1,5 @@
 import Quickshell
 import qs.common
-import qs.nix
 import "search.js" as Search
 
 // hyprmoncfg's profiles, led by the one it recommends for the connected outputs.
@@ -12,7 +11,7 @@ MenuWindow {
   fullHeight: list.fullHeight
 
   MenuCommand {
-    command: [Bin.hyprmoncfg, "status", "--json"]
+    command: ["hyprmoncfg", "status", "--json"]
     onDone: output => {
       const status = JSON.parse(output);
       const profiles = (status.profiles ?? [])
@@ -36,7 +35,8 @@ MenuWindow {
     placeholder: "Monitor layout…"
     results: root.rows.filter(row => Search.scoreFields(list.query, [[1.0, row.title], [0.8, row.subtitle]]) >= 0)
     onActivated: row => {
-      Quickshell.execDetached([Bin.applyMonitorLayout, row.profile]);
+      // A failure comes back as a notification, since the menu is gone by then.
+      Quickshell.execDetached(["sh", "-c", 'out=$(hyprmoncfg apply --confirm-timeout 0 "$1" 2>&1) || notify-send -u critical "hyprmoncfg: $1" "$out"', "sh", row.profile]);
       Panels.close();
     }
   }

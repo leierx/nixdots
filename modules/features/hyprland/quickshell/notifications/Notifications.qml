@@ -1,10 +1,11 @@
+import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.common
 
 // The notification daemon's windows: popups in the top right corner and the
-// notification center, a drop-down panel below them. Scripts reach it with
-// `qs ipc -c shell call notifications <function>`.
+// notification center with its calendar, dropping down from the middle of the
+// bar. Scripts reach it with `qs ipc -c shell call notifications <function>`.
 Scope {
   IpcHandler {
     target: "notifications"
@@ -48,10 +49,21 @@ Scope {
 
   NotificationPopups {}
 
-  // Created as it opens, so every stack starts folded.
+  // Created as it opens, so every stack starts folded, and unloaded once it
+  // has animated closed.
   LazyLoader {
-    active: Panels.active === "notifications"
+    id: center
 
-    NotificationCenter {}
+    NotificationCenter {
+      onHidden: center.active = false
+    }
+  }
+
+  Connections {
+    target: Panels
+
+    function onActiveChanged() {
+      if (Panels.active === "notifications") center.active = true;
+    }
   }
 }

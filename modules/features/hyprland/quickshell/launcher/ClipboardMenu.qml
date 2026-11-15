@@ -1,6 +1,5 @@
 import Quickshell
 import qs.common
-import qs.nix
 import "search.js" as Search
 
 // cliphist's history, newest first; the picked entry goes back on the clipboard.
@@ -13,7 +12,7 @@ MenuWindow {
   fullHeight: list.fullHeight
 
   MenuCommand {
-    command: [Bin.cliphist, "list"]
+    command: ["cliphist", "list"]
     onDone: output => {
       root.entries = output.split("\n").filter(line => line !== "").map(line => {
         const tab = line.indexOf("\t");
@@ -29,7 +28,7 @@ MenuWindow {
     maxRows: 12
     results: root.search(list.query)
     onActivated: row => {
-      Quickshell.execDetached([Bin.cliphistCopy, row.id]);
+      Quickshell.execDetached(["sh", "-c", 'cliphist decode "$1" | wl-copy', "sh", row.id]);
       Panels.close();
     }
   }

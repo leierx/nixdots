@@ -253,40 +253,50 @@ Notes on specific features:
     component is its own directory owning its windows, widgets and IPC target,
     and `shell.qml` only instantiates them; `common/` holds what all share,
     `Theme` (colours, fonts, `px()`, spacing; a size used by one component lives
-    in it) and `Panels` (the one open panel, so opening one closes the others).
-    The Nix side has no options: a plain `bin` attrset in `quickshell.nix`
-    becomes the `Bin` singleton of store paths (it builds the same hyprmoncfg
-    derivation as `hyprmoncfg.nix`), and `palettes.ui` becomes `Colors`, both in
-    a `qs.nix` module added to the store copy, so the QML only runs from the
-    built copy (`programs.quickshell.configs.shell`), not the checkout. A new
-    component is a directory with a `Scope` holding its `IpcHandler`, a line in
-    `shell.qml`, and a bind in `quickshell.nix`.
+    in it) and `Panels`, the one open panel by name: opening any panel (a
+    picker, the notification center, later the bar's) closes the others, and
+    any IPC `close` closes whichever is open.
+    - The shell is written like any Hyprland rice, so it works on other
+      setups: the QML runs its tools by name from PATH (`cliphist`, `wl-copy`,
+      `pw-play`, `notify-send`, `xdg-open`, `systemd-run`, `hyprmoncfg`,
+      `wezterm`) rather than store paths, an exception to the rule above;
+      `quickshell.nix` installs the ones no other feature does. The only Nix
+      in the QML is `palettes.ui` as the `Colors` singleton in a `qs.nix`
+      module added to the store copy, so it only runs from the built copy
+      (`programs.quickshell.configs.shell`), not the checkout. A new component
+      is a directory with a `Scope` holding its `IpcHandler`, a line in
+      `shell.qml`, and a bind in `quickshell.nix`.
     - `launcher/` is the rofi-style pickers (`qs ipc -c shell call launcher
-      toggle apps|clipboard|monitors`), keyboard driven: `MenuWindow` +
-      `MenuList` (+ `MenuCommand` to read a command's output) and `search.js`;
-      a picker is a `<Name>Menu.qml` plus a `LazyLoader` in `Launcher.qml`.
-      Apps start in their own `systemd-run --user --scope`, so restarting the
-      service leaves them running. Hyprland's `quickshell:launcher` layer rule
-      dims behind it.
+      toggle apps|clipboard|monitors`), keyboard driven and snappy, without
+      animations: `MenuWindow` + `MenuList` (+ `MenuCommand` to read a
+      command's output) and `search.js`; a picker is a `<Name>Menu.qml` plus a
+      `LazyLoader` in `Launcher.qml`. Apps start in their own
+      `systemd-run --user --scope`, so restarting the service leaves them
+      running. Hyprland's `quickshell:launcher` layer rule dims behind it.
     - `notifications/` is the notification daemon (no mako): `Notifs.qml` owns
       `org.freedesktop.Notifications` and keeps every notification until it is
       dismissed. Popups stack top right on the monitor focused when each
-      arrived, below the bar; the app's timeout or 8 s, critical never,
-      hovering holds it; click runs the default action, right click or a swipe
-      dismisses; more than three actions fold into a "More" dropdown. The
-      center (`qs ipc -c shell call notifications toggle`) drops down from the
-      same corner, mouse only: notifications stacked per app (several fold
+      arrived, below the bar, sliding in and out; the app's timeout or 8 s,
+      critical never, hovering holds it; click runs the default action, right
+      click or a swipe dismisses; more than three actions fold into a "More"
+      dropdown. The center (`qs ipc -c shell call notifications toggle`) is
+      GNOME's layout, dropping down from the middle of the bar with a short
+      fade and slide: notifications on the left, stacked per app (several fold
       into one card with the others' edges showing; click unfolds, the header
-      folds, Dismiss clears the app), the wheel moving a fixed step a notch
-      (Qt's own scrolls Wayland's 15 px), and do not disturb, saved in
-      Quickshell's state dir, letting only critical ones pop up. Escape or a
-      click outside closes it. Sounds are elementary OS's (Unlicense) in
-      `sounds/`, played with `pw-play` (Quickshell has no QtMultimedia) when a
-      popup shows; low urgency is silent, and `suppress-sound` and
-      `sound-file` hints are honoured. Scripts use `qs ipc -c shell call
-      notifications <toggleDnd|setDnd|dnd|count|clear|hidePopups>`. History
-      lives in memory: a restart of the service (every rebuild that changes
-      the shell) empties it.
+      folds, Dismiss clears the app), a Do Not Disturb switch and Clear below,
+      and `Calendar.qml` on the right (locale's first weekday, ISO week
+      numbers, arrows or wheel for months, the date returns to today). Mouse
+      only, and unlike the pickers it is smooth: the list drags and flicks
+      with Qt's overshoot, a wheel notch glides 150 px (Qt's own moves the
+      15 px Wayland reports) and bounces at the ends, and stacks animate their
+      height. Escape or a click outside closes it. Do not disturb is saved in
+      Quickshell's state dir and lets only critical notifications pop up.
+      Sounds are elementary OS's (Unlicense) in `sounds/`, played with
+      `pw-play` (Quickshell has no QtMultimedia) when a popup shows; low
+      urgency is silent, and `suppress-sound` and `sound-file` hints are
+      honoured. Scripts use `qs ipc -c shell call notifications
+      <toggleDnd|setDnd|dnd|count|clear|hidePopups>`. History lives in memory;
+      a restart of the service empties it, by design.
   - hyprlock talks to fprintd itself (`auth:fingerprint`, on when
     `services.fprintd` is), so the NixOS half turns `fprintAuth` off for
     hyprlock's PAM service.

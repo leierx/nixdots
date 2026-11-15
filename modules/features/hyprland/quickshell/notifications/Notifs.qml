@@ -6,7 +6,6 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.Notifications
 import qs.common
-import qs.nix
 
 // The notification daemon. Every notification stays in `entries`, the
 // notification center's history, until it is dismissed; `popups` are the ones
@@ -42,7 +41,7 @@ Singleton {
   }
 
   function openUrl(url) {
-    Quickshell.execDetached([Bin.systemdRun, "--user", "--scope", "--quiet", Bin.xdgOpen, url]);
+    Quickshell.execDetached(["systemd-run", "--user", "--scope", "--quiet", "xdg-open", url]);
   }
 
   // The app's own sound if it sends one; low urgency is silent.
@@ -53,7 +52,7 @@ Singleton {
       || ["", "sounds/notification.oga", "sounds/critical.ogg"][notification.urgency];
     if (!file) return;
     const path = file.startsWith("/") ? file : Qt.resolvedUrl(file).toString().replace(/^file:\/\//, "");
-    Quickshell.execDetached([Bin.pwPlay, path]);
+    Quickshell.execDetached(["pw-play", path]);
   }
 
   // The monitor a new popup goes to.

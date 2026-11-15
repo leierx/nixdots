@@ -18,7 +18,7 @@ ColumnLayout {
   readonly property bool stacked: entries.length > 1
   // Edges of folded cards showing below the top one; the last one is taller
   // and says how many more there are.
-  readonly property int sheets: Math.min(entries.length - 1, 2)
+  readonly property int sheets: Math.max(0, Math.min(entries.length - 1, 2))
   readonly property int peek: Theme.px(8)
   readonly property int labelPeek: Theme.px(20)
 

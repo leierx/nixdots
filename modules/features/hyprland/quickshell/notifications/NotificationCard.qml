@@ -28,7 +28,7 @@ Item {
   readonly property bool overflow: actions.length > 3
   readonly property var progress: notification?.hints.value
   readonly property string appIcon: iconSource(notification?.appIcon) || (notification?.appName ? iconSource(DesktopEntries.heuristicLookup(notification.appName)?.icon) : "")
-  readonly property int imageSize: Theme.px(48)
+  readonly property int imageSize: Theme.px(40)
 
   readonly property string age: {
     const seconds = (Notifs.now - (entry?.time ?? Notifs.now)) / 1000;

@@ -62,6 +62,21 @@ Variants {
         }
       }
 
+      remove: Transition {
+        NumberAnimation {
+          property: "x"
+          to: list.width
+          duration: 200
+          easing.type: Easing.InCubic
+        }
+
+        NumberAnimation {
+          property: "opacity"
+          to: 0
+          duration: 200
+        }
+      }
+
       displaced: Transition {
         NumberAnimation {
           property: "y"
