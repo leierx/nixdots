@@ -49,7 +49,7 @@ Scope {
 
   NotificationPopups {}
 
-  // Created as it opens, so every stack starts folded, and unloaded once it
+  // Created as it opens, so every group starts collapsed, and unloaded once it
   // has animated closed.
   LazyLoader {
     id: center

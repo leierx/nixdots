@@ -5,9 +5,10 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import qs.common
+import "swipe.js" as Swipe
 
 // The notification center, dropping down from the middle of the bar like
-// GNOME's: every notification not yet dismissed on the left, stacked per app
+// GNOME's: every notification not yet dismissed on the left, grouped per app
 // with the latest app first, and a calendar on the right. Escape or a click
 // outside it closes it, and opening it puts away the popups. No screen is
 // set, so Hyprland opens it on the focused monitor.
@@ -243,38 +244,35 @@ PanelWindow {
           ListView {
             id: list
 
+            // The group being swiped, by index, and how far.
+            property int swiped: -1
+            property real swipeDistance: 0
+
             anchors.fill: parent
-            spacing: Theme.px(10)
+            spacing: Theme.px(8)
             clip: true
             flickableDirection: Flickable.VerticalFlick
             maximumFlickVelocity: 3500
-            // Every stack stays created, so one unfolded keeps its state.
+            // Every group stays created, so one expanded keeps its state.
             cacheBuffer: 100000
             model: ScriptModel {
               values: root.apps
             }
 
-            delegate: Item {
-              id: slot
-
+            delegate: NotificationGroup {
               required property string modelData
+              required property int index
 
               width: ListView.view.width
-              height: stack.implicitHeight
-              clip: true
-
-              Behavior on height {
-                NumberAnimation {
-                  duration: 200
-                  easing.type: Easing.OutCubic
-                }
+              entries: Notifs.entries.filter(entry => root.appKey(entry) === modelData)
+              lean: Swipe.lean(index, list.swiped, list.swipeDistance, Theme.px(70))
+              onSwipeMoved: distance => {
+                list.swiped = index;
+                list.swipeDistance = distance;
               }
-
-              NotificationStack {
-                id: stack
-
-                width: parent.width
-                entries: Notifs.entries.filter(entry => root.appKey(entry) === slot.modelData)
+              onSwipeEnded: {
+                list.swiped = -1;
+                list.swipeDistance = 0;
               }
             }
 

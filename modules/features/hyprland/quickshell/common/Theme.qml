@@ -10,6 +10,8 @@ Singleton {
   readonly property color bg: Colors.bg1
   readonly property color raised: Colors.bg2
   readonly property color selected: Colors.bg3
+  // Hover on something already selected.
+  readonly property color highlight: Colors.bg4
   readonly property color border: Colors.bg3
   readonly property color fg: Colors.fg
   readonly property color fgDim: Colors.gray

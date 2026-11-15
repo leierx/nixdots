@@ -7,110 +7,27 @@ import Quickshell.Services.Notifications
 import Quickshell.Widgets
 import qs.common
 
-// One notification: its app and age, then the image, summary and body, a
-// progress bar if the app sends one, and the actions. A click runs the default
-// action; a right click or a swipe dismisses it.
+// One popup: its app and age, then the image, summary and body, a progress bar
+// if the app sends one, and the actions. A click runs the default action, or
+// just puts the popup away; a right click or a swipe dismisses it.
 Item {
   id: root
 
   required property NotifEntry entry
-  // In the notification center, cards sit flat on the center's panel.
-  property bool flat: false
-  // On top of a folded stack, a click unfolds the stack instead.
-  property bool folded: false
-
-  signal unfold()
 
   readonly property Notification notification: entry?.notification ?? null
   readonly property NotificationAction defaultAction: notification?.actions.find(a => a.identifier === "default") ?? null
-  readonly property var actions: notification?.actions.filter(a => a.identifier !== "default") ?? []
-  // Three actions fit in a row; with more, the third button opens the rest.
-  readonly property bool overflow: actions.length > 3
   readonly property var progress: notification?.hints.value
-  readonly property string appIcon: iconSource(notification?.appIcon) || (notification?.appName ? iconSource(DesktopEntries.heuristicLookup(notification.appName)?.icon) : "")
+  readonly property string appIcon: Notifs.appIcon(notification)
   readonly property int imageSize: Theme.px(40)
 
-  readonly property string age: {
-    const seconds = (Notifs.now - (entry?.time ?? Notifs.now)) / 1000;
-    if (seconds < 60) return "now";
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-    return Qt.formatDate(entry.time, "d MMM");
-  }
-
   property bool expanded: false
-  property bool moreOpen: false
 
   implicitHeight: card.implicitHeight
 
-  function iconSource(icon) {
-    if (!icon) return "";
-    if (icon.startsWith("file://")) return icon;
-    if (icon.startsWith("/")) return `file://${icon}`;
-    return Quickshell.iconPath(icon, true);
-  }
-
   function activate() {
-    if (folded) {
-      unfold();
-    } else if (defaultAction) {
-      defaultAction.invoke();
-      if (flat) Panels.close();
-    } else if (!flat) {
-      entry.popup = false;
-    }
-  }
-
-  component ActionButton: Rectangle {
-    id: button
-
-    property alias text: label.text
-    property string glyph: ""
-
-    signal clicked()
-
-    implicitHeight: Theme.px(34)
-    radius: Theme.px(8)
-    color: area.containsMouse ? Theme.selected : root.flat ? Theme.bg : Theme.raised
-
-    Row {
-      anchors.centerIn: parent
-      spacing: Theme.px(6)
-
-      Text {
-        id: label
-
-        width: Math.min(implicitWidth, button.width - Theme.px(20) - (glyph.visible ? glyph.width + parent.spacing : 0))
-        color: Theme.fg
-        elide: Text.ElideRight
-        font {
-          family: Theme.fontFamily
-          pixelSize: Theme.fontBody
-        }
-      }
-
-      Text {
-        id: glyph
-
-        visible: button.glyph !== ""
-        anchors.verticalCenter: parent.verticalCenter
-        text: button.glyph
-        color: Theme.fgSoft
-        font {
-          family: Theme.glyphFamily
-          pixelSize: Theme.fontBody
-        }
-      }
-    }
-
-    MouseArea {
-      id: area
-
-      anchors.fill: parent
-      hoverEnabled: true
-      cursorShape: Qt.PointingHandCursor
-      onClicked: button.clicked()
-    }
+    if (defaultAction) defaultAction.invoke();
+    else entry.popup = false;
   }
 
   Rectangle {
@@ -119,8 +36,8 @@ Item {
     width: root.width
     implicitHeight: content.implicitHeight + Theme.padding * 2
     radius: Theme.radius
-    color: !root.flat ? Theme.bg : hover.hovered ? Theme.selected : Theme.raised
-    border.width: root.flat && !root.entry?.critical ? 0 : 1
+    color: Theme.bg
+    border.width: 1
     border.color: root.entry?.critical ? Theme.urgent : Theme.border
     opacity: 1 - Math.abs(x) / width
 
@@ -137,7 +54,7 @@ Item {
       id: hover
 
       onHoveredChanged: {
-        if (!root.flat) root.entry.hovered = hovered;
+        root.entry.hovered = hovered;
       }
     }
 
@@ -149,12 +66,11 @@ Item {
 
       anchors.fill: parent
       acceptedButtons: Qt.LeftButton | Qt.RightButton
-      cursorShape: root.flat ? Qt.PointingHandCursor : Qt.ArrowCursor
       drag {
         target: card
         axis: Drag.XAxis
         // Popups only leave towards the screen edge.
-        minimumX: root.flat ? -card.width : 0
+        minimumX: 0
         maximumX: card.width
       }
       onPressed: swiped = false
@@ -206,7 +122,7 @@ Item {
         }
 
         Text {
-          text: root.age
+          text: Notifs.age(root.entry?.time ?? Notifs.now)
           color: Theme.fgDim
           font {
             family: Theme.fontFamily
@@ -305,7 +221,7 @@ Item {
         visible: root.progress !== undefined
         implicitHeight: Theme.px(6)
         radius: height / 2
-        color: root.flat ? Theme.bg : Theme.selected
+        color: Theme.selected
 
         Rectangle {
           width: parent.width * Math.max(0, Math.min(100, root.progress ?? 0)) / 100
@@ -315,48 +231,9 @@ Item {
         }
       }
 
-      RowLayout {
+      NotificationActions {
         Layout.fillWidth: true
-        visible: root.actions.length > 0
-        spacing: Theme.px(8)
-
-        Repeater {
-          model: root.overflow ? root.actions.slice(0, 2) : root.actions
-
-          ActionButton {
-            required property NotificationAction modelData
-
-            Layout.fillWidth: true
-            text: modelData.text
-            onClicked: modelData.invoke()
-          }
-        }
-
-        ActionButton {
-          visible: root.overflow
-          Layout.fillWidth: true
-          text: "More"
-          glyph: root.moreOpen ? "▴" : "▾"
-          onClicked: root.moreOpen = !root.moreOpen
-        }
-      }
-
-      ColumnLayout {
-        Layout.fillWidth: true
-        visible: root.overflow && root.moreOpen
-        spacing: Theme.px(4)
-
-        Repeater {
-          model: root.overflow ? root.actions.slice(2) : []
-
-          ActionButton {
-            required property NotificationAction modelData
-
-            Layout.fillWidth: true
-            text: modelData.text
-            onClicked: modelData.invoke()
-          }
-        }
+        actions: root.notification?.actions.filter(a => a.identifier !== "default") ?? []
       }
     }
   }

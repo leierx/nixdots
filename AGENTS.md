@@ -281,15 +281,21 @@ Notes on specific features:
       click or a swipe dismisses; more than three actions fold into a "More"
       dropdown. The center (`qs ipc -c shell call notifications toggle`) is
       GNOME's layout, dropping down from the middle of the bar with a short
-      fade and slide: notifications on the left, stacked per app (several fold
-      into one card with the others' edges showing; click unfolds, the header
-      folds, Dismiss clears the app), a Do Not Disturb switch and Clear below,
-      and `Calendar.qml` on the right (locale's first weekday, ISO week
-      numbers, arrows or wheel for months, the date returns to today). Mouse
-      only, and unlike the pickers it is smooth: the list drags and flicks
-      with Qt's overshoot, a wheel notch glides 150 px (Qt's own moves the
-      15 px Wayland reports) and bounces at the ends, and stacks animate their
-      height. Escape or a click outside closes it. Do not disturb is saved in
+      fade and slide: notifications on the left, a Do Not Disturb switch and
+      Clear below, and `Calendar.qml` on the right (locale's first weekday,
+      ISO week numbers, arrows or wheel for months, the date returns to
+      today). Notifications are grouped per app the way end-4's dots do
+      (`NotificationGroup`, `NotificationItem`): one card with the app's icon,
+      name, latest time and a count pill over its two newest notifications a
+      line each; expanded, each gets an inset card with its image, whole body
+      and actions. Left click expands (or runs a lone notification's default
+      action), right click expands and collapses, middle click or a swipe
+      dismisses the group, or once expanded, one notification; while one is
+      swiped its neighbours lean along (`swipe.js`). Mouse only, and unlike
+      the pickers it is smooth: the list drags and flicks with Qt's overshoot,
+      a wheel notch glides 150 px (Qt's own moves the 15 px Wayland reports)
+      and bounces at the ends, and groups animate their height. Escape or a
+      click outside closes it. Do not disturb is saved in
       Quickshell's state dir and lets only critical notifications pop up.
       Sounds are elementary OS's (Unlicense) in `sounds/`, played with
       `pw-play` (Quickshell has no QtMultimedia) when a popup shows; low

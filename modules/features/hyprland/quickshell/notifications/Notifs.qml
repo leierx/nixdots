@@ -40,6 +40,27 @@ Singleton {
     for (const entry of entries.slice()) entry.notification.dismiss();
   }
 
+  // "now", "5m", "3h", then the date; ticks with `now`.
+  function age(time) {
+    const seconds = (now - time) / 1000;
+    if (seconds < 60) return "now";
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+    return Qt.formatDate(time, "d MMM");
+  }
+
+  // The app's icon: the one it sends, else its desktop entry's.
+  function appIcon(notification) {
+    return iconSource(notification?.appIcon) || (notification?.appName ? iconSource(DesktopEntries.heuristicLookup(notification.appName)?.icon) : "");
+  }
+
+  function iconSource(icon) {
+    if (!icon) return "";
+    if (icon.startsWith("file://")) return icon;
+    if (icon.startsWith("/")) return `file://${icon}`;
+    return Quickshell.iconPath(icon, true);
+  }
+
   function openUrl(url) {
     Quickshell.execDetached(["systemd-run", "--user", "--scope", "--quiet", "xdg-open", url]);
   }
