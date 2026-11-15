@@ -28,7 +28,7 @@ Column {
 
   // The children take their width from the column, so it needs its own.
   width: parent.width
-  spacing: 4
+  spacing: Theme.px(4)
 
   function updatePeak() {
     peakRows = Math.max(peakRows, Math.min(results.length, maxRows));
@@ -59,7 +59,7 @@ Column {
     id: input
 
     width: parent.width
-    padding: 14
+    padding: Theme.px(14)
     focus: true
     color: Theme.fg
     font {
@@ -68,7 +68,7 @@ Column {
     }
     // The default cursor blinks; this one stays lit.
     cursorDelegate: Rectangle {
-      width: 2
+      width: Theme.px(2)
       color: Theme.fg
       visible: input.cursorVisible
     }

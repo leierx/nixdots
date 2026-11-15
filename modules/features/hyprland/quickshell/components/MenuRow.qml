@@ -13,7 +13,7 @@ Rectangle {
   signal clicked()
 
   height: Theme.rowHeight
-  radius: 8
+  radius: Theme.px(8)
   // ListView attaches isCurrentItem to the delegate itself, which this is.
   color: ListView.isCurrentItem ? Theme.selected : "transparent"
 
@@ -26,10 +26,10 @@ Rectangle {
   RowLayout {
     anchors {
       fill: parent
-      leftMargin: 12
-      rightMargin: 12
+      leftMargin: Theme.px(12)
+      rightMargin: Theme.px(12)
     }
-    spacing: 14
+    spacing: Theme.px(14)
 
     IconImage {
       visible: !!root.modelData.icon
@@ -39,7 +39,7 @@ Rectangle {
 
     Column {
       Layout.fillWidth: true
-      spacing: 2
+      spacing: Theme.px(2)
 
       Text {
         width: parent.width
