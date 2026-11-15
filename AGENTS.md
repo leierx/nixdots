@@ -126,7 +126,7 @@ importer changes behaviour through the aspect's own options or `lib.mkForce`.
 | Option | Type | Notes |
 | --- | --- | --- |
 | `identity` | `{ username, fullName, email }` | Primary user; read by `users`, `git`, `home-manager`, profiles. |
-| `palettes` | `attrsOf (attrsOf str)` | `ui` (quickshell, mako, waybar, hyprland, hyprlock), `adwaita_dark` (wezterm, tmux). |
+| `palettes` | `attrsOf (attrsOf str)` | `ui` (quickshell, waybar, hyprland, hyprlock), `adwaita_dark` (wezterm, tmux). |
 | `hyprland.workspaces` | positive int | Workspaces per monitor; read by hyprsplit's config, the binds and waybar's labels. |
 | `nixosHosts.<name>` | submodule `{ system }` | Drives `flake.nixosConfigurations`. |
 | `systems` | `listOf str` | Option default `[ ]`; `per-system.nix` defines `[ "x86_64-linux" "aarch64-darwin" ]`. Drives `perSystem`. |
@@ -185,7 +185,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `gaming.nix` | nixos | `gaming` | Steam + proton-ge (Steam also sets 32-bit graphics) |
 | `git.nix` | nixos, homeManager | `git` | git on; user identity from `identity` |
 | `home-manager.nix` | nixos | `home-manager` | wires HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<hostname>/home` |
-| `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`, HM options `hyprmoncfg.profiles`, `quickshell.bin`) | see below |
+| `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`, HM options `hyprmoncfg.profiles`, `quickshell.bin`, `quickshell.notificationSounds`) | see below |
 | `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage; no host imports it |
 | `journald.nix` | nixos | `journald` | 90-day retention |
 | `libvirt.nix` | nixos | `libvirt` | libvirtd + unprivileged QEMU/KVM with swtpm, virt-manager, trusted `br0` lab bridge; no host imports it |
@@ -210,7 +210,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 Notes on specific features:
 
 - **`hyprland/`** is split across `default.nix` (nixos + HM base),
-  `bindings.nix`, `rules.nix`, `mako.nix`, `waybar.nix`, `hypridle.nix`,
+  `bindings.nix`, `rules.nix`, `waybar.nix`, `hypridle.nix`,
   `hyprlock.nix`, `hyprmoncfg.nix`, `plugins.nix`, `quickshell.nix`, plus `assets/`, `scripts/`
   and `quickshell/`. It uses the
   pinned Hyprland input and its **Lua-based settings API** — binds and
@@ -231,11 +231,7 @@ Notes on specific features:
     as it starts, so each session begins empty),
     hyprmoncfgd, hypridle, hyprpolkitagent, hyprpaper (the wallpaper; a
     config reload restarts it) and nm-applet (whose unit hardcodes
-    `graphical-session.target`, hence a `mkForce`). mako is D-Bus activated
-    through its packaged `mako.service` (the D-Bus file gains
-    `SystemdService=`), and a drop-in gives that unit
-    `Requisite=hyprland-session.target`, so a notification can't start it
-    elsewhere.
+    `graphical-session.target`, hence a `mkForce`).
   - Monitors are laid out by [hyprmoncfg](https://github.com/crmne/hyprmoncfg)
     (from `nixpkgs-unstable`, built against the pinned Hyprland so its hyprctl
     matches). Profiles are declared only: the HM option `hyprmoncfg.profiles`
@@ -248,12 +244,16 @@ Notes on specific features:
     profile places. `hyprland.lua` is read-only, so the module
     appends hyprmoncfg's `dofile` include itself with `lib.mkAfter`; it must stay
     the file's last line.
-  - The menus (SUPER+D apps, SUPER+V clipboard, SUPER+P monitor layouts) are
+  - The menus (SUPER+D apps, SUPER+V clipboard, SUPER+P monitor layouts,
+    SUPER+N notifications) are
     a [Quickshell](https://quickshell.org) shell in `quickshell/`, wired by
     `quickshell.nix`: one `quickshell.service` session daemon (restarted when the
     shell changes, via `X-Restart-Triggers`), driven over IPC
-    (`qs ipc -c shell call menu toggle <name>`). Nix adds a `qs.nix` module to
-    the store copy: `Colors` (`palettes.ui`) and `Bin`, the store paths of the HM
+    (`qs ipc -c shell call menu toggle <name>`). Quickshell comes from
+    `pkgs.unstable` (0.3.2), since 0.3.1 fixed crashes on freed objects in a
+    `ScriptModel`, which the notification lists hold. Nix adds a `qs.nix` module to
+    the store copy: `Colors` (`palettes.ui`), `Sounds` (the HM option
+    `quickshell.notificationSounds`) and `Bin`, the store paths of the HM
     option `quickshell.bin`, which any part of the feature extends
     (`hyprmoncfg.nix` adds its own). A new menu is a `menus/<Name>Menu.qml` on
     `MenuWindow` + `MenuList` (+ `MenuCommand` to read a command's output), a
@@ -261,6 +261,20 @@ Notes on specific features:
     in their own `systemd-run --user --scope`, so restarting the service leaves
     them running. The QML imports `qs.nix`, so it only runs from the built
     store copy (`programs.quickshell.configs.shell`), not the checkout.
+  - The same shell is the notification daemon (no mako): `services/Notifs.qml`
+    owns `org.freedesktop.Notifications` and keeps every notification until
+    it is dismissed. Popups (`notifications/`) stack top right on the monitor
+    focused when each arrived, below the bar; the app's timeout or 8 s,
+    critical never, hovering holds it; click runs the default action, right
+    click or a swipe dismisses; more than three actions fold into a "More"
+    dropdown. SUPER+N opens the history (`menus/NotificationsMenu.qml`) with
+    do not disturb, which is saved in Quickshell's state dir and lets only
+    critical ones pop up. Sounds play through `pw-play` (Quickshell has no
+    QtMultimedia) when a popup shows, honouring `suppress-sound`,
+    `sound-file` and `sound-name` (freedesktop theme). Scripts use
+    `qs ipc -c shell call notifications <toggleDnd|setDnd|dnd|count|clear|hidePopups>`.
+    History lives in memory: a restart of the service (every rebuild that
+    changes the shell) empties it.
   - hyprlock talks to fprintd itself (`auth:fingerprint`, on when
     `services.fprintd` is), so the NixOS half turns `fprintAuth` off for
     hyprlock's PAM service.

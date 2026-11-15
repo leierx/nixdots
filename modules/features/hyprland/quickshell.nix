@@ -11,6 +11,17 @@ root: {
       inherit (lib) types;
       inherit (lib.generators) mkLuaInline;
 
+      # sound-name hints are looked up here
+      soundTheme = "${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo";
+
+      sound =
+        urgency: default:
+        lib.mkOption {
+          type = types.nullOr types.path;
+          inherit default;
+          description = "Sound file for ${urgency} urgency notifications, or null for silence.";
+        };
+
       singleton = name: type: values: ''
         pragma Singleton
 
@@ -33,6 +44,18 @@ root: {
           pkgs.writeText "Colors.qml" (singleton "Colors" "color" root.config.palettes.ui)
         } $out/nix/Colors.qml
         cp ${pkgs.writeText "Bin.qml" (singleton "Bin" "string" config.quickshell.bin)} $out/nix/Bin.qml
+        cp ${
+          pkgs.writeText "Sounds.qml" (
+            singleton "Sounds" "string" (
+              lib.mapAttrs (
+                _: sound: if sound == null then "" else "${sound}"
+              ) config.quickshell.notificationSounds
+              // {
+                theme = soundTheme;
+              }
+            )
+          )
+        } $out/nix/Sounds.qml
       '';
 
       menuBind = key: menu: desc: {
@@ -50,8 +73,14 @@ root: {
         description = "Executables the shell runs, read in QML as `Bin.<name>`.";
       };
 
+      options.quickshell.notificationSounds = {
+        low = sound "low" null;
+        normal = sound "normal" "${soundTheme}/message-new-instant.oga";
+        critical = sound "critical" "${soundTheme}/dialog-warning.oga";
+      };
+
       config = {
-        # Theme.qml's font and shell.qml's icon theme
+        # Theme.qml's fonts and shell.qml's icon theme
         home.packages = [
           pkgs.adwaita-fonts
           pkgs.papirus-icon-theme
@@ -61,6 +90,8 @@ root: {
           terminal = lib.getExe config.programs.wezterm.package;
           systemdRun = lib.getExe' osConfig.systemd.package "systemd-run";
           notifySend = lib.getExe' pkgs.libnotify "notify-send";
+          xdgOpen = lib.getExe' pkgs.xdg-utils "xdg-open";
+          pwPlay = lib.getExe' pkgs.pipewire "pw-play";
           cliphist = lib.getExe config.services.cliphist.package;
           cliphistCopy = lib.getExe (
             pkgs.writeShellApplication {
@@ -76,6 +107,8 @@ root: {
 
         programs.quickshell = {
           enable = true;
+          # 0.3.1 fixed crashes on freed objects in a ScriptModel, which the notification lists hold
+          package = pkgs.unstable.quickshell;
           configs.shell = shell;
           activeConfig = "shell";
           systemd.enable = true;
@@ -90,6 +123,7 @@ root: {
           (menuBind "v" "clipboard" "Clipboard history")
           # SUPER+P, after Windows' display "Project" switcher
           (menuBind "P" "monitors" "Monitor layouts")
+          (menuBind "n" "notifications" "Notifications")
         ];
       };
     };
