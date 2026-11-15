@@ -308,7 +308,8 @@ Notes on specific features:
       to today). Opening it puts the popups away. Notifications are grouped
       per app the way end-4's dots do (`NotificationGroup`,
       `NotificationItem`): one card with the app's icon, name, latest time and
-      a count pill over its two newest notifications a line each; expanded,
+      a GTK menu button (count and arrow) over its two newest notifications a
+      line each; expanded,
       each gets an inset card with its image, whole body and actions. Left
       click on a notification (a lone one, or one in an expanded group) runs
       its default action, or dismisses it when it has none and at most one

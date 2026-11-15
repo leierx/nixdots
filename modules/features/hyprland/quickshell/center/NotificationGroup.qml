@@ -230,28 +230,28 @@ Item {
             font: Theme.caption
           }
 
+          // GTK's menu button: the count and the arrow, as libadwaita draws a
+          // label with an arrow; with no count it is an image button.
           Rectangle {
             implicitWidth: pill.implicitWidth
-            implicitHeight: 24
-            radius: height / 2
+            implicitHeight: 34
+            radius: Theme.buttonRadius
             color: pillArea.containsMouse ? Theme.buttonHover : Theme.button
 
-            // The arrow's 16 px leave 4 above and below; a lone arrow gets the
-            // same at its sides, which makes a circle.
             Row {
               id: pill
 
               anchors.centerIn: parent
-              leftPadding: root.single ? 4 : 9
-              rightPadding: 4
-              spacing: 1
+              leftPadding: root.single ? 9 : 10
+              rightPadding: root.single ? 9 : 10
+              spacing: 6
 
               Text {
                 visible: !root.single
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.shown.length
                 color: Theme.fg
-                font: Theme.caption
+                font: Theme.heading
               }
 
               ExpanderArrow {
