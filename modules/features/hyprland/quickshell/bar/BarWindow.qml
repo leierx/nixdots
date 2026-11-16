@@ -52,10 +52,6 @@ PanelWindow {
       verticalCenter: parent.verticalCenter
     }
 
-    WeatherNow {
-      anchors.verticalCenter: parent.verticalCenter
-    }
-
     Battery {
       anchors.verticalCenter: parent.verticalCenter
     }

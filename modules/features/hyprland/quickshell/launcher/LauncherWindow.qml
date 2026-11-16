@@ -23,8 +23,6 @@ PanelWindow {
   readonly property int rows: Math.max(1, Math.min(8, Math.floor((height - 2 * margin - fieldHeight - 17) / (matches.rowHeight + matches.spacing))))
   // A preview keeps the card's height, whatever the matches.
   readonly property int resultsHeight: (previewing ? rows * matches.rowHeight + (rows - 1) * matches.spacing + 16 : matches.implicitHeight + 8)
-  // Until the window has its size, the card would glide in from the top.
-  property bool settled: false
 
   color: "transparent"
   anchors {
@@ -351,15 +349,9 @@ PanelWindow {
     onClicked: Panels.close()
   }
 
-  Timer {
-    running: root.height > 0
-    interval: 50
-    onTriggered: root.settled = true
-  }
-
   Rectangle {
     anchors.horizontalCenter: parent.horizontalCenter
-    // Always centred, gliding as the matches change its height.
+    // Always centred, so it grows and shrinks about the middle.
     y: Math.round((root.height - height) / 2)
     width: root.cardWidth
     height: root.fieldHeight + (root.listing ? rule.height + root.resultsHeight : 0)
@@ -367,15 +359,6 @@ PanelWindow {
     color: Theme.bg
     border.width: 1
     border.color: Theme.outline
-
-    Behavior on height {
-      enabled: root.settled
-
-      NumberAnimation {
-        duration: 400
-        easing.type: Easing.OutCubic
-      }
-    }
 
     Shadow {}
 

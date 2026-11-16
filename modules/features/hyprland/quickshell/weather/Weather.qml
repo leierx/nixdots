@@ -9,11 +9,9 @@ Singleton {
   id: root
 
   property string place: ""
-  // From the hour under way: { time, temperature in °C, wind in m/s, rain in mm, symbol: MET's symbol code, icon }.
+  // From the hour under way: { time, temperature in °C, symbol: MET's symbol code, icon }.
   property var hours: []
   readonly property var now: hours[0] ?? null
-  // Yr's quarters of a day from the one under way: { start, quarter (0 for the night), low, high in °C, symbol, icon }.
-  property var periods: []
 
   // MET's terms ask for a User-Agent naming the app.
   readonly property string userAgent: "nixdots-quickshell github.com/leierx/nixdots"
@@ -31,11 +29,6 @@ Singleton {
 
   function degrees(celsius: real): string {
     return `${Math.round(celsius)}°`;
-  }
-
-  // Empty when MET rounds it to nothing.
-  function millimetres(amount: real): string {
-    return amount >= 0.05 ? `${amount.toFixed(1)} mm` : "";
   }
 
   function failed(what: string, error): void {
@@ -104,46 +97,17 @@ Singleton {
         if (!text) return;
         try {
           const hourAgo = Date.now() - 60 * 60 * 1000;
-          const series = JSON.parse(text).properties.timeseries
-            .filter(entry => Date.parse(entry.time) > hourAgo)
-            .map(entry => ({ time: new Date(entry.time), data: entry.data }));
-
-          root.hours = series
-            .filter(entry => entry.data.next_1_hours)
+          root.hours = JSON.parse(text).properties.timeseries
+            .filter(entry => Date.parse(entry.time) > hourAgo && entry.data.next_1_hours)
             .map(entry => {
               const symbol = entry.data.next_1_hours.summary.symbol_code;
               return {
-                time: entry.time,
+                time: new Date(entry.time),
                 temperature: entry.data.instant.details.air_temperature,
-                wind: entry.data.instant.details.wind_speed,
-                rain: entry.data.next_1_hours.details.precipitation_amount ?? 0,
                 symbol,
                 icon: root.icon(symbol),
               };
             });
-
-          // Yr's quarters of a day, each as MET's six-hour forecast from its first entry: hourly for
-          // two days and six-hourly after, so a quarter starts where the forecast has an entry.
-          const periods = [];
-          for (const entry of series) {
-            const next = entry.data.next_6_hours;
-            const quarter = Math.floor(entry.time.getHours() / 6);
-            const start = new Date(entry.time.getFullYear(), entry.time.getMonth(), entry.time.getDate(), quarter * 6);
-            if (!next || periods.some(period => period.start.getTime() === start.getTime())) continue;
-            const end = new Date(start.getTime() + 6 * 60 * 60 * 1000);
-            const values = series
-              .filter(other => other.time >= start && other.time < end)
-              .map(other => other.data.instant.details.air_temperature);
-            periods.push({
-              start,
-              quarter,
-              low: Math.min(...values),
-              high: Math.max(...values),
-              symbol: next.summary.symbol_code,
-              icon: root.icon(next.summary.symbol_code),
-            });
-          }
-          root.periods = periods;
         } catch (error) {
           root.failed("fetching the forecast", error);
         }

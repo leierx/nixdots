@@ -338,8 +338,8 @@ Notes on specific features:
       across the gaps between rows and a pointer leaving for a moment.
       Widths are in em and the card and its rows shrink to fit the screen,
       so it holds at any scale. It is always centred on the screen, its
-      height easing (400 ms) as the matches change, so it grows and shrinks about the
-      middle and never slides in from the top.
+      height following the matches without an animation, so it grows and
+      shrinks about the middle.
       `MenuCommand` reads a command's output and sends a failure as a
       notification, or only to the log while `quiet` (a load nobody waits
       on). Search matches every typed word as a substring, or in a
@@ -394,8 +394,8 @@ Notes on specific features:
       `BarWindow` per screen), sized and lettered like the waybar it replaced
       (Adwaita Sans at 16 px, on GNOME Shell's panel black): the NixOS logo
       (`nixos.svg`, which does nothing yet), the monitor's workspaces, the
-      clock (opens the center), the weather now (`WeatherNow`: MET's icon and
-      the temperature, also opening the center), the battery and the tray. Quickshell keeps Hyprland's state by
+      clock (a flat round button, as GNOME's panel draws its date: shaded on
+      hover and while the center it opens is open), the battery and the tray. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
       renames, so `Bar.qml` refreshes monitors and workspaces on those.
       - Workspaces: each bar shows its monitor's own `1 … n` (monitor id × n
@@ -429,12 +429,12 @@ Notes on specific features:
       public address puts the machine (ipinfo.io), so it follows the laptop,
       fetched with `curl` from the shell's start and every half hour after,
       coordinates at two decimals for
-      MET's cache. `now` is the hour under way (temperature, wind, rain,
-      MET's symbol code), `periods` Yr's quarters of a day from the one under
-      way (night, morning, afternoon and evening, each with MET's six-hour
-      symbol, its low and high). The card shows now, then today, tomorrow
-      and the day after by quarter: nights by their low, the rest by their
-      high, quarters already over as dashes. The icons are MET's own
+      MET's cache. `hours` runs hourly from the hour under way (`now`): its
+      temperature, MET's symbol code and icon. The card, laid out like
+      Windows' weather widget, has the icon, the place over the temperature
+      in °C, the condition and the next 24 hours' high / low on the right
+      (the rest of today is an hour or two late in the evening), and the
+      next six hours below. The icons are MET's own
       ([metno/weathericons](https://github.com/metno/weathericons), MIT),
       which `quickshell.nix` fetches into `weather/icons/` with their
       `legend.csv`, which names the symbols ("Partly cloudy").

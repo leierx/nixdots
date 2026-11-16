@@ -8,12 +8,10 @@ Rectangle {
   id: root
 
   readonly property var now: Weather.now
-  readonly property var days: Weather.periods
-    .map(period => new Date(period.start.getFullYear(), period.start.getMonth(), period.start.getDate()))
-    .filter((date, index, dates) => dates.findIndex(other => other.getTime() === date.getTime()) === index)
-    .slice(0, 3)
-  readonly property int labelWidth: 66
-  readonly property int padding: 16
+  readonly property var next: Weather.hours.slice(1, 7)
+  // The next day's rather than the rest of today's, which late in the evening is an hour or two.
+  readonly property var day: Weather.hours.slice(0, 24).map(hour => hour.temperature)
+  readonly property int padding: 18
 
   // MET's SVGs drawn at the size shown, so they stay sharp.
   component WeatherIcon: Image {
@@ -23,10 +21,6 @@ Rectangle {
     height: size
     sourceSize: Qt.size(size, size)
     fillMode: Image.PreserveAspectFit
-  }
-
-  function sameDay(a, b) {
-    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   }
 
   implicitHeight: content.implicitHeight + 2 * padding
@@ -42,137 +36,108 @@ Rectangle {
       right: parent.right
       margins: root.padding
     }
-    spacing: 12
+    spacing: 16
 
     RowLayout {
       Layout.fillWidth: true
-      spacing: 12
+      spacing: 10
 
       WeatherIcon {
-        size: 52
+        size: 76
         source: root.now?.icon ?? ""
       }
 
-      Text {
-        text: Weather.degrees(root.now?.temperature ?? 0)
-        color: Theme.fg
-        font.family: Theme.body.family
-        font.pointSize: 22
-        font.weight: Font.Light
+      ColumnLayout {
+        spacing: -6
+
+        Text {
+          text: Weather.place
+          color: Theme.fg
+          font: Theme.heading
+        }
+
+        Row {
+          Text {
+            text: Math.round(root.now?.temperature ?? 0)
+            color: Theme.fg
+            font.family: Theme.body.family
+            font.pointSize: 38
+            font.weight: Font.Light
+          }
+
+          Text {
+            topPadding: 10
+            text: "°C"
+            color: Theme.fgDim
+            font: Theme.heading
+          }
+        }
       }
 
       ColumnLayout {
         Layout.fillWidth: true
-        spacing: 0
+        Layout.alignment: Qt.AlignBottom
+        Layout.bottomMargin: 6
+        spacing: 2
 
         Text {
           Layout.fillWidth: true
+          horizontalAlignment: Text.AlignRight
           text: Weather.describe(root.now?.symbol ?? "")
           color: Theme.fg
           font: Theme.heading
+          wrapMode: Text.Wrap
+          maximumLineCount: 2
           elide: Text.ElideRight
         }
 
         Text {
           Layout.fillWidth: true
-          text: [Weather.place, `${Math.round(root.now?.wind ?? 0)} m/s`, Weather.millimetres(root.now?.rain ?? 0)].filter(part => part).join(" · ")
+          horizontalAlignment: Text.AlignRight
+          visible: root.day.length > 0
+          text: `${Weather.degrees(Math.max(...root.day))} / ${Weather.degrees(Math.min(...root.day))}`
           color: Theme.fgDim
-          font: Theme.caption
-          elide: Text.ElideRight
+          font: Theme.body
         }
       }
     }
 
-    ColumnLayout {
+    RowLayout {
       Layout.fillWidth: true
-      spacing: 6
+      spacing: 0
 
-      RowLayout {
-        Layout.fillWidth: true
-        spacing: 0
+      Repeater {
+        model: root.next
 
-        Item {
-          Layout.preferredWidth: root.labelWidth
-        }
+        ColumnLayout {
+          id: hour
 
-        Repeater {
-          model: ["Night", "Morning", "Afternoon", "Evening"]
+          required property var modelData
+
+          Layout.fillWidth: true
+          Layout.preferredWidth: 1
+          spacing: 4
 
           Text {
-            required property string modelData
-
             Layout.fillWidth: true
-            Layout.preferredWidth: 1
             horizontalAlignment: Text.AlignHCenter
-            text: modelData
+            text: Qt.locale().toString(hour.modelData.time, "HH")
             color: Theme.fgDim
             font: Theme.caption
           }
-        }
-      }
 
-      Repeater {
-        model: root.days
-
-        RowLayout {
-          id: day
-
-          required property date modelData
-          required property int index
-
-          Layout.fillWidth: true
-          spacing: 0
-
-          Text {
-            Layout.preferredWidth: root.labelWidth
-            text: ["Today", "Tomorrow"][day.index] ?? Qt.locale().toString(day.modelData, "ddd")
-            color: Theme.fg
-            font: Theme.body
+          WeatherIcon {
+            Layout.alignment: Qt.AlignHCenter
+            size: 30
+            source: hour.modelData.icon
           }
 
-          Repeater {
-            // A quarter already over has no forecast.
-            model: [0, 1, 2, 3].map(quarter => Weather.periods.find(period => period.quarter === quarter && root.sameDay(period.start, day.modelData)) ?? null)
-
-            ColumnLayout {
-              id: cell
-
-              required property var modelData
-
-              Layout.fillWidth: true
-              Layout.preferredWidth: 1
-              spacing: 1
-
-              Item {
-                Layout.alignment: Qt.AlignHCenter
-                implicitWidth: 28
-                implicitHeight: 28
-
-                WeatherIcon {
-                  anchors.fill: parent
-                  visible: cell.modelData !== null
-                  size: 28
-                  source: cell.modelData?.icon ?? ""
-                }
-
-                Text {
-                  anchors.centerIn: parent
-                  visible: cell.modelData === null
-                  text: "–"
-                  color: Theme.fgDim
-                  font: Theme.body
-                }
-              }
-
-              Text {
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                // Nights by their low, the rest by their high.
-                text: cell.modelData ? Weather.degrees(cell.modelData.quarter === 0 ? cell.modelData.low : cell.modelData.high) : " "
-                color: Theme.fg
-                font: Theme.caption
-              }
-            }
+          Text {
+            Layout.fillWidth: true
+            horizontalAlignment: Text.AlignHCenter
+            text: Weather.degrees(hour.modelData.temperature)
+            color: Theme.fg
+            font: Theme.body
           }
         }
       }
