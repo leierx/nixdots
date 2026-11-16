@@ -8,8 +8,8 @@ Rectangle {
   id: root
 
   implicitWidth: label.implicitWidth + 24
-  implicitHeight: 28
-  radius: height / 2
+  implicitHeight: 22
+  radius: 6
   color: Panels.active === "center" ? Theme.selected : area.containsMouse ? Theme.hover : "transparent"
 
   SystemClock {

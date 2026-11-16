@@ -295,8 +295,8 @@ Notes on specific features:
       running. The clipboard picker decodes images into Quickshell's cache
       (pruned to what cliphist still lists) and shows them as thumbnails.
       Hyprland's `quickshell:launcher` layer rule dims behind it.
-    - `bar/` is the bar along the top of every monitor (`Bar.qml`, one solid
-      `BarWindow` per screen in `Theme.bg`): the NixOS logo (a square that
+    - `bar/` is the bar along the top of every monitor (`Bar.qml`, one slim
+      `BarWindow` per screen in GNOME Shell's panel black): the NixOS logo (a square that
       does nothing yet), the monitor's workspaces, the clock (opens the
       center), the battery and the tray. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores

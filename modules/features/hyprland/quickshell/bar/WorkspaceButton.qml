@@ -21,9 +21,10 @@ Rectangle {
   readonly property bool occupied: (workspace?.toplevels.values.length ?? 0) > 0
   readonly property bool urgent: workspace?.urgent ?? false
 
-  implicitWidth: Math.max(implicitHeight, label.implicitWidth + 16)
-  implicitHeight: 24
-  radius: height / 2
+  implicitWidth: Math.max(implicitHeight, label.implicitWidth + 12)
+  implicitHeight: 22
+  // libadwaita's button corners, scaled to its size.
+  radius: 6
   color: focused ? Theme.accentBg : shown ? Theme.selected : area.containsMouse ? Theme.hover : "transparent"
   border.width: foreign ? 1 : 0
   border.color: Theme.border
@@ -42,7 +43,7 @@ Rectangle {
     color: root.focused ? Theme.accentFg : root.urgent ? Theme.destructive : Theme.fg
     // Dim while empty, shown or not.
     opacity: root.occupied ? 1 : 0.55
-    font: Theme.body
+    font: Theme.heading
   }
 
   MouseArea {

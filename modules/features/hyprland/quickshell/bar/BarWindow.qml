@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
 import qs.common
+import qs.nix
 
 // One monitor's bar: the NixOS logo and the monitor's workspaces on the left,
 // the clock in the middle, the battery and the tray on the right.
@@ -18,8 +19,9 @@ PanelWindow {
     left: true
     right: true
   }
-  implicitHeight: 34
-  color: Theme.bg
+  implicitHeight: 26
+  // GNOME Shell's panel black.
+  color: Colors.dark_5
 
   WlrLayershell.namespace: "quickshell:bar"
 
