@@ -9,6 +9,7 @@ MouseArea {
   implicitWidth: label.implicitWidth + 24
   implicitHeight: 27
   hoverEnabled: true
+  cursorShape: Qt.PointingHandCursor
   onClicked: Panels.toggle("center")
 
   SystemClock {

@@ -7,6 +7,7 @@ import qs.bar
 import qs.center
 import qs.launcher
 import qs.notifications
+import qs.shortcuts
 
 ShellRoot {
   Bar {}
@@ -16,4 +17,6 @@ ShellRoot {
   Notifications {}
 
   Center {}
+
+  Shortcuts {}
 }

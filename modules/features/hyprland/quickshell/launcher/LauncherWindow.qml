@@ -16,13 +16,18 @@ PanelWindow {
   required property LauncherMode mode
   readonly property bool previewing: mode.preview !== null
   readonly property bool listing: matches.count > 0
+  // Full height and still while typing; one that waits for a query grows once, at its first match.
+  property bool grown: false
+  readonly property bool expanded: grown || !mode.waitsForQuery
+
   // Clear of the screen's edges, whatever its size and scale.
   readonly property int margin: Math.round(3 * Theme.em)
   readonly property real cardWidth: Math.min(Math.round((previewing || mode.wide ? 68 : 48) * Theme.em), width - 2 * margin)
   readonly property int fieldHeight: 68
   readonly property int rows: Math.max(1, Math.min(8, Math.floor((height - 2 * margin - fieldHeight - 17) / (matches.rowHeight + matches.spacing))))
-  // A preview keeps the card's height, whatever the matches.
-  readonly property int resultsHeight: (previewing ? rows * matches.rowHeight + (rows - 1) * matches.spacing + 16 : matches.implicitHeight + 8)
+  readonly property int resultsHeight: rows * matches.rowHeight + (rows - 1) * matches.spacing + (previewing ? 16 : 8)
+
+  onListingChanged: if (listing) grown = true
 
   color: "transparent"
   anchors {
@@ -354,7 +359,7 @@ PanelWindow {
     // Always centred, so it grows and shrinks about the middle.
     y: Math.round((root.height - height) / 2)
     width: root.cardWidth
-    height: root.fieldHeight + (root.listing ? rule.height + root.resultsHeight : 0)
+    height: root.fieldHeight + (root.expanded ? rule.height + root.resultsHeight : 0)
     radius: 22
     color: Theme.bg
     border.width: 1
@@ -403,7 +408,7 @@ PanelWindow {
       }
       height: root.previewing ? 1 : 0
       color: Theme.border
-      visible: root.listing && root.previewing
+      visible: root.expanded && root.previewing
     }
 
     // Down to the card's edge as it grows, so the list clips itself inside it.
@@ -414,7 +419,7 @@ PanelWindow {
         right: parent.right
         bottom: parent.bottom
       }
-      visible: root.listing
+      visible: root.expanded
       spacing: 0
 
       ResultList {

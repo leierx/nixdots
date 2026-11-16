@@ -248,7 +248,8 @@ Notes on specific features:
     appends hyprmoncfg's `dofile` include itself with `lib.mkAfter`; it must stay
     the file's last line.
   - The desktop components (the bar, the launcher's SUPER+D apps, SUPER+V
-    clipboard, SUPER+P monitor layouts and SUPER+Tab windows, the notification
+    clipboard, SUPER+P monitor layouts and SUPER+Tab windows, SUPER+? keyboard
+    shortcuts, the notification
     center from the bar's clock) are a [Quickshell](https://quickshell.org)
     shell in `quickshell/`, wired by `quickshell.nix`: one `quickshell.service`
     session daemon (restarted when the shell changes, via `X-Restart-Triggers`).
@@ -259,7 +260,7 @@ Notes on specific features:
     `Theme`, `StateFile` (a `JsonAdapter`'s file in Quickshell's state dir),
     `Shadow`, `ExpanderArrow`, and `Panels`, the one open panel by name, with
     the IPC target `panels` (`qs ipc -c shell call panels open|close|toggle
-    <name>`; `apps`, `clipboard`, `monitors`, `windows`, `center`): opening any panel (a
+    <name>`; `apps`, `clipboard`, `monitors`, `windows`, `center`, `shortcuts`): opening any panel (a
     launcher mode, the notification center, a tray menu) closes the others, and
     `close` closes whichever is open.
     - Conventions for the QML:
@@ -337,9 +338,10 @@ Notes on specific features:
       right under the field. One hover for the list, not each row's, holds
       across the gaps between rows and a pointer leaving for a moment.
       Widths are in em and the card and its rows shrink to fit the screen,
-      so it holds at any scale. It is always centred on the screen, its
-      height following the matches without an animation, so it grows and
-      shrinks about the middle.
+      so it holds at any scale. It is always centred on the screen and holds
+      still while typing: full height from the start, except in a mode that
+      waits for a query (`apps`), which grows once, without an animation, at
+      its first match and keeps that height until it closes.
       `MenuCommand` reads a command's output and sends a failure as a
       notification, or only to the log while `quiet` (a load nobody waits
       on). Search matches every typed word as a substring, or in a
@@ -390,11 +392,21 @@ Notes on specific features:
         it shrinks smoothly) in a frame shaped by the size Hyprland reports
         before the first frame arrives. Quickshell can only capture it through
         Hyprland's toplevel export; elsewhere it shows the app's icon.
+    - `shortcuts/` is the keyboard shortcuts window (SUPER+?, as GTK apps
+      use Ctrl+?), GTK's shortcuts window in groups balanced over up to three
+      columns, each row a description and its keys as keycaps. It reads
+      `hyprctl binds -j` on every open, so it lists whatever binds carry a
+      description: numbered ones ("Focus workspace 1" … "6") fold into one
+      row, a submap's binds form a group under the bind whose description its
+      name begins ("system_control", "System controls") and read "Super X
+      then L", media keys are left out, and the rest are grouped by their
+      description into General, Windows, Workspaces and Mouse. Its
+      `quickshell:shortcuts` layer rule dims behind it.
     - `bar/` is the bar along the top of every monitor (`Bar.qml`, one
       `BarWindow` per screen), sized and lettered like the waybar it replaced
       (Adwaita Sans at 16 px, on GNOME Shell's panel black): the NixOS logo
       (`nixos.svg`, which does nothing yet), the monitor's workspaces, the
-      clock (a flat round button, as GNOME's panel draws its date: shaded on
+      clock (a flat round button with a pointing hand, as GNOME's panel draws its date: shaded on
       hover and while the center it opens is open), the battery and the tray. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
       renames, so `Bar.qml` refreshes monitors and workspaces on those.
@@ -411,10 +423,13 @@ Notes on specific features:
         left click activates (or opens the menu of a menu-only item), middle is the secondary action, right opens
         the menu: `TrayMenu`, libadwaita's popover menu drawn from
         `QsMenuOpener` with its corner at the pointer (leftwards where it would
-        run off the screen), on an overlay whose input is only the card (a
-        `Panels` panel per screen), with submenus replacing it under a back row
-        (the menu stays held open, or Quickshell unloads its submenus), stray
-        separators dropped. Like a GTK menu it takes no keyboard and no grab,
+        run off the screen), on an overlay (a `Panels` panel per screen) whose
+        input region is only its cards (`Region.regions`), stray separators
+        dropped. Submenus cascade as GTK's do: a card each, beside the row that
+        opens it (held highlighted), opened by a click or 200 ms of hover, so
+        the pointer can cross other rows on its way; each goes the way the last
+        one went until another its width would not fit, and its rows' arrows
+        sit on that side, pointing that way. Like a GTK menu it takes no keyboard and no grab,
         so the app in front keeps both and a click elsewhere goes through; it
         closes 300 ms after the pointer is on neither it nor its icon (Hyprland
         reports no hover on a new menu until the pointer moves).
@@ -642,7 +657,10 @@ out=$(nix build --no-link --print-out-paths --impure --expr \
   '(builtins.getFlake "path:'$PWD'").nixosConfigurations.desktop.config.home-manager.users.'$USER'.programs.quickshell.configs.shell')
 rm -rf $T/shell && cp -rL "$out" $T/shell && chmod -R u+w $T/shell
 
-# Fakes: hyprmoncfg logs applies instead of making them; cliphist reads a copy.
+# Fakes: hyprmoncfg logs applies instead of making them; cliphist reads a copy;
+# hyprctl gives the real binds (the shortcuts window), as there is no Hyprland.
+hyprctl binds -j > $T/binds.json
+printf '#!/bin/sh\ncat %s/binds.json\n' $T > $T/bin/hyprctl
 hyprmoncfg status --json > $T/status.json
 cp ~/.cache/cliphist/db $T/clip.db
 printf '#!/bin/sh\ncase $1 in status) cat %s/status.json ;; *) echo "$@" >> %s/hyprmoncfg.log ;; esac\n' $T $T > $T/bin/hyprmoncfg

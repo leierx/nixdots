@@ -8,6 +8,7 @@ import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.common
 
+// GTK's menus: submenus cascade beside the row that opens them, the way the last one went until the screen ends.
 PanelWindow {
   id: root
 
@@ -15,18 +16,18 @@ PanelWindow {
   required property point anchor
   // While the pointer rests on the menu's icon: Hyprland reports none on the menu until the pointer moves.
   property bool held: false
-  // Submenus entered, innermost last; an entry the app has since dropped turns null.
+  // Submenus open, outermost first; an entry the app has since dropped turns null.
   property list<QsMenuEntry> path: []
-  readonly property QsMenuEntry submenu: path[path.length - 1] ?? null
+  readonly property var levels: [root.menu, ...root.path.filter(entry => entry !== null)]
+  // Cards register here, as the window's input region is theirs alone.
+  property list<Item> cards: []
+  // A row's submenu opens, or a deeper one closes, a moment after the pointer reaches it, so it can cross other rows on the way.
+  property var pending: null
   readonly property int padding: 6
-  // Without the stray separators apps leave around items they hide.
-  readonly property var entries: {
-    const entries = [];
-    for (const entry of opener.children.values) {
-      if (!entry.isSeparator || (entries.length > 0 && !entries[entries.length - 1].isSeparator)) entries.push(entry);
-    }
-    if (entries.length > 0 && entries[entries.length - 1].isSeparator) entries.pop();
-    return entries;
+
+  function apply(level: int, entry: var): void {
+    root.pending = null;
+    root.path = [...root.path.slice(0, level), ...(entry?.hasChildren ? [entry] : [])];
   }
 
   color: "transparent"
@@ -37,9 +38,8 @@ PanelWindow {
     right: true
   }
   exclusionMode: ExclusionMode.Ignore
-  // Only the card takes input, so the bar beside it keeps its clicks.
   mask: Region {
-    item: card
+    regions: root.cards.map(card => card.region)
   }
 
   WlrLayershell.layer: WlrLayer.Overlay
@@ -47,201 +47,220 @@ PanelWindow {
   // Like a GTK menu: the app keeps the keyboard, and the menu goes once the pointer leaves it.
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-  // Holds the root menu, since Quickshell unloads its submenus once no opener has it.
-  QsMenuOpener {
-    menu: root.menu
+  Timer {
+    id: hoverDelay
+
+    interval: 200
+    onTriggered: if (root.pending) root.apply(root.pending.level, root.pending.entry)
   }
 
-  QsMenuOpener {
-    id: opener
-
-    menu: root.submenu ?? root.menu
+  Timer {
+    running: !inside.hovered && !root.held
+    interval: 300
+    onTriggered: Panels.close()
   }
 
-  Rectangle {
-    id: card
-
-    // Its corner at the pointer, leftwards where it would run off the screen.
-    x: root.anchor.x + width + Theme.gap <= root.width ? root.anchor.x : Math.max(Theme.gap, root.anchor.x - width)
-    y: Math.min(root.anchor.y, root.height - height - Theme.gap)
-    width: Math.max(180, rows.implicitWidth) + root.padding * 2
-    height: rows.implicitHeight + root.padding * 2
-    radius: Theme.cardRadius
-    color: Theme.bg
-    border.width: 1
-    border.color: Theme.outline
-
-    Shadow {}
+  // Only the cards take input, so this is hovered exactly while the pointer is on one; hover reaches ancestors, not siblings beneath.
+  Item {
+    anchors.fill: parent
 
     HoverHandler {
       id: inside
     }
 
-    Timer {
-      running: !inside.hovered && !root.held
-      interval: 300
-      onTriggered: Panels.close()
-    }
+    Repeater {
+      id: levels
 
-    ColumnLayout {
-      id: rows
-
-      anchors {
-        fill: parent
-        margins: root.padding
-      }
-      spacing: 0
-
-      Rectangle {
-        Layout.fillWidth: true
-        implicitWidth: title.implicitWidth + 64
-        implicitHeight: 32
-        visible: root.submenu !== null
-        radius: 6
-        color: backHover.hovered ? Theme.hover : "transparent"
-
-        ExpanderArrow {
-          x: 8
-          anchors.verticalCenter: parent.verticalCenter
-          rotation: 90
-        }
-
-        Text {
-          id: title
-
-          anchors.centerIn: parent
-          text: root.submenu?.text ?? ""
-          color: Theme.fg
-          font: Theme.heading
-        }
-
-        HoverHandler {
-          id: backHover
-        }
-
-        MouseArea {
-          anchors.fill: parent
-          onClicked: root.path = root.path.slice(0, -1)
-        }
+      model: ScriptModel {
+        values: root.levels
       }
 
       Rectangle {
-        Layout.fillWidth: true
-        Layout.topMargin: 6
-        Layout.bottomMargin: 6
-        implicitHeight: 1
-        visible: root.submenu !== null
-        color: Theme.border
-      }
+        id: card
 
-      Repeater {
-        model: ScriptModel {
-          values: root.entries
+        required property QsMenuHandle modelData
+        required property int index
+
+        readonly property Region region: Region {
+          item: card
         }
-
-        Item {
-          id: entry
-
-          required property QsMenuEntry modelData
-
-          Layout.fillWidth: true
-          implicitWidth: modelData.isSeparator ? 0 : content.implicitWidth + 24 + (modelData.hasChildren ? 24 : 0)
-          implicitHeight: modelData.isSeparator ? 13 : 32
-
-          Rectangle {
-            anchors.verticalCenter: parent.verticalCenter
-            width: parent.width
-            height: 1
-            visible: entry.modelData.isSeparator
-            color: Theme.border
+        readonly property Item parentCard: index > 0 ? levels.itemAt(index - 1) : null
+        // Where its submenus go: 1 to the right, -1 to the left; on as the last one went while another of its width fits.
+        readonly property int direction: {
+          const way = parentCard?.direction ?? (root.anchor.x + width + Theme.gap <= root.width ? 1 : -1);
+          const fits = way > 0 ? x + 2 * width + Theme.gap <= root.width : x - width - Theme.gap >= 0;
+          return fits ? way : -way;
+        }
+        readonly property bool cascades: entries.some(entry => entry.hasChildren)
+        // Without the stray separators apps leave around items they hide.
+        readonly property var entries: {
+          const entries = [];
+          for (const entry of opener.children.values) {
+            if (!entry.isSeparator || (entries.length > 0 && !entries[entries.length - 1].isSeparator)) entries.push(entry);
           }
+          if (entries.length > 0 && entries[entries.length - 1].isSeparator) entries.pop();
+          return entries;
+        }
+        // The row that opened it, in its parent's card.
+        readonly property real openerY: parentCard?.rowY(modelData) ?? 0
 
-          Rectangle {
-            anchors.fill: parent
-            visible: !entry.modelData.isSeparator
-            radius: 6
-            color: entryHover.hovered && entry.modelData.enabled ? Theme.hover : "transparent"
+        function rowY(entry: var): real {
+          const row = rowsRepeater.itemAt(entries.indexOf(entry));
+          return row ? row.mapToItem(card, 0, 0).y : root.padding;
+        }
 
-            Row {
-              id: content
+        // Its corner at the pointer; a submenu overlapping its parent a little, level with the row that opened it.
+        x: {
+          if (!parentCard) return root.anchor.x + width + Theme.gap <= root.width ? root.anchor.x : Math.max(Theme.gap, root.anchor.x - width);
+          const beside = parentCard.direction > 0 ? parentCard.x + parentCard.width - 4 : parentCard.x - width + 4;
+          return Math.max(Theme.gap, Math.min(beside, root.width - width - Theme.gap));
+        }
+        y: Math.max(Theme.gap, Math.min((parentCard ? parentCard.y + openerY - root.padding : root.anchor.y), root.height - height - Theme.gap))
+        width: Math.max(180, rows.implicitWidth) + root.padding * 2
+        height: rows.implicitHeight + root.padding * 2
+        radius: Theme.cardRadius
+        color: Theme.bg
+        border.width: 1
+        border.color: Theme.outline
 
-              x: 12
-              anchors.verticalCenter: parent.verticalCenter
-              spacing: 8
-              opacity: entry.modelData.enabled ? 1 : 0.5
+        Component.onCompleted: root.cards = [...root.cards, card]
+        Component.onDestruction: root.cards = root.cards.filter(other => other !== card)
 
-              Item {
+        Shadow {}
+
+        QsMenuOpener {
+          id: opener
+
+          menu: card.modelData
+        }
+
+        ColumnLayout {
+          id: rows
+
+          anchors {
+            fill: parent
+            margins: root.padding
+          }
+          spacing: 0
+
+          Repeater {
+            id: rowsRepeater
+
+            model: ScriptModel {
+              values: card.entries
+            }
+
+            Item {
+              id: entry
+
+              required property QsMenuEntry modelData
+              readonly property bool opened: root.path[card.index] === modelData
+              // Room for the arrow on the side the submenu opens.
+              readonly property int arrowSpace: card.cascades ? 24 : 0
+
+              Layout.fillWidth: true
+              implicitWidth: modelData.isSeparator ? 0 : content.implicitWidth + 24 + arrowSpace
+              implicitHeight: modelData.isSeparator ? 13 : 32
+
+              Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 16
-                height: 16
-                visible: entry.modelData.buttonType !== QsMenuButtonType.None
+                width: parent.width
+                height: 1
+                visible: entry.modelData.isSeparator
+                color: Theme.border
+              }
 
-                Shape {
-                  anchors.fill: parent
-                  visible: entry.modelData.buttonType === QsMenuButtonType.CheckBox && entry.modelData.checkState === Qt.Checked
-                  preferredRendererType: Shape.CurveRenderer
+              Rectangle {
+                anchors.fill: parent
+                visible: !entry.modelData.isSeparator
+                radius: 6
+                color: (entryHover.hovered || entry.opened) && entry.modelData.enabled ? Theme.hover : "transparent"
 
-                  ShapePath {
-                    strokeColor: Theme.fg
-                    strokeWidth: 2
-                    fillColor: "transparent"
-                    capStyle: ShapePath.RoundCap
-                    joinStyle: ShapePath.RoundJoin
+                Row {
+                  id: content
 
-                    PathPolyline {
-                      path: [Qt.point(3, 8.5), Qt.point(6.5, 12), Qt.point(13, 4.5)]
+                  x: 12 + (card.direction < 0 ? entry.arrowSpace : 0)
+                  anchors.verticalCenter: parent.verticalCenter
+                  spacing: 8
+                  opacity: entry.modelData.enabled ? 1 : 0.5
+
+                  Item {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 16
+                    height: 16
+                    visible: entry.modelData.buttonType !== QsMenuButtonType.None
+
+                    Shape {
+                      anchors.fill: parent
+                      visible: entry.modelData.buttonType === QsMenuButtonType.CheckBox && entry.modelData.checkState === Qt.Checked
+                      preferredRendererType: Shape.CurveRenderer
+
+                      ShapePath {
+                        strokeColor: Theme.fg
+                        strokeWidth: 2
+                        fillColor: "transparent"
+                        capStyle: ShapePath.RoundCap
+                        joinStyle: ShapePath.RoundJoin
+
+                        PathPolyline {
+                          path: [Qt.point(3, 8.5), Qt.point(6.5, 12), Qt.point(13, 4.5)]
+                        }
+                      }
                     }
+
+                    Rectangle {
+                      anchors.centerIn: parent
+                      width: 6
+                      height: 6
+                      radius: 3
+                      visible: entry.modelData.buttonType === QsMenuButtonType.RadioButton && entry.modelData.checkState === Qt.Checked
+                      color: Theme.fg
+                    }
+                  }
+
+                  IconImage {
+                    anchors.verticalCenter: parent.verticalCenter
+                    implicitSize: 16
+                    visible: entry.modelData.icon !== ""
+                    source: entry.modelData.icon
+                  }
+
+                  Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: entry.modelData.text
+                    color: Theme.fg
+                    font: Theme.body
                   }
                 }
 
-                Rectangle {
-                  anchors.centerIn: parent
-                  width: 6
-                  height: 6
-                  radius: 3
-                  visible: entry.modelData.buttonType === QsMenuButtonType.RadioButton && entry.modelData.checkState === Qt.Checked
-                  color: Theme.fg
+                ExpanderArrow {
+                  x: card.direction > 0 ? parent.width - width - 8 : 8
+                  anchors.verticalCenter: parent.verticalCenter
+                  visible: entry.modelData.hasChildren
+                  rotation: card.direction > 0 ? -90 : 90
                 }
-              }
 
-              IconImage {
-                anchors.verticalCenter: parent.verticalCenter
-                implicitSize: 16
-                visible: entry.modelData.icon !== ""
-                source: entry.modelData.icon
-              }
+                HoverHandler {
+                  id: entryHover
 
-              Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: entry.modelData.text
-                color: Theme.fg
-                font: Theme.body
-              }
-            }
+                  onHoveredChanged: {
+                    if (!hovered || entry.modelData.isSeparator) return;
+                    root.pending = { level: card.index, entry: entry.modelData.enabled ? entry.modelData : null };
+                    hoverDelay.restart();
+                  }
+                }
 
-            ExpanderArrow {
-              anchors {
-                right: parent.right
-                rightMargin: 8
-                verticalCenter: parent.verticalCenter
-              }
-              visible: entry.modelData.hasChildren
-              rotation: -90
-            }
-
-            HoverHandler {
-              id: entryHover
-            }
-
-            MouseArea {
-              anchors.fill: parent
-              enabled: entry.modelData.enabled
-              onClicked: {
-                if (entry.modelData.hasChildren) {
-                  root.path = [...root.path, entry.modelData];
-                } else {
-                  entry.modelData.triggered();
-                  Panels.close();
+                MouseArea {
+                  anchors.fill: parent
+                  enabled: entry.modelData.enabled
+                  onClicked: {
+                    if (entry.modelData.hasChildren) {
+                      root.apply(card.index, entry.opened ? null : entry.modelData);
+                    } else {
+                      entry.modelData.triggered();
+                      Panels.close();
+                    }
+                  }
                 }
               }
             }
