@@ -44,11 +44,7 @@ LauncherMode {
   fields: row => [[1.0, row.title], [1.0, row.subtitle]]
 
   onOpened: listCommand.running = true
-  onOpenChanged: {
-    if (open) return;
-    entries = [];
-    stats = {};
-  }
+  onOpenChanged: if (!open) entries = []
   onActivated: row => {
     Quickshell.execDetached(["sh", "-c", 'cliphist decode "$1" | wl-copy', "sh", row.id]);
     Panels.close();
@@ -58,9 +54,23 @@ LauncherMode {
     root.entries = root.entries.filter(entry => entry.id !== row.id);
   }
 
-  // A picture past 64 MiB or 50 megapixels gets no thumbnail: decoding it would cost more than it shows.
+  // The rows show at once; what needs a clip decoded follows from the cache.
   MenuCommand {
     id: listCommand
+
+    command: ["cliphist", "list"]
+    onDone: output => {
+      root.entries = output.split("\n").filter(line => line !== "").map(line => {
+        const tab = line.indexOf("\t");
+        return { id: line.slice(0, tab), text: line.slice(tab + 1), line: line };
+      });
+      cacheCommand.running = true;
+    }
+  }
+
+  // Thumbnails and counts are made once per clip. A picture past 64 MiB or 50 megapixels gets none: decoding it would cost more than it shows.
+  MenuCommand {
+    id: cacheCommand
 
     name: "cliphist"
     command: ["sh", "-c", `
@@ -69,54 +79,42 @@ LauncherMode {
       list=$(cliphist list) || exit
       tab=$(printf '\\t')
       printf '%s\\n' "$list" | while IFS="$tab" read -r id text; do
-        case $text in "[[ binary data "*) ;; *) continue ;; esac
-        set -- $text
-        case $5 in GiB) continue ;; MiB) [ "\${4%.*}" -lt 64 ] || continue ;; esac
-        width=\${7%x*} height=\${7#*x}
-        case $width$height in "" | *[!0-9]*) continue ;; esac
-        [ $((width * height)) -le 50000000 ] || continue
-        [ -s "$id" ] || cliphist decode "$id" > "$id"
+        case $text in
+          "[[ binary data "*)
+            set -- $text
+            case $5 in GiB) continue ;; MiB) [ "\${4%.*}" -lt 64 ] || continue ;; esac
+            width=\${7%x*} height=\${7#*x}
+            case $width$height in "" | *[!0-9]*) continue ;; esac
+            [ $((width * height)) -le 50000000 ] || continue
+            [ -s "$id" ] || cliphist decode "$id" > "$id"
+            ;;
+          *)
+            [ -s "$id.stats" ] || cliphist decode "$id" | awk '{ count += length($0) + 1 } END { print NR, count - (NR > 0) }' > "$id.stats"
+            ;;
+        esac
       done
       set +f
+      ids=" $(printf '%s\\n' "$list" | cut -f1 | tr '\\n' ' ')"
       for file in *; do
-        [ -e "$file" ] || continue
-        printf '%s\\n' "$list" | grep -q "^\${file%.stats}$tab" || rm -f "$file"
+        case $ids in *" \${file%.stats} "*) ;; *) rm -f "$file" ;; esac
       done
-      printf '%s\\n--\\n' "$list"
-      ls | grep -v '\\.stats$' || true
+      for file in *; do
+        case $file in *.stats) ;; *) [ -e "$file" ] && printf '%s\\n' "$file" ;; esac
+      done
+      echo --
+      set -- *.stats
+      [ -e "$1" ] && awk '{ id = FILENAME; sub(/\\.stats$/, "", id); print id, $0 }' "$@"
+      true
     `, "sh", root.cache]
     onDone: output => {
-      const [list, pictures] = output.split("\n--\n");
+      const [pictures, stats] = output.split("--\n");
       root.pictures = pictures.split("\n").filter(id => id !== "");
-      root.entries = list.split("\n").filter(line => line !== "").map(line => {
-        const tab = line.indexOf("\t");
-        return { id: line.slice(0, tab), text: line.slice(tab + 1), line: line };
-      });
-      const texts = root.entries.filter(entry => !entry.text.startsWith("[[ binary data ")).map(entry => entry.id);
-      if (texts.length > 0) statsCommand.exec(["sh", "-c", statsCommand.script, "sh", root.cache, ...texts]);
-    }
-  }
-
-  // Counted once per clip and kept in the cache, as each needs the clip decoded.
-  MenuCommand {
-    id: statsCommand
-
-    readonly property string script: `
-      cd "$1" && shift || exit
-      for id; do
-        [ -s "$id.stats" ] || cliphist decode "$id" | awk '{ count += length($0) + 1 } END { print NR, count - (NR > 0) }' > "$id.stats"
-        printf '%s %s\\n' "$id" "$(cat "$id.stats")"
-      done
-    `
-
-    name: "cliphist"
-    onDone: output => {
-      const stats = {};
-      for (const line of output.split("\n").filter(line => line !== "")) {
+      const counts = {};
+      for (const line of (stats ?? "").split("\n").filter(line => line !== "")) {
         const [id, lines, characters] = line.split(" ");
-        stats[id] = [Number(lines), Number(characters)];
+        counts[id] = [Number(lines), Number(characters)];
       }
-      root.stats = stats;
+      root.stats = counts;
     }
   }
 }

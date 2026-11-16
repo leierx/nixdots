@@ -8,6 +8,9 @@ import qs.common
 LauncherMode {
   id: root
 
+  // Kept between opens and replaced only when the output differs, so the menu opens whole.
+  property string statusText: ""
+  property string profilesText: ""
   property var status: null
   property var profiles: ({})
 
@@ -16,6 +19,7 @@ LauncherMode {
   // Material Symbols' tv_displays
   glyph: "M120-320q-17 0-28.5-11.5T80-360v-440q0-33 23.5-56.5T160-880h520q17 0 28.5 11.5T720-840q0 17-11.5 28.5T680-800H160v440q0 17-11.5 28.5T120-320ZM480-80q-17 0-28.5-11.5T440-120v-40H320q-33 0-56.5-23.5T240-240v-400q0-33 23.5-56.5T320-720h520q33 0 56.5 23.5T920-640v400q0 33-23.5 56.5T840-160H720v40q0 17-11.5 28.5T680-80H480ZM320-240h520v-400H320v400Zm260-200Z"
   placeholder: "Monitor layout…"
+  split: 0.5
   preview: Preview {
     row: root.selected
   }
@@ -63,6 +67,7 @@ LauncherMode {
           x: output.x,
           y: output.y,
           mode: output.enabled ? `${output.width}×${output.height} @ ${Math.round(output.refresh)} Hz` : "",
+          position: `${output.x}x${output.y}`,
           scale: output.scale,
         }, shape ? logical(shape) : { width: 1920, height: 1080 });
       });
@@ -70,11 +75,14 @@ LauncherMode {
     return outputs.map(output => Object.assign(output, { number: order.indexOf(output) + 1 }));
   }
 
-  onOpenChanged: if (!open) status = null
-  onOpened: {
+
+  function load(): void {
     statusCommand.running = true;
     profilesCommand.running = true;
   }
+
+  Component.onCompleted: load()
+  onOpened: load()
   onActivated: row => {
     // The launcher is gone by then, so a failure comes back as a notification.
     Quickshell.execDetached(["sh", "-c", 'out=$(hyprmoncfg apply --confirm-timeout 0 "$1" 2>&1) || notify-send -u critical "hyprmoncfg: $1" "$out"', "sh", row.profile]);
@@ -94,16 +102,13 @@ LauncherMode {
 
     spacing: 6
 
-    Item {
-      Layout.fillHeight: true
-    }
-
     Text {
       Layout.fillWidth: true
       horizontalAlignment: Text.AlignHCenter
       text: preview.row?.title ?? ""
       color: Theme.fg
       font: Theme.title2
+      elide: Text.ElideRight
     }
 
     Text {
@@ -112,11 +117,13 @@ LauncherMode {
       text: preview.row?.state || " "
       color: Theme.fgDim
       font: Theme.heading
+      elide: Text.ElideRight
     }
 
     LayoutDiagram {
       Layout.fillWidth: true
-      Layout.preferredHeight: 130
+      Layout.fillHeight: true
+      Layout.minimumHeight: 60
       Layout.topMargin: 14
       Layout.bottomMargin: 14
       layout: preview.row?.layout ?? []
@@ -133,6 +140,7 @@ LauncherMode {
         required property var modelData
 
         Layout.alignment: Qt.AlignHCenter
+        Layout.maximumWidth: preview.width
         spacing: 10
 
         Rectangle {
@@ -153,13 +161,16 @@ LauncherMode {
         }
 
         Text {
+          Layout.fillWidth: true
           text: output.modelData.name
           color: output.modelData.enabled ? Theme.fg : Theme.fgDim
           font: Theme.body
+          elide: Text.ElideRight
         }
 
+        // The position tells two of the same model apart.
         Text {
-          text: output.modelData.enabled ? `${output.modelData.mode}${output.modelData.scale !== 1 ? ` · ×${output.modelData.scale}` : ""}` : "off"
+          text: output.modelData.enabled ? [output.modelData.mode, output.modelData.scale !== 1 ? `×${output.modelData.scale}` : "", `at ${output.modelData.position}`].filter(part => part).join(" · ") : "off"
           color: Theme.fgDim
           font: Theme.body
         }
@@ -173,17 +184,16 @@ LauncherMode {
       color: Theme.fgDim
       font: Theme.body
     }
-
-    Item {
-      Layout.fillHeight: true
-    }
   }
 
   MenuCommand {
     id: statusCommand
 
     command: ["hyprmoncfg", "status", "--json"]
+    quiet: !root.open
     onDone: output => {
+      if (output === root.statusText) return;
+      root.statusText = output;
       try {
         root.status = JSON.parse(output);
       } catch (error) {
@@ -197,8 +207,11 @@ LauncherMode {
     id: profilesCommand
 
     name: "hyprmoncfg profiles"
+    quiet: !root.open
     command: ["sh", "-c", 'for file in "${XDG_CONFIG_HOME:-$HOME/.config}"/hyprmoncfg/profiles/*.json; do cat "$file"; echo; done']
     onDone: output => {
+      if (output === root.profilesText) return;
+      root.profilesText = output;
       const profiles = {};
       for (const line of output.split("\n").filter(line => line !== "")) {
         try {

@@ -113,10 +113,11 @@ PanelWindow {
     Keys.onPressed: event => {
       const list = field.list;
       const control = event.modifiers & Qt.ControlModifier;
-      if (event.key === Qt.Key_Up || control && event.key === Qt.Key_P) list.select(list.currentIndex - 1);
-      else if (event.key === Qt.Key_Down || control && event.key === Qt.Key_N) list.select(list.currentIndex + 1);
-      else if (event.key === Qt.Key_Tab && !(event.modifiers & Qt.ShiftModifier)) list.select((list.currentIndex + 1) % list.count);
-      else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) list.select((list.currentIndex - 1 + list.count) % list.count);
+      const shift = event.modifiers & Qt.ShiftModifier;
+      const back = event.key === Qt.Key_Up || control && event.key === Qt.Key_P || event.key === Qt.Key_Backtab || shift && event.key === Qt.Key_Tab;
+      const forward = event.key === Qt.Key_Down || control && event.key === Qt.Key_N || event.key === Qt.Key_Tab;
+      if (back) list.step(-1);
+      else if (forward) list.step(1);
       else if (event.key === Qt.Key_Delete && event.modifiers & Qt.ShiftModifier) list.remove(list.currentIndex);
       else return;
       event.accepted = true;
@@ -148,6 +149,11 @@ PanelWindow {
     function select(index: int): void {
       list.currentIndex = Math.max(0, Math.min(list.count - 1, index));
       list.positionViewAtIndex(list.currentIndex, ListView.Contain);
+    }
+
+    // Keys go round; the wheel stops at the ends.
+    function step(delta: int): void {
+      if (list.count > 0) list.select((list.currentIndex + delta + list.count) % list.count);
     }
 
     function activate(index: int): void {
@@ -337,7 +343,7 @@ PanelWindow {
     // Always centred, gliding as the matches change its height.
     y: Math.round((root.height - height) / 2)
     width: root.cardWidth
-    height: root.fieldHeight + (root.listing ? 1 + root.resultsHeight : 0)
+    height: root.fieldHeight + (root.listing ? rule.height + root.resultsHeight : 0)
     radius: 22
     color: Theme.bg
     border.width: 1
@@ -347,7 +353,7 @@ PanelWindow {
       enabled: root.settled
 
       NumberAnimation {
-        duration: 200
+        duration: 320
         easing.type: Easing.OutCubic
       }
     }
@@ -393,9 +399,9 @@ PanelWindow {
         left: parent.left
         right: parent.right
       }
-      height: 1
+      height: root.previewing ? 1 : 0
       color: Theme.border
-      visible: root.listing
+      visible: root.listing && root.previewing
     }
 
     // Down to the card's edge as it grows, so the list clips itself inside it.
@@ -412,9 +418,8 @@ PanelWindow {
       ResultList {
         id: matches
 
-        // 60/40 beside a preview.
         Layout.fillWidth: !root.previewing
-        Layout.preferredWidth: root.previewing ? Math.round(root.cardWidth * 0.6) - 16 : -1
+        Layout.preferredWidth: root.previewing ? Math.round(root.cardWidth * root.mode.split) - 16 : -1
         Layout.minimumWidth: Math.max(0, Layout.preferredWidth)
         Layout.fillHeight: true
         Layout.margins: 8

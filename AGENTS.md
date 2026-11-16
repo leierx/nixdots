@@ -38,6 +38,9 @@ is hand-rolled in `flake.nix`, `import-tree.nix` and `modules/flake/`.
   tar, systemd) is assumed.
 - **`imports` in a host is the whole machine.** Host builders inject only the
   hostname, platform and a `stateVersion` default; nothing else.
+- **No AI credit.** Commits, PRs and files in this repo never credit Claude
+  or any other agent: no `Co-Authored-By` trailer, no "Generated with" line,
+  whatever a tool's default attribution says.
 - **No comment is the best comment.** If one is needed, it's one line for the
   operator: why it's done this way, never what the code does. Longer only for
   a hard reason.
@@ -273,13 +276,8 @@ Notes on specific features:
         resetting state by hand.
       - Every panel goes through `Panels`; saved state through `StateFile`.
       - Behaviour is checked against the source (Quickshell, Qt, Hyprland)
-        rather than guessed, and tested before it lands: build
-        `programs.quickshell.configs.shell`, run it with `qs -p <path>`, open
-        each panel over `qs ipc -p <path> call panels open <name>` and read
-        the log; pointer behaviour can be driven with `wlrctl pointer` and
-        checked with `grim` and `wev` (all from nixpkgs, not installed).
-        Restart rather than hot-reload after changing inline components:
-        a reload keeps their old types ("X is not a type").
+        rather than guessed, and tested before it lands, in a headless sway
+        of its own (see [Testing the Quickshell shell](#testing-the-quickshell-shell)).
       - An inline component sees the file's ids before its own properties,
         so it reads those through its own id (`list.results`, not
         `results`).
@@ -289,7 +287,7 @@ Notes on specific features:
       type scale as `font` values (`Theme.body`, `heading`, `caption`,
       `title4`, …; Adwaita Sans at GTK's 11pt) and its radii (button 9, card
       12, window 15). Panel widths follow GNOME Shell's, in em of the body
-      font (`Theme.em`): 30em popups (GNOME's are 34em), a 29em message list, its calendar
+      font (`Theme.em`): 30em popups (GNOME's are 34em), its calendar
       days. `shell.qml` sets `QT_SCALE_FACTOR=1.2` (an `Env`
       pragma), Qt's own high-DPI scaling, so it all draws 1.2× and sharp;
       apps and links the shell opens get the variable removed.
@@ -312,8 +310,9 @@ Notes on specific features:
       call panels toggle <name>`): SUPER+D `apps`, SUPER+V `clipboard`,
       SUPER+P `monitors`, SUPER+Tab `windows`. Nothing in one mode points to
       the others; a second shortcut while open starts that mode afresh.
-      Keyboard driven: Up/Down or Ctrl+P/Ctrl+N move a row, Tab and
-      Shift+Tab go round, Enter picks, Shift+Delete removes, Escape closes.
+      Keyboard driven: Up/Down, Ctrl+P/Ctrl+N, Tab and Shift+Tab move a
+      row and go round at the ends (the wheel stops there), Enter picks,
+      Shift+Delete removes, Escape closes.
       A mode is a `LauncherMode` in `<Name>Mode.qml`, listed in
       `Launcher.qml`, which makes its shortcut. It sets a `name`, a `title`,
       a `glyph` (a Material Symbols Rounded path, Apache-2.0, pasted in and
@@ -321,7 +320,8 @@ Notes on specific features:
       an app) and a `placeholder`; its `rows` and the `fields` searched in
       them; an `activated` handler, a `removed` one where it is `removable`;
       `opened` to load what it lists; `wide` for a wider card;
-      `waitsForQuery` to list nothing until something is typed; and
+      `waitsForQuery` to list nothing until something is typed; `split`,
+      the list's share beside a preview (0.6); and
       optionally a `preview`, a component (inline in the mode's file) shown
       beside the matches for the `selected` row. Rows carry a unique `key`,
       by which a `ScriptModel` keeps their delegates as a search changes, a
@@ -331,13 +331,15 @@ Notes on specific features:
       one design for all of them: a card with the mode's glyph and the field,
       the matches below it with ↵ on the selected row (not on a picture's),
       what the query matched in bold, as rofi does, nothing below it while
-      nothing matches, and with a preview the card wider and split 60/40.
+      nothing matches, and with a preview the card wider, split by the
+      mode's `split` under a line across (none without a preview).
       Widths are in em and the card and its rows shrink to fit the screen,
       so it holds at any scale. It is always centred on the screen, its
-      height easing as the matches change, so it grows and shrinks about the
+      height easing (320 ms) as the matches change, so it grows and shrinks about the
       middle and never slides in from the top.
       `MenuCommand` reads a command's output and sends a failure as a
-      notification. Search matches every typed word as a substring, or in a
+      notification, or only to the log while `quiet` (a load nobody waits
+      on). Search matches every typed word as a substring, or in a
       loose field (an app's name) as its letters in order (`ffx` finds
       Firefox) for a lower score. Hyprland's `quickshell:launcher` layer
       rule dims behind it.
@@ -351,21 +353,30 @@ Notes on specific features:
         quick as the rest (an icon Papirus lacks costs thousands of failed
         stats).
       - `clipboard`, wide and without a preview: cliphist's history, newest
-        first. Text says its length under it ("84 characters, 4 lines"),
+        first, shown as soon as `cliphist list` returns. Text says its
+        length under it ("84 characters, 4 lines"),
         counted once per clip into Quickshell's cache since it needs the clip
-        decoded, after the list shows. Pictures say their size and format,
+        decoded. Pictures say their size and format,
         and are decoded into the cache (pruned to what cliphist still lists)
         for a thumbnail at the row's end, shrunk to fit and never enlarged;
-        one past 64 MiB or 50 megapixels gets none.
-      - `monitors`: `hyprmoncfg status --json`'s profiles, `Auto` first.
+        one past 64 MiB or 50 megapixels gets none. One script fills the
+        cache after the rows show, prunes it and reports every thumbnail
+        and count, with a fork per new clip and a few in all; both are kept
+        between opens, so only a new clip's arrive late.
+      - `monitors`, split half and half: `hyprmoncfg status --json`'s
+        profiles, `Auto` first, loaded at the shell's start and again on
+        every open, and replaced only when the output differs, so it opens
+        whole and a refresh changes nothing that is the same.
         Each is drawn by `LayoutDiagram` from its file in
         `~/.config/hyprmoncfg/profiles`, so any machine's layouts draw
         themselves: outputs at their logical size (scale and rotation
         applied), numbered left to right, those a profile turns off outlined
         to the side at the size another profile gives them, and those saved
         without a size left out. Past eight outputs, or once one would be
-        under 4 px, the drawing becomes a count. The preview draws it large
-        and lists the outputs, six lines at most.
+        under 4 px, the drawing becomes a count. The preview draws it as
+        large as fits
+        and lists the outputs, six lines at most, each with its mode,
+        scale and position (`at 2560x0`), which tells two of one model apart.
       - `windows`: every window from wlr-foreign-toplevel
         (`ToplevelManager`), so it works on any compositor, the focused one
         last. On Hyprland the rest come in focus order (a `refreshToplevels`
@@ -448,7 +459,8 @@ Notes on specific features:
       a restart of the service empties it, by design.
     - `center/` is the notification center (`qs ipc -c shell call panels
       toggle center`), GNOME's layout, dropping down from the middle of the bar with
-      a short fade and slide: notifications on the left, a Do Not Disturb
+      a short fade and slide: notifications on the left (36em, wider than
+      GNOME's 29em, which read long and narrow), a Do Not Disturb
       switch and Clear (which also closes it) below, and `Calendar.qml` on
       the right (locale's first weekday, ISO week numbers, arrows or wheel for
       months, the date returns to today) with the weather under it, left out
@@ -601,6 +613,105 @@ nix fmt                  # formatter = nixfmt-tree
 
 Agents always pass `--no-link` to `nix build`; never leave a `result` symlink
 in the tree.
+
+## Testing the Quickshell shell
+
+Test the shell in a headless sway of its own, on its own D-Bus, never in the
+live session. Nothing in it reaches the running Hyprland, so neither
+hyprmoncfgd nor the live shell needs pausing, and the user's screens, focus,
+notifications and tray are left alone. A nested Hyprland is no option: with
+no parent Wayland it falls through to DRM, logind refuses it, and it hangs in
+its crash path leaving `/run/user/$UID/hypr/<sig>/` behind.
+
+Set it up once per session (`T` in the scratchpad; sway, grim and wtype come
+from nixpkgs, not installed):
+
+```bash
+T=<scratchpad>/t; mkdir -p $T/bin $T/cfg
+pkg() { nix build --no-link --print-out-paths "nixpkgs#$1" | head -1; }
+SWAY=$(pkg sway) GRIM=$(pkg grim) WTYPE=$(pkg wtype)
+
+# path:, since a git flake leaves untracked files out
+out=$(nix build --no-link --print-out-paths --impure --expr \
+  '(builtins.getFlake "path:'$PWD'").nixosConfigurations.desktop.config.home-manager.users.'$USER'.programs.quickshell.configs.shell')
+rm -rf $T/shell && cp -rL "$out" $T/shell && chmod -R u+w $T/shell
+
+# Fakes: hyprmoncfg logs applies instead of making them; cliphist reads a copy.
+hyprmoncfg status --json > $T/status.json
+cp ~/.cache/cliphist/db $T/clip.db
+printf '#!/bin/sh\ncase $1 in status) cat %s/status.json ;; *) echo "$@" >> %s/hyprmoncfg.log ;; esac\n' $T $T > $T/bin/hyprmoncfg
+printf '#!/bin/sh\nexec %s -db-path %s/clip.db "$@"\n' "$(command -v cliphist)" $T > $T/bin/cliphist
+chmod +x $T/bin/*
+ln -sf ~/.config/* $T/cfg/ && rm $T/cfg/hyprmoncfg   # profiles to fake go in $T/cfg/hyprmoncfg/profiles
+
+cat > $T/sway.cfg <<EOF
+output HEADLESS-1 mode 1920x1080 scale 1
+exec sh -c 'echo \$WAYLAND_DISPLAY > $T/display'
+EOF
+cat > $T/run.sh <<EOF
+#!/bin/sh
+echo \$DBUS_SESSION_BUS_ADDRESS > $T/bus
+echo \$\$ > $T/sway.pid
+unset HYPRLAND_INSTANCE_SIGNATURE
+WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 exec $SWAY/bin/sway -c $T/sway.cfg
+EOF
+cat > $T/x.sh <<EOF
+#!/bin/sh
+export WAYLAND_DISPLAY=\$(cat $T/display) DBUS_SESSION_BUS_ADDRESS=\$(cat $T/bus) XDG_CONFIG_HOME=$T/cfg
+unset HYPRLAND_INSTANCE_SIGNATURE
+export PATH=$T/bin:$GRIM/bin:$WTYPE/bin:$SWAY/bin:\$PATH
+exec "\$@"
+EOF
+chmod +x $T/run.sh $T/x.sh
+
+setsid dbus-run-session -- $T/run.sh > $T/sway.log 2>&1 < /dev/null &
+until [ -s $T/display ]; do sleep 0.2; done
+setsid $T/x.sh qs -p $T/shell > $T/qs.log 2>&1 < /dev/null & echo $! > $T/qs.pid
+```
+
+Everything that should land in the test session goes through `$T/x.sh`:
+
+```bash
+timeout 5 $T/x.sh qs ipc -p $T/shell call panels open apps
+$T/x.sh wtype -s 300 " fire"                  # the first key of every call is dropped
+$T/x.sh wtype -s 300 -M ctrl -k n -m ctrl
+$T/x.sh grim $T/shot-3.png                     # a new name each time; reads cache by path
+$T/x.sh grim -g "360,330 600x260" $T/crop-3.png
+$T/x.sh notify-send -a Discord loft01 "hello"
+$T/x.sh swaymsg output HEADLESS-1 mode 2560x1440 scale 1.5
+grep -E 'WARN|ERROR' $T/qs.log                 # GlobalShortcut, UPower and Hyprland warnings are expected
+```
+
+- Iterate by copying edited QML over `$T/shell` and restarting `qs` (kill
+  `qs.pid`, start it again): no rebuild needed, since the copy carries
+  `qs.nix`. Restart rather than hot-reload: a reload keeps inline
+  components' old types ("X is not a type") and only watches files the last
+  load used.
+- Wrap every `qs ipc` in `timeout`: against a config that failed to load it
+  blocks forever, and with two instances for one path it talks to the old
+  one (`qs list --all`).
+- Screenshot pixels are logical × 1.2 (`QT_SCALE_FACTOR`) × the output scale.
+- Animation: background `grim -s 0.25` shots about 35 ms apart, then
+  `md5sum` to see which frames settled.
+- Sway has no `dim_around`, toplevel capture or global shortcuts; check
+  those on Hyprland after the rebuild.
+- Never `pgrep -f <pattern> | xargs kill`: the pattern is in the calling
+  shell's own command line. Use the pid files.
+
+Tear it down:
+
+```bash
+kill $(cat $T/qs.pid) $(cat $T/sway.pid)
+# Portals the private bus activated outlive it, reparented to pid 1.
+for p in /proc/[0-9]*; do
+  tr '\0' '\n' 2>/dev/null < $p/environ | grep -qxF "DBUS_SESSION_BUS_ADDRESS=$(cat $T/bus)" && echo ${p#/proc/}
+done   # kill what it lists, ignoring this loop's own sh and sleep
+id=$(grep -o 'Shell ID: "[0-9a-f]*' $T/qs.log | cut -d'"' -f2)
+rm -rf ~/.local/state/quickshell/by-shell/$id ~/.cache/quickshell/by-shell/$id $T/clip.db
+```
+
+Quickshell keys those dirs by the config path, so the test shell's are its
+own; the live shell's id is in `qs list --all`. Delete only the test's.
 
 ## Sharp edges
 

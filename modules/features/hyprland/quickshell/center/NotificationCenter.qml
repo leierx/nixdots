@@ -223,8 +223,8 @@ PanelWindow {
 
       ColumnLayout {
         Layout.alignment: Qt.AlignTop
-        // GNOME Shell's message list.
-        Layout.preferredWidth: Math.round(29 * Theme.em)
+        // Wider than GNOME Shell's 29em message list, which reads long and narrow beside the calendar.
+        Layout.preferredWidth: Math.round(36 * Theme.em)
         spacing: root.padding
 
         Item {

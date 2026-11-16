@@ -14,6 +14,8 @@ Scope {
   property bool removable: false
   property bool wide: false
   property bool waitsForQuery: false
+  // The list's share of a card with a preview.
+  property real split: 0.6
   property var fields: row => [[1.0, row.title, true], [0.8, row.subtitle]]
   property Component preview: null
   property var selected: null

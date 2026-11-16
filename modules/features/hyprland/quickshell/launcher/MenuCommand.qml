@@ -7,10 +7,16 @@ Process {
   id: root
 
   property string name: command.join(" ")
+  // For a load in the background, which nobody is waiting on.
+  property bool quiet: false
 
   signal done(string output)
 
   function fail(message: string): void {
+    if (root.quiet) {
+      console.warn(`${root.name}: ${message}`);
+      return;
+    }
     Quickshell.execDetached(["notify-send", "-u", "critical", root.name, message]);
     Panels.close();
   }
