@@ -51,10 +51,11 @@ root: {
         cp ${hyprsplit} $out/nix/Hyprsplit.qml
       '';
 
-      ipcBind = key: call: desc: {
+      # a GlobalShortcut in the shell, reached without starting a `qs ipc` process
+      globalBind = key: name: desc: {
         _args = [
           (mkLuaInline ''mod .. " + ${key}"'')
-          (mkLuaInline "hl.dsp.exec_cmd(${builtins.toJSON "${lib.getExe config.programs.quickshell.package} ipc -c shell call ${call}"})")
+          (mkLuaInline "hl.dsp.global(${builtins.toJSON "quickshell:${name}"})")
           { description = desc; }
         ];
       };
@@ -86,11 +87,10 @@ root: {
       };
 
       wayland.windowManager.hyprland.settings.bind = [
-        (ipcBind "d" "launcher toggle apps" "App launcher")
-        (ipcBind "v" "launcher toggle clipboard" "Clipboard history")
+        (globalBind "d" "launcher-apps" "App launcher")
+        (globalBind "v" "launcher-clipboard" "Clipboard history")
         # SUPER+P, after Windows' display "Project" switcher
-        (ipcBind "P" "launcher toggle monitors" "Monitor layouts")
-        (ipcBind "n" "center toggle" "Notification center")
+        (globalBind "P" "launcher-monitors" "Monitor layouts")
       ];
     };
 }

@@ -245,7 +245,7 @@ Notes on specific features:
     appends hyprmoncfg's `dofile` include itself with `lib.mkAfter`; it must stay
     the file's last line.
   - The desktop components (the bar, SUPER+D apps, SUPER+V clipboard,
-    SUPER+P monitor layouts, SUPER+N notification center) are a [Quickshell](https://quickshell.org)
+    SUPER+P monitor layouts, the notification center from the bar's clock) are a [Quickshell](https://quickshell.org)
     shell in `quickshell/`, wired by `quickshell.nix`: one `quickshell.service`
     session daemon (restarted when the shell changes, via `X-Restart-Triggers`).
     Quickshell comes from `pkgs.unstable` (0.3.2), since 0.3.1 fixed crashes on
@@ -276,14 +276,18 @@ Notes on specific features:
       module added to the store copy, so it only runs from the built copy
       (`programs.quickshell.configs.shell`), not the checkout. A new component
       is a directory with a `Scope` holding its `IpcHandler`, a line in
-      `shell.qml`, and a bind in `quickshell.nix`.
-    - `launcher/` is the rofi-style pickers (`qs ipc -c shell call launcher
+      `shell.qml`, and for a keybind a `GlobalShortcut` (Quickshell.Hyprland)
+      bound in `quickshell.nix` with `hl.dsp.global("quickshell:<name>")`,
+      which reaches the running shell without starting a `qs ipc` process.
+    - `launcher/` is the rofi-style pickers (global shortcuts
+      `quickshell:launcher-apps|clipboard|monitors`, or `qs ipc -c shell call launcher
       toggle apps|clipboard|monitors`), keyboard driven and snappy, without
       animations: `MenuWindow` + `MenuList` (+ `MenuCommand` to read a
       command's output) and `search.js`; a picker is a `<Name>Menu.qml` plus a
       `LazyLoader` in `Launcher.qml`, which also loads the desktop entries,
-      icon theme and app use at startup so the first open is as quick as the
-      rest. Rows carry a unique `key`, by which a `ScriptModel` keeps their
+      icon theme, every app's icon and app use at startup so the first open
+      is as quick as the rest (an icon Papirus lacks costs thousands of
+      failed stats). Rows carry a unique `key`, by which a `ScriptModel` keeps their
       delegates as a search changes; Shift+Delete removes a row where the
       picker allows it. Search matches every typed word as a substring, or in
       a loose field (an app's name) as its letters in order (`ffx` finds
