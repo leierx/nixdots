@@ -33,11 +33,22 @@ root: {
         }}
       '';
 
+      hyprsplit = pkgs.writeText "Hyprsplit.qml" ''
+        pragma Singleton
+
+        import Quickshell
+
+        Singleton {
+          readonly property int workspaces: ${toString root.config.hyprland.workspaces}
+        }
+      '';
+
       shell = pkgs.runCommand "quickshell-shell" { } ''
         cp -r ${./quickshell} $out
         chmod -R u+w $out
         mkdir $out/nix
         cp ${colors} $out/nix/Colors.qml
+        cp ${hyprsplit} $out/nix/Hyprsplit.qml
       '';
 
       ipcBind = key: call: desc: {

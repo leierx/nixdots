@@ -20,6 +20,8 @@
       fstrim.enable = true;
       fwupd.enable = true;
       thermald.enable = true;
+      # the bar's battery
+      upower.enable = true;
 
       tlp = {
         enable = true;

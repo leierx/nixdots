@@ -20,6 +20,8 @@ Singleton {
   readonly property color accent: Colors.accent_color
   readonly property color destructiveBg: Colors.destructive_bg_color
   readonly property color destructive: Colors.destructive_color
+  readonly property color warning: Colors.warning_color
+  readonly property color success: Colors.success_color
 
   readonly property color outline: overlay(0.07)
   readonly property color border: overlay(0.15)

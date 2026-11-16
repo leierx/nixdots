@@ -17,7 +17,7 @@
             match.class = ".*";
             suppress_event = "maximize";
           }
-          # smart gaps / no gaps when single client (wiki recipe; v counts a group once)
+          # smart gaps / no gaps when single client (wiki recipe; v counts a group once); the bar turns solid alike
           {
             match = {
               workspace = "w[tv1]";

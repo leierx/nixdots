@@ -7,11 +7,14 @@
 // example `qs ipc -c shell call launcher toggle apps`.
 
 import Quickshell
+import qs.bar
 import qs.center
 import qs.launcher
 import qs.notifications
 
 ShellRoot {
+  Bar {}
+
   Launcher {}
 
   Notifications {}
