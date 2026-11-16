@@ -9,17 +9,28 @@ import Quickshell.Widgets
 import qs.common
 
 // A tray item's menu, libadwaita's popover menu hanging below its icon. A
-// submenu takes the menu's place, under a row leading back. Escape or a click
-// outside it, the bar included, closes it.
+// submenu takes the menu's place, under a row leading back. Escape, any click
+// outside it, the bar included, or the pointer leaving it for a second closes
+// it.
 PanelWindow {
   id: root
 
   required property QsMenuHandle menu
-  // The middle of the icon button's lower edge.
+  // Under the icon's middle, on the bar's lower edge.
   required property point anchor
   // The submenus entered, innermost last.
   property list<QsMenuEntry> path: []
   readonly property int padding: 6
+  // The menu's rows, without leading, trailing or doubled separators, which
+  // apps leave around items they hide.
+  readonly property var entries: {
+    const entries = [];
+    for (const entry of opener.children.values) {
+      if (!entry.isSeparator || (entries.length > 0 && !entries[entries.length - 1].isSeparator)) entries.push(entry);
+    }
+    if (entries.length > 0 && entries[entries.length - 1].isSeparator) entries.pop();
+    return entries;
+  }
 
   color: "transparent"
   anchors {
@@ -34,15 +45,28 @@ PanelWindow {
   WlrLayershell.namespace: "quickshell:menu"
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
+  // Keeps the menu loaded while a submenu shows: switching the one opener
+  // over would release it, and Quickshell unloads its submenus with it.
+  QsMenuOpener {
+    menu: root.menu
+  }
+
   QsMenuOpener {
     id: opener
 
     menu: root.path.length > 0 ? root.path[root.path.length - 1] : root.menu
   }
 
+  Timer {
+    interval: 1000
+    running: hover.entered && !hover.hovered
+    onTriggered: Panels.close()
+  }
+
   // Everywhere outside the menu.
   MouseArea {
     anchors.fill: parent
+    acceptedButtons: Qt.AllButtons
     onClicked: Panels.close()
   }
 
@@ -61,9 +85,21 @@ PanelWindow {
 
     Keys.onEscapePressed: Panels.close()
 
+    // Whether the pointer is on the menu, and has been since it opened.
+    HoverHandler {
+      id: hover
+
+      property bool entered: false
+
+      onHoveredChanged: {
+        if (hovered) entered = true;
+      }
+    }
+
     // Keeps clicks between the rows from closing it.
     MouseArea {
       anchors.fill: parent
+      acceptedButtons: Qt.AllButtons
     }
 
     ColumnLayout {
@@ -82,7 +118,7 @@ PanelWindow {
         implicitHeight: 32
         visible: root.path.length > 0
         radius: 6
-        color: back.containsMouse ? Theme.hover : "transparent"
+        color: backHover.hovered ? Theme.hover : "transparent"
 
         ExpanderArrow {
           x: 8
@@ -99,11 +135,14 @@ PanelWindow {
           font: Theme.heading
         }
 
-        MouseArea {
-          id: back
+        // Hover handlers rather than hovering mouse areas, which would keep
+        // hover from the menu's own handler.
+        HoverHandler {
+          id: backHover
+        }
 
+        MouseArea {
           anchors.fill: parent
-          hoverEnabled: true
           onClicked: root.path = root.path.slice(0, -1)
         }
       }
@@ -118,7 +157,9 @@ PanelWindow {
       }
 
       Repeater {
-        model: opener.children
+        model: ScriptModel {
+          values: root.entries
+        }
 
         Item {
           id: entry
@@ -141,7 +182,7 @@ PanelWindow {
             anchors.fill: parent
             visible: !entry.modelData.isSeparator
             radius: 6
-            color: area.containsMouse && entry.modelData.enabled ? Theme.hover : "transparent"
+            color: entryHover.hovered && entry.modelData.enabled ? Theme.hover : "transparent"
 
             Row {
               id: content
@@ -211,11 +252,12 @@ PanelWindow {
               rotation: -90
             }
 
-            MouseArea {
-              id: area
+            HoverHandler {
+              id: entryHover
+            }
 
+            MouseArea {
               anchors.fill: parent
-              hoverEnabled: true
               enabled: entry.modelData.enabled
               onClicked: {
                 if (entry.modelData.hasChildren) {

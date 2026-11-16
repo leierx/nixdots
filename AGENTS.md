@@ -308,14 +308,16 @@ Notes on specific features:
         name; specials are left out. `WorkspaceOwners` remembers the connector
         last seen with each monitor id in the state dir, so a workspace left
         behind by an unplugged monitor still carries its name (the bare id if
-        never seen). Bold, dim while empty, a pill while shown, outlined when
+        never seen). Bold and centred on its ink, dim while empty, a pill while shown, outlined when
         foreign, red when urgent; pressing one focuses it by id wherever it
         is.
       - The tray is bare icons without hover states, hiding passive items;
         left click activates (or opens the menu of a menu-only item), middle is the secondary action, right opens
         the menu: `TrayMenu`, libadwaita's popover menu drawn from
         `QsMenuOpener` on an overlay over the screen (a `Panels` panel per
-        screen), with submenus replacing it under a back row.
+        screen), with submenus replacing it under a back row (the menu stays held
+        open, or Quickshell unloads its submenus), stray separators dropped;
+        any click outside or a second away from it closes it.
       - The battery (`Power`) is UPower's display device, shown only when
         UPower is running and it is a laptop battery, so only thonkpad
         enables UPower; `qs ipc -c shell call bar fakeBattery 15 false` shows a

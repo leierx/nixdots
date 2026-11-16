@@ -48,7 +48,8 @@ Row {
         } else if (mouse.button === Qt.LeftButton && !modelData.onlyMenu) {
           modelData.activate();
         } else if (modelData.hasMenu) {
-          root.menuAnchor = mapToItem(null, width / 2, height);
+          // Under the icon, on the bar's lower edge.
+          root.menuAnchor = Qt.point(mapToItem(null, width / 2, 0).x, QsWindow.window.height);
           root.menuItem = modelData;
           Panels.open(root.panel);
         }

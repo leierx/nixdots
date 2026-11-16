@@ -37,12 +37,21 @@ Rectangle {
   Text {
     id: label
 
-    anchors.centerIn: parent
+    // Centred on its ink: a digit sits off-centre in its line box.
+    x: (root.width - ink.tightBoundingRect.width) / 2 - ink.tightBoundingRect.x
+    y: (root.height - ink.tightBoundingRect.height) / 2 - ink.tightBoundingRect.y - baselineOffset
     text: !root.foreign ? WorkspaceOwners.index(root.number) : root.number > 0 ? WorkspaceOwners.foreignLabel(root.number) : root.workspace?.name ?? root.address
     color: root.urgent ? Theme.destructive : Theme.fg
     // Dim while empty, shown or not.
     opacity: root.occupied ? 1 : 0.4
     font: Qt.font({ family: Theme.body.family, pointSize: 10, weight: Font.Bold })
+  }
+
+  TextMetrics {
+    id: ink
+
+    font: label.font
+    text: label.text
   }
 
   MouseArea {
