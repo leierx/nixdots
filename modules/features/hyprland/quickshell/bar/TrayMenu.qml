@@ -35,6 +35,10 @@ PanelWindow {
     right: true
   }
   exclusionMode: ExclusionMode.Ignore
+  // Only the card takes input, so the bar beside it keeps its clicks.
+  mask: Region {
+    item: card
+  }
 
   WlrLayershell.layer: WlrLayer.Overlay
   WlrLayershell.namespace: "quickshell:menu"
@@ -51,21 +55,12 @@ PanelWindow {
     menu: root.submenu ?? root.menu
   }
 
-  Timer {
-    interval: 1000
-    running: hover.entered && !hover.hovered
-    onTriggered: Panels.close()
-  }
-
-  MouseArea {
-    anchors.fill: parent
-    acceptedButtons: Qt.AllButtons
-    onClicked: Panels.close()
-  }
-
   Rectangle {
-    x: Math.max(Theme.gap, Math.min(root.anchor.x - width / 2, root.width - width - Theme.gap))
-    y: root.anchor.y + Theme.gap
+    id: card
+
+    // Its corner at the pointer, leftwards where it would run off the screen.
+    x: root.anchor.x + width + Theme.gap <= root.width ? root.anchor.x : Math.max(Theme.gap, root.anchor.x - width)
+    y: Math.min(root.anchor.y, root.height - height - Theme.gap)
     width: Math.max(180, rows.implicitWidth) + root.padding * 2
     height: rows.implicitHeight + root.padding * 2
     radius: Theme.cardRadius
@@ -77,23 +72,6 @@ PanelWindow {
     Shadow {}
 
     Keys.onEscapePressed: Panels.close()
-
-    HoverHandler {
-      id: hover
-
-      // So a menu the pointer never reached stays open.
-      property bool entered: false
-
-      onHoveredChanged: {
-        if (hovered) entered = true;
-      }
-    }
-
-    // Keeps clicks between the rows from closing it.
-    MouseArea {
-      anchors.fill: parent
-      acceptedButtons: Qt.AllButtons
-    }
 
     ColumnLayout {
       id: rows
@@ -127,7 +105,6 @@ PanelWindow {
           font: Theme.heading
         }
 
-        // A hovering MouseArea would take hover from the menu's own handler.
         HoverHandler {
           id: backHover
         }

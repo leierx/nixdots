@@ -258,6 +258,25 @@ Notes on specific features:
     <name>`; `apps`, `clipboard`, `monitors`, `center`): opening any panel (a
     picker, the notification center, a tray menu) closes the others, and
     `close` closes whichever is open.
+    - Conventions for the QML:
+      - Comments follow the repo rule strictly: none by default, no file
+        headers, one line saying why, never what. What a component does is
+        documented here, not in the QML.
+      - Colours, fonts, radii and spacing come from `Theme`; only `Theme`
+        reads `Colors`. A size that belongs to one component stays in it.
+      - Shared pieces live in `common/` and are extracted at about three
+        uses; a widget used in one file is an inline `component`.
+      - Bindings over imperative code: handlers only react to events, and
+        transient windows are created as they open (`LazyLoader`, `Variants`
+        keyed by what they show) so each open starts fresh instead of
+        resetting state by hand.
+      - Every panel goes through `Panels`; saved state through `StateFile`.
+      - Behaviour is checked against the source (Quickshell, Qt, Hyprland)
+        rather than guessed, and tested before it lands: build
+        `programs.quickshell.configs.shell`, run it with `qs -p <path>`, open
+        each panel over `qs ipc -p <path> call panels open <name>` and read
+        the log; pointer behaviour can be driven with `wlrctl pointer` and
+        checked with `grim` and `wev` (all from nixpkgs, not installed).
     - `Theme` is libadwaita's dark style 1:1: its named colours
       (`palettes.adwaita_dark`, `view_bg_color` surfaces), hover/selection/
       border as the foreground at libadwaita's alphas over any surface, its
@@ -321,10 +340,14 @@ Notes on specific features:
       - The tray is bare icons without hover states, hiding passive items;
         left click activates (or opens the menu of a menu-only item), middle is the secondary action, right opens
         the menu: `TrayMenu`, libadwaita's popover menu drawn from
-        `QsMenuOpener` on an overlay over the screen (a `Panels` panel per
-        screen), with submenus replacing it under a back row (the menu stays held
-        open, or Quickshell unloads its submenus), stray separators dropped;
-        any click outside or a second away from it closes it.
+        `QsMenuOpener` with its corner at the pointer (leftwards where it would
+        run off the screen), on an overlay whose input is only the card (a
+        `Panels` panel per screen), with submenus replacing it under a back row
+        (the menu stays held open, or Quickshell unloads its submenus), stray
+        separators dropped. A `HyprlandFocusGrab` over the menu and the bar
+        closes it on a click anywhere else, which Hyprland swallows; bar clicks
+        get through, so another icon switches menus, the same icon closes it,
+        and a click on the bar besides its buttons closes any open panel.
       - The battery (`Power`) is UPower's display device, shown only when
         UPower is running and it is a laptop battery, so only thonkpad
         enables UPower; `qs ipc -c shell call bar fakeBattery 15 false` shows a

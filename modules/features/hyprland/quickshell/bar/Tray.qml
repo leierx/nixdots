@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import qs.common
@@ -16,6 +17,7 @@ Row {
   property point menuAnchor
   // A name per screen, so a menu on one monitor closes one open on another.
   readonly property string panel: `tray:${screen?.name}`
+  readonly property QtObject bar: QsWindow.window
 
   leftPadding: 7
   rightPadding: 7
@@ -30,7 +32,7 @@ Row {
     }
 
     MouseArea {
-      id: button
+      id: icon
 
       required property SystemTrayItem modelData
 
@@ -38,34 +40,52 @@ Row {
       implicitHeight: 26
       acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
       onClicked: mouse => {
-        if (mouse.button === Qt.MiddleButton) {
-          modelData.secondaryActivate();
-        } else if (mouse.button === Qt.LeftButton && !modelData.onlyMenu) {
-          modelData.activate();
-        } else if (modelData.hasMenu) {
-          root.menuAnchor = Qt.point(mapToItem(null, width / 2, 0).x, QsWindow.window.height);
+        const opensMenu = modelData.hasMenu && (mouse.button === Qt.RightButton || (mouse.button === Qt.LeftButton && modelData.onlyMenu));
+        if (opensMenu && Panels.active === root.panel && root.menuItem === modelData) {
+          Panels.close();
+        } else if (opensMenu) {
+          // The menu's window and the bar's both start at the screen's corner.
+          root.menuAnchor = mapToItem(null, mouse.x, mouse.y);
           root.menuItem = modelData;
           Panels.open(root.panel);
+        } else {
+          Panels.close();
+          if (mouse.button === Qt.MiddleButton) modelData.secondaryActivate();
+          else if (mouse.button === Qt.LeftButton && !modelData.onlyMenu) modelData.activate();
         }
       }
 
       IconImage {
         anchors.centerIn: parent
         implicitSize: 17
-        source: button.modelData.icon
+        source: icon.modelData.icon
         // Apps that send pixels get a new source on every change; keep the old one up meanwhile.
         backer.retainWhileLoading: true
       }
     }
   }
 
-  LazyLoader {
-    active: Panels.active === root.panel && root.menuItem !== null
+  // Keyed by item, so switching to another icon's menu starts it afresh.
+  Variants {
+    model: Panels.active === root.panel && root.menuItem !== null ? [root.menuItem] : []
 
     TrayMenu {
+      id: trayMenu
+
+      required property SystemTrayItem modelData
+
       screen: root.screen
-      menu: root.menuItem.menu
+      menu: modelData.menu
       anchor: root.menuAnchor
+
+      // The bar stays clickable, so another icon switches menus; a click anywhere else ends the grab, and Hyprland swallows it.
+      HyprlandFocusGrab {
+        windows: [trayMenu, root.bar]
+        active: true
+        onCleared: {
+          if (root.menuItem === trayMenu.modelData) Panels.close();
+        }
+      }
     }
   }
 }

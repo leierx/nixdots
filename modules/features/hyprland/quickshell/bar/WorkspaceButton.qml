@@ -56,6 +56,9 @@ Rectangle {
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
     // On press, which feels quicker than a click.
-    onPressed: Hyprland.dispatch(`hl.dsp.focus({ workspace = ${JSON.stringify(root.number > 0 ? root.address : "name:" + root.address)} })`)
+    onPressed: {
+      Panels.close();
+      Hyprland.dispatch(`hl.dsp.focus({ workspace = ${JSON.stringify(root.number > 0 ? root.address : "name:" + root.address)} })`);
+    }
   }
 }
