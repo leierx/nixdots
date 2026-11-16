@@ -3,8 +3,8 @@ import Quickshell.Hyprland
 import qs.common
 
 // One workspace, by its number on its own monitor, else as "DP2-1" or by
-// name. Bright while it has windows; filled while shown, in the accent colour
-// on the focused monitor; outlined when it belongs to another monitor.
+// name. Dim while empty; filled while shown, in the accent colour on the
+// focused monitor; outlined when it belongs to another monitor.
 Rectangle {
   id: root
 
@@ -39,7 +39,9 @@ Rectangle {
 
     anchors.centerIn: parent
     text: !root.foreign ? WorkspaceOwners.index(root.number) : root.number > 0 ? WorkspaceOwners.foreignLabel(root.number) : root.workspace?.name ?? root.address
-    color: root.focused ? Theme.accentFg : root.urgent ? Theme.destructive : root.occupied || root.shown ? Theme.fg : Theme.fgDim
+    color: root.focused ? Theme.accentFg : root.urgent ? Theme.destructive : Theme.fg
+    // Dim while empty, shown or not.
+    opacity: root.occupied ? 1 : 0.55
     font: Theme.body
   }
 

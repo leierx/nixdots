@@ -95,7 +95,17 @@ in
               col = {
                 # libadwaita's border: the foreground at 15%
                 inactive_border = "rgba(${hex adw.window_fg_color}26)";
-                active_border = "rgb(${hex adw.accent_bg_color})";
+                active_border = {
+                  colors = [
+                    "rgb(${hex adw.green_4})"
+                    "rgb(${hex adw.green_4})"
+                    "rgb(${hex adw.green_4})"
+                    "rgb(${hex adw.accent_bg_color})"
+                    "rgb(${hex adw.accent_bg_color})"
+                    "rgb(${hex adw.accent_bg_color})"
+                  ];
+                  angle = 30;
+                };
                 nogroup_border = "rgb(${hex adw.warning_bg_color})";
                 nogroup_border_active = "rgb(${hex adw.warning_color})";
               };

@@ -14,6 +14,8 @@ Row {
   id: root
 
   required property ShellScreen screen
+  // Each icon's square, as tall as the bar.
+  required property int size
 
   // The item whose menu is open; null once it leaves the tray.
   property SystemTrayItem menuItem: null
@@ -25,28 +27,31 @@ Row {
     if (menuItem === null && Panels.active === panel) Panels.close();
   }
 
-  spacing: 2
-
   Repeater {
     model: ScriptModel {
       values: SystemTray.items.values.filter(item => item.status !== Status.Passive)
     }
 
-    Rectangle {
+    // Just the icon, like the NixOS logo: no hover or pressed state.
+    MouseArea {
       id: button
 
       required property SystemTrayItem modelData
 
-      function openMenu() {
-        root.menuAnchor = mapToItem(null, width / 2, height);
-        root.menuItem = modelData;
-        Panels.open(root.panel);
+      implicitWidth: root.size
+      implicitHeight: root.size
+      acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+      onClicked: mouse => {
+        if (mouse.button === Qt.MiddleButton) {
+          modelData.secondaryActivate();
+        } else if (mouse.button === Qt.LeftButton && !modelData.onlyMenu) {
+          modelData.activate();
+        } else if (modelData.hasMenu) {
+          root.menuAnchor = mapToItem(null, width / 2, height);
+          root.menuItem = modelData;
+          Panels.open(root.panel);
+        }
       }
-
-      implicitWidth: 28
-      implicitHeight: 28
-      radius: height / 2
-      color: Panels.active === root.panel && root.menuItem === modelData ? Theme.selected : area.containsMouse ? Theme.hover : "transparent"
 
       IconImage {
         anchors.centerIn: parent
@@ -54,19 +59,6 @@ Row {
         source: button.modelData.icon
         // Apps that send pixels get a new source on every change; keep the old one up meanwhile.
         backer.retainWhileLoading: true
-      }
-
-      MouseArea {
-        id: area
-
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-        onClicked: mouse => {
-          if (mouse.button === Qt.MiddleButton) button.modelData.secondaryActivate();
-          else if (mouse.button === Qt.LeftButton && !button.modelData.onlyMenu) button.modelData.activate();
-          else if (button.modelData.hasMenu) button.openMenu();
-        }
       }
     }
   }

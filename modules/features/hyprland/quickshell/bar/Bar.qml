@@ -20,10 +20,9 @@ Scope {
     }
   }
 
-  // Quickshell keeps Hyprland's state by its events, but misses some: it only
-  // refreshes monitors as one comes or goes and ignores renames, leaving
-  // workspaces on stale monitors and with stale names, and it reads windows'
-  // floating and group state, which the bar turns solid by, only on request.
+  // Quickshell keeps Hyprland's state by its events, but only refreshes
+  // monitors as one comes or goes and ignores renames, leaving workspaces on
+  // stale monitors and with stale names.
   Connections {
     target: Hyprland
 
@@ -31,8 +30,6 @@ Scope {
       if (["monitoraddedv2", "monitorremovedv2", "changeworkspaceid", "renameworkspace"].includes(event.name)) {
         Hyprland.refreshMonitors();
         Hyprland.refreshWorkspaces();
-      } else if (["openwindow", "movewindowv2", "changefloatingmode", "togglegroup", "moveintogroup", "moveoutofgroup"].includes(event.name)) {
-        Hyprland.refreshToplevels();
       }
     }
   }

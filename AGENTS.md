@@ -126,7 +126,7 @@ importer changes behaviour through the aspect's own options or `lib.mkForce`.
 | Option | Type | Notes |
 | --- | --- | --- |
 | `identity` | `{ username, fullName, email }` | Primary user; read by `users`, `git`, `home-manager`, profiles. |
-| `palettes` | `attrsOf (attrsOf str)` | `adwaita_dark` (libadwaita 1.9's dark style under its own names: every named colour, translucent ones as CSS `#rrggbbaa`, the accent swatches and the GNOME palette, plus ghostty's terminal colours; quickshell, hyprland, hyprlock, wezterm, tmux), `ui` (read by nothing since waybar went). |
+| `palettes` | `attrsOf (attrsOf str)` | `adwaita_dark` (libadwaita 1.9's dark style under its own names: every named colour, translucent ones as CSS `#rrggbbaa`, the accent swatches and the GNOME palette, plus ghostty's terminal colours; quickshell, hyprland, hyprlock, wezterm, tmux). |
 | `hyprland.workspaces` | positive int | Workspaces per monitor; read by hyprsplit's config, the binds and the quickshell bar. |
 | `nixosHosts.<name>` | submodule `{ system }` | Drives `flake.nixosConfigurations`. |
 | `systems` | `listOf str` | Option default `[ ]`; `per-system.nix` defines `[ "x86_64-linux" "aarch64-darwin" ]`. Drives `perSystem`. |
@@ -295,44 +295,38 @@ Notes on specific features:
       running. The clipboard picker decodes images into Quickshell's cache
       (pruned to what cliphist still lists) and shows them as thumbnails.
       Hyprland's `quickshell:launcher` layer rule dims behind it.
-    - `bar/` is the bar along the top of every monitor (`Bar.qml`, one
-      `BarWindow` per screen): the NixOS logo (a square that does nothing
-      yet), the monitor's workspaces, the clock (opens the center), the
-      weather, the battery and the tray. Over a lone window, the same
-      workspaces rules.nix' `w[tv1]`/`f[1]` draw without gaps (one tiled
-      window, a group counting once, or a maximized one), it is one solid
-      bar; otherwise its three groups float as islands, and it morphs
-      between the two. The space it keeps is the solid bar's height in both,
-      the islands hanging into the windows' gaps, so tiled windows never move;
-      its input mask shrinks to the solid bar so the window below takes clicks.
-      Quickshell keeps Hyprland's state by events but misses some, so
-      `Bar.qml` refreshes monitors and workspaces on monitor add/remove and
-      renames, and windows (for their floating and group state) on
-      open/move/float/group events.
+    - `bar/` is the bar along the top of every monitor (`Bar.qml`, one solid
+      `BarWindow` per screen in `Theme.bg`): the NixOS logo (a square that
+      does nothing yet), the monitor's workspaces, the clock (opens the
+      center), the battery and the tray. Quickshell keeps Hyprland's state by
+      events but only refreshes monitors as one comes or goes and ignores
+      renames, so `Bar.qml` refreshes monitors and workspaces on those.
       - Workspaces: each bar shows its monitor's own `1 … n` (monitor id × n
         + 1 onwards, as hyprsplit numbers them), then any other workspace on
         it, named after the monitor that owns it (`DP2-1`), and named ones by
         name; specials are left out. `WorkspaceOwners` remembers the connector
         last seen with each monitor id in the state dir, so a workspace left
         behind by an unplugged monitor still carries its name (the bare id if
-        never seen). Bright with windows, a pill while shown, accent on the
+        never seen). Dim while empty, a pill while shown, accent on the
         focused monitor, outlined when foreign, red when urgent; pressing one
         focuses it by id wherever it is.
-      - The tray hides passive items; left click activates (or opens the menu
-        of a menu-only item), middle is the secondary action, right opens the
-        menu: `TrayMenu`, libadwaita's popover menu drawn from `QsMenuOpener`
-        on an overlay over the screen (a `Panels` panel per screen), with
-        submenus replacing it under a back row.
+      - The tray is bare icons in bar-high squares like the logo, without
+        hover states, hiding passive items; left click activates (or opens the
+        menu of a menu-only item), middle is the secondary action, right opens
+        the menu: `TrayMenu`, libadwaita's popover menu drawn from
+        `QsMenuOpener` on an overlay over the screen (a `Panels` panel per
+        screen), with submenus replacing it under a back row.
       - The battery (`Power`) is UPower's display device, shown only when
         UPower is running and it is a laptop battery, so only thonkpad
         enables UPower; `qs ipc -c shell call bar fakeBattery 15 false` shows a
         made-up one anywhere, `realBattery` drops it.
-    - `weather/` is the `Weather` singleton any component can read: MET
-      Norway's forecast (yr.no's) for where the public address puts the
-      machine (ipinfo.io), so it follows the laptop, fetched with `curl`
-      every half hour, coordinates at two decimals for MET's cache. `now` is
-      the hour under way, `hours` the forecast after it, each with MET's
-      symbol code and a freedesktop weather icon (Papirus has them).
+    - `weather/` is the `Weather` singleton for components to read, none yet
+      (a singleton only starts once read): MET Norway's forecast (yr.no's)
+      for where the public address puts the machine (ipinfo.io), so it
+      follows the laptop, fetched with `curl` every half hour, coordinates at
+      two decimals for MET's cache. `now` is the hour under way, `hours` the
+      forecast after it, each with MET's symbol code and a freedesktop
+      weather icon (Papirus has them).
     - `notifications/` is the notification daemon (no mako) and its popups:
       `Notifs.qml` owns `org.freedesktop.Notifications` and keeps every
       notification as a `NotifEntry` until it is dismissed; the entry holds a
