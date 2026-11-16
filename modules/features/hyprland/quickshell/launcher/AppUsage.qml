@@ -3,19 +3,16 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.common
 
-// How much each app is used, so the launcher can put the usual ones first.
-// A launch counts half as much a week later. Each app keeps one number,
-// log2 of the sum of 2^(launch time in weeks): a launch adds to it with a
-// log-sum-exp step, and as every app ages at the same rate, the numbers
-// compare current use without ever being decayed. Saved in the state dir.
+// Each app keeps log2 of the sum of 2^(launch time in weeks), so a launch counts
+// half as much a week later, and as all apps age alike the numbers never need decaying.
 Singleton {
   id: root
 
   readonly property real week: 7 * 24 * 3600 * 1000
 
-  // From 0 for an app never launched towards 1: ½ after one launch just now,
-  // ¾ after two.
+  // 0 for an app never launched, towards 1: ½ after one launch just now, ¾ after two.
   function use(id: string): real {
     const rank = state.ranks[id];
     return rank === undefined ? 0 : 1 - Math.pow(2, -Math.pow(2, rank - Date.now() / week));
@@ -29,21 +26,12 @@ Singleton {
     state.ranks = Object.assign({}, state.ranks, { [id]: sum });
   }
 
-  FileView {
-    path: Quickshell.statePath("launcher.json")
-    // Until the first launch, there is no file, which is fine.
-    printErrors: false
-    // Deferred: writing at once loses a second change made in the same turn.
-    onAdapterUpdated: Qt.callLater(writeAdapter)
-    onLoadFailed: error => {
-      if (error !== FileViewError.FileNotFound) console.warn(`Reading ${path} failed: ${FileViewError.toString(error)}`);
-    }
-    onSaveFailed: error => console.warn(`Writing ${path} failed: ${FileViewError.toString(error)}`)
+  StateFile {
+    name: "launcher.json"
 
     JsonAdapter {
       id: state
 
-      // Desktop entry id to rank.
       property var ranks: ({})
     }
   }

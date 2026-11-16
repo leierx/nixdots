@@ -5,12 +5,7 @@ import QtQuick.Layouts
 import qs.common
 import qs.notifications
 
-// One notification inside a group. Collapsed, a line of its summary and body;
-// expanded, a card of its own with the image, the whole body and the actions.
-// A click on the card runs its default action, or dismisses it if it has none
-// and no buttons to choose from; a right or middle click or a swipe dismisses
-// it. A group's only notification has its summary in the group's header and
-// goes without a card.
+// A group's only notification has its summary in the group's header and goes without a card.
 Item {
   id: root
 
@@ -18,14 +13,8 @@ Item {
   property bool expanded: false
   property bool single: false
   property bool dimmed: false
-  // How far a swipe in the group moves it.
-  property real lean: 0
-
-  signal swipeMoved(real distance)
-  signal swipeEnded()
 
   readonly property bool boxed: expanded && !single
-  // If the collapsed line cuts the body short.
   readonly property bool truncated: line.truncated
   readonly property int pad: 12
 
@@ -53,12 +42,6 @@ Item {
     anchors.fill: parent
     // Collapsed, the group takes every click.
     enabled: root.expanded
-    onDistanceChanged: {
-      if (dragging) root.swipeMoved(distance);
-    }
-    onDraggingChanged: {
-      if (!dragging) root.swipeEnded();
-    }
     onSwiped: left => root.slideAway(left)
     onTapped: button => {
       if (button !== Qt.LeftButton || root.entry.clickDismisses) {
@@ -73,7 +56,7 @@ Item {
   Rectangle {
     id: box
 
-    x: root.lean
+    x: swipe.distance
     width: root.width
     height: content.implicitHeight + (root.boxed ? root.pad * 2 : 0)
     radius: Theme.buttonRadius
@@ -129,7 +112,6 @@ Item {
       }
       spacing: 8
 
-      // Collapsed: summary and body on one line.
       RowLayout {
         visible: !root.expanded && !(root.single && root.entry.body === "")
         Layout.fillWidth: true
@@ -168,7 +150,6 @@ Item {
         }
       }
 
-      // Expanded: the whole notification.
       RowLayout {
         visible: root.expanded
         Layout.fillWidth: true

@@ -4,9 +4,7 @@ import QtQuick
 import Quickshell
 import qs.nix
 
-// libadwaita's dark style, 1:1, which shell.qml scales: its named colours,
-// the foreground overlays it draws states with, its type scale and its radii.
-// Sizes that belong to one component live in that component.
+// libadwaita's dark style, 1:1.
 Singleton {
   id: root
 
@@ -14,6 +12,8 @@ Singleton {
   readonly property color bg: Colors.view_bg_color
   readonly property color fg: Colors.view_fg_color
   readonly property color fgDim: overlay(0.55)
+  // GNOME Shell's panel black.
+  readonly property color panel: Colors.dark_5
   readonly property color accentBg: Colors.accent_bg_color
   readonly property color accentFg: Colors.accent_fg_color
   // For text and lines on bg, where accentBg is too dark.
@@ -47,9 +47,8 @@ Singleton {
   readonly property int windowRadius: 15
 
   // The body font's size in px, the unit GNOME Shell sizes its panels in.
-  readonly property real em: 11 * 96 / 72
+  readonly property real em: body.pointSize * 96 / 72
 
-  // Between a surface and the screen's edge or the bar.
   readonly property int gap: 10
 
   // The foreground over whatever lies below, as libadwaita mixes currentColor.

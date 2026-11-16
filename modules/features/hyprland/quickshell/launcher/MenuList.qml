@@ -2,37 +2,26 @@ import QtQuick
 import Quickshell
 import qs.common
 
-// A search field above a list of results, driven by the keyboard. `results`
-// is an array of rows, each with a unique `key`, a `title`, optionally a
-// `subtitle` and an `icon` or a picture's `thumbnail` as an image source,
-// plus whatever the picker wants handed back when the row is picked with
-// `activated(row)`, or with Shift+Delete, `removed(row)`. Rows are matched by
-// `key` as the results change, so a row that stays keeps its delegate and icon.
-//
-// The search field holds the keyboard focus. Keys it has no use for, like Up
-// and Down, travel up to this item, and Escape on to MenuWindow.
 Column {
   id: root
 
   property alias query: input.text
   property string placeholder: ""
+  // Each row needs a unique `key`, by which its delegate is kept as the results change.
   property var results: []
-  // Rows shown before the list starts scrolling.
   property int maxRows: 7
   readonly property int rowHeight: 50
 
-  // The most rows shown since the picker opened, so narrowing a search leaves
-  // the card where it is.
+  // The most rows shown since the picker opened, so narrowing a search leaves the card where it is.
   property int peakRows: 0
 
-  // The height at peakRows, for MenuWindow.fullHeight. The column leaves out
-  // the spacing while the list is hidden.
+  // The column leaves out the spacing while the list is hidden.
   readonly property real fullHeight: input.height + (peakRows > 0 ? spacing : 0) + peakRows * rowHeight
 
   signal activated(var row)
   signal removed(var row)
 
-  // Set while a row goes, which keeps the selection where it is.
+  // Keeps the selection where it is while a row goes.
   property bool removing: false
 
   // The children take their width from the column, so it needs its own.
@@ -42,7 +31,6 @@ Column {
   onResultsChanged: peakRows = Math.max(peakRows, Math.min(results.length, maxRows))
   Component.onCompleted: peakRows = Math.min(results.length, maxRows)
 
-  // Select a row, clamped to the list, and scroll it into view.
   function select(index) {
     list.currentIndex = Math.max(0, Math.min(list.count - 1, index));
     list.positionViewAtIndex(list.currentIndex, ListView.Contain);
@@ -110,12 +98,10 @@ Column {
       // A new search starts at its best match.
       onValuesChanged: root.select(root.removing ? list.currentIndex : 0)
     }
-    // No dragging or kinetic scrolling: the list only ever jumps to keep the
-    // selected row in view.
+    // Only ever jumps, to keep the selected row in view.
     interactive: false
 
-    // The wheel moves the selection a row per notch, like rofi. Touchpads
-    // send smaller steps, which add up until they make a whole notch.
+    // A row per notch, like rofi; touchpad steps add up to a notch.
     WheelHandler {
       property real pending: 0
 

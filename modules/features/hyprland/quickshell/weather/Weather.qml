@@ -4,14 +4,10 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// The weather where this machine is: MET Norway's forecast, yr.no's, for the
-// place its public address puts it (ipinfo.io), so it follows a laptop around.
-// Looked up every half hour; the last forecast stays while offline. Read
-// `hours` for a forecast, or `now` for the hour under way.
+// For where the public address puts the machine, so it follows a laptop around.
 Singleton {
   id: root
 
-  // Where the forecast is for, as "Oslo".
   property string place: ""
   // From the hour under way: { time, temperature in °C, symbol: MET's symbol code, icon }.
   property var hours: []
@@ -20,7 +16,7 @@ Singleton {
   // MET's terms ask for a User-Agent naming the app.
   readonly property string userAgent: "nixdots-quickshell github.com/leierx/nixdots"
 
-  // MET's symbol code ("rainshowers_day") as a freedesktop weather icon.
+  // MET's "rainshowers_day" as a freedesktop icon name.
   function icon(symbol: string): string {
     const [kind, time] = symbol.split("_");
     const night = time === "night";

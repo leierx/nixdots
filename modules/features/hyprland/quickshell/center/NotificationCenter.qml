@@ -6,23 +6,17 @@ import Quickshell
 import Quickshell.Wayland
 import qs.common
 import qs.notifications
-import "swipe.js" as Swipe
 
-// The notification center, dropping down from the middle of the bar like
-// GNOME's: every notification not yet dismissed on the left, grouped per app
-// with the latest app first, and a calendar on the right. Escape or a click
-// outside it closes it, and opening it puts away the popups. No screen is
-// set, so Hyprland opens it on the focused monitor.
+// No screen is set, so Hyprland opens it on the focused monitor.
 PanelWindow {
   id: root
 
   readonly property bool open: Panels.active === "center"
-  // Apps in the order of their newest notification.
+  // In the order of their newest notification.
   readonly property var apps: [...new Set(Notifs.entries.map(entry => root.appKey(entry)))]
   readonly property int padding: 12
   readonly property int maxListHeight: 520
 
-  // After the closing animation, for the loader to unload it.
   signal hidden()
 
   function appKey(entry) {
@@ -106,13 +100,11 @@ PanelWindow {
     }
   }
 
-  // Everywhere outside the panel.
   MouseArea {
     anchors.fill: parent
     onClicked: Panels.close()
   }
 
-  // libadwaita's switch.
   component Switch: Rectangle {
     id: toggle
 
@@ -157,7 +149,6 @@ PanelWindow {
     }
   }
 
-  // libadwaita's text button, in regular weight.
   component Button: Rectangle {
     id: button
 
@@ -243,10 +234,6 @@ PanelWindow {
           ListView {
             id: list
 
-            // The group being swiped, by index, and how far.
-            property int swiped: -1
-            property real swipeDistance: 0
-
             anchors.fill: parent
             spacing: 8
             clip: true
@@ -260,19 +247,9 @@ PanelWindow {
 
             delegate: NotificationGroup {
               required property string modelData
-              required property int index
 
               width: ListView.view.width
               entries: Notifs.entries.filter(entry => root.appKey(entry) === modelData)
-              lean: Swipe.lean(index, list.swiped, list.swipeDistance, 70)
-              onSwipeMoved: distance => {
-                list.swiped = index;
-                list.swipeDistance = distance;
-              }
-              onSwipeEnded: {
-                list.swiped = -1;
-                list.swipeDistance = 0;
-              }
             }
 
             add: Transition {
@@ -309,9 +286,7 @@ PanelWindow {
             }
           }
 
-          // Qt scrolls a wheel notch by the 15 pixels Wayland reports for it;
-          // this glides a fixed step a notch and bounces at the ends. Touchpads,
-          // whose deltas come in small steps, go on to the list's own scrolling.
+          // Qt scrolls a notch by the 15 px Wayland reports; touchpads keep the list's own scrolling.
           MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.NoButton
@@ -320,17 +295,9 @@ PanelWindow {
                 wheel.accepted = false;
                 return;
               }
-              const top = list.originY;
-              const bottom = top + Math.max(0, list.contentHeight - list.height);
+              const bottom = list.originY + Math.max(0, list.contentHeight - list.height);
               const from = scroll.running ? scroll.to : list.contentY;
-              const to = from - wheel.angleDelta.y;
-              if ((to < top && list.contentY <= top) || (to > bottom && list.contentY >= bottom)) {
-                bounce.edge = to < top ? top : bottom;
-                bounce.overshoot = to < top ? -36 : 36;
-                if (!bounce.running) bounce.restart();
-                return;
-              }
-              scroll.to = Math.max(top, Math.min(bottom, to));
+              scroll.to = Math.max(list.originY, Math.min(bottom, from - wheel.angleDelta.y));
               scroll.restart();
             }
           }
@@ -344,30 +311,6 @@ PanelWindow {
             easing.type: Easing.OutCubic
           }
 
-          SequentialAnimation {
-            id: bounce
-
-            property real edge
-            property real overshoot
-
-            NumberAnimation {
-              target: list
-              property: "contentY"
-              to: bounce.edge + bounce.overshoot
-              duration: 90
-              easing.type: Easing.OutQuad
-            }
-
-            NumberAnimation {
-              target: list
-              property: "contentY"
-              to: bounce.edge
-              duration: 260
-              easing.type: Easing.OutBack
-            }
-          }
-
-          // Shows where the list is while it moves.
           Rectangle {
             anchors.right: parent.right
             y: list.visibleArea.yPosition * list.height

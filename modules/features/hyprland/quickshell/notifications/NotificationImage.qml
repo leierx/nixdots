@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell.Widgets
 
-// A notification's image, cropped to fill a rounded square or circle.
 ClippingRectangle {
   id: root
 

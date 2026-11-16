@@ -5,10 +5,6 @@ import QtQuick.Layouts
 import Quickshell.Widgets
 import qs.common
 
-// One popup: its app and age, then the image, summary and body, a progress bar
-// if the app sends one, and the actions. A click runs the default action, or
-// just puts the popup away; a right or middle click or a swipe towards the
-// screen's edge dismisses it.
 Item {
   id: root
 

@@ -8,21 +8,16 @@ import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.common
 
-// A tray item's menu, libadwaita's popover menu hanging below its icon. A
-// submenu takes the menu's place, under a row leading back. Escape, any click
-// outside it, the bar included, or the pointer leaving it for a second closes
-// it.
 PanelWindow {
   id: root
 
   required property QsMenuHandle menu
-  // Under the icon's middle, on the bar's lower edge.
   required property point anchor
-  // The submenus entered, innermost last.
+  // Submenus entered, innermost last; an entry the app has since dropped turns null.
   property list<QsMenuEntry> path: []
+  readonly property QsMenuEntry submenu: path[path.length - 1] ?? null
   readonly property int padding: 6
-  // The menu's rows, without leading, trailing or doubled separators, which
-  // apps leave around items they hide.
+  // Without the stray separators apps leave around items they hide.
   readonly property var entries: {
     const entries = [];
     for (const entry of opener.children.values) {
@@ -45,8 +40,7 @@ PanelWindow {
   WlrLayershell.namespace: "quickshell:menu"
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
-  // Keeps the menu loaded while a submenu shows: switching the one opener
-  // over would release it, and Quickshell unloads its submenus with it.
+  // Holds the root menu, since Quickshell unloads its submenus once no opener has it.
   QsMenuOpener {
     menu: root.menu
   }
@@ -54,7 +48,7 @@ PanelWindow {
   QsMenuOpener {
     id: opener
 
-    menu: root.path.length > 0 ? root.path[root.path.length - 1] : root.menu
+    menu: root.submenu ?? root.menu
   }
 
   Timer {
@@ -63,7 +57,6 @@ PanelWindow {
     onTriggered: Panels.close()
   }
 
-  // Everywhere outside the menu.
   MouseArea {
     anchors.fill: parent
     acceptedButtons: Qt.AllButtons
@@ -85,10 +78,10 @@ PanelWindow {
 
     Keys.onEscapePressed: Panels.close()
 
-    // Whether the pointer is on the menu, and has been since it opened.
     HoverHandler {
       id: hover
 
+      // So a menu the pointer never reached stays open.
       property bool entered: false
 
       onHoveredChanged: {
@@ -111,12 +104,11 @@ PanelWindow {
       }
       spacing: 0
 
-      // Back out of a submenu, titled with its name.
       Rectangle {
         Layout.fillWidth: true
         implicitWidth: title.implicitWidth + 64
         implicitHeight: 32
-        visible: root.path.length > 0
+        visible: root.submenu !== null
         radius: 6
         color: backHover.hovered ? Theme.hover : "transparent"
 
@@ -130,13 +122,12 @@ PanelWindow {
           id: title
 
           anchors.centerIn: parent
-          text: root.path.length > 0 ? root.path[root.path.length - 1].text : ""
+          text: root.submenu?.text ?? ""
           color: Theme.fg
           font: Theme.heading
         }
 
-        // Hover handlers rather than hovering mouse areas, which would keep
-        // hover from the menu's own handler.
+        // A hovering MouseArea would take hover from the menu's own handler.
         HoverHandler {
           id: backHover
         }
@@ -152,7 +143,7 @@ PanelWindow {
         Layout.topMargin: 6
         Layout.bottomMargin: 6
         implicitHeight: 1
-        visible: root.path.length > 0
+        visible: root.submenu !== null
         color: Theme.border
       }
 
@@ -192,7 +183,6 @@ PanelWindow {
               spacing: 8
               opacity: entry.modelData.enabled ? 1 : 0.5
 
-              // A check mark or a radio dot.
               Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 16

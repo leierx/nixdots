@@ -2,9 +2,6 @@ import QtQuick
 import Quickshell.Hyprland
 import qs.common
 
-// One workspace, by its number on its own monitor, else as "DP2-1" or by
-// name. Dim while empty, filled while shown, outlined when it belongs to
-// another monitor.
 Rectangle {
   id: root
 
@@ -14,8 +11,7 @@ Rectangle {
 
   // Null for one of the monitor's own that Hyprland has not created yet.
   readonly property HyprlandWorkspace workspace: Hyprland.workspaces.values.find(ws => ws.address === address) ?? null
-  // 0 for a named workspace.
-  readonly property int number: Number(address)
+  readonly property int number: Number(address) || 0
   readonly property bool shown: workspace !== null && workspace.active && workspace.monitor === monitor
   readonly property bool occupied: (workspace?.toplevels.values.length ?? 0) > 0
   readonly property bool urgent: workspace?.urgent ?? false
@@ -34,7 +30,7 @@ Rectangle {
     }
   }
 
-  Text {
+  BarText {
     id: label
 
     // Centred on its ink: a digit sits off-centre in its line box.
@@ -42,9 +38,8 @@ Rectangle {
     y: (root.height - ink.tightBoundingRect.height) / 2 - ink.tightBoundingRect.y - baselineOffset
     text: !root.foreign ? WorkspaceOwners.index(root.number) : root.number > 0 ? WorkspaceOwners.foreignLabel(root.number) : root.workspace?.name ?? root.address
     color: root.urgent ? Theme.destructive : Theme.fg
-    // Dim while empty, shown or not.
     opacity: root.occupied ? 1 : 0.4
-    font: Qt.font({ family: Theme.body.family, pointSize: 10, weight: Font.Bold })
+    weight: Font.Bold
   }
 
   TextMetrics {

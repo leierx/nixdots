@@ -3,24 +3,15 @@ import Quickshell
 import Quickshell.Wayland
 import qs.common
 
-// The frame every picker shares: a transparent surface over the whole monitor,
-// with a card for the picker's widgets. Escape or a click outside the card
-// closes it.
-//
-// No screen is set, so Hyprland opens it on the focused monitor. Hyprland's
-// layer rule for the "quickshell:launcher" namespace dims everything behind it
-// and turns its animations off.
+// No screen is set, so Hyprland opens it on the focused monitor.
 PanelWindow {
   id: root
 
-  // The content's height when it is at its tallest. The card's top edge sits
-  // where content this tall would be centred, so when a search shortens the
-  // list only the bottom edge moves and the search field stays put.
-  property real fullHeight: body.implicitHeight
+  // The card's top sits where content this tall is centred, so the search field stays put as the list shortens.
+  required property real fullHeight
   property int cardWidth: 640
   readonly property int padding: 8
 
-  // The picker's widgets, stacked top to bottom inside the card.
   default property alias content: body.data
 
   color: "transparent"
@@ -37,7 +28,6 @@ PanelWindow {
   WlrLayershell.namespace: "quickshell:launcher"
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
-  // Everywhere outside the card.
   MouseArea {
     anchors.fill: parent
     onClicked: Panels.close()

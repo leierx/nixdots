@@ -53,7 +53,6 @@
           {
             match.namespace = "^quickshell:launcher$";
             dim_around = true;
-            no_anim = true;
           }
           {
             match.namespace = "^quickshell:center$";

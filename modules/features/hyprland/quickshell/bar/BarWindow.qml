@@ -2,15 +2,12 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
-import qs.nix
+import qs.common
 
-// One monitor's bar: the NixOS logo and the monitor's workspaces on the left,
-// the clock in the middle, the battery and the tray on the right.
 PanelWindow {
   id: root
 
-  // Looked up rather than Hyprland.monitorFor(), which is not a binding and
-  // stays null when the output comes before Hyprland announces the monitor.
+  // Hyprland.monitorFor() is not reactive: it stays null if the output appears before the monitor.
   readonly property HyprlandMonitor monitor: Hyprland.monitors.values.find(m => m.name === screen?.name) ?? null
 
   anchors {
@@ -19,8 +16,7 @@ PanelWindow {
     right: true
   }
   implicitHeight: 35
-  // GNOME Shell's panel black.
-  color: Colors.dark_5
+  color: Theme.panel
 
   WlrLayershell.namespace: "quickshell:bar"
 

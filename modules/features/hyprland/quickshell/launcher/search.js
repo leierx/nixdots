@@ -1,15 +1,8 @@
 .pragma library
 
-// Search shared by every picker, matching the way rofi does by default: every
-// word typed has to appear somewhere in the text, in any order, so "term wez"
-// finds WezTerm. In a loose field (an app's name) a word may also match as its
-// letters in order with gaps between, so "ffx" finds Firefox, scoring below
-// any word that appears whole.
-//
-// score() is -1 when the text does not match, and otherwise a number where
-// bigger is better. An empty query matches everything with 0, which leaves the
-// picker's own order alone.
-
+// Like rofi: every word typed appears somewhere, in any order, or in a loose
+// field as its letters in order ("ffx" in Firefox), scored below any whole word.
+// -1 is no match; an empty query matches everything with 0, keeping the picker's order.
 function score(query, text, loose) {
   const words = query.toLowerCase().split(/\s+/).filter(word => word !== "");
   if (words.length === 0) {
@@ -32,8 +25,6 @@ function score(query, text, loose) {
       total += 500 - span;
       continue;
     }
-    // The start of the text beats the start of a later word, which beats
-    // the middle of one.
     if (at === 0) {
       total += 1000;
     } else if (" -_./:".includes(haystack[at - 1])) {
@@ -46,8 +37,7 @@ function score(query, text, loose) {
   return total - haystack.length / 20;
 }
 
-// The fewest characters of the text that hold the word's letters in order, or
-// -1 if they are not all there.
+// The fewest characters of the text holding the word's letters in order, or -1.
 function spread(haystack, word) {
   let best = -1;
   for (let start = haystack.indexOf(word[0]); start >= 0; start = haystack.indexOf(word[0], start + 1)) {
@@ -65,9 +55,7 @@ function spread(haystack, word) {
   return best;
 }
 
-// The best score over several fields, each scaled by its weight, so that a
-// hit in the name beats the same hit in a keyword. `fields` is a list of
-// [weight, text, loose] triples, `loose` optional.
+// `fields` are [weight, text, loose?], so a hit in the name beats the same hit in a keyword.
 function scoreFields(query, fields) {
   let best = -1;
   for (const [weight, text, loose] of fields) {

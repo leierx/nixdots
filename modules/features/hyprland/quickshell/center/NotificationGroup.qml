@@ -6,48 +6,29 @@ import Quickshell
 import Quickshell.Widgets
 import qs.common
 import qs.notifications
-import "swipe.js" as Swipe
 
-// One app's notifications in the center, grouped the way end-4's dots do: the
-// app's icon and name, the latest time and a count over its two newest
-// notifications, a line each. Expanded, each notification gets its own card.
-// A click on a lone notification runs its default action, or dismisses it if
-// it has none and no buttons to choose from; a click on several expands or
-// collapses them. A right or middle click or a swipe dismisses the group, and
-// once expanded, the same on a notification dismisses just that one.
+// Grouped the way end-4's dots do.
 Item {
   id: root
 
   // Newest first.
   required property var entries
-  // How far a swipe in the list moves it.
-  property real lean: 0
   property bool expanded: false
 
-  // The entries last shown, kept once the app's last one has gone so the group
-  // fades out whole.
+  // Kept once the app's last entry has gone, so the group fades out whole.
   property var shown: []
   onEntriesChanged: {
     if (entries.length > 0) shown = entries;
   }
   Component.onCompleted: shown = entries
 
-  signal swipeMoved(real distance)
-  signal swipeEnded()
-
   readonly property NotifEntry newest: shown[0] ?? null
   readonly property bool single: shown.length === 1
   readonly property bool critical: shown.some(e => e.critical)
   readonly property bool showImage: single && newest.notification.image !== ""
-  // Expanding shows more: other notifications, or a lone one's buttons,
-  // progress or the rest of its body.
   readonly property bool expandable: !single || newest.buttons.length > 0 || newest.progress !== undefined || (items.count > 0 && items.itemAt(0).truncated)
   readonly property int iconSize: 40
   readonly property int pad: 12
-
-  // The notification being swiped inside it, by index, and how far.
-  property int swiped: -1
-  property real swipeDistance: 0
 
   implicitHeight: card.height
 
@@ -57,7 +38,6 @@ Item {
     away.start();
   }
 
-  // Collapses as its last notification but one goes.
   onSingleChanged: {
     if (single) expanded = false;
   }
@@ -81,12 +61,6 @@ Item {
 
     anchors.fill: parent
     swipeEnabled: !root.expanded
-    onDistanceChanged: {
-      if (dragging) root.swipeMoved(distance);
-    }
-    onDraggingChanged: {
-      if (!dragging) root.swipeEnded();
-    }
     onSwiped: left => root.slideAway(left)
     onTapped: button => {
       if (button !== Qt.LeftButton) {
@@ -105,7 +79,7 @@ Item {
   Rectangle {
     id: card
 
-    x: root.lean
+    x: swipe.distance
     width: root.width
     height: row.implicitHeight + root.pad * 2
     radius: Theme.cardRadius
@@ -188,7 +162,6 @@ Item {
           radius: width / 2
         }
 
-        // The app's icon in the corner of a notification's image.
         IconImage {
           anchors {
             right: parent.right
@@ -212,8 +185,6 @@ Item {
           }
         }
 
-        // A lone notification's summary and age, or the app's name and how
-        // many it sent; each of several shows its own age on its line.
         RowLayout {
           Layout.fillWidth: true
           Layout.minimumHeight: 24
@@ -235,7 +206,6 @@ Item {
             font: Theme.caption
           }
 
-          // A flat button: just the arrow, with a circle under the pointer.
           Rectangle {
             visible: root.expandable || root.expanded
             implicitWidth: 24
@@ -274,17 +244,7 @@ Item {
             entry: modelData
             expanded: root.expanded
             single: root.single
-            // The second line, with more behind it.
             dimmed: !root.expanded && index === 1 && root.shown.length > 2
-            lean: Swipe.lean(index, root.swiped, root.swipeDistance, swipe.threshold)
-            onSwipeMoved: distance => {
-              root.swiped = index;
-              root.swipeDistance = distance;
-            }
-            onSwipeEnded: {
-              root.swiped = -1;
-              root.swipeDistance = 0;
-            }
           }
         }
       }

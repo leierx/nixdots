@@ -250,11 +250,14 @@ Notes on specific features:
     session daemon (restarted when the shell changes, via `X-Restart-Triggers`).
     Quickshell comes from `pkgs.unstable` (0.3.2), since 0.3.1 fixed crashes on
     freed objects in a `ScriptModel`, which the notification lists hold. Each
-    component is its own directory owning its windows, widgets, sizes and IPC
-    target, and `shell.qml` only instantiates them; `common/` holds only what
-    all share: `Theme` and `Panels`, the one open panel by name: opening any
-    panel (a picker, the notification center, a tray menu) closes the
-    others, and any IPC `close` closes whichever is open.
+    component is its own directory owning its windows, widgets and sizes, and
+    `shell.qml` only instantiates them; `common/` holds what several share:
+    `Theme`, `StateFile` (a `JsonAdapter`'s file in Quickshell's state dir),
+    `Shadow`, `ExpanderArrow`, and `Panels`, the one open panel by name, with
+    the IPC target `panels` (`qs ipc -c shell call panels open|close|toggle
+    <name>`; `apps`, `clipboard`, `monitors`, `center`): opening any panel (a
+    picker, the notification center, a tray menu) closes the others, and
+    `close` closes whichever is open.
     - `Theme` is libadwaita's dark style 1:1: its named colours
       (`palettes.adwaita_dark`, `view_bg_color` surfaces), hover/selection/
       border as the foreground at libadwaita's alphas over any surface, its
@@ -275,12 +278,12 @@ Notes on specific features:
       `Hyprsplit.workspaces`, in a `qs.nix`
       module added to the store copy, so it only runs from the built copy
       (`programs.quickshell.configs.shell`), not the checkout. A new component
-      is a directory with a `Scope` holding its `IpcHandler`, a line in
-      `shell.qml`, and for a keybind a `GlobalShortcut` (Quickshell.Hyprland)
+      is a directory with a `Scope`, a line in `shell.qml`, an `IpcHandler`
+      if scripts drive more than its panel, and for a keybind a `GlobalShortcut` (Quickshell.Hyprland)
       bound in `quickshell.nix` with `hl.dsp.global("quickshell:<name>")`,
       which reaches the running shell without starting a `qs ipc` process.
     - `launcher/` is the rofi-style pickers (global shortcuts
-      `quickshell:launcher-apps|clipboard|monitors`, or `qs ipc -c shell call launcher
+      `quickshell:launcher-apps|clipboard|monitors`, or `qs ipc -c shell call panels
       toggle apps|clipboard|monitors`), keyboard driven and snappy, without
       animations: `MenuWindow` + `MenuList` (+ `MenuCommand` to read a
       command's output) and `search.js`; a picker is a `<Name>Menu.qml` plus a
@@ -338,7 +341,7 @@ Notes on specific features:
       notification as a `NotifEntry` until it is dismissed; the entry holds a
       `RetainableLock` and outlives the close by a second, so views slide a
       closed notification away whole. Popups stack top right on the monitor
-      focused when each arrived, below the bar, sliding in and out (the
+      focused when each arrived (the first one's once it is gone), below the bar, sliding in and out (the
       window stays mapped with an empty input region, so the last one does
       too); the app's timeout or 8 s, critical never, hovering holds it;
       click runs the default action, right or middle click or a swipe towards
@@ -358,8 +361,8 @@ Notes on specific features:
       `qs ipc -c shell call notifications
       <toggleDnd|setDnd|dnd|count|clear|hidePopups>`. History lives in memory;
       a restart of the service empties it, by design.
-    - `center/` is the notification center (`qs ipc -c shell call center
-      toggle`), GNOME's layout, dropping down from the middle of the bar with
+    - `center/` is the notification center (`qs ipc -c shell call panels
+      toggle center`), GNOME's layout, dropping down from the middle of the bar with
       a short fade and slide: notifications on the left, a Do Not Disturb
       switch and Clear (which also closes it) below, and `Calendar.qml` on
       the right (locale's first weekday, ISO week numbers, arrows or wheel for
@@ -375,11 +378,10 @@ Notes on specific features:
       its default action, or dismisses it when it has none and at most one
       action (`NotifEntry.clickDismisses`); on a group of several it expands
       and collapses. Right or middle click or a swipe dismisses the group,
-      or once expanded, one notification; while one is swiped its
-      neighbours lean along (`swipe.js`). Mouse only, and unlike the pickers
+      or once expanded, one notification. Mouse only, and unlike the pickers
       it is smooth: the list drags and flicks with Qt's overshoot, a wheel
-      notch glides 120 px (Qt's own moves the 15 px Wayland reports) and
-      bounces at the ends, and groups animate their height. Escape or a click
+      notch glides 120 px (Qt's own moves the 15 px Wayland reports), and
+      groups animate their height. Escape or a click
       outside closes it, and its `quickshell:center` layer rule dims behind
       it. The popups and the center cast libadwaita's window shadow
       (`common/Shadow.qml`, Qt's `RectangularShadow`), and their expand

@@ -1,9 +1,6 @@
 import Quickshell
 import Quickshell.Io
 
-// The notification daemon's popups, in the top right corner of the monitor
-// focused when each arrived. The notification center lives in center/.
-// Scripts reach the daemon with `qs ipc -c shell call notifications <function>`.
 Scope {
   IpcHandler {
     target: "notifications"

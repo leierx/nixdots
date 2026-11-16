@@ -2,9 +2,6 @@ import QtQuick
 import QtQuick.Shapes
 import qs.common
 
-// The battery's charge as a filled battery and a percentage: green while
-// plugged in, yellow when low and red when critical on battery. Hidden on
-// machines without one.
 Row {
   id: root
 
@@ -40,7 +37,6 @@ Row {
       }
     }
 
-    // The terminal.
     Rectangle {
       anchors.left: body.right
       anchors.leftMargin: 0.5
@@ -52,7 +48,6 @@ Row {
     }
   }
 
-  // A bolt while plugged in.
   Shape {
     anchors.verticalCenter: parent.verticalCenter
     width: 7
@@ -70,10 +65,9 @@ Row {
     }
   }
 
-  Text {
+  BarText {
     anchors.verticalCenter: parent.verticalCenter
     text: `${Power.percent}%`
     color: Power.low ? root.level : Theme.fg
-    font: Qt.font({ family: Theme.body.family, pointSize: 10, weight: Font.Medium })
   }
 }

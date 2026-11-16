@@ -90,7 +90,7 @@ root: {
         (globalBind "d" "launcher-apps" "App launcher")
         (globalBind "v" "launcher-clipboard" "Clipboard history")
         # SUPER+P, after Windows' display "Project" switcher
-        (globalBind "P" "launcher-monitors" "Monitor layouts")
+        (globalBind "p" "launcher-monitors" "Monitor layouts")
       ];
     };
 }

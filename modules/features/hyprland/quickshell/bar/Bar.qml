@@ -3,14 +3,11 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 
-// The bar along the top of every monitor. Scripts reach it with
-// `qs ipc -c shell call bar <function>`.
 Scope {
   IpcHandler {
     target: "bar"
 
-    // A made-up battery, to see the indicator on a machine without one:
-    // `fakeBattery 15 false` is 15 % on battery.
+    // `fakeBattery 15 false`: 15 % on battery, to see the indicator on a machine without one.
     function fakeBattery(percent: int, plugged: bool): void {
       Power.fake = { percent, plugged };
     }
@@ -20,9 +17,7 @@ Scope {
     }
   }
 
-  // Quickshell keeps Hyprland's state by its events, but only refreshes
-  // monitors as one comes or goes and ignores renames, leaving workspaces on
-  // stale monitors and with stale names.
+  // Quickshell refreshes monitors only as one is added, and ignores renamed workspaces.
   Connections {
     target: Hyprland
 

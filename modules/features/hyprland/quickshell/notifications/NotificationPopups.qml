@@ -5,10 +5,6 @@ import Quickshell
 import Quickshell.Wayland
 import qs.common
 
-// Popups stacked in the top right corner, below the bar, newest on top. Each
-// stays on the monitor that was focused when it arrived. Only the cards take
-// clicks; the rest of the window passes them through to the windows below.
-// The window stays mapped while empty, so the last popup still slides out.
 Variants {
   model: Quickshell.screens
 
@@ -16,6 +12,8 @@ Variants {
     id: window
 
     required property ShellScreen modelData
+    // Takes the popups of a monitor that has gone.
+    readonly property bool fallback: modelData === Quickshell.screens[0]
 
     screen: modelData
     anchors {
@@ -27,6 +25,7 @@ Variants {
     implicitWidth: 24 + Math.round(34 * Theme.em) + Theme.gap
     exclusiveZone: 0
     color: "transparent"
+    // Stays mapped while empty, so the last popup still slides out; only the cards take clicks.
     mask: Region {
       item: list.contentItem
     }
@@ -46,7 +45,7 @@ Variants {
       spacing: Theme.gap
       interactive: false
       model: ScriptModel {
-        values: Notifs.popups.filter(e => e.screen === window.modelData.name)
+        values: Notifs.popups.filter(e => e.screen === window.modelData.name || (window.fallback && !Quickshell.screens.some(s => s.name === e.screen)))
       }
 
       delegate: NotificationCard {

@@ -1,9 +1,9 @@
 pragma Singleton
 
 import Quickshell
+import Quickshell.Io
 
-// Which panel is open, by name ("apps", "center", …). Only one is open
-// at a time, so opening one closes any other.
+// One panel open at a time, by name ("apps", "center", "tray:DP-1", …).
 Singleton {
   property string active: ""
 
@@ -17,5 +17,21 @@ Singleton {
 
   function toggle(name) {
     active = active === name ? "" : name;
+  }
+
+  IpcHandler {
+    target: "panels"
+
+    function open(name: string): void {
+      Panels.open(name);
+    }
+
+    function close(): void {
+      Panels.close();
+    }
+
+    function toggle(name: string): void {
+      Panels.toggle(name);
+    }
   }
 }

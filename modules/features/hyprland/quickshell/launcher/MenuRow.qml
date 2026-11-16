@@ -3,8 +3,6 @@ import QtQuick.Layouts
 import Quickshell.Widgets
 import qs.common
 
-// One row of a MenuList: an icon or a picture's thumbnail if the row has one,
-// a title and an optional subtitle, highlighted while it is the selected row.
 Rectangle {
   id: root
 
@@ -25,7 +23,6 @@ Rectangle {
     onClicked: root.clicked()
   }
 
-  // Leaves out the icon, and the space for it, when the row has none.
   RowLayout {
     anchors {
       fill: parent

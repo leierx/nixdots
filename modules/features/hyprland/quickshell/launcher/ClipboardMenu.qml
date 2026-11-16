@@ -2,22 +2,17 @@ import Quickshell
 import qs.common
 import "search.js" as Search
 
-// cliphist's history, newest first; the picked entry goes back on the
-// clipboard, and Shift+Delete removes it. Images show as thumbnails, decoded
-// into the cache as the picker opens.
 MenuWindow {
   id: root
 
   property var entries: []
-  // Thumbnails, named by cliphist id.
   readonly property string thumbnails: Quickshell.cachePath("clipboard")
 
   cardWidth: 960
   fullHeight: list.fullHeight
 
-  // Lists the history after decoding the images it has no thumbnail of yet,
-  // and drops the thumbnails of entries that are gone.
   MenuCommand {
+    name: "cliphist"
     command: ["sh", "-c", `
       mkdir -p "$1" && cd "$1" || exit
       list=$(cliphist list) || exit

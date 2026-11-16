@@ -1,9 +1,7 @@
 import QtQuick
 import QtQuick.Shapes
 
-// libadwaita's expander arrow, Adwaita's pan-down-symbolic drawn in the
-// foreground colour, turning to point up while `open`. Raised a pixel from
-// the icon, so it sits centred in its 16 px.
+// Adwaita's pan-down-symbolic, raised a pixel so it sits centred in its 16 px.
 Shape {
   id: root
 

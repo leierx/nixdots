@@ -1,8 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 
-// libadwaita's shadow under a floating window, for a rounded Rectangle to
-// hold as its child: it fills the parent and draws beneath it.
+// libadwaita's window shadow, as a child of the rounded Rectangle it lies under.
 Item {
   id: root
 

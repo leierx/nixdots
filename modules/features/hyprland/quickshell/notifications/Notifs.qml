@@ -8,9 +8,6 @@ import Quickshell.Services.Notifications
 import Quickshell.Wayland
 import qs.common
 
-// The notification daemon. Every notification stays in `entries`, the
-// notification center's history, until it is dismissed; `popups` are the ones
-// currently shown in the corner of a monitor.
 Singleton {
   id: root
 
@@ -18,19 +15,15 @@ Singleton {
   property var entries: []
   readonly property var popups: entries.filter(e => e.popup)
 
-  // Do not disturb: popups only for critical notifications. Saved, so a
-  // rebuild restarting the shell keeps it.
+  // Only critical notifications pop up; saved, so a rebuild restarting the shell keeps it.
   property alias dnd: state.dnd
 
   readonly property int defaultTimeout: 8000
   readonly property int maxPopups: 5
 
-  // Ticks the ages on the cards.
   property date now: new Date()
 
-  // The focused window is fullscreen, a game or a video: like GNOME, only
-  // critical notifications pop up over it, and going fullscreen puts the
-  // others away.
+  // Like GNOME: over a fullscreen window only critical notifications pop up, and going fullscreen puts the others away.
   readonly property bool fullscreen: ToplevelManager.activeToplevel?.fullscreen ?? false
   onFullscreenChanged: {
     if (fullscreen) {
@@ -53,8 +46,6 @@ Singleton {
     for (const entry of entries.slice()) entry.notification.dismiss();
   }
 
-  // "now" and "5m" while fresh, then the time today, "Yesterday", the weekday
-  // within a week and the date before that; ticks with `now`.
   function age(time) {
     const minutes = Math.floor((now - time) / 60000);
     if (minutes < 1) return "now";
@@ -68,17 +59,15 @@ Singleton {
     return Qt.locale().toString(time, time.getFullYear() === now.getFullYear() ? "d MMM" : "d MMM yyyy");
   }
 
-  // A body as shown: without the link to the site Chromium puts first, and
-  // without blank lines around it or more than one between paragraphs.
+  // Chromium puts a link to the site first.
   function cleanBody(body) {
     const origin = /^<a href="([^"]*)">([^<]*)<\/a>(?:\n|$)/.exec(body);
     if (origin && origin[1].includes(origin[2])) body = body.slice(origin[0].length);
     return body.trim().replace(/\n{3,}/g, "\n\n");
   }
 
-  // The app's icon: the one it sends, else its desktop entry's.
   function appIcon(notification) {
-    return iconSource(notification?.appIcon) || (notification?.appName ? iconSource(DesktopEntries.heuristicLookup(notification.appName)?.icon) : "");
+    return iconSource(notification.appIcon) || (notification.appName ? iconSource(DesktopEntries.heuristicLookup(notification.appName)?.icon) : "");
   }
 
   function iconSource(icon) {
@@ -96,7 +85,7 @@ Singleton {
     });
   }
 
-  // The app's own sound if it sends one; low urgency is silent.
+  // Low urgency is silent.
   function playSound(notification) {
     const hints = notification.hints;
     if (hints["suppress-sound"]) return;
@@ -106,7 +95,6 @@ Singleton {
     if (file) Quickshell.execDetached(["pw-play", file]);
   }
 
-  // The monitor a new popup goes to.
   function focusedScreen() {
     return Hyprland.focusedMonitor?.name ?? Quickshell.screens[0]?.name ?? "";
   }
@@ -118,16 +106,8 @@ Singleton {
     onTriggered: root.now = new Date()
   }
 
-  FileView {
-    path: Quickshell.statePath("notifications.json")
-    // Until do not disturb is first switched, there is no file, which is fine.
-    printErrors: false
-    // Deferred: writing at once loses a second change made in the same turn.
-    onAdapterUpdated: Qt.callLater(writeAdapter)
-    onLoadFailed: error => {
-      if (error !== FileViewError.FileNotFound) console.warn(`Reading ${path} failed: ${FileViewError.toString(error)}`);
-    }
-    onSaveFailed: error => console.warn(`Writing ${path} failed: ${FileViewError.toString(error)}`)
+  StateFile {
+    name: "notifications.json"
 
     JsonAdapter {
       id: state
@@ -152,8 +132,7 @@ Singleton {
     onNotification: notification => {
       notification.tracked = true;
 
-      // A newer notification with the same tag replaces the old one, as
-      // volume and brightness scripts expect.
+      // Same tag replaces, as volume and brightness scripts expect.
       const tag = notification.hints["x-canonical-private-synchronous"];
       if (tag) {
         for (const entry of root.entries.slice()) {

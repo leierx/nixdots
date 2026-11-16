@@ -5,18 +5,13 @@ import QtQuick.Layouts
 import Quickshell
 import qs.common
 
-// A month at a time under today's date, weeks starting on the locale's first
-// day, with ISO week numbers down the side. The arrows or the wheel change the
-// month; clicking the date goes back to today's.
 ColumnLayout {
   id: root
 
   readonly property var locale: Qt.locale()
   readonly property date today: clock.date
-  // The first of the month shown.
   property date month: new Date(today.getFullYear(), today.getMonth(), 1)
 
-  // The six weeks shown, from the first day of the week holding the 1st.
   readonly property var weeks: {
     const lead = (month.getDay() - locale.firstDayOfWeek + 7) % 7;
     return Array.from({ length: 6 }, (_, week) => Array.from({ length: 7 }, (_, day) => new Date(month.getFullYear(), month.getMonth(), 1 - lead + week * 7 + day)));
@@ -135,7 +130,6 @@ ColumnLayout {
     spacing: 2
 
     Row {
-      // The corner above the week numbers.
       Item {
         width: root.cell
         height: root.cell
@@ -213,7 +207,7 @@ ColumnLayout {
     }
   }
 
-  // A notch a month; touchpads add up to one.
+  // A month a notch; touchpad steps add up to a notch.
   WheelHandler {
     property real pending: 0
 

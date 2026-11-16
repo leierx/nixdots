@@ -2,14 +2,10 @@ import Quickshell
 import qs.common
 import "search.js" as Search
 
-// The application launcher, like rofi's drun: desktop entries matched on
-// name, generic name, keywords, executable and categories, best match first
-// and the apps used most first among equal matches.
 MenuWindow {
   id: root
 
-  // Entries with Terminal=true are run inside this, since their command
-  // would start them without one.
+  // For Terminal=true entries, whose command has no terminal of its own.
   readonly property list<string> terminal: ["wezterm", "start", "--"]
 
   fullHeight: list.fullHeight
@@ -38,8 +34,7 @@ MenuWindow {
       if (score >= 0) {
         rows.push({
           key: entry.id,
-          // Use adds less than half a step between kinds of match (search.js),
-          // ordering apps matched alike without lifting one past a better one.
+          // Under half the step between kinds of match in search.js, so use only orders equal matches.
           score: score + 50 * AppUsage.use(entry.id),
           title: entry.name,
           subtitle: entry.genericName,
@@ -49,7 +44,6 @@ MenuWindow {
       }
     }
 
-    // Equal scores, like unused apps before anything is typed, sort by name.
     rows.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
     return rows;
   }

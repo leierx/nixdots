@@ -5,8 +5,6 @@ import QtQuick.Layouts
 import Quickshell.Services.Notifications
 import qs.common
 
-// A notification's buttons, three to a row; with more, the third opens the
-// rest below.
 ColumnLayout {
   id: root
 
@@ -22,7 +20,6 @@ ColumnLayout {
     id: button
 
     property alias text: label.text
-    // An expander arrow after the text, pointing up while open.
     property bool expander: false
     property bool open: false
 

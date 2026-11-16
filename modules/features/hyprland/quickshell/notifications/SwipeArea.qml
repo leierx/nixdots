@@ -1,8 +1,5 @@
 import QtQuick
 
-// Tells a sideways drag from a click. Once the pointer has moved sideways,
-// `distance` follows it and the list stops scrolling; letting go past
-// `threshold` emits `swiped`. Clicks without a drag emit `tapped`.
 MouseArea {
   id: root
 

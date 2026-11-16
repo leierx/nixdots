@@ -2,17 +2,18 @@ import Quickshell
 import Quickshell.Io
 import qs.common
 
-// Runs `command` once, as the menu holding it opens, and hands its output to
-// `done`. A failure is sent as a notification and closes the menu.
-//
-//   MenuCommand {
-//     command: ["cliphist", "list"]
-//     onDone: output => root.rows = parse(output)
-//   }
+// A failure is sent as a notification titled `name` and closes the menu.
 Process {
   id: root
 
+  property string name: command.join(" ")
+
   signal done(string output)
+
+  function fail(message: string): void {
+    Quickshell.execDetached(["notify-send", "-u", "critical", root.name, message]);
+    Panels.close();
+  }
 
   running: true
   stdout: StdioCollector {
@@ -24,12 +25,7 @@ Process {
 
   // The collectors have their text by the time the process exits.
   onExited: exitCode => {
-    if (exitCode === 0) {
-      root.done(out.text);
-      return;
-    }
-    const name = [root.command[0].split("/").pop(), ...root.command.slice(1)].join(" ");
-    Quickshell.execDetached(["notify-send", "-u", "critical", name, err.text]);
-    Panels.close();
+    if (exitCode === 0) root.done(out.text);
+    else root.fail(err.text);
   }
 }
