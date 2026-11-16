@@ -23,7 +23,7 @@ Row {
     .sort((a, b) => (b.id > 0) - (a.id > 0) || a.id - b.id || a.name.localeCompare(b.name))
     .map(ws => ws.address)
 
-  spacing: 4
+  spacing: 0
 
   Repeater {
     model: ScriptModel {

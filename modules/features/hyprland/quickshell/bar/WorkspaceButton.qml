@@ -3,8 +3,8 @@ import Quickshell.Hyprland
 import qs.common
 
 // One workspace, by its number on its own monitor, else as "DP2-1" or by
-// name. Dim while empty; filled while shown, in the accent colour on the
-// focused monitor; outlined when it belongs to another monitor.
+// name. Dim while empty, filled while shown, outlined when it belongs to
+// another monitor.
 Rectangle {
   id: root
 
@@ -17,15 +17,14 @@ Rectangle {
   // 0 for a named workspace.
   readonly property int number: Number(address)
   readonly property bool shown: workspace !== null && workspace.active && workspace.monitor === monitor
-  readonly property bool focused: shown && (monitor?.focused ?? false)
   readonly property bool occupied: (workspace?.toplevels.values.length ?? 0) > 0
   readonly property bool urgent: workspace?.urgent ?? false
 
-  implicitWidth: Math.max(implicitHeight, label.implicitWidth + 18)
+  implicitWidth: Math.max(27, label.implicitWidth + 12)
   implicitHeight: 26
   // libadwaita's button corners, scaled to its size.
   radius: 7
-  color: focused ? Theme.accentBg : shown ? Theme.selected : area.containsMouse ? Theme.hover : "transparent"
+  color: shown ? Theme.overlay(0.25) : area.containsMouse ? Theme.overlay(0.15) : "transparent"
   border.width: foreign ? 1 : 0
   border.color: Theme.border
 
@@ -40,10 +39,10 @@ Rectangle {
 
     anchors.centerIn: parent
     text: !root.foreign ? WorkspaceOwners.index(root.number) : root.number > 0 ? WorkspaceOwners.foreignLabel(root.number) : root.workspace?.name ?? root.address
-    color: root.focused ? Theme.accentFg : root.urgent ? Theme.destructive : Theme.fg
+    color: root.urgent ? Theme.destructive : Theme.fg
     // Dim while empty, shown or not.
-    opacity: root.occupied ? 1 : 0.55
-    font: Theme.heading
+    opacity: root.occupied ? 1 : 0.4
+    font: Qt.font({ family: Theme.body.family, pointSize: 10, weight: Font.Bold })
   }
 
   MouseArea {

@@ -12,6 +12,8 @@ Row {
 
   visible: Power.present
   spacing: 6
+  leftPadding: 8
+  rightPadding: 8
 
   Item {
     anchors.verticalCenter: parent.verticalCenter
@@ -72,6 +74,6 @@ Row {
     anchors.verticalCenter: parent.verticalCenter
     text: `${Power.percent}%`
     color: Power.low ? root.level : Theme.fg
-    font: Theme.body
+    font: Qt.font({ family: Theme.body.family, pointSize: 10, weight: Font.Medium })
   }
 }

@@ -16,6 +16,6 @@ Singleton {
   readonly property int percent: fake?.percent ?? Math.round(device.percentage * 100)
   // On mains power, charging or full.
   readonly property bool plugged: fake?.plugged ?? !UPower.onBattery
-  readonly property bool low: !plugged && percent <= 20
+  readonly property bool low: !plugged && percent <= 25
   readonly property bool critical: !plugged && percent <= 10
 }

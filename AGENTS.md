@@ -295,10 +295,11 @@ Notes on specific features:
       running. The clipboard picker decodes images into Quickshell's cache
       (pruned to what cliphist still lists) and shows them as thumbnails.
       Hyprland's `quickshell:launcher` layer rule dims behind it.
-    - `bar/` is the bar along the top of every monitor (`Bar.qml`, one slim
-      `BarWindow` per screen in GNOME Shell's panel black): the NixOS logo (a square that
-      does nothing yet), the monitor's workspaces, the clock (opens the
-      center), the battery and the tray. Quickshell keeps Hyprland's state by
+    - `bar/` is the bar along the top of every monitor (`Bar.qml`, one
+      `BarWindow` per screen), sized and lettered like the waybar it replaced
+      (Adwaita Sans at 16 px, on GNOME Shell's panel black): the NixOS logo
+      (`nixos.svg`, which does nothing yet), the monitor's workspaces, the
+      clock (opens the center), the battery and the tray. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
       renames, so `Bar.qml` refreshes monitors and workspaces on those.
       - Workspaces: each bar shows its monitor's own `1 … n` (monitor id × n
@@ -307,12 +308,11 @@ Notes on specific features:
         name; specials are left out. `WorkspaceOwners` remembers the connector
         last seen with each monitor id in the state dir, so a workspace left
         behind by an unplugged monitor still carries its name (the bare id if
-        never seen). Dim while empty, a pill while shown, accent on the
-        focused monitor, outlined when foreign, red when urgent; pressing one
-        focuses it by id wherever it is.
-      - The tray is bare icons in bar-high squares like the logo, without
-        hover states, hiding passive items; left click activates (or opens the
-        menu of a menu-only item), middle is the secondary action, right opens
+        never seen). Bold, dim while empty, a pill while shown, outlined when
+        foreign, red when urgent; pressing one focuses it by id wherever it
+        is.
+      - The tray is bare icons without hover states, hiding passive items;
+        left click activates (or opens the menu of a menu-only item), middle is the secondary action, right opens
         the menu: `TrayMenu`, libadwaita's popover menu drawn from
         `QsMenuOpener` on an overlay over the screen (a `Panels` panel per
         screen), with submenus replacing it under a back row.

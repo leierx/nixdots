@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
-import qs.common
 import qs.nix
 
 // One monitor's bar: the NixOS logo and the monitor's workspaces on the left,
@@ -19,7 +18,7 @@ PanelWindow {
     left: true
     right: true
   }
-  implicitHeight: 30
+  implicitHeight: 35
   // GNOME Shell's panel black.
   color: Colors.dark_5
 
@@ -28,16 +27,13 @@ PanelWindow {
   Row {
     anchors {
       left: parent.left
+      leftMargin: 2
       verticalCenter: parent.verticalCenter
     }
-    spacing: 4
 
-    NixLogo {
-      implicitHeight: root.implicitHeight
-    }
+    NixLogo {}
 
     Workspaces {
-      anchors.verticalCenter: parent.verticalCenter
       monitor: root.monitor
     }
   }
@@ -49,18 +45,16 @@ PanelWindow {
   Row {
     anchors {
       right: parent.right
+      rightMargin: 2
       verticalCenter: parent.verticalCenter
     }
-    spacing: 4
 
     Battery {
       anchors.verticalCenter: parent.verticalCenter
     }
 
     Tray {
-      anchors.verticalCenter: parent.verticalCenter
       screen: root.screen
-      size: root.implicitHeight
     }
   }
 }

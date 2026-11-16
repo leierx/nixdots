@@ -14,14 +14,15 @@ Row {
   id: root
 
   required property ShellScreen screen
-  // Each icon's square, as tall as the bar.
-  required property int size
 
   // The item whose menu is open; null once it leaves the tray.
   property SystemTrayItem menuItem: null
   property point menuAnchor
   // A name per screen, so a menu on one monitor closes one open on another.
   readonly property string panel: `tray:${screen?.name}`
+
+  leftPadding: 7
+  rightPadding: 7
 
   onMenuItemChanged: {
     if (menuItem === null && Panels.active === panel) Panels.close();
@@ -38,8 +39,8 @@ Row {
 
       required property SystemTrayItem modelData
 
-      implicitWidth: root.size
-      implicitHeight: root.size
+      implicitWidth: 21
+      implicitHeight: 26
       acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
       onClicked: mouse => {
         if (mouse.button === Qt.MiddleButton) {
@@ -55,7 +56,7 @@ Row {
 
       IconImage {
         anchors.centerIn: parent
-        implicitSize: 18
+        implicitSize: 17
         source: button.modelData.icon
         // Apps that send pixels get a new source on every change; keep the old one up meanwhile.
         backer.retainWhileLoading: true
