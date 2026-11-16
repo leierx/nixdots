@@ -5,7 +5,7 @@ import QtQuick.Shapes
 // nothing yet, so it has no hover or press state.
 Item {
   implicitWidth: implicitHeight
-  implicitHeight: 26
+  implicitHeight: 30
 
   // Papirus' distributor-logo-nixos, its lambdas in a 56×48 box.
   Shape {

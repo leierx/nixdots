@@ -21,10 +21,10 @@ Rectangle {
   readonly property bool occupied: (workspace?.toplevels.values.length ?? 0) > 0
   readonly property bool urgent: workspace?.urgent ?? false
 
-  implicitWidth: Math.max(implicitHeight, label.implicitWidth + 12)
-  implicitHeight: 22
+  implicitWidth: Math.max(implicitHeight, label.implicitWidth + 18)
+  implicitHeight: 26
   // libadwaita's button corners, scaled to its size.
-  radius: 6
+  radius: 7
   color: focused ? Theme.accentBg : shown ? Theme.selected : area.containsMouse ? Theme.hover : "transparent"
   border.width: foreign ? 1 : 0
   border.color: Theme.border

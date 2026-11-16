@@ -19,7 +19,7 @@ PanelWindow {
     left: true
     right: true
   }
-  implicitHeight: 26
+  implicitHeight: 30
   // GNOME Shell's panel black.
   color: Colors.dark_5
 
