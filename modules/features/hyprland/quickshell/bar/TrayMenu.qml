@@ -21,7 +21,7 @@ PanelWindow {
   readonly property var levels: [root.menu, ...root.path.filter(entry => entry !== null)]
   // Cards register here, as the window's input region is theirs alone.
   property list<Item> cards: []
-  // A row's submenu opens, or a deeper one closes, a moment after the pointer reaches it, so it can cross other rows on the way.
+  // A row's submenu opens a moment after the pointer reaches it, so passing over rows opens nothing; any other row closes deeper ones at once.
   property var pending: null
   readonly property int padding: 6
 
@@ -50,13 +50,13 @@ PanelWindow {
   Timer {
     id: hoverDelay
 
-    interval: 200
+    interval: 150
     onTriggered: if (root.pending) root.apply(root.pending.level, root.pending.entry)
   }
 
   Timer {
     running: !inside.hovered && !root.held
-    interval: 300
+    interval: 100
     onTriggered: Panels.close()
   }
 
@@ -155,7 +155,7 @@ PanelWindow {
 
               required property QsMenuEntry modelData
               readonly property bool opened: root.path[card.index] === modelData
-              // Room for the arrow on the side the submenu opens.
+              // Room for the arrows, which point right whichever side the submenu opens, as GTK's do.
               readonly property int arrowSpace: card.cascades ? 24 : 0
 
               Layout.fillWidth: true
@@ -179,7 +179,7 @@ PanelWindow {
                 Row {
                   id: content
 
-                  x: 12 + (card.direction < 0 ? entry.arrowSpace : 0)
+                  x: 12
                   anchors.verticalCenter: parent.verticalCenter
                   spacing: 8
                   opacity: entry.modelData.enabled ? 1 : 0.5
@@ -234,10 +234,10 @@ PanelWindow {
                 }
 
                 ExpanderArrow {
-                  x: card.direction > 0 ? parent.width - width - 8 : 8
+                  x: parent.width - width - 8
                   anchors.verticalCenter: parent.verticalCenter
                   visible: entry.modelData.hasChildren
-                  rotation: card.direction > 0 ? -90 : 90
+                  rotation: -90
                 }
 
                 HoverHandler {
@@ -245,7 +245,11 @@ PanelWindow {
 
                   onHoveredChanged: {
                     if (!hovered || entry.modelData.isSeparator) return;
-                    root.pending = { level: card.index, entry: entry.modelData.enabled ? entry.modelData : null };
+                    if (!entry.modelData.enabled || !entry.modelData.hasChildren) {
+                      root.apply(card.index, null);
+                      return;
+                    }
+                    root.pending = { level: card.index, entry: entry.modelData };
                     hoverDelay.restart();
                   }
                 }

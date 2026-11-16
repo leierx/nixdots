@@ -312,8 +312,7 @@ Notes on specific features:
       SUPER+P `monitors`, SUPER+Tab `windows`. Nothing in one mode points to
       the others; a second shortcut while open starts that mode afresh.
       Keyboard driven: Up/Down, Ctrl+P/Ctrl+N, Tab and Shift+Tab move a
-      row and go round at the ends (the wheel stops there); in a mode that
-      waits for a query they list everything until the query changes. Enter picks,
+      row and go round at the ends (the wheel stops there). Enter picks,
       Shift+Delete removes, Escape closes.
       A mode is a `LauncherMode` in `<Name>Mode.qml`, listed in
       `Launcher.qml`, which makes its shortcut. It sets a `name`, a `title`,
@@ -322,7 +321,7 @@ Notes on specific features:
       an app) and a `placeholder`; its `rows` and the `fields` searched in
       them; an `activated` handler, a `removed` one where it is `removable`;
       `opened` to load what it lists; `wide` for a wider card;
-      `waitsForQuery` to list nothing until something is typed; `split`,
+      `split`,
       the list's share beside a preview (0.6); and
       optionally a `preview`, a component (inline in the mode's file) shown
       beside the matches for the `selected` row. Rows carry a unique `key`,
@@ -339,16 +338,15 @@ Notes on specific features:
       across the gaps between rows and a pointer leaving for a moment.
       Widths are in em and the card and its rows shrink to fit the screen,
       so it holds at any scale. It is always centred on the screen and holds
-      still while typing: full height from the start, except in a mode that
-      waits for a query (`apps`), which grows once, without an animation, at
-      its first match and keeps that height until it closes.
+      still while typing: every mode opens at full height, listing all its
+      rows before anything is typed, without an animation.
       `MenuCommand` reads a command's output and sends a failure as a
       notification, or only to the log while `quiet` (a load nobody waits
       on). Search matches every typed word as a substring, or in a
       loose field (an app's name) as its letters in order (`ffx` finds
       Firefox) for a lower score. Hyprland's `quickshell:launcher` layer
       rule dims behind it.
-      - `apps` waits for a query. Apps used most come first among equal
+      - `apps`: apps used most come first among equal
         matches: `AppUsage.qml` keeps one frecency number per app in the
         state dir, log2 of the sum of 2^(launch time in weeks), so a launch
         counts half a week later and nothing ever needs decaying. Apps start
@@ -392,7 +390,8 @@ Notes on specific features:
         it shrinks smoothly) in a frame shaped by the size Hyprland reports
         before the first frame arrives. Quickshell can only capture it through
         Hyprland's toplevel export; elsewhere it shows the app's icon.
-    - `shortcuts/` is the keyboard shortcuts window (SUPER+?, as GTK apps
+    - `shortcuts/` is the keyboard shortcuts window (SUPER+?, bound as
+      SUPER+SHIFT+plus since Hyprland matches binds on the unshifted key; as GTK apps
       use Ctrl+?), GTK's shortcuts window in groups balanced over up to three
       columns, each row a description and its keys as keycaps. It reads
       `hyprctl binds -j` on every open, so it lists whatever binds carry a
@@ -426,12 +425,13 @@ Notes on specific features:
         run off the screen), on an overlay (a `Panels` panel per screen) whose
         input region is only its cards (`Region.regions`), stray separators
         dropped. Submenus cascade as GTK's do: a card each, beside the row that
-        opens it (held highlighted), opened by a click or 200 ms of hover, so
-        the pointer can cross other rows on its way; each goes the way the last
-        one went until another its width would not fit, and its rows' arrows
-        sit on that side, pointing that way. Like a GTK menu it takes no keyboard and no grab,
+        opens it (held highlighted), opened by a click or 150 ms of hover, so
+        passing over rows opens nothing, and closed as soon as the pointer is on
+        another row of its parent; each goes the way the last
+        one went until another its width would not fit. Arrows point right on
+        the right whichever way it opens, as GTK's do. Like a GTK menu it takes no keyboard and no grab,
         so the app in front keeps both and a click elsewhere goes through; it
-        closes 300 ms after the pointer is on neither it nor its icon (Hyprland
+        closes 100 ms after the pointer is on neither it nor its icon (Hyprland
         reports no hover on a new menu until the pointer moves).
         Another icon switches menus, the same icon closes it,
         and a click on the bar besides its buttons closes any open panel.

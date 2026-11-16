@@ -102,8 +102,8 @@ root: {
         # SUPER+P, after Windows' display "Project" switcher
         (globalBind "p" "launcher-monitors" "Monitor layouts")
         (globalBind "Tab" "launcher-windows" "Window switcher")
-        # SUPER+?, as GTK apps show theirs on Ctrl+?
-        (globalBind "SHIFT + question" "shortcuts" "Keyboard shortcuts")
+        # SUPER+?, as GTK apps show theirs on Ctrl+?; Hyprland matches the unshifted key, plus on the no layout
+        (globalBind "SHIFT + plus" "shortcuts" "Keyboard shortcuts")
       ];
     };
 }

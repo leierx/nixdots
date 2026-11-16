@@ -13,7 +13,7 @@ Scope {
 
   function chord(modmask: int, key: string): var {
     const mods = [[64, "Super"], [4, "Ctrl"], [8, "Alt"], [1, "Shift"]].filter(([bit]) => modmask & bit).map(([, name]) => name);
-    const names = { Return: "Enter", ESCAPE: "Esc", Escape: "Esc", question: "?", space: "Space", "mouse:272": "Left click", "mouse:273": "Right click", "mouse:274": "Middle click" };
+    const names = { Return: "Enter", ESCAPE: "Esc", Escape: "Esc", question: "?", plus: "+", space: "Space", "mouse:272": "Left click", "mouse:273": "Right click", "mouse:274": "Middle click" };
     return [...mods, names[key] ?? (key.length === 1 ? key.toUpperCase() : key)];
   }
 

@@ -15,10 +15,6 @@ PanelWindow {
 
   required property LauncherMode mode
   readonly property bool previewing: mode.preview !== null
-  readonly property bool listing: matches.count > 0
-  // Full height and still while typing; one that waits for a query grows once, at its first match.
-  property bool grown: false
-  readonly property bool expanded: grown || !mode.waitsForQuery
 
   // Clear of the screen's edges, whatever its size and scale.
   readonly property int margin: Math.round(3 * Theme.em)
@@ -26,8 +22,6 @@ PanelWindow {
   readonly property int fieldHeight: 68
   readonly property int rows: Math.max(1, Math.min(8, Math.floor((height - 2 * margin - fieldHeight - 17) / (matches.rowHeight + matches.spacing))))
   readonly property int resultsHeight: rows * matches.rowHeight + (rows - 1) * matches.spacing + (previewing ? 16 : 8)
-
-  onListingChanged: if (listing) grown = true
 
   color: "transparent"
   anchors {
@@ -143,9 +137,7 @@ PanelWindow {
     property string query: ""
     property int maxRows: 7
     property int rowHeight: 50
-    // A mode that waits for a query lists everything once a key moves through it, until the query changes.
-    property bool browsing: false
-    readonly property var results: list.mode.waitsForQuery && list.query === "" && !list.browsing ? [] : list.mode.search(list.query)
+    readonly property var results: list.mode.search(list.query)
     readonly property var current: list.results[list.currentIndex] ?? null
 
     // Keeps the selection where it is while a row goes.
@@ -159,7 +151,6 @@ PanelWindow {
     // Keys go round; the wheel stops at the ends.
     function step(delta: int): void {
       if (list.count > 0) list.select((list.currentIndex + delta + list.count) % list.count);
-      else if (list.query === "") list.browsing = true;
     }
 
     function activate(index: int): void {
@@ -179,7 +170,6 @@ PanelWindow {
     // Only ever jumps, to keep the selected row in view.
     interactive: false
     onCurrentChanged: list.mode.selected = list.current
-    onQueryChanged: list.browsing = false
 
     model: ScriptModel {
       values: list.results
@@ -359,7 +349,8 @@ PanelWindow {
     // Always centred, so it grows and shrinks about the middle.
     y: Math.round((root.height - height) / 2)
     width: root.cardWidth
-    height: root.fieldHeight + (root.expanded ? rule.height + root.resultsHeight : 0)
+    // Full height from the start, so it holds still while typing.
+    height: root.fieldHeight + rule.height + root.resultsHeight
     radius: 22
     color: Theme.bg
     border.width: 1
@@ -408,7 +399,7 @@ PanelWindow {
       }
       height: root.previewing ? 1 : 0
       color: Theme.border
-      visible: root.expanded && root.previewing
+      visible: root.previewing
     }
 
     // Down to the card's edge as it grows, so the list clips itself inside it.
@@ -419,7 +410,6 @@ PanelWindow {
         right: parent.right
         bottom: parent.bottom
       }
-      visible: root.expanded
       spacing: 0
 
       ResultList {
