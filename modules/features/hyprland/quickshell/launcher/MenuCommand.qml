@@ -2,7 +2,7 @@ import Quickshell
 import Quickshell.Io
 import qs.common
 
-// A failure is sent as a notification titled `name` and closes the menu.
+// A failure is sent as a notification titled `name` and closes the launcher.
 Process {
   id: root
 
@@ -15,7 +15,6 @@ Process {
     Panels.close();
   }
 
-  running: true
   stdout: StdioCollector {
     id: out
   }

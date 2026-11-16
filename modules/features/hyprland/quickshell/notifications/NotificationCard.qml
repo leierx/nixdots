@@ -101,7 +101,7 @@ Item {
 
         NotificationImage {
           visible: source != ""
-          Layout.alignment: Qt.AlignTop
+          Layout.alignment: Qt.AlignVCenter
           source: root.entry.notification.image
           radius: Theme.buttonRadius
         }

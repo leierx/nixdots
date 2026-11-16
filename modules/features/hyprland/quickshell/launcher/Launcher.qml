@@ -3,62 +3,39 @@ import Quickshell
 import Quickshell.Hyprland
 import qs.common
 
-// A picker is created as it opens, so every open starts from an empty search.
 Scope {
-  // On a first open the entries arrived one by one, each rebuilding the list.
-  Component.onCompleted: {
-    DesktopEntries.applications.values;
-    AppUsage.week;
-    Quickshell.hasThemeIcon("application-x-executable");
-  }
+  id: root
 
-  // An icon Papirus lacks costs thousands of failed stats, enough to miss the first keys typed.
-  Connections {
-    target: DesktopEntries.applications
+  readonly property list<LauncherMode> modes: [
+    AppsMode {},
+    ClipboardMode {},
+    MonitorsMode {},
+    WindowsMode {},
+  ]
+  readonly property LauncherMode mode: modes.find(mode => mode.open) ?? null
+  // The window outlives its mode by a moment as it closes.
+  property LauncherMode shown: null
 
-    function onValuesChanged() {
-      Qt.callLater(warmIcons);
+  onModeChanged: if (mode) shown = mode
+
+  Variants {
+    model: root.modes
+
+    GlobalShortcut {
+      required property LauncherMode modelData
+
+      name: `launcher-${modelData.name}`
+      description: modelData.title
+      onPressed: Panels.toggle(modelData.name)
     }
+  }
 
-    // Later, so a scan's entries, arriving one by one, are looked up once.
-    function warmIcons() {
-      for (const entry of DesktopEntries.applications.values) Quickshell.hasThemeIcon(entry.icon);
+  // Created as it opens, so every open starts from an empty search.
+  LazyLoader {
+    active: root.mode !== null
+
+    LauncherWindow {
+      mode: root.shown
     }
-  }
-
-  GlobalShortcut {
-    name: "launcher-apps"
-    description: "App launcher"
-    onPressed: Panels.toggle("apps")
-  }
-
-  GlobalShortcut {
-    name: "launcher-clipboard"
-    description: "Clipboard history"
-    onPressed: Panels.toggle("clipboard")
-  }
-
-  GlobalShortcut {
-    name: "launcher-monitors"
-    description: "Monitor layouts"
-    onPressed: Panels.toggle("monitors")
-  }
-
-  LazyLoader {
-    active: Panels.active === "apps"
-
-    AppsMenu {}
-  }
-
-  LazyLoader {
-    active: Panels.active === "clipboard"
-
-    ClipboardMenu {}
-  }
-
-  LazyLoader {
-    active: Panels.active === "monitors"
-
-    MonitorsMenu {}
   }
 }

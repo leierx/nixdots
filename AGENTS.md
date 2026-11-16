@@ -238,14 +238,15 @@ Notes on specific features:
     (outputs by EDID make/model/serial, workspace planning off because hyprsplit
     owns workspaces) becomes `~/.config/hyprmoncfg/profiles`, one read-only store
     directory, so the TUI cannot save a profile. SUPER+P applies one through the
-    quickshell `monitors` picker; its `Auto` entry applies hyprmoncfg's recommended profile, since the daemon
+    quickshell launcher's `monitors` mode; its `Auto` entry applies hyprmoncfg's recommended profile, since the daemon
     keeps a hand-picked one until the next hotplug.
     A catch-all `monitor` rule (preferred, auto, scale 1) covers outputs no
     profile places. `hyprland.lua` is read-only, so the module
     appends hyprmoncfg's `dofile` include itself with `lib.mkAfter`; it must stay
     the file's last line.
-  - The desktop components (the bar, SUPER+D apps, SUPER+V clipboard,
-    SUPER+P monitor layouts, the notification center from the bar's clock) are a [Quickshell](https://quickshell.org)
+  - The desktop components (the bar, the launcher's SUPER+D apps, SUPER+V
+    clipboard, SUPER+P monitor layouts and SUPER+Tab windows, the notification
+    center from the bar's clock) are a [Quickshell](https://quickshell.org)
     shell in `quickshell/`, wired by `quickshell.nix`: one `quickshell.service`
     session daemon (restarted when the shell changes, via `X-Restart-Triggers`).
     Quickshell comes from `pkgs.unstable` (0.3.2), since 0.3.1 fixed crashes on
@@ -255,8 +256,8 @@ Notes on specific features:
     `Theme`, `StateFile` (a `JsonAdapter`'s file in Quickshell's state dir),
     `Shadow`, `ExpanderArrow`, and `Panels`, the one open panel by name, with
     the IPC target `panels` (`qs ipc -c shell call panels open|close|toggle
-    <name>`; `apps`, `clipboard`, `monitors`, `center`): opening any panel (a
-    picker, the notification center, a tray menu) closes the others, and
+    <name>`; `apps`, `clipboard`, `monitors`, `windows`, `center`): opening any panel (a
+    launcher mode, the notification center, a tray menu) closes the others, and
     `close` closes whichever is open.
     - Conventions for the QML:
       - Comments follow the repo rule strictly: none by default, no file
@@ -277,13 +278,18 @@ Notes on specific features:
         each panel over `qs ipc -p <path> call panels open <name>` and read
         the log; pointer behaviour can be driven with `wlrctl pointer` and
         checked with `grim` and `wev` (all from nixpkgs, not installed).
+        Restart rather than hot-reload after changing inline components:
+        a reload keeps their old types ("X is not a type").
+      - An inline component sees the file's ids before its own properties,
+        so it reads those through its own id (`list.results`, not
+        `results`).
     - `Theme` is libadwaita's dark style 1:1: its named colours
       (`palettes.adwaita_dark`, `view_bg_color` surfaces), hover/selection/
       border as the foreground at libadwaita's alphas over any surface, its
       type scale as `font` values (`Theme.body`, `heading`, `caption`,
       `title4`, …; Adwaita Sans at GTK's 11pt) and its radii (button 9, card
       12, window 15). Panel widths follow GNOME Shell's, in em of the body
-      font (`Theme.em`): 34em popups, a 29em message list, its calendar
+      font (`Theme.em`): 30em popups (GNOME's are 34em), a 29em message list, its calendar
       days. `shell.qml` sets `QT_SCALE_FACTOR=1.2` (an `Env`
       pragma), Qt's own high-DPI scaling, so it all draws 1.2× and sharp;
       apps and links the shell opens get the variable removed.
@@ -301,26 +307,75 @@ Notes on specific features:
       if scripts drive more than its panel, and for a keybind a `GlobalShortcut` (Quickshell.Hyprland)
       bound in `quickshell.nix` with `hl.dsp.global("quickshell:<name>")`,
       which reaches the running shell without starting a `qs ipc` process.
-    - `launcher/` is the rofi-style pickers (global shortcuts
-      `quickshell:launcher-apps|clipboard|monitors`, or `qs ipc -c shell call panels
-      toggle apps|clipboard|monitors`), keyboard driven and snappy, without
-      animations: `MenuWindow` + `MenuList` (+ `MenuCommand` to read a
-      command's output) and `search.js`; a picker is a `<Name>Menu.qml` plus a
-      `LazyLoader` in `Launcher.qml`, which also loads the desktop entries,
-      icon theme, every app's icon and app use at startup so the first open
-      is as quick as the rest (an icon Papirus lacks costs thousands of
-      failed stats). Rows carry a unique `key`, by which a `ScriptModel` keeps their
-      delegates as a search changes; Shift+Delete removes a row where the
-      picker allows it. Search matches every typed word as a substring, or in
-      a loose field (an app's name) as its letters in order (`ffx` finds
-      Firefox) for a lower score. Apps used most come first among equal
-      matches: `AppUsage.qml` keeps one frecency number per app in the state
-      dir, log2 of the sum of 2^(launch time in weeks), so a launch counts
-      half a week later and nothing ever needs decaying. Apps start in their
-      own `systemd-run --user --scope`, so restarting the service leaves them
-      running. The clipboard picker decodes images into Quickshell's cache
-      (pruned to what cliphist still lists) and shows them as thumbnails.
-      Hyprland's `quickshell:launcher` layer rule dims behind it.
+    - `launcher/` is one launcher with a mode per feature, each opened by its
+      own global shortcut (`quickshell:launcher-<name>`, or `qs ipc -c shell
+      call panels toggle <name>`): SUPER+D `apps`, SUPER+V `clipboard`,
+      SUPER+P `monitors`, SUPER+Tab `windows`. Nothing in one mode points to
+      the others; a second shortcut while open starts that mode afresh.
+      Keyboard driven: Up/Down or Ctrl+P/Ctrl+N move a row, Tab and
+      Shift+Tab go round, Enter picks, Shift+Delete removes, Escape closes.
+      A mode is a `LauncherMode` in `<Name>Mode.qml`, listed in
+      `Launcher.qml`, which makes its shortcut. It sets a `name`, a `title`,
+      a `glyph` (a Material Symbols Rounded path, Apache-2.0, pasted in and
+      named in a comment; drawn bare in white, so a mode never looks like
+      an app) and a `placeholder`; its `rows` and the `fields` searched in
+      them; an `activated` handler, a `removed` one where it is `removable`;
+      `opened` to load what it lists; `wide` for a wider card;
+      `waitsForQuery` to list nothing until something is typed; and
+      optionally a `preview`, a component (inline in the mode's file) shown
+      beside the matches for the `selected` row. Rows carry a unique `key`,
+      by which a `ScriptModel` keeps their delegates as a search changes, a
+      `title`, and optionally a dim `subtitle`, an `icon`, a `glyph` or a
+      monitor `layout` to lead it, a `thumbnail` (with its `size`) at its
+      end, and a `boost` that orders equal matches. `LauncherWindow` is the
+      one design for all of them: a card with the mode's glyph and the field,
+      the matches below it with ↵ on the selected row (not on a picture's),
+      what the query matched in bold, as rofi does, nothing below it while
+      nothing matches, and with a preview the card wider and split 60/40.
+      Widths are in em and the card and its rows shrink to fit the screen,
+      so it holds at any scale. It is always centred on the screen, its
+      height easing as the matches change, so it grows and shrinks about the
+      middle and never slides in from the top.
+      `MenuCommand` reads a command's output and sends a failure as a
+      notification. Search matches every typed word as a substring, or in a
+      loose field (an app's name) as its letters in order (`ffx` finds
+      Firefox) for a lower score. Hyprland's `quickshell:launcher` layer
+      rule dims behind it.
+      - `apps` waits for a query. Apps used most come first among equal
+        matches: `AppUsage.qml` keeps one frecency number per app in the
+        state dir, log2 of the sum of 2^(launch time in weeks), so a launch
+        counts half a week later and nothing ever needs decaying. Apps start
+        in their own `systemd-run --user --scope`, so restarting the service
+        leaves them running. The mode loads the desktop entries, icon theme,
+        every app's icon and app use at startup so the first open is as
+        quick as the rest (an icon Papirus lacks costs thousands of failed
+        stats).
+      - `clipboard`, wide and without a preview: cliphist's history, newest
+        first. Text says its length under it ("84 characters, 4 lines"),
+        counted once per clip into Quickshell's cache since it needs the clip
+        decoded, after the list shows. Pictures say their size and format,
+        and are decoded into the cache (pruned to what cliphist still lists)
+        for a thumbnail at the row's end, shrunk to fit and never enlarged;
+        one past 64 MiB or 50 megapixels gets none.
+      - `monitors`: `hyprmoncfg status --json`'s profiles, `Auto` first.
+        Each is drawn by `LayoutDiagram` from its file in
+        `~/.config/hyprmoncfg/profiles`, so any machine's layouts draw
+        themselves: outputs at their logical size (scale and rotation
+        applied), numbered left to right, those a profile turns off outlined
+        to the side at the size another profile gives them, and those saved
+        without a size left out. Past eight outputs, or once one would be
+        under 4 px, the drawing becomes a count. The preview draws it large
+        and lists the outputs, six lines at most.
+      - `windows`: every window from wlr-foreign-toplevel
+        (`ToplevelManager`), so it works on any compositor, the focused one
+        last. On Hyprland the rest come in focus order (a `refreshToplevels`
+        as it opens), each with its monitor and workspace as the bar numbers
+        it, and Enter dispatches `hl.dsp.focus({ window = "address:0x…" })`;
+        elsewhere it calls `Toplevel.activate()`. The preview is the window
+        live (`ScreencopyView`, mipmapped from up to twice its shown size so
+        it shrinks smoothly) in a frame shaped by the size Hyprland reports
+        before the first frame arrives. Quickshell can only capture it through
+        Hyprland's toplevel export; elsewhere it shows the app's icon.
     - `bar/` is the bar along the top of every monitor (`Bar.qml`, one
       `BarWindow` per screen), sized and lettered like the waybar it replaced
       (Adwaita Sans at 16 px, on GNOME Shell's panel black): the NixOS logo
@@ -352,13 +407,20 @@ Notes on specific features:
         UPower is running and it is a laptop battery, so only thonkpad
         enables UPower; `qs ipc -c shell call bar fakeBattery 15 false` shows a
         made-up one anywhere, `realBattery` drops it.
-    - `weather/` is the `Weather` singleton for components to read, none yet
-      (a singleton only starts once read): MET Norway's forecast (yr.no's)
-      for where the public address puts the machine (ipinfo.io), so it
-      follows the laptop, fetched with `curl` every half hour, coordinates at
-      two decimals for MET's cache. `now` is the hour under way, `hours` the
-      forecast after it, each with MET's symbol code and a freedesktop
-      weather icon (Papirus has them).
+    - `weather/` is the `Weather` singleton and `Forecast`, its card under
+      the center's calendar: MET Norway's forecast (yr.no's) for where the
+      public address puts the machine (ipinfo.io), so it follows the laptop,
+      fetched with `curl` from the shell's start and every half hour after,
+      coordinates at two decimals for
+      MET's cache. `now` is the hour under way (temperature, wind, rain,
+      MET's symbol code), `periods` Yr's quarters of a day from the one under
+      way (night, morning, afternoon and evening, each with MET's six-hour
+      symbol, its low and high). The card shows now, then today, tomorrow
+      and the day after by quarter: nights by their low, the rest by their
+      high, quarters already over as dashes. The icons are MET's own
+      ([metno/weathericons](https://github.com/metno/weathericons), MIT),
+      which `quickshell.nix` fetches into `weather/icons/` with their
+      `legend.csv`, which names the symbols ("Partly cloudy").
     - `notifications/` is the notification daemon (no mako) and its popups:
       `Notifs.qml` owns `org.freedesktop.Notifications` and keeps every
       notification as a `NotifEntry` until it is dismissed; the entry holds a
@@ -389,7 +451,8 @@ Notes on specific features:
       a short fade and slide: notifications on the left, a Do Not Disturb
       switch and Clear (which also closes it) below, and `Calendar.qml` on
       the right (locale's first weekday, ISO week numbers, arrows or wheel for
-      months, the date returns to today). Opening it puts the popups away. Notifications are grouped
+      months, the date returns to today) with the weather under it, left out
+      where the screen is too short for both. Opening it puts the popups away. Notifications are grouped
       per app the way end-4's dots do (`NotificationGroup`,
       `NotificationItem`): one card with the app's icon, name and count, and a
       flat arrow button, over its two newest notifications a line each with
@@ -401,7 +464,7 @@ Notes on specific features:
       its default action, or dismisses it when it has none and at most one
       action (`NotifEntry.clickDismisses`); on a group of several it expands
       and collapses. Right or middle click or a swipe dismisses the group,
-      or once expanded, one notification. Mouse only, and unlike the pickers
+      or once expanded, one notification. Mouse only, and unlike the launcher
       it is smooth: the list drags and flicks with Qt's overshoot, a wheel
       notch glides 120 px (Qt's own moves the 15 px Wayland reports), and
       groups animate their height. Escape or a click

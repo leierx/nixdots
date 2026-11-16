@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Wayland
 import qs.common
 import qs.notifications
+import qs.weather
 
 // No screen is set, so Hyprland opens it on the focused monitor.
 PanelWindow {
@@ -228,8 +229,8 @@ PanelWindow {
 
         Item {
           Layout.fillWidth: true
-          // As tall as the calendar at least, so the panel keeps its shape.
-          Layout.preferredHeight: Math.max(calendar.implicitHeight - footer.implicitHeight - root.padding, Math.min(list.contentHeight, root.maxListHeight))
+          // As tall as the calendar and weather at least, so the panel keeps its shape.
+          Layout.preferredHeight: Math.max(side.implicitHeight - footer.implicitHeight - root.padding, Math.min(list.contentHeight, root.maxListHeight))
 
           ListView {
             id: list
@@ -378,10 +379,23 @@ PanelWindow {
         color: Theme.border
       }
 
-      Calendar {
-        id: calendar
+      ColumnLayout {
+        id: side
 
         Layout.alignment: Qt.AlignTop
+        spacing: root.padding
+
+        Calendar {
+          id: calendar
+        }
+
+        Forecast {
+          id: forecast
+
+          Layout.fillWidth: true
+          // Left out where the screen is too short for it below the calendar.
+          visible: Weather.now !== null && root.height - 2 * Theme.gap - 2 * root.padding - calendar.implicitHeight - side.spacing >= forecast.implicitHeight
+        }
       }
     }
   }

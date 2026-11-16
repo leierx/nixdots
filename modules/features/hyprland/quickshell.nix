@@ -43,12 +43,22 @@ root: {
         }
       '';
 
+      # MET Norway's weather symbols, named by its symbol codes
+      weathericons = pkgs.fetchFromGitHub {
+        owner = "metno";
+        repo = "weathericons";
+        rev = "89e3173756248b4696b9b10677b66c4ef435db53";
+        hash = "sha256-Kv6GujllD3shrrkndod6WDrby8CaytKQoaQgJ/q9ul8=";
+      };
+
       shell = pkgs.runCommand "quickshell-shell" { } ''
         cp -r ${./quickshell} $out
         chmod -R u+w $out
         mkdir $out/nix
         cp ${colors} $out/nix/Colors.qml
         cp ${hyprsplit} $out/nix/Hyprsplit.qml
+        mkdir $out/weather/icons
+        cp ${weathericons}/weather/svg/*.svg ${weathericons}/weather/legend.csv $out/weather/icons/
       '';
 
       # a GlobalShortcut in the shell, reached without starting a `qs ipc` process
@@ -91,6 +101,7 @@ root: {
         (globalBind "v" "launcher-clipboard" "Clipboard history")
         # SUPER+P, after Windows' display "Project" switcher
         (globalBind "p" "launcher-monitors" "Monitor layouts")
+        (globalBind "Tab" "launcher-windows" "Window switcher")
       ];
     };
 }
