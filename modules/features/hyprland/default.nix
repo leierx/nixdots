@@ -38,7 +38,11 @@ in
       ...
     }:
     {
-      home.packages = [ pkgs.wl-clipboard ];
+      home.packages = [
+        pkgs.wl-clipboard
+      ]
+      # home-manager puts the applet's desktop entries on XDG_DATA_DIRS but not its binaries on PATH
+      ++ lib.optional config.services.network-manager-applet.enable config.services.network-manager-applet.package;
 
       # session services run under Hyprland only
       wayland.systemd.target = "hyprland-session.target";
