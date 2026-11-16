@@ -23,22 +23,19 @@ LauncherMode {
   preview: Preview {
     row: root.selected
   }
+  // The recommended profile is what the daemon applies on the next hotplug, so it leads.
   rows: {
     if (!root.status) return [];
     const recommended = root.status.recommended_profile?.name;
-    const profiles = (root.status.profiles ?? [])
+    return (root.status.profiles ?? [])
       .map(profile => ({
         key: profile.name,
         title: profile.name,
+        subtitle: [profile.active ? "Active" : "", profile.name === recommended ? "Recommended" : ""].filter(part => part).join(" · "),
         profile: profile.name,
-        state: profile.active ? "Active" : profile.name === recommended ? "Recommended" : "",
         layout: root.layout(profile.name),
       }))
-      .sort((a, b) => a.title.localeCompare(b.title));
-    // The daemon keeps a hand-picked profile until the next hotplug; "Auto" applies what it would pick.
-    return recommended
-      ? [{ key: "", title: "Auto", profile: recommended, state: `Applies ${recommended}`, layout: root.layout(recommended) }, ...profiles]
-      : profiles;
+      .sort((a, b) => (b.profile === recommended) - (a.profile === recommended) || a.title.localeCompare(b.title));
   }
 
   // hyprmoncfg saves no size for an output a profile turns off, so it takes the one another profile gives it.
@@ -114,7 +111,7 @@ LauncherMode {
     Text {
       Layout.fillWidth: true
       horizontalAlignment: Text.AlignHCenter
-      text: preview.row?.state || " "
+      text: preview.row?.subtitle || " "
       color: Theme.fgDim
       font: Theme.heading
       elide: Text.ElideRight

@@ -241,8 +241,8 @@ Notes on specific features:
     (outputs by EDID make/model/serial, workspace planning off because hyprsplit
     owns workspaces) becomes `~/.config/hyprmoncfg/profiles`, one read-only store
     directory, so the TUI cannot save a profile. SUPER+P applies one through the
-    quickshell launcher's `monitors` mode; its `Auto` entry applies hyprmoncfg's recommended profile, since the daemon
-    keeps a hand-picked one until the next hotplug.
+    quickshell launcher's `monitors` mode, which lists the profile the daemon
+    would apply on the next hotplug first, as `Recommended`.
     A catch-all `monitor` rule (preferred, auto, scale 1) covers outputs no
     profile places. `hyprland.lua` is read-only, so the module
     appends hyprmoncfg's `dofile` include itself with `lib.mkAfter`; it must stay
@@ -311,7 +311,8 @@ Notes on specific features:
       SUPER+P `monitors`, SUPER+Tab `windows`. Nothing in one mode points to
       the others; a second shortcut while open starts that mode afresh.
       Keyboard driven: Up/Down, Ctrl+P/Ctrl+N, Tab and Shift+Tab move a
-      row and go round at the ends (the wheel stops there), Enter picks,
+      row and go round at the ends (the wheel stops there); in a mode that
+      waits for a query they list everything until the query changes. Enter picks,
       Shift+Delete removes, Escape closes.
       A mode is a `LauncherMode` in `<Name>Mode.qml`, listed in
       `Launcher.qml`, which makes its shortcut. It sets a `name`, a `title`,
@@ -332,10 +333,12 @@ Notes on specific features:
       the matches below it with ↵ on the selected row (not on a picture's),
       what the query matched in bold, as rofi does, nothing below it while
       nothing matches, and with a preview the card wider, split by the
-      mode's `split` under a line across (none without a preview).
+      mode's `split` under a line across; without a preview the rows start
+      right under the field. One hover for the list, not each row's, holds
+      across the gaps between rows and a pointer leaving for a moment.
       Widths are in em and the card and its rows shrink to fit the screen,
       so it holds at any scale. It is always centred on the screen, its
-      height easing (320 ms) as the matches change, so it grows and shrinks about the
+      height easing (400 ms) as the matches change, so it grows and shrinks about the
       middle and never slides in from the top.
       `MenuCommand` reads a command's output and sends a failure as a
       notification, or only to the log while `quiet` (a load nobody waits
@@ -364,7 +367,7 @@ Notes on specific features:
         and count, with a fork per new clip and a few in all; both are kept
         between opens, so only a new clip's arrive late.
       - `monitors`, split half and half: `hyprmoncfg status --json`'s
-        profiles, `Auto` first, loaded at the shell's start and again on
+        profiles, the recommended one first, loaded at the shell's start and again on
         every open, and replaced only when the output differs, so it opens
         whole and a refresh changes nothing that is the same.
         Each is drawn by `LayoutDiagram` from its file in
@@ -391,7 +394,8 @@ Notes on specific features:
       `BarWindow` per screen), sized and lettered like the waybar it replaced
       (Adwaita Sans at 16 px, on GNOME Shell's panel black): the NixOS logo
       (`nixos.svg`, which does nothing yet), the monitor's workspaces, the
-      clock (opens the center), the battery and the tray. Quickshell keeps Hyprland's state by
+      clock (opens the center), the weather now (`WeatherNow`: MET's icon and
+      the temperature, also opening the center), the battery and the tray. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
       renames, so `Bar.qml` refreshes monitors and workspaces on those.
       - Workspaces: each bar shows its monitor's own `1 … n` (monitor id × n
@@ -410,9 +414,11 @@ Notes on specific features:
         run off the screen), on an overlay whose input is only the card (a
         `Panels` panel per screen), with submenus replacing it under a back row
         (the menu stays held open, or Quickshell unloads its submenus), stray
-        separators dropped. A `HyprlandFocusGrab` over the menu and the bar
-        closes it on a click anywhere else, which Hyprland swallows; bar clicks
-        get through, so another icon switches menus, the same icon closes it,
+        separators dropped. Like a GTK menu it takes no keyboard and no grab,
+        so the app in front keeps both and a click elsewhere goes through; it
+        closes 300 ms after the pointer is on neither it nor its icon (Hyprland
+        reports no hover on a new menu until the pointer moves).
+        Another icon switches menus, the same icon closes it,
         and a click on the bar besides its buttons closes any open panel.
       - The battery (`Power`) is UPower's display device, shown only when
         UPower is running and it is a laptop battery, so only thonkpad
@@ -459,7 +465,7 @@ Notes on specific features:
       a restart of the service empties it, by design.
     - `center/` is the notification center (`qs ipc -c shell call panels
       toggle center`), GNOME's layout, dropping down from the middle of the bar with
-      a short fade and slide: notifications on the left (36em, wider than
+      a short fade and slide: notifications on the left (40em, wider than
       GNOME's 29em, which read long and narrow), a Do Not Disturb
       switch and Clear (which also closes it) below, and `Calendar.qml` on
       the right (locale's first weekday, ISO week numbers, arrows or wheel for
@@ -623,13 +629,13 @@ notifications and tray are left alone. A nested Hyprland is no option: with
 no parent Wayland it falls through to DRM, logind refuses it, and it hangs in
 its crash path leaving `/run/user/$UID/hypr/<sig>/` behind.
 
-Set it up once per session (`T` in the scratchpad; sway, grim and wtype come
+Set it up once per session (`T` in the scratchpad; sway, grim, wtype and wlrctl come
 from nixpkgs, not installed):
 
 ```bash
 T=<scratchpad>/t; mkdir -p $T/bin $T/cfg
 pkg() { nix build --no-link --print-out-paths "nixpkgs#$1" | head -1; }
-SWAY=$(pkg sway) GRIM=$(pkg grim) WTYPE=$(pkg wtype)
+SWAY=$(pkg sway) GRIM=$(pkg grim) WTYPE=$(pkg wtype) WLRCTL=$(pkg wlrctl)
 
 # path:, since a git flake leaves untracked files out
 out=$(nix build --no-link --print-out-paths --impure --expr \
@@ -659,14 +665,16 @@ cat > $T/x.sh <<EOF
 #!/bin/sh
 export WAYLAND_DISPLAY=\$(cat $T/display) DBUS_SESSION_BUS_ADDRESS=\$(cat $T/bus) XDG_CONFIG_HOME=$T/cfg
 unset HYPRLAND_INSTANCE_SIGNATURE
-export PATH=$T/bin:$GRIM/bin:$WTYPE/bin:$SWAY/bin:\$PATH
+export PATH=$T/bin:$GRIM/bin:$WTYPE/bin:$WLRCTL/bin:$SWAY/bin:\$PATH
 exec "\$@"
 EOF
 chmod +x $T/run.sh $T/x.sh
 
 setsid dbus-run-session -- $T/run.sh > $T/sway.log 2>&1 < /dev/null &
 until [ -s $T/display ]; do sleep 0.2; done
-setsid $T/x.sh qs -p $T/shell > $T/qs.log 2>&1 < /dev/null & echo $! > $T/qs.pid
+# setsid may fork, so $! is not qs; find the test shell by its config path.
+testqs() { qs list --all | awk -v p=$T/shell/shell.qml '/Process ID/ { pid = $3 } /Config path/ && $3 == p { print pid }'; }
+setsid $T/x.sh qs -p $T/shell > $T/qs.log 2>&1 < /dev/null &
 ```
 
 Everything that should land in the test session goes through `$T/x.sh`:
@@ -682,8 +690,8 @@ $T/x.sh swaymsg output HEADLESS-1 mode 2560x1440 scale 1.5
 grep -E 'WARN|ERROR' $T/qs.log                 # GlobalShortcut, UPower and Hyprland warnings are expected
 ```
 
-- Iterate by copying edited QML over `$T/shell` and restarting `qs` (kill
-  `qs.pid`, start it again): no rebuild needed, since the copy carries
+- Iterate by copying edited QML over `$T/shell` and restarting `qs`
+  (`kill $(testqs)`, start it again): no rebuild needed, since the copy carries
   `qs.nix`. Restart rather than hot-reload: a reload keeps inline
   components' old types ("X is not a type") and only watches files the last
   load used.
@@ -693,15 +701,19 @@ grep -E 'WARN|ERROR' $T/qs.log                 # GlobalShortcut, UPower and Hypr
 - Screenshot pixels are logical × 1.2 (`QT_SCALE_FACTOR`) × the output scale.
 - Animation: background `grim -s 0.25` shots about 35 ms apart, then
   `md5sum` to see which frames settled.
-- Sway has no `dim_around`, toplevel capture or global shortcuts; check
-  those on Hyprland after the rebuild.
+- `wlrctl pointer move` reaches the shell, so hover can be tested; its
+  clicks do not. Sway has no `dim_around`, toplevel capture or global
+  shortcuts, and Hyprland cannot nest in it (it wants `xdg_wm_base` 6,
+  sway 1.12 offers 5) nor start headless on its own. Check those, and
+  clicks, on Hyprland after the rebuild: on the user's session only when
+  they allow it (`wlrctl` moves their pointer; `grim -o <output>`).
 - Never `pgrep -f <pattern> | xargs kill`: the pattern is in the calling
-  shell's own command line. Use the pid files.
+  shell's own command line. Use `testqs` and the pid files.
 
 Tear it down:
 
 ```bash
-kill $(cat $T/qs.pid) $(cat $T/sway.pid)
+kill $(testqs) $(cat $T/sway.pid)
 # Portals the private bus activated outlive it, reparented to pid 1.
 for p in /proc/[0-9]*; do
   tr '\0' '\n' 2>/dev/null < $p/environ | grep -qxF "DBUS_SESSION_BUS_ADDRESS=$(cat $T/bus)" && echo ${p#/proc/}

@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import qs.common
@@ -14,10 +13,11 @@ Row {
 
   // Null once the item leaves the tray.
   property SystemTrayItem menuItem: null
+  // Its icon, which keeps the menu open while the pointer rests on it.
+  property Item menuButton: null
   property point menuAnchor
   // A name per screen, so a menu on one monitor closes one open on another.
   readonly property string panel: `tray:${screen?.name}`
-  readonly property QtObject bar: QsWindow.window
 
   leftPadding: 7
   rightPadding: 7
@@ -39,6 +39,7 @@ Row {
       implicitWidth: 21
       implicitHeight: 26
       acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+      hoverEnabled: true
       onClicked: mouse => {
         const opensMenu = modelData.hasMenu && (mouse.button === Qt.RightButton || (mouse.button === Qt.LeftButton && modelData.onlyMenu));
         if (opensMenu && Panels.active === root.panel && root.menuItem === modelData) {
@@ -47,6 +48,7 @@ Row {
           // The menu's window and the bar's both start at the screen's corner.
           root.menuAnchor = mapToItem(null, mouse.x, mouse.y);
           root.menuItem = modelData;
+          root.menuButton = icon;
           Panels.open(root.panel);
         } else {
           Panels.close();
@@ -70,22 +72,12 @@ Row {
     model: Panels.active === root.panel && root.menuItem !== null ? [root.menuItem] : []
 
     TrayMenu {
-      id: trayMenu
-
       required property SystemTrayItem modelData
 
       screen: root.screen
       menu: modelData.menu
       anchor: root.menuAnchor
-
-      // The bar stays clickable, so another icon switches menus; a click anywhere else ends the grab, and Hyprland swallows it.
-      HyprlandFocusGrab {
-        windows: [trayMenu, root.bar]
-        active: true
-        onCleared: {
-          if (root.menuItem === trayMenu.modelData) Panels.close();
-        }
-      }
+      held: root.menuButton?.containsMouse ?? false
     }
   }
 }

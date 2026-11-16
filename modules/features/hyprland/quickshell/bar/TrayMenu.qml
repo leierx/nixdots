@@ -13,6 +13,8 @@ PanelWindow {
 
   required property QsMenuHandle menu
   required property point anchor
+  // While the pointer rests on the menu's icon: Hyprland reports none on the menu until the pointer moves.
+  property bool held: false
   // Submenus entered, innermost last; an entry the app has since dropped turns null.
   property list<QsMenuEntry> path: []
   readonly property QsMenuEntry submenu: path[path.length - 1] ?? null
@@ -42,7 +44,8 @@ PanelWindow {
 
   WlrLayershell.layer: WlrLayer.Overlay
   WlrLayershell.namespace: "quickshell:menu"
-  WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+  // Like a GTK menu: the app keeps the keyboard, and the menu goes once the pointer leaves it.
+  WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
   // Holds the root menu, since Quickshell unloads its submenus once no opener has it.
   QsMenuOpener {
@@ -67,11 +70,18 @@ PanelWindow {
     color: Theme.bg
     border.width: 1
     border.color: Theme.outline
-    focus: true
 
     Shadow {}
 
-    Keys.onEscapePressed: Panels.close()
+    HoverHandler {
+      id: inside
+    }
+
+    Timer {
+      running: !inside.hovered && !root.held
+      interval: 300
+      onTriggered: Panels.close()
+    }
 
     ColumnLayout {
       id: rows

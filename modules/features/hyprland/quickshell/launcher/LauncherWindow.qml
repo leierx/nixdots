@@ -22,7 +22,7 @@ PanelWindow {
   readonly property int fieldHeight: 68
   readonly property int rows: Math.max(1, Math.min(8, Math.floor((height - 2 * margin - fieldHeight - 17) / (matches.rowHeight + matches.spacing))))
   // A preview keeps the card's height, whatever the matches.
-  readonly property int resultsHeight: (previewing ? rows * matches.rowHeight + (rows - 1) * matches.spacing : matches.implicitHeight) + 16
+  readonly property int resultsHeight: (previewing ? rows * matches.rowHeight + (rows - 1) * matches.spacing + 16 : matches.implicitHeight + 8)
   // Until the window has its size, the card would glide in from the top.
   property bool settled: false
 
@@ -140,7 +140,9 @@ PanelWindow {
     property string query: ""
     property int maxRows: 7
     property int rowHeight: 50
-    readonly property var results: list.mode.waitsForQuery && list.query === "" ? [] : list.mode.search(list.query)
+    // A mode that waits for a query lists everything once a key moves through it, until the query changes.
+    property bool browsing: false
+    readonly property var results: list.mode.waitsForQuery && list.query === "" && !list.browsing ? [] : list.mode.search(list.query)
     readonly property var current: list.results[list.currentIndex] ?? null
 
     // Keeps the selection where it is while a row goes.
@@ -154,6 +156,7 @@ PanelWindow {
     // Keys go round; the wheel stops at the ends.
     function step(delta: int): void {
       if (list.count > 0) list.select((list.currentIndex + delta + list.count) % list.count);
+      else if (list.query === "") list.browsing = true;
     }
 
     function activate(index: int): void {
@@ -173,12 +176,31 @@ PanelWindow {
     // Only ever jumps, to keep the selected row in view.
     interactive: false
     onCurrentChanged: list.mode.selected = list.current
+    onQueryChanged: list.browsing = false
 
     model: ScriptModel {
       values: list.results
       objectProp: "key"
       // A new search starts at its best match.
       onValuesChanged: list.select(list.removing ? list.currentIndex : 0)
+    }
+
+    // One hover for the list rather than each row's: it holds across the gaps between rows and a pointer leaving for a moment.
+    property int hovered: -1
+
+    HoverHandler {
+      id: hover
+
+      onPointChanged: {
+        const index = list.indexAt(hover.point.position.x + list.contentX, hover.point.position.y + list.contentY);
+        if (index >= 0) list.hovered = index;
+      }
+    }
+
+    Timer {
+      running: !hover.hovered
+      interval: 150
+      onTriggered: list.hovered = -1
     }
 
     // A row per notch, like rofi; touchpad steps add up to a notch.
@@ -238,13 +260,10 @@ PanelWindow {
     width: ListView.view.width
     height: row.list.rowHeight
     radius: 12
-    color: row.current ? Theme.selected : area.containsMouse ? Theme.hover : "transparent"
+    color: row.current ? Theme.selected : row.index === row.list.hovered ? Theme.hover : "transparent"
 
     MouseArea {
-      id: area
-
       anchors.fill: parent
-      hoverEnabled: true
       onClicked: row.list.activate(row.index)
     }
 
@@ -353,7 +372,7 @@ PanelWindow {
       enabled: root.settled
 
       NumberAnimation {
-        duration: 320
+        duration: 400
         easing.type: Easing.OutCubic
       }
     }
@@ -423,6 +442,8 @@ PanelWindow {
         Layout.minimumWidth: Math.max(0, Layout.preferredWidth)
         Layout.fillHeight: true
         Layout.margins: 8
+        // Without a line across, the field's own padding already parts it from the rows.
+        Layout.topMargin: root.previewing ? 8 : 0
         mode: root.mode
         query: search.text
         maxRows: root.rows
