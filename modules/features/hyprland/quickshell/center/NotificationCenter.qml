@@ -188,6 +188,8 @@ Overlay {
           MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.NoButton
+            // A MouseArea sets an arrow of its own, which would hide the cursors of everything under it.
+            cursorShape: undefined
             onWheel: wheel => {
               if (Math.abs(wheel.angleDelta.y) < 120) {
                 wheel.accepted = false;

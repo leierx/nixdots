@@ -292,6 +292,11 @@ Notes on specific features:
       - An inline component sees the file's ids before its own properties,
         so it reads those through its own id (`list.results`, not
         `results`).
+      - A `MouseArea` always sets a cursor, an arrow unless told otherwise,
+        and Qt takes the topmost item with one: a `MouseArea` laid over
+        others (to catch the wheel, say) or beside a parent's `HoverHandler`
+        needs `cursorShape: undefined`. Qt's `qt.quick.hover.cursor` logging
+        names the item that won.
     - `Theme` is libadwaita's dark style 1:1: its named colours
       (`palettes.adwaita_dark`, `view_bg_color` surfaces), hover/selection/
       border as the foreground at libadwaita's alphas over any surface, its

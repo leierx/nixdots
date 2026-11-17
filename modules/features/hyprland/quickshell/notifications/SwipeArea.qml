@@ -30,6 +30,8 @@ MouseArea {
   }
 
   acceptedButtons: Qt.LeftButton | Qt.RightButton
+  // Its owner's HoverHandler says what a click does; a MouseArea would otherwise set an arrow over it.
+  cursorShape: undefined
   preventStealing: dragging
 
   onPressed: mouse => {
