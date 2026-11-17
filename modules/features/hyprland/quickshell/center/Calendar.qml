@@ -45,12 +45,14 @@ ColumnLayout {
     font: Theme.title4
   }
 
+  // qmllint disable Quick.layout-positioning
   component Cell: Text {
     width: root.cell
     height: root.cell
     horizontalAlignment: Text.AlignHCenter
     verticalAlignment: Text.AlignVCenter
   }
+  // qmllint enable Quick.layout-positioning
 
   ColumnLayout {
     Layout.leftMargin: 8

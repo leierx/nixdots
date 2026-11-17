@@ -32,12 +32,16 @@ Scope {
     else selected = null;
   }
 
+  function fieldsOf(row: var): var {
+    return root.fields(row);
+  }
+
   // A row's boost only reorders matches, so it is added after the filter.
   function search(query: string): var {
     if (root.find) return root.find(query);
     const typed = Search.words(query);
     return root.rows
-      .map((row, index) => ({ row, index, score: Search.scoreFields(typed, root.fields(row)) }))
+      .map((row, index) => ({ row, index, score: Search.scoreFields(typed, root.fieldsOf(row)) }))
       .filter(match => match.score >= 0)
       .sort((a, b) => b.score + (b.row.boost ?? 0) - a.score - (a.row.boost ?? 0) || a.index - b.index)
       .map(match => match.row);

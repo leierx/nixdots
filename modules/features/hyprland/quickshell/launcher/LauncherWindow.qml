@@ -108,7 +108,7 @@ Overlay {
       else if (event.key === Qt.Key_PageDown) list.select(list.currentIndex + list.page);
       else if (control && event.key === Qt.Key_U) list.select(list.currentIndex - half);
       else if (control && event.key === Qt.Key_D) list.select(list.currentIndex + half);
-      else if (event.key === Qt.Key_Delete && shift) list.remove(list.currentIndex);
+      else if (event.key === Qt.Key_Delete && shift) list.removeAt(list.currentIndex);
       else return;
       event.accepted = true;
     }
@@ -150,7 +150,7 @@ Overlay {
       if (index >= 0 && index < list.results.length) list.mode.activated(list.results[index]);
     }
 
-    function remove(index: int): void {
+    function removeAt(index: int): void {
       if (!list.mode.removable || index < 0 || index >= list.results.length) return;
       list.removing = true;
       list.mode.removed(list.results[index]);
@@ -213,8 +213,8 @@ Overlay {
   component Picture: ClippingRectangle {
     id: picture
 
-    required property var row
-    readonly property var size: picture.row.size ?? { width: 1, height: 1 }
+    required property var entry
+    readonly property var size: picture.entry.size ?? { width: 1, height: 1 }
     // Shrunk to fit and never enlarged, so a small picture stays sharp and a huge one is decoded small.
     readonly property real ratio: Math.min(1, picture.width / picture.size.width, picture.height / picture.size.height)
 
@@ -228,7 +228,7 @@ Overlay {
       width: Math.round(picture.size.width * picture.ratio)
       height: Math.round(picture.size.height * picture.ratio)
       sourceSize: Qt.size(width, height)
-      source: picture.row.thumbnail ?? ""
+      source: picture.entry.thumbnail ?? ""
       // Pictures can be large; the row shows without waiting for one.
       asynchronous: true
     }
@@ -241,7 +241,7 @@ Overlay {
     required property int index
     required property ResultList list
     readonly property bool current: ListView.isCurrentItem
-    readonly property var fields: row.list.mode.fields(row.modelData)
+    readonly property var fields: row.list.mode.fieldsOf(row.modelData)
 
     // Letters in order are marked only where search.js matches them so.
     function loose(text: string): bool {
@@ -325,7 +325,7 @@ Overlay {
 
       Picture {
         visible: !!row.modelData.thumbnail
-        row: row.modelData
+        entry: row.modelData
       }
 
       // Material Symbols' keyboard_return; a picture already ends its row.

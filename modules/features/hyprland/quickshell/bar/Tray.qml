@@ -14,7 +14,7 @@ Row {
   // Null once the item leaves the tray.
   property SystemTrayItem menuItem: null
   // Its icon, which keeps the menu open while the pointer rests on it.
-  property Item menuButton: null
+  property MouseArea menuButton: null
   property point menuAnchor
   // A name per screen, so a menu on one monitor closes one open on another; set once, so it outlives the screen.
   property string panel: ""

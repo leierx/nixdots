@@ -95,7 +95,7 @@ PanelWindow {
         readonly property Region region: Region {
           item: card
         }
-        readonly property Item parentCard: index > 0 ? levels.itemAt(index - 1) : null
+        readonly property var parentCard: index > 0 ? levels.itemAt(index - 1) : null
         readonly property int direction: {
           const way = parentCard?.direction ?? (root.anchor.x + width + Theme.gap <= root.width ? 1 : -1);
           const fits = way > 0 ? x + 2 * width + Theme.gap <= root.width : x - width - Theme.gap >= 0;
@@ -227,7 +227,7 @@ PanelWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     implicitSize: 16
                     visible: !!entry.modelData?.icon
-                    source: entry.modelData?.icon ?? ""
+                    source: entry.modelData ? entry.modelData.icon : ""
                   }
 
                   Text {

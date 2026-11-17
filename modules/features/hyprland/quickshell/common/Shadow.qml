@@ -4,7 +4,7 @@ import QtQuick.Effects
 Item {
   id: root
 
-  property real radius: parent.radius
+  property real radius: (parent as Rectangle)?.radius ?? 0
 
   anchors.fill: parent
   z: -1

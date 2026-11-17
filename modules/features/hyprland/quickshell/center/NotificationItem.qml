@@ -122,7 +122,7 @@ Item {
 
         NotificationImage {
           // A lone notification's image is the group's icon.
-          visible: !root.single && source != ""
+          visible: !root.single && root.entry.notification.image !== ""
           Layout.alignment: Qt.AlignVCenter
           source: root.single ? "" : root.entry.notification.image
           radius: Theme.buttonRadius

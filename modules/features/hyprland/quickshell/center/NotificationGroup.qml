@@ -118,8 +118,8 @@ Item {
 
         IconImage {
           anchors.centerIn: parent
-          visible: !root.showImage && source != ""
-          source: root.newest?.appIcon ?? ""
+          visible: !root.showImage && !!root.newest?.appIcon
+          source: root.newest ? root.newest.appIcon : ""
           implicitSize: 28
         }
 
@@ -145,8 +145,8 @@ Item {
             bottom: parent.bottom
             margins: -2
           }
-          visible: root.showImage && source != ""
-          source: root.newest?.appIcon ?? ""
+          visible: root.showImage && !!root.newest?.appIcon
+          source: root.newest ? root.newest.appIcon : ""
           implicitSize: 18
         }
       }
