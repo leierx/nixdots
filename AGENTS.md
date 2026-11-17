@@ -389,7 +389,7 @@ Notes on specific features:
         becomes a count. The preview draws it as
         large as fits
         and lists the outputs, six lines at most, each with its connector,
-        model, size in inches (Hyprland's mm, while plugged in), mode, scale and position (`at 2560x0`); one turned off has an
+        model, size in inches (Hyprland's mm, while plugged in), mode, scale, and position (`at 2560x0`) for one not plugged in; one turned off has an
         outlined badge.
       - `windows`: every window from wlr-foreign-toplevel
         (`ToplevelManager`), so it works on any compositor, the focused one
