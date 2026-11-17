@@ -189,6 +189,8 @@ root: {
           bind -T copy-mode-vi C-v send -X rectangle-toggle
           bind -T copy-mode-vi y send -X copy-selection-and-cancel
           bind -T copy-mode-vi Escape send -X cancel
+          # tmux has no selection-changed event, so every copy-mode command sends the selection over OSC 52, without a paste buffer
+          set-hook -g after-send-keys { if -F "#{selection_present}" { send -X copy-pipe-no-clear -P } }
           # upstream copies and drops back to the prompt; this keeps the scroll position and the highlight
           bind -T copy-mode-vi MouseDragEnd1Pane send -X copy-pipe-no-clear
           # a click drops the kept selection, so the next drag starts a new one instead of extending a word/line pick
