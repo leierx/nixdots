@@ -427,15 +427,25 @@ Notes on specific features:
         service sandboxed by systemd alone: `ProtectSystem=strict`,
         `PrivateTmp`, a writable tmpfs over `$HOME` and `$XDG_RUNTIME_DIR`
         (`ProtectHome=tmpfs` is read-only, which apps fail on), only the
-        Wayland, PipeWire and X11 sockets and GTK/fontconfig/cursor settings
+        PipeWire and X11 sockets and GTK/fontconfig/cursor settings
         bound back in, and the nix daemon socket and both D-Bus buses out of
         reach, since through any of them it could have something outside
-        write for it. The user manager implies `PrivateUsers`, so it needs
-        no privileges; scopes take no sandboxing, hence a service. A package
+        write for it. Wayland comes through a socket of its own made by
+        `security-context` (`scripts/security-context.c`), a
+        `wp_security_context_v1` listener, for which Hyprland hides every
+        protocol off its whitelist (virtual keyboards and pointers,
+        screencopy, toplevel export, layer shell), since with the real socket
+        a program could press SUPER+Return and type into the terminal it
+        opens. Hyprland takes connections on it only while `security-context`
+        runs, so it waits on the program (`systemd-run --wait`, or the
+        terminal). X11 apps still share Xwayland with the desktop's own. The
+        user manager implies `PrivateUsers`, so it needs no privileges;
+        scopes take no sandboxing, hence a service. A package
         with a desktop entry for the program (not `Terminal=true`) runs
-        on its own, anything else in wezterm under `--pty --wait`, held open
-        on a failure or a run under 5 s. A failed build notifies with nix's
-        last lines; what it builds stays in the store until GC.
+        on its own, notifying if it stops with an error, anything else in
+        wezterm under `--pty --wait`, held open on a failure or a run under
+        5 s. A failed build notifies with nix's last lines; what it builds
+        stays in the store until GC.
       - `windows`: every window from wlr-foreign-toplevel
         (`ToplevelManager`), so it works on any compositor, the focused one
         last. On Hyprland the rest come in focus order (a `refreshToplevels`

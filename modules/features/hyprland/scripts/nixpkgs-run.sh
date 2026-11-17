@@ -44,6 +44,11 @@ fi
 
 runtime=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
 config=${XDG_CONFIG_HOME:-$HOME/.config}
+display=${WAYLAND_DISPLAY:-wayland-0}
+
+# Hyprland hides every protocol that could type into or capture other windows from a client on a security context's socket.
+wayland=$(mktemp -d -p "$runtime" nixpkgs-run.XXXXXX)
+trap 'rm -f "$log"; rm -rf "$wayland"' EXIT
 
 # Writes land in tmpfs and go with it; the user manager implies PrivateUsers, so this needs no privileges.
 sandbox=(
@@ -57,7 +62,7 @@ sandbox=(
   # The daemon would let it write to the store, and the session and system buses would let it ask anything outside to.
   --property=InaccessiblePaths=-/nix/var/nix/daemon-socket
   --property=InaccessiblePaths=-/run/dbus
-  --property="BindPaths=-$runtime/${WAYLAND_DISPLAY:-wayland-0}"
+  --property="BindPaths=$wayland/socket:$runtime/$display"
   --property="BindPaths=-$runtime/pipewire-0"
   --property="BindPaths=-$runtime/pulse/native"
   --property=BindReadOnlyPaths=-/tmp/.X11-unix
@@ -72,13 +77,13 @@ for var in WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XCURSOR_
   fi
 done
 
+# Waited on, as the socket takes connections only while security-context runs.
 if $gui; then
-  "${sandbox[@]}" "$exe" 2>"$log" || fail "$attr failed to start"
+  security-context "$wayland/socket" "$attr" "${sandbox[@]}" --wait "$exe" 2>"$log" || fail "$attr stopped with an error"
 else
-  rm -f "$log"
   # A command that is over at once, or failed, stays on screen until Enter.
   # shellcheck disable=SC2016
-  exec "$terminal" start --always-new-process -- "$BASH" -c '
+  security-context "$wayland/socket" "$attr" "$terminal" start --always-new-process -- "$BASH" -c '
     start=$SECONDS
     "$@"
     status=$?

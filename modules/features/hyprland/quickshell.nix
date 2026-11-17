@@ -72,6 +72,25 @@ root: {
         text = builtins.readFile ./scripts/nixpkgs-index.sh;
       };
 
+      securityContext = pkgs.stdenv.mkDerivation {
+        name = "security-context";
+        src = ./scripts/security-context.c;
+        dontUnpack = true;
+        nativeBuildInputs = [
+          pkgs.pkg-config
+          pkgs.wayland-scanner
+        ];
+        buildInputs = [ pkgs.wayland ];
+        buildPhase = ''
+          xml=${pkgs.wayland-protocols}/share/wayland-protocols/staging/security-context/security-context-v1.xml
+          wayland-scanner client-header "$xml" security-context-v1-client-protocol.h
+          wayland-scanner private-code "$xml" security-context-v1-protocol.c
+          $CC -O2 -Wall -Werror -I. -o security-context "$src" security-context-v1-protocol.c $(pkg-config --cflags --libs wayland-client)
+        '';
+        installPhase = "install -Dm755 security-context $out/bin/security-context";
+        meta.mainProgram = "security-context";
+      };
+
       nixpkgsRun = pkgs.writeShellApplication {
         name = "nixpkgs-run";
         runtimeInputs = [
@@ -79,6 +98,7 @@ root: {
           pkgs.coreutils
           pkgs.gnugrep
           pkgs.libnotify
+          securityContext
         ];
         text = ''
           terminal=${lib.escapeShellArg (lib.getExe config.programs.wezterm.package)}
