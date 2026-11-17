@@ -8,11 +8,40 @@ import qs.common
 LauncherMode {
   id: root
 
-  // Kept between opens and replaced only when the output differs, so the menu opens whole.
+  // Kept between opens, and an equal output changes nothing, so the menu opens whole.
   property string statusText: ""
   property string profilesText: ""
-  property var status: null
-  property var profiles: ({})
+  readonly property var status: {
+    try {
+      return JSON.parse(root.statusText);
+    } catch (error) {
+      if (root.statusText !== "") console.warn(`hyprmoncfg status: ${error}`);
+      return null;
+    }
+  }
+  // Only for the pictures; a profile that fails to parse goes without one.
+  readonly property var profiles: {
+    const profiles = {};
+    for (const line of root.profilesText.split("\n").filter(line => line !== "")) {
+      try {
+        const profile = JSON.parse(line);
+        profiles[profile.name] = profile.outputs ?? [];
+      } catch (error) {
+        console.warn(`hyprmoncfg profile: ${error}`);
+      }
+    }
+    return profiles;
+  }
+  // hyprmoncfg saves no size for an output a profile turns off, so it takes the one another profile gives it.
+  readonly property var known: {
+    const known = {};
+    for (const outputs of Object.values(root.profiles)) {
+      for (const output of outputs) {
+        if (output.enabled && root.sized(output)) known[output.key] = output;
+      }
+    }
+    return known;
+  }
 
   name: "monitors"
   title: "Monitor layouts"
@@ -38,25 +67,21 @@ LauncherMode {
       .sort((a, b) => (b.profile === recommended) - (a.profile === recommended) || a.title.localeCompare(b.title));
   }
 
-  // hyprmoncfg saves no size for an output a profile turns off, so it takes the one another profile gives it.
+  function sized(output): bool {
+    return output.width > 0 && output.height > 0;
+  }
+
   function layout(name: string): var {
-    const sized = output => output.width > 0 && output.height > 0;
     const logical = output => {
       const turned = output.transform % 2 === 1;
       const width = output.width / (output.scale || 1);
       const height = output.height / (output.scale || 1);
       return { width: turned ? height : width, height: turned ? width : height };
     };
-    const known = {};
-    for (const outputs of Object.values(root.profiles)) {
-      for (const output of outputs) {
-        if (output.enabled && sized(output)) known[output.key] = output;
-      }
-    }
     const outputs = (root.profiles[name] ?? [])
-      .filter(output => !output.enabled || sized(output))
+      .filter(output => !output.enabled || root.sized(output))
       .map(output => {
-        const shape = sized(output) ? output : known[output.key];
+        const shape = root.sized(output) ? output : root.known[output.key];
         return Object.assign({
           key: output.key,
           name: [output.make, output.model].filter(part => part).join(" ") || output.description,
@@ -71,7 +96,6 @@ LauncherMode {
     const order = outputs.filter(output => output.enabled).sort((a, b) => a.x - b.x || a.y - b.y);
     return outputs.map(output => Object.assign(output, { number: order.indexOf(output) + 1 }));
   }
-
 
   function load(): void {
     statusCommand.running = true;
@@ -144,7 +168,7 @@ LauncherMode {
           visible: output.modelData.enabled
           implicitWidth: Math.max(20, number.implicitWidth + 10)
           implicitHeight: 20
-          radius: 6
+          radius: Theme.smallRadius
           color: Theme.fg
 
           Text {
@@ -183,42 +207,20 @@ LauncherMode {
     }
   }
 
-  MenuCommand {
+  Command {
     id: statusCommand
 
     command: ["hyprmoncfg", "status", "--json"]
     quiet: !root.open
-    onDone: output => {
-      if (output === root.statusText) return;
-      root.statusText = output;
-      try {
-        root.status = JSON.parse(output);
-      } catch (error) {
-        statusCommand.fail(String(error));
-      }
-    }
+    onDone: output => root.statusText = output
   }
 
-  // Only for the pictures; a profile that fails to parse goes without one.
-  MenuCommand {
+  Command {
     id: profilesCommand
 
     name: "hyprmoncfg profiles"
     quiet: !root.open
     command: ["sh", "-c", 'for file in "${XDG_CONFIG_HOME:-$HOME/.config}"/hyprmoncfg/profiles/*.json; do cat "$file"; echo; done']
-    onDone: output => {
-      if (output === root.profilesText) return;
-      root.profilesText = output;
-      const profiles = {};
-      for (const line of output.split("\n").filter(line => line !== "")) {
-        try {
-          const profile = JSON.parse(line);
-          profiles[profile.name] = profile.outputs ?? [];
-        } catch (error) {
-          console.warn(`hyprmoncfg profile: ${error}`);
-        }
-      }
-      root.profiles = profiles;
-    }
+    onDone: output => root.profilesText = output
   }
 }

@@ -1,10 +1,8 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import Quickshell.Io
 import qs.common
 
-// Hyprland's own binds with their descriptions, read afresh on every open.
 Scope {
   id: root
 
@@ -30,7 +28,6 @@ Scope {
     });
     const entries = submaps.map(submap => submap.entry).filter(entry => entry);
 
-    // Numbered binds, "Focus workspace 1" to "6", become one row.
     const rows = [];
     for (const bind of main.filter(bind => !entries.includes(bind))) {
       const numbered = /^(.*\S)\s+(\d+)$/.exec(bind.description);
@@ -79,17 +76,15 @@ Scope {
     onPressed: Panels.toggle("shortcuts")
   }
 
-  Process {
+  Command {
     id: binds
 
     command: ["hyprctl", "binds", "-j"]
-    stdout: StdioCollector {
-      onStreamFinished: {
-        try {
-          root.groups = root.group(JSON.parse(text));
-        } catch (error) {
-          console.warn(`Shortcuts: reading Hyprland's binds failed: ${error}`);
-        }
+    onDone: output => {
+      try {
+        root.groups = root.group(JSON.parse(output));
+      } catch (error) {
+        binds.fail(String(error));
       }
     }
   }

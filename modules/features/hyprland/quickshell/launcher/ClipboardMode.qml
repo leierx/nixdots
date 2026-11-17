@@ -6,7 +6,7 @@ LauncherMode {
   id: root
 
   property var entries: []
-  property var pictures: []
+  property var pictures: ({})
   property var stats: ({})
   readonly property string cache: Quickshell.cachePath("clipboard")
 
@@ -30,7 +30,7 @@ LauncherMode {
       subtitle: `${image[3]}×${image[4]} ${image[2].toUpperCase()}, ${image[1]}`,
       // Material Symbols' image
       glyph: "M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0 0v-560 560Zm80-80h400q12 0 18-11t-2-21L586-459q-6-8-16-8t-16 8L450-320l-74-99q-6-8-16-8t-16 8l-80 107q-8 10-2 21t18 11Z",
-      thumbnail: root.pictures.includes(entry.id) ? `file://${root.cache}/${entry.id}` : "",
+      thumbnail: root.pictures[entry.id] ? `file://${root.cache}/${entry.id}` : "",
       size: { width: Number(image[3]), height: Number(image[4]) },
     } : {
       title: entry.text,
@@ -55,7 +55,7 @@ LauncherMode {
   }
 
   // The rows show at once; what needs a clip decoded follows from the cache.
-  MenuCommand {
+  Command {
     id: listCommand
 
     command: ["cliphist", "list"]
@@ -69,7 +69,7 @@ LauncherMode {
   }
 
   // Thumbnails and counts are made once per clip. A picture past 64 MiB or 50 megapixels gets none: decoding it would cost more than it shows.
-  MenuCommand {
+  Command {
     id: cacheCommand
 
     name: "cliphist"
@@ -108,7 +108,9 @@ LauncherMode {
     `, "sh", root.cache]
     onDone: output => {
       const [pictures, stats] = output.split("--\n");
-      root.pictures = pictures.split("\n").filter(id => id !== "");
+      const decoded = {};
+      for (const id of pictures.split("\n").filter(id => id !== "")) decoded[id] = true;
+      root.pictures = decoded;
       const counts = {};
       for (const line of (stats ?? "").split("\n").filter(line => line !== "")) {
         const [id, lines, characters] = line.split(" ");

@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.common
 
 // For where the public address puts the machine, so it follows a laptop around.
 Singleton {
@@ -16,7 +17,7 @@ Singleton {
   // MET's terms ask for a User-Agent naming the app.
   readonly property string userAgent: "nixdots-quickshell github.com/leierx/nixdots"
 
-  // MET's names for its symbols, from the icons' legend, without the time of day.
+  // Without the time of day, as the legend names them.
   property var names: ({})
 
   function icon(symbol: string): string {
@@ -31,8 +32,7 @@ Singleton {
     return `${Math.round(celsius)}°`;
   }
 
-  function failed(what: string, error): void {
-    console.warn(`Weather: ${what} failed: ${error}`);
+  function retrySoon(): void {
     refresh.interval = 5 * 60 * 1000;
     refresh.restart();
   }
@@ -61,56 +61,49 @@ Singleton {
     }
   }
 
-  Process {
+  Command {
     id: locate
 
+    name: "Weather: locating"
+    quiet: true
     command: ["curl", "--fail", "--silent", "--max-time", "20", "https://ipinfo.io/json"]
-    onExited: code => {
-      if (code !== 0) root.failed("locating", `curl exited with ${code}`);
-    }
-    stdout: StdioCollector {
-      onStreamFinished: {
-        if (!text) return;
-        try {
-          const location = JSON.parse(text);
-          // About a kilometre; MET asks for at most four decimals, and fewer share its cache.
-          const [lat, lon] = location.loc.split(",").map(n => Number(n).toFixed(2));
-          root.place = location.city;
-          forecast.command = ["curl", "--fail", "--silent", "--max-time", "20", "--user-agent", root.userAgent, `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`];
-          forecast.running = true;
-        } catch (error) {
-          root.failed("locating", error);
-        }
+    onFailed: root.retrySoon()
+    onDone: output => {
+      try {
+        const location = JSON.parse(output);
+        // About a kilometre; MET asks for at most four decimals, and fewer share its cache.
+        const [lat, lon] = location.loc.split(",").map(n => Number(n).toFixed(2));
+        root.place = location.city;
+        forecast.command = ["curl", "--fail", "--silent", "--max-time", "20", "--user-agent", root.userAgent, `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`];
+        forecast.running = true;
+      } catch (error) {
+        locate.fail(String(error));
       }
     }
   }
 
-  Process {
+  Command {
     id: forecast
 
-    onExited: code => {
-      if (code !== 0) root.failed("fetching the forecast", `curl exited with ${code}`);
-    }
-
-    stdout: StdioCollector {
-      onStreamFinished: {
-        if (!text) return;
-        try {
-          const hourAgo = Date.now() - 60 * 60 * 1000;
-          root.hours = JSON.parse(text).properties.timeseries
-            .filter(entry => Date.parse(entry.time) > hourAgo && entry.data.next_1_hours)
-            .map(entry => {
-              const symbol = entry.data.next_1_hours.summary.symbol_code;
-              return {
-                time: new Date(entry.time),
-                temperature: entry.data.instant.details.air_temperature,
-                symbol,
-                icon: root.icon(symbol),
-              };
-            });
-        } catch (error) {
-          root.failed("fetching the forecast", error);
-        }
+    name: "Weather: fetching the forecast"
+    quiet: true
+    onFailed: root.retrySoon()
+    onDone: output => {
+      try {
+        const hourAgo = Date.now() - 60 * 60 * 1000;
+        root.hours = JSON.parse(output).properties.timeseries
+          .filter(entry => Date.parse(entry.time) > hourAgo && entry.data.next_1_hours)
+          .map(entry => {
+            const symbol = entry.data.next_1_hours.summary.symbol_code;
+            return {
+              time: new Date(entry.time),
+              temperature: entry.data.instant.details.air_temperature,
+              symbol,
+              icon: root.icon(symbol),
+            };
+          });
+      } catch (error) {
+        forecast.fail(String(error));
       }
     }
   }

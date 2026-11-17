@@ -8,7 +8,6 @@ import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.common
 
-// GTK's menus: submenus cascade beside the row that opens them, the way the last one went until the screen ends.
 PanelWindow {
   id: root
 
@@ -16,12 +15,12 @@ PanelWindow {
   required property point anchor
   // While the pointer rests on the menu's icon: Hyprland reports none on the menu until the pointer moves.
   property bool held: false
-  // Submenus open, outermost first; an entry the app has since dropped turns null.
+  // An entry the app has since dropped turns null.
   property list<QsMenuEntry> path: []
   readonly property var levels: [root.menu, ...root.path.filter(entry => entry !== null)]
   // Cards register here, as the window's input region is theirs alone.
   property list<Item> cards: []
-  // A row's submenu opens a moment after the pointer reaches it, so passing over rows opens nothing; any other row closes deeper ones at once.
+  // A moment's delay, so passing over rows opens nothing.
   property var pending: null
   readonly property int padding: 6
 
@@ -75,7 +74,7 @@ PanelWindow {
         values: root.levels
       }
 
-      Rectangle {
+      Card {
         id: card
 
         required property QsMenuHandle modelData
@@ -85,7 +84,6 @@ PanelWindow {
           item: card
         }
         readonly property Item parentCard: index > 0 ? levels.itemAt(index - 1) : null
-        // Where its submenus go: 1 to the right, -1 to the left; on as the last one went while another of its width fits.
         readonly property int direction: {
           const way = parentCard?.direction ?? (root.anchor.x + width + Theme.gap <= root.width ? 1 : -1);
           const fits = way > 0 ? x + 2 * width + Theme.gap <= root.width : x - width - Theme.gap >= 0;
@@ -101,7 +99,6 @@ PanelWindow {
           if (entries.length > 0 && entries[entries.length - 1].isSeparator) entries.pop();
           return entries;
         }
-        // The row that opened it, in its parent's card.
         readonly property real openerY: parentCard?.rowY(modelData) ?? 0
 
         function rowY(entry: var): real {
@@ -109,7 +106,6 @@ PanelWindow {
           return row ? row.mapToItem(card, 0, 0).y : root.padding;
         }
 
-        // Its corner at the pointer; a submenu overlapping its parent a little, level with the row that opened it.
         x: {
           if (!parentCard) return root.anchor.x + width + Theme.gap <= root.width ? root.anchor.x : Math.max(Theme.gap, root.anchor.x - width);
           const beside = parentCard.direction > 0 ? parentCard.x + parentCard.width - 4 : parentCard.x - width + 4;
@@ -119,14 +115,9 @@ PanelWindow {
         width: Math.max(180, rows.implicitWidth) + root.padding * 2
         height: rows.implicitHeight + root.padding * 2
         radius: Theme.cardRadius
-        color: Theme.bg
-        border.width: 1
-        border.color: Theme.outline
 
         Component.onCompleted: root.cards = [...root.cards, card]
         Component.onDestruction: root.cards = root.cards.filter(other => other !== card)
-
-        Shadow {}
 
         QsMenuOpener {
           id: opener
@@ -173,7 +164,7 @@ PanelWindow {
               Rectangle {
                 anchors.fill: parent
                 visible: !entry.modelData.isSeparator
-                radius: 6
+                radius: Theme.smallRadius
                 color: (entryHover.hovered || entry.opened) && entry.modelData.enabled ? Theme.hover : "transparent"
 
                 Row {

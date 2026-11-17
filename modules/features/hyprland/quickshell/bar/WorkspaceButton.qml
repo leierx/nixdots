@@ -20,7 +20,7 @@ Rectangle {
   implicitHeight: 26
   // libadwaita's button corners, scaled to its size.
   radius: 7
-  color: shown ? Theme.overlay(0.25) : area.containsMouse ? Theme.overlay(0.15) : "transparent"
+  color: shown ? Theme.buttonChecked : area.containsMouse ? Theme.buttonHover : "transparent"
   border.width: foreign ? 1 : 0
   border.color: Theme.border
 

@@ -3,7 +3,6 @@ pragma Singleton
 import Quickshell
 import Quickshell.Io
 
-// One panel open at a time, by name ("apps", "center", "tray:DP-1", …).
 Singleton {
   property string active: ""
 

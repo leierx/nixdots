@@ -5,7 +5,6 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.common
-import qs.nix
 
 LauncherMode {
   id: root
@@ -19,7 +18,9 @@ LauncherMode {
   preview: Preview {
     row: root.selected
   }
+  // Only while open: titles and focus change all day.
   rows: {
+    if (!root.open) return [];
     const windows = ToplevelManager.toplevels.values.map((toplevel, index) => {
       const hyprland = Hyprland.toplevels.values.find(other => other.wayland === toplevel) ?? null;
       const entry = DesktopEntries.heuristicLookup(toplevel.appId);
@@ -42,11 +43,10 @@ LauncherMode {
     return windows.sort((a, b) => a.toplevel.activated - b.toplevel.activated || a.recency - b.recency);
   }
 
-  // "DP-1 · 2", the workspace as the bar numbers it: hyprsplit gives monitor k the workspaces k*n+1 … (k+1)*n.
   function where(hyprland): string {
     const workspace = hyprland?.workspace;
     if (!workspace) return "";
-    const label = workspace.id > 0 ? String((workspace.id - 1) % Hyprsplit.workspaces + 1) : workspace.name.replace(/^special:/, "");
+    const label = workspace.id > 0 ? String(WorkspaceOwners.index(workspace.id)) : workspace.name.replace(/^special:/, "");
     return [hyprland.monitor?.name, label].filter(part => part).join(" · ");
   }
 

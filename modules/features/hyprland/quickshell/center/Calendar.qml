@@ -2,14 +2,13 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import Quickshell
 import qs.common
 
 ColumnLayout {
   id: root
 
   readonly property var locale: Qt.locale()
-  readonly property date today: clock.date
+  readonly property date today: Time.now
   property date month: new Date(today.getFullYear(), today.getMonth(), 1)
 
   readonly property var weeks: {
@@ -37,40 +36,13 @@ ColumnLayout {
     return 1 + Math.round(((thursday - firstThursday) / 86400000 - 3 + (firstThursday.getUTCDay() + 6) % 7) / 7);
   }
 
-  SystemClock {
-    id: clock
-
-    precision: SystemClock.Minutes
-  }
-
-  component Arrow: Rectangle {
-    id: arrow
-
-    property alias text: label.text
-
-    signal clicked()
-
+  component Arrow: Button {
     implicitWidth: root.cell
     implicitHeight: root.cell
     radius: width / 2
-    color: area.containsMouse ? Theme.buttonHover : "transparent"
-
-    Text {
-      id: label
-
-      anchors.centerIn: parent
-      color: Theme.fg
-      font: Theme.title4
-    }
-
-    MouseArea {
-      id: area
-
-      anchors.fill: parent
-      hoverEnabled: true
-      cursorShape: Qt.PointingHandCursor
-      onClicked: arrow.clicked()
-    }
+    padding: 0
+    flat: true
+    font: Theme.title4
   }
 
   component Cell: Text {
@@ -164,7 +136,7 @@ ColumnLayout {
             anchors.centerIn: parent
             width: 26
             height: 22
-            radius: 6
+            radius: Theme.smallRadius
             color: Theme.card
           }
 
@@ -207,7 +179,7 @@ ColumnLayout {
     }
   }
 
-  // A month a notch; touchpad steps add up to a notch.
+  // Touchpad steps add up to a notch.
   WheelHandler {
     property real pending: 0
 

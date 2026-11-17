@@ -1,7 +1,6 @@
 import Quickshell
 import Quickshell.Io
 
-// A JsonAdapter's file in Quickshell's state dir.
 FileView {
   required property string name
 

@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
-import qs.common
 import qs.nix
 
 // hyprsplit gives monitor k the workspaces k*n+1 … (k+1)*n.

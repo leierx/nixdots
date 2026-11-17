@@ -6,15 +6,14 @@ import Quickshell
 import Quickshell.Wayland
 import qs.common
 
-// GTK's shortcuts window: groups of rows, a description and its keys, in balanced columns.
-PanelWindow {
+Overlay {
   id: root
 
   required property var groups
   readonly property int columnWidth: Math.round(24 * Theme.em)
   readonly property int rowHeight: 34
   readonly property int columnCount: Math.max(1, Math.min(3, Math.floor((width - 2 * Theme.gap - 48) / (columnWidth + 32))))
-  // Each group to the shortest column so far, its title counting as a row and a half.
+  // A group's title counts as a row and a half.
   readonly property var columns: {
     const columns = Array.from({ length: root.columnCount }, () => ({ groups: [], size: 0 }));
     for (const group of root.groups) {
@@ -25,18 +24,9 @@ PanelWindow {
     return columns.filter(column => column.groups.length > 0);
   }
 
-  color: "transparent"
-  anchors {
-    top: true
-    bottom: true
-    left: true
-    right: true
-  }
-  exclusionMode: ExclusionMode.Ignore
+  card: box
 
-  WlrLayershell.layer: WlrLayer.Overlay
   WlrLayershell.namespace: "quickshell:shortcuts"
-  WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
   component Keycap: Rectangle {
     id: keycap
@@ -45,7 +35,7 @@ PanelWindow {
 
     implicitWidth: Math.max(implicitHeight, label.implicitWidth + 14)
     implicitHeight: 24
-    radius: 6
+    radius: Theme.smallRadius
     color: Theme.button
 
     Text {
@@ -58,30 +48,14 @@ PanelWindow {
     }
   }
 
-  MouseArea {
-    anchors.fill: parent
-    onClicked: Panels.close()
-  }
+  Card {
+    id: box
 
-  Rectangle {
     anchors.centerIn: parent
     width: Math.min(content.implicitWidth + 48, root.width - 2 * Theme.gap)
     height: Math.min(content.implicitHeight + 48, root.height - 2 * Theme.gap)
-    radius: Theme.windowRadius
-    color: Theme.bg
-    border.width: 1
-    border.color: Theme.outline
     focus: true
     clip: true
-
-    Keys.onEscapePressed: Panels.close()
-
-    Shadow {}
-
-    // Keeps clicks on the card from closing it.
-    MouseArea {
-      anchors.fill: parent
-    }
 
     ColumnLayout {
       id: content
@@ -153,7 +127,6 @@ PanelWindow {
                       elide: Text.ElideRight
                     }
 
-                    // A sequence, Super X then L, as its chords one after another.
                     Repeater {
                       model: row.modelData.keys
 

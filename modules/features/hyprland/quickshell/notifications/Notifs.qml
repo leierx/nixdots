@@ -21,8 +21,6 @@ Singleton {
   readonly property int defaultTimeout: 8000
   readonly property int maxPopups: 5
 
-  property date now: new Date()
-
   // Like GNOME: over a fullscreen window only critical notifications pop up, and going fullscreen puts the others away.
   readonly property bool fullscreen: ToplevelManager.activeToplevel?.fullscreen ?? false
   onFullscreenChanged: {
@@ -47,6 +45,7 @@ Singleton {
   }
 
   function age(time) {
+    const now = Time.now;
     const minutes = Math.floor((now - time) / 60000);
     if (minutes < 1) return "now";
     if (minutes < 60) return `${minutes}m`;
@@ -97,13 +96,6 @@ Singleton {
 
   function focusedScreen() {
     return Hyprland.focusedMonitor?.name ?? Quickshell.screens[0]?.name ?? "";
-  }
-
-  Timer {
-    interval: 30000
-    running: true
-    repeat: true
-    onTriggered: root.now = new Date()
   }
 
   StateFile {

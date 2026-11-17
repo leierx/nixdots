@@ -258,7 +258,16 @@ Notes on specific features:
     component is its own directory owning its windows, widgets and sizes, and
     `shell.qml` only instantiates them; `common/` holds what several share:
     `Theme`, `StateFile` (a `JsonAdapter`'s file in Quickshell's state dir),
-    `Shadow`, `ExpanderArrow`, and `Panels`, the one open panel by name, with
+    `Shadow`, `ExpanderArrow`, `Time` (one minute clock for the bar, the
+    calendar and notification ages), `WorkspaceOwners` (hyprsplit's numbering,
+    for the bar and the window switcher), `Command` (a process whose output
+    arrives as `done`, and whose failure becomes a notification that closes
+    the open panel, or only a log line while `quiet`, a load nobody waits
+    on), `Overlay` (the full-screen layer a panel lives in, closing it on a
+    click anywhere but its `card`), `Card` (the surface of panels and
+    popups: libadwaita's window background, outline and shadow; Escape
+    closes the panel it is in), `Button` (libadwaita's button, `flat` or
+    not, with an optional expander arrow), and `Panels`, the one open panel by name, with
     the IPC target `panels` (`qs ipc -c shell call panels open|close|toggle
     <name>`; `apps`, `clipboard`, `monitors`, `windows`, `center`, `shortcuts`): opening any panel (a
     launcher mode, the notification center, a tray menu) closes the others, and
@@ -340,9 +349,7 @@ Notes on specific features:
       so it holds at any scale. It is always centred on the screen and holds
       still while typing: every mode opens at full height, listing all its
       rows before anything is typed, without an animation.
-      `MenuCommand` reads a command's output and sends a failure as a
-      notification, or only to the log while `quiet` (a load nobody waits
-      on). Search matches every typed word as a substring, or in a
+      Search matches every typed word as a substring, or in a
       loose field (an app's name) as its letters in order (`ffx` finds
       Firefox) for a lower score. Hyprland's `quickshell:launcher` layer
       rule dims behind it.

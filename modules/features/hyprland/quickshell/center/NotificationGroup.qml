@@ -11,7 +11,6 @@ import qs.notifications
 Item {
   id: root
 
-  // Newest first.
   required property var entries
   property bool expanded: false
 
@@ -26,33 +25,21 @@ Item {
   readonly property bool single: shown.length === 1
   readonly property bool critical: shown.some(e => e.critical)
   readonly property bool showImage: single && newest.notification.image !== ""
-  readonly property bool expandable: !single || newest.buttons.length > 0 || newest.progress !== undefined || (items.count > 0 && items.itemAt(0).truncated)
+  readonly property bool expandable: !single || newest.buttons.length > 0 || newest.progress !== undefined || (root.first?.truncated ?? false)
   readonly property int iconSize: 40
   readonly property int pad: 12
 
+  // itemAt() is not reactive, so the first row is looked up again as rows come and go.
+  property NotificationItem first: null
+
   implicitHeight: card.height
 
-  function slideAway(left) {
-    card.x = card.x;
-    away.to = (left ? -1 : 1) * (width + 20);
-    away.start();
+  function findFirst(): void {
+    first = items.itemAt(0);
   }
 
   onSingleChanged: {
     if (single) expanded = false;
-  }
-
-  NumberAnimation {
-    id: away
-
-    target: card
-    property: "x"
-    duration: 200
-    easing.type: Easing.InCubic
-    // Dismissing removes the entry, so walk a copy.
-    onFinished: {
-      for (const entry of root.shown.slice()) entry.notification.dismiss();
-    }
   }
 
   // Under the card, so its buttons, links and notifications come first.
@@ -60,18 +47,23 @@ Item {
     id: swipe
 
     anchors.fill: parent
+    target: card
     swipeEnabled: !root.expanded
-    onSwiped: left => root.slideAway(left)
+    onSwiped: left => swipe.slideAway(left)
+    // Dismissing removes the entry, so walk a copy.
+    onGone: {
+      for (const entry of root.shown.slice()) entry.notification.dismiss();
+    }
     onTapped: button => {
       if (button !== Qt.LeftButton) {
-        root.slideAway(false);
+        swipe.slideAway(false);
       } else if (!root.single) {
         root.expanded = !root.expanded;
       } else if (root.newest.defaultAction) {
         root.newest.defaultAction.invoke();
         Panels.close();
       } else if (root.newest.clickDismisses) {
-        root.slideAway(false);
+        swipe.slideAway(false);
       }
     }
   }
@@ -206,32 +198,23 @@ Item {
             font: Theme.caption
           }
 
-          Rectangle {
+          Button {
             visible: root.expandable || root.expanded
             implicitWidth: 24
             implicitHeight: 24
             radius: height / 2
-            color: arrowArea.containsMouse ? Theme.buttonHover : "transparent"
-
-            ExpanderArrow {
-              anchors.centerIn: parent
-              open: root.expanded
-            }
-
-            MouseArea {
-              id: arrowArea
-
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.expanded = !root.expanded
-            }
+            flat: true
+            expander: true
+            open: root.expanded
+            onClicked: root.expanded = !root.expanded
           }
         }
 
         Repeater {
           id: items
 
+          onItemAdded: Qt.callLater(root.findFirst)
+          onItemRemoved: Qt.callLater(root.findFirst)
           model: ScriptModel {
             values: root.expanded ? root.shown : root.shown.slice(0, 2)
           }

@@ -9,8 +9,7 @@ import Quickshell.Widgets
 import qs.common
 import "search.js" as Search
 
-// No screen is set, so Hyprland opens it on the focused monitor.
-PanelWindow {
+Overlay {
   id: root
 
   required property LauncherMode mode
@@ -23,19 +22,9 @@ PanelWindow {
   readonly property int rows: Math.max(1, Math.min(8, Math.floor((height - 2 * margin - fieldHeight - 17) / (matches.rowHeight + matches.spacing))))
   readonly property int resultsHeight: rows * matches.rowHeight + (rows - 1) * matches.spacing + (previewing ? 16 : 8)
 
-  color: "transparent"
-  anchors {
-    top: true
-    bottom: true
-    left: true
-    right: true
-  }
-  // Cover the bar rather than being pushed aside by it.
-  exclusionMode: ExclusionMode.Ignore
+  card: box
 
-  WlrLayershell.layer: WlrLayer.Overlay
   WlrLayershell.namespace: "quickshell:launcher"
-  WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
   // Material Symbols draw in a 960 px box above the origin.
   component Glyph: Item {
@@ -68,7 +57,6 @@ PanelWindow {
     }
   }
 
-  // What the query matched in bold, as rofi does.
   component Marked: Text {
     id: marked
 
@@ -105,7 +93,6 @@ PanelWindow {
     // Another mode's shortcut while open starts it afresh.
     onModeChanged: field.clear()
     onAccepted: field.list.activate(field.list.currentIndex)
-    Keys.onEscapePressed: Panels.close()
     // Before the field's own keys, where Shift+Delete would cut.
     Keys.onPressed: event => {
       const list = field.list;
@@ -115,7 +102,7 @@ PanelWindow {
       const forward = event.key === Qt.Key_Down || control && event.key === Qt.Key_N || event.key === Qt.Key_Tab;
       if (back) list.step(-1);
       else if (forward) list.step(1);
-      else if (event.key === Qt.Key_Delete && event.modifiers & Qt.ShiftModifier) list.remove(list.currentIndex);
+      else if (event.key === Qt.Key_Delete && shift) list.remove(list.currentIndex);
       else return;
       event.accepted = true;
     }
@@ -135,7 +122,6 @@ PanelWindow {
 
     required property LauncherMode mode
     property string query: ""
-    property int maxRows: 7
     property int rowHeight: 50
     readonly property var results: list.mode.search(list.query)
     readonly property var current: list.results[list.currentIndex] ?? null
@@ -164,7 +150,6 @@ PanelWindow {
       list.removing = false;
     }
 
-    implicitHeight: Math.min(list.count, list.maxRows) * list.rowHeight + Math.max(0, Math.min(list.count, list.maxRows) - 1) * list.spacing
     clip: true
     spacing: 2
     // Only ever jumps, to keep the selected row in view.
@@ -222,7 +207,7 @@ PanelWindow {
 
     implicitHeight: 38
     implicitWidth: Math.round(picture.implicitHeight * 16 / 9)
-    radius: 6
+    radius: Theme.smallRadius
     color: Theme.card
 
     Image {
@@ -252,7 +237,7 @@ PanelWindow {
 
     width: ListView.view.width
     height: row.list.rowHeight
-    radius: 12
+    radius: Theme.cardRadius
     color: row.current ? Theme.selected : row.index === row.list.hovered ? Theme.hover : "transparent"
 
     MouseArea {
@@ -339,29 +324,15 @@ PanelWindow {
     }
   }
 
-  MouseArea {
-    anchors.fill: parent
-    onClicked: Panels.close()
-  }
+  Card {
+    id: box
 
-  Rectangle {
     anchors.horizontalCenter: parent.horizontalCenter
-    // Always centred, so it grows and shrinks about the middle.
     y: Math.round((root.height - height) / 2)
     width: root.cardWidth
     // Full height from the start, so it holds still while typing.
     height: root.fieldHeight + rule.height + root.resultsHeight
     radius: 22
-    color: Theme.bg
-    border.width: 1
-    border.color: Theme.outline
-
-    Shadow {}
-
-    // Keeps clicks on the card from closing the launcher.
-    MouseArea {
-      anchors.fill: parent
-    }
 
     RowLayout {
       id: field
@@ -402,7 +373,6 @@ PanelWindow {
       visible: root.previewing
     }
 
-    // Down to the card's edge as it grows, so the list clips itself inside it.
     RowLayout {
       anchors {
         top: rule.bottom
@@ -424,7 +394,6 @@ PanelWindow {
         Layout.topMargin: root.previewing ? 8 : 0
         mode: root.mode
         query: search.text
-        maxRows: root.rows
 
         delegate: ResultRow {
           list: matches

@@ -12,7 +12,6 @@ Singleton {
 
   readonly property real week: 7 * 24 * 3600 * 1000
 
-  // 0 for an app never launched, towards 1: ½ after one launch just now, ¾ after two.
   function use(id: string): real {
     const rank = state.ranks[id];
     return rank === undefined ? 0 : 1 - Math.pow(2, -Math.pow(2, rank - Date.now() / week));

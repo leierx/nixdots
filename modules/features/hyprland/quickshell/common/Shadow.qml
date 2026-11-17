@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Effects
 
-// libadwaita's window shadow, as a child of the rounded Rectangle it lies under.
 Item {
   id: root
 

@@ -20,7 +20,6 @@ PanelWindow {
 
   WlrLayershell.namespace: "quickshell:bar"
 
-  // A click on the bar besides its buttons closes the open panel.
   MouseArea {
     anchors.fill: parent
     acceptedButtons: Qt.AllButtons

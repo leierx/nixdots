@@ -18,10 +18,11 @@ Item {
     id: swipe
 
     anchors.fill: parent
+    target: card
+    // The list slides it out from where it was let go.
     onSwiped: left => {
       if (left) return;
-      // Leaves the card where the swipe let go, for the list to slide it out.
-      card.x = card.x;
+      swipe.hold();
       root.entry.notification.dismiss();
     }
     onTapped: button => {
@@ -35,20 +36,15 @@ Item {
     onHoveredChanged: root.entry.hovered = hovered
   }
 
-  Rectangle {
+  Card {
     id: card
 
     // Popups only leave towards the screen's edge.
     x: Math.max(0, swipe.distance)
     width: root.width
     height: content.implicitHeight + 24
-    radius: Theme.windowRadius
-    color: Theme.bg
-    border.width: 1
     border.color: root.entry.critical ? Theme.destructive : Theme.outline
     opacity: 1 - x / width
-
-    Shadow {}
 
     Behavior on x {
       enabled: !swipe.dragging

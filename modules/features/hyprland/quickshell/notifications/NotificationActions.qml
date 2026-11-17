@@ -16,50 +16,14 @@ ColumnLayout {
   visible: actions.length > 0
   spacing: 6
 
-  component ActionButton: Rectangle {
-    id: button
-
-    property alias text: label.text
-    property bool expander: false
-    property bool open: false
-
-    signal clicked()
+  component ActionButton: Button {
+    required property NotificationAction modelData
 
     Layout.fillWidth: true
-    implicitHeight: 34
-    radius: Theme.buttonRadius
-    color: area.containsMouse ? Theme.buttonHover : Theme.button
-
-    Row {
-      anchors.centerIn: parent
-      spacing: 6
-
-      Text {
-        id: label
-
-        width: Math.min(implicitWidth, button.width - 20 - (arrow.visible ? arrow.width + parent.spacing : 0))
-        color: Theme.fg
-        elide: Text.ElideRight
-        font: Theme.heading
-      }
-
-      ExpanderArrow {
-        id: arrow
-
-        visible: button.expander
-        anchors.verticalCenter: parent.verticalCenter
-        open: button.open
-      }
-    }
-
-    MouseArea {
-      id: area
-
-      anchors.fill: parent
-      hoverEnabled: true
-      cursorShape: Qt.PointingHandCursor
-      onClicked: button.clicked()
-    }
+    // Equal shares, whatever their labels.
+    Layout.preferredWidth: 1
+    text: modelData.text
+    onClicked: modelData.invoke()
   }
 
   RowLayout {
@@ -69,15 +33,12 @@ ColumnLayout {
     Repeater {
       model: root.overflow ? root.actions.slice(0, 2) : root.actions
 
-      ActionButton {
-        required property NotificationAction modelData
-
-        text: modelData.text
-        onClicked: modelData.invoke()
-      }
+      ActionButton {}
     }
 
-    ActionButton {
+    Button {
+      Layout.fillWidth: true
+      Layout.preferredWidth: 1
       visible: root.overflow
       text: "More"
       expander: true
@@ -89,11 +50,6 @@ ColumnLayout {
   Repeater {
     model: root.overflow && root.moreOpen ? root.actions.slice(2) : []
 
-    ActionButton {
-      required property NotificationAction modelData
-
-      text: modelData.text
-      onClicked: modelData.invoke()
-    }
+    ActionButton {}
   }
 }

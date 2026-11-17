@@ -8,8 +8,7 @@ import qs.common
 import qs.notifications
 import qs.weather
 
-// No screen is set, so Hyprland opens it on the focused monitor.
-PanelWindow {
+Overlay {
   id: root
 
   readonly property bool open: Panels.active === "center"
@@ -18,40 +17,29 @@ PanelWindow {
   readonly property int padding: 12
   readonly property int maxListHeight: 520
 
+  property real shown: 0
+
   signal hidden()
 
   function appKey(entry) {
     return entry.notification.desktopEntry || entry.notification.appName;
   }
 
-  onOpenChanged: {
-    if (open) {
-      Notifs.hidePopups();
-      hide.stop();
-      show.restart();
-    } else {
-      show.stop();
-      hide.restart();
-    }
-  }
+  onOpenChanged: if (open) Notifs.hidePopups()
+  onShownChanged: if (shown === 0 && !open) hidden()
+  // Bound only now, so the first open eases in too.
   Component.onCompleted: {
     Notifs.hidePopups();
-    show.restart();
+    shown = Qt.binding(() => root.open ? 1 : 0);
   }
 
-  color: "transparent"
-  anchors {
-    top: true
-    bottom: true
-    left: true
-    right: true
-  }
+  card: panel
   // Below the bar rather than over it.
+  exclusionMode: ExclusionMode.Normal
   exclusiveZone: 0
   // While closing, clicks already go to the windows below.
   mask: open ? null : nothing
 
-  WlrLayershell.layer: WlrLayer.Overlay
   WlrLayershell.namespace: "quickshell:center"
   WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
@@ -59,51 +47,11 @@ PanelWindow {
     id: nothing
   }
 
-  ParallelAnimation {
-    id: show
-
+  Behavior on shown {
     NumberAnimation {
-      target: panel
-      property: "opacity"
-      to: 1
-      duration: 180
-      easing.type: Easing.OutCubic
+      duration: root.open ? 180 : 120
+      easing.type: root.open ? Easing.OutCubic : Easing.InCubic
     }
-
-    NumberAnimation {
-      target: slide
-      property: "y"
-      to: 0
-      duration: 180
-      easing.type: Easing.OutCubic
-    }
-  }
-
-  ParallelAnimation {
-    id: hide
-
-    onFinished: root.hidden()
-
-    NumberAnimation {
-      target: panel
-      property: "opacity"
-      to: 0
-      duration: 120
-      easing.type: Easing.InCubic
-    }
-
-    NumberAnimation {
-      target: slide
-      property: "y"
-      to: -12
-      duration: 120
-      easing.type: Easing.InCubic
-    }
-  }
-
-  MouseArea {
-    anchors.fill: parent
-    onClicked: Panels.close()
   }
 
   component Switch: Rectangle {
@@ -150,37 +98,7 @@ PanelWindow {
     }
   }
 
-  component Button: Rectangle {
-    id: button
-
-    property alias text: label.text
-
-    signal clicked()
-
-    implicitWidth: label.implicitWidth + 34
-    implicitHeight: 34
-    radius: Theme.buttonRadius
-    color: area.containsMouse ? Theme.buttonHover : Theme.button
-
-    Text {
-      id: label
-
-      anchors.centerIn: parent
-      color: Theme.fg
-      font: Theme.body
-    }
-
-    MouseArea {
-      id: area
-
-      anchors.fill: parent
-      hoverEnabled: true
-      cursorShape: Qt.PointingHandCursor
-      onClicked: button.clicked()
-    }
-  }
-
-  Rectangle {
+  Card {
     id: panel
 
     anchors {
@@ -190,25 +108,10 @@ PanelWindow {
     }
     width: columns.implicitWidth + root.padding * 2
     height: columns.implicitHeight + root.padding * 2
-    radius: Theme.windowRadius
-    color: Theme.bg
-    border.width: 1
-    border.color: Theme.outline
-    opacity: 0
+    opacity: root.shown
     focus: true
     transform: Translate {
-      id: slide
-
-      y: -12
-    }
-
-    Shadow {}
-
-    Keys.onEscapePressed: Panels.close()
-
-    // Keeps clicks on the panel from closing it.
-    MouseArea {
-      anchors.fill: parent
+      y: -12 * (1 - root.shown)
     }
 
     RowLayout {
@@ -362,6 +265,7 @@ PanelWindow {
 
           Button {
             text: "Clear"
+            font: Theme.body
             // Hidden without leaving the layout, so the footer keeps its height.
             opacity: Notifs.entries.length > 0 ? 1 : 0
             enabled: opacity === 1

@@ -13,7 +13,6 @@ Scope {
   property var rows: []
   property bool removable: false
   property bool wide: false
-  // The list's share of a card with a preview.
   property real split: 0.6
   property var fields: row => [[1.0, row.title, true], [0.8, row.subtitle]]
   property Component preview: null
@@ -32,8 +31,9 @@ Scope {
 
   // A row's boost only reorders matches, so it is added after the filter.
   function search(query: string): var {
+    const typed = Search.words(query);
     return root.rows
-      .map((row, index) => ({ row, index, score: Search.scoreFields(query, root.fields(row)) }))
+      .map((row, index) => ({ row, index, score: Search.scoreFields(typed, root.fields(row)) }))
       .filter(match => match.score >= 0)
       .sort((a, b) => b.score + (b.row.boost ?? 0) - a.score - (a.row.boost ?? 0) || a.index - b.index)
       .map(match => match.row);

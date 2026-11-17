@@ -5,7 +5,6 @@ import QtQuick.Layouts
 import qs.common
 import qs.notifications
 
-// A group's only notification has its summary in the group's header and goes without a card.
 Item {
   id: root
 
@@ -20,32 +19,18 @@ Item {
 
   implicitHeight: box.height
 
-  function slideAway(left) {
-    box.x = box.x;
-    away.to = (left ? -1 : 1) * (width + 20);
-    away.start();
-  }
-
-  NumberAnimation {
-    id: away
-
-    target: box
-    property: "x"
-    duration: 200
-    easing.type: Easing.InCubic
-    onFinished: root.entry.notification.dismiss()
-  }
-
   SwipeArea {
     id: swipe
 
     anchors.fill: parent
+    target: box
     // Collapsed, the group takes every click.
     enabled: root.expanded
-    onSwiped: left => root.slideAway(left)
+    onSwiped: left => swipe.slideAway(left)
+    onGone: root.entry.notification.dismiss()
     onTapped: button => {
       if (button !== Qt.LeftButton || root.entry.clickDismisses) {
-        root.slideAway(false);
+        swipe.slideAway(false);
       } else if (root.entry.defaultAction) {
         root.entry.defaultAction.invoke();
         Panels.close();

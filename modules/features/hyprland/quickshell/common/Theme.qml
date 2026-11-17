@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell
 import qs.nix
 
-// libadwaita's dark style, 1:1.
 Singleton {
   id: root
 
@@ -32,6 +31,7 @@ Singleton {
   readonly property color selectedHover: overlay(0.13)
   readonly property color button: overlay(0.10)
   readonly property color buttonHover: overlay(0.15)
+  readonly property color buttonChecked: overlay(0.25)
   readonly property color trough: overlay(0.15)
   readonly property color slider: Qt.tint(Colors.view_bg_color, overlay(0.8))
 
@@ -42,6 +42,7 @@ Singleton {
   readonly property font title4: Qt.font({ family: "Adwaita Sans", pointSize: 13, weight: Font.Bold })
   readonly property font title2: Qt.font({ family: "Adwaita Sans", pointSize: 15, weight: Font.ExtraBold })
 
+  readonly property int smallRadius: 6
   readonly property int buttonRadius: 9
   readonly property int cardRadius: 12
   readonly property int windowRadius: 15

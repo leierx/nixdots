@@ -7,7 +7,6 @@ Scope {
   IpcHandler {
     target: "bar"
 
-    // `fakeBattery 15 false`: 15 % on battery, to see the indicator on a machine without one.
     function fakeBattery(percent: int, plugged: bool): void {
       Power.fake = { percent, plugged };
     }

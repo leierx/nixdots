@@ -4,11 +4,8 @@ function words(query) {
   return query.toLowerCase().split(/\s+/).filter(word => word !== "");
 }
 
-// Like rofi: every word typed appears somewhere, in any order, or in a loose
-// field as its letters in order ("ffx" in Firefox), scored below any whole word.
-// -1 is no match; an empty query matches everything with 0, keeping the picker's order.
-function score(query, text, loose) {
-  const typed = words(query);
+// -1 is no match; no words match everything with 0, keeping the picker's order.
+function score(typed, text, loose) {
   if (typed.length === 0) {
     return 0;
   }
@@ -41,7 +38,6 @@ function score(query, text, loose) {
   return total - haystack.length / 20;
 }
 
-// Where the word's letters fall, in order, over the fewest characters of the text, or null.
 function spread(haystack, word) {
   let best = null;
   for (let start = haystack.indexOf(word[0]); start >= 0; start = haystack.indexOf(word[0], start + 1)) {
@@ -61,11 +57,11 @@ function spread(haystack, word) {
 }
 
 // `fields` are [weight, text, loose?], so a hit in the name beats the same hit in a keyword.
-function scoreFields(query, fields) {
+function scoreFields(typed, fields) {
   let best = -1;
   for (const [weight, text, loose] of fields) {
     // -1 stays negative whatever the weight.
-    best = Math.max(best, score(query, text, loose) * weight);
+    best = Math.max(best, score(typed, text, loose) * weight);
   }
   return best;
 }
@@ -74,7 +70,6 @@ function escape(text) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/ /g, "&nbsp;");
 }
 
-// The text as StyledText with what score() matched in bold.
 function mark(query, text, loose) {
   if (!text) {
     return "";
