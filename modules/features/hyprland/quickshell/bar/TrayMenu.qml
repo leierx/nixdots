@@ -16,21 +16,31 @@ PanelWindow {
   required property string name
   // While the pointer rests on the menu's icon: Hyprland reports none on the menu until the pointer moves.
   property bool held: false
-  property list<QsMenuEntry> path: []
-  // An entry the app has since dropped turns null, and takes the submenus from it on.
-  readonly property var levels: {
-    const dropped = root.path.indexOf(null);
-    return [root.menu, ...(dropped < 0 ? root.path : root.path.slice(0, dropped))];
-  }
+  // The labels of the open submenus rather than their entries: nm-applet rebuilds its whole menu, every entry new, as networks come and go.
+  property var path: []
   // Cards register here, as the window's input region is theirs alone.
   property list<Item> cards: []
   // A moment's delay, so passing over rows opens nothing.
   property var pending: null
   readonly property int padding: 6
 
-  function apply(level: int, entry: var): void {
+  function apply(level: int, label: string): void {
     root.pending = null;
-    root.path = [...root.path.slice(0, level), ...(entry?.hasChildren ? [entry] : [])];
+    root.path = [...root.path.slice(0, level), ...(label ? [label] : [])];
+  }
+
+  // A card by depth, as var: Repeater.itemAt() says Item, which has none of a card's properties.
+  function level(depth: int): var {
+    return levels.itemAt(depth);
+  }
+
+  // Closes the submenus from the first whose label its parent no longer has.
+  function prune(): void {
+    for (let depth = 1; depth <= root.path.length; depth++) {
+      if (root.level(depth)?.handle) continue;
+      root.path = root.path.slice(0, depth - 1);
+      return;
+    }
   }
 
   color: "transparent"
@@ -62,7 +72,7 @@ PanelWindow {
     id: hoverDelay
 
     interval: 150
-    onTriggered: if (root.pending) root.apply(root.pending.level, root.pending.entry)
+    onTriggered: if (root.pending) root.apply(root.pending.level, root.pending.label)
   }
 
   Timer {
@@ -82,20 +92,23 @@ PanelWindow {
     Repeater {
       id: levels
 
+      // Levels by depth, so a card outlives a rebuild of the menu it shows.
       model: ScriptModel {
-        values: root.levels
+        values: Array.from({ length: root.path.length + 1 }, (_, depth) => depth)
       }
 
       Card {
         id: card
 
-        required property QsMenuHandle modelData
         required property int index
+        readonly property QsMenuHandle handle: index === 0 ? root.menu : parentCard?.entries.find(entry => entry.hasChildren && entry.text === root.path[index - 1]) ?? null
+        // Bumped as rows are made, which itemAt() does not report.
+        property int built: 0
 
         readonly property Region region: Region {
           item: card
         }
-        readonly property var parentCard: index > 0 ? levels.itemAt(index - 1) : null
+        readonly property var parentCard: index > 0 ? root.level(index - 1) : null
         readonly property int direction: {
           const way = parentCard?.direction ?? (root.anchor.x + width + Theme.gap <= root.width ? 1 : -1);
           const fits = way > 0 ? x + 2 * width + Theme.gap <= root.width : x - width - Theme.gap >= 0;
@@ -111,11 +124,11 @@ PanelWindow {
           if (entries.length > 0 && entries[entries.length - 1].isSeparator) entries.pop();
           return entries;
         }
-        readonly property real openerY: parentCard?.rowY(modelData) ?? 0
+        readonly property real openerY: parentCard?.rowY(handle) ?? 0
 
         function rowY(entry: var): real {
-          const row = rowsRepeater.itemAt(entries.indexOf(entry));
-          return row ? row.mapToItem(card, 0, 0).y : root.padding;
+          const row = card.built > 0 ? rowsRepeater.itemAt(entries.indexOf(entry)) : null;
+          return rows.y + (row?.y ?? 0);
         }
 
         x: {
@@ -128,15 +141,18 @@ PanelWindow {
         height: rows.implicitHeight + root.padding * 2
         radius: Theme.cardRadius
 
-        Component.onCompleted: root.cards = [...root.cards, card]
+        Component.onCompleted: {
+          root.cards = [...root.cards, card];
+          if (index > 0 && !handle) Qt.callLater(root.prune);
+        }
         Component.onDestruction: root.cards = root.cards.filter(other => other !== card)
-        // A list does not notice its entry dropped, so the submenu says so itself.
-        onModelDataChanged: if (modelData === null && index > 0) root.apply(index - 1, null)
+        // Later, as changing the levels from a binding they feed loops.
+        onHandleChanged: if (handle === null && index > 0) Qt.callLater(root.prune)
 
         QsMenuOpener {
           id: opener
 
-          menu: card.modelData
+          menu: card.handle
         }
 
         ColumnLayout {
@@ -151,6 +167,7 @@ PanelWindow {
           Repeater {
             id: rowsRepeater
 
+            onItemAdded: card.built++
             model: ScriptModel {
               values: card.entries
             }
@@ -159,7 +176,7 @@ PanelWindow {
               id: entry
 
               required property QsMenuEntry modelData
-              readonly property bool opened: root.path[card.index] === modelData
+              readonly property bool opened: (modelData?.hasChildren ?? false) && root.path[card.index] === modelData.text
               // Room for the arrows, which point right whichever side the submenu opens, as GTK's do.
               readonly property int arrowSpace: card.cascades ? 24 : 0
 
@@ -251,10 +268,10 @@ PanelWindow {
                   onHoveredChanged: {
                     if (!hovered || !entry.modelData || entry.modelData.isSeparator) return;
                     if (!entry.modelData.enabled || !entry.modelData.hasChildren) {
-                      root.apply(card.index, null);
+                      root.apply(card.index, "");
                       return;
                     }
-                    root.pending = { level: card.index, entry: entry.modelData };
+                    root.pending = { level: card.index, label: entry.modelData.text };
                     hoverDelay.restart();
                   }
                 }
@@ -265,7 +282,7 @@ PanelWindow {
                   onClicked: {
                     if (!entry.modelData) return;
                     if (entry.modelData.hasChildren) {
-                      root.apply(card.index, entry.opened ? null : entry.modelData);
+                      root.apply(card.index, entry.opened ? "" : entry.modelData.text);
                     } else {
                       entry.modelData.triggered();
                       Panels.close();

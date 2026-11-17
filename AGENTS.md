@@ -501,7 +501,9 @@ Notes on specific features:
         passing over rows opens nothing, and closed as soon as the pointer is on
         another row of its parent; each goes the way the last
         one went until another its width would not fit. Arrows point right on
-        the right whichever way it opens, as GTK's do. Like a GTK menu it takes no keyboard and no grab,
+        the right whichever way it opens, as GTK's do. Open submenus are kept by
+        label, so one stays open when its app rebuilds the menu with every entry
+        new, as nm-applet does whenever the networks change. Like a GTK menu it takes no keyboard and no grab,
         so the app in front keeps both and a click elsewhere goes through; it
         closes 100 ms after the pointer is on neither it nor its icon (Hyprland
         reports no hover on a new menu until the pointer moves).
