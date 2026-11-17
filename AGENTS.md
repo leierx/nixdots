@@ -252,7 +252,9 @@ Notes on specific features:
     shortcuts, the notification
     center from the bar's clock) are a [Quickshell](https://quickshell.org)
     shell in `quickshell/`, wired by `quickshell.nix`: one `quickshell.service`
-    session daemon (restarted when the shell changes, via `X-Restart-Triggers`).
+    session daemon (restarted when the shell changes, via `X-Restart-Triggers`,
+    and a second after a crash, with no start limit, so a crash loop through a
+    burst of hotplugs never leaves the session without one).
     Quickshell comes from `pkgs.unstable` (0.3.2), since 0.3.1 fixed crashes on
     freed objects in a `ScriptModel`, which the notification lists hold. Each
     component is its own directory owning its windows, widgets and sizes, and
@@ -261,10 +263,12 @@ Notes on specific features:
     `Shadow`, `ExpanderArrow`, `Time` (one minute clock for the bar, the
     calendar and notification ages), `WorkspaceOwners` (hyprsplit's numbering,
     for the bar and the window switcher), `Command` (a process whose output
-    arrives as `done`, and whose failure becomes a notification that closes
-    the open panel, or only a log line while `quiet`, a load nobody waits
+    arrives as `done`, and whose failure, a program that cannot start or
+    crashes included, becomes a notification that closes
+    the panel open as it started, or only a log line while `quiet`, a load nobody waits
     on), `Overlay` (the full-screen layer a panel lives in, closing it on a
-    click anywhere but its `card`), `Card` (the surface of panels and
+    click anywhere but its `card`, and leaving `Panels` when Hyprland closes
+    it with its monitor), `Card` (the surface of panels and
     popups: libadwaita's window background, outline and shadow; Escape
     closes the panel it is in), `Button` (libadwaita's button, `flat` or
     not, with an optional expander arrow; `ExpandButton` and `CloseButton` are
@@ -386,7 +390,8 @@ Notes on specific features:
       - `monitors`, split half and half: `hyprmoncfg status --json`'s
         profiles, the recommended one first, loaded at the shell's start and again on
         every open, and replaced only when the output differs, so it opens
-        whole and a refresh changes nothing that is the same.
+        whole and a refresh changes nothing that is the same; one that fails,
+        mid-hotplug say, only logs while there is a status to show.
         Each is drawn by `LayoutDiagram` from its file in
         `~/.config/hyprmoncfg/profiles`, so any machine's layouts draw
         themselves: outputs at their logical size (scale and rotation
@@ -409,7 +414,8 @@ Notes on specific features:
         `Content-Encoding: br`) and has jq cut it down, a few seconds and
         about 3 GB at idle priority. It runs at the shell's start and on
         every open, and a list it brings while open is read on the close,
-        so each open searches the list it opened with. The mode keeps
+        so each open searches the list it opened with; a failed fetch only
+        notifies on an open with no list. The mode keeps
         columns rather than an object per package, searches the matches of
         the last query when the new one extends it, keeps only the best 50,
         and before anything is typed lists only what was run before
@@ -457,7 +463,9 @@ Notes on specific features:
       clock (a flat round button with a pointing hand, as GNOME's panel draws its date: shaded on
       hover and while the center it opens is open), the battery and the tray. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
-      renames, so `Bar.qml` refreshes monitors and workspaces on those.
+      renames, so `Bar.qml` refreshes monitors and workspaces on those, and
+      once more 300 ms after the last, since Quickshell drops a refresh while
+      one is under way and a hotplug comes as a burst.
       - Workspaces: each bar shows its monitor's own `1 … n` (monitor id × n
         + 1 onwards, as hyprsplit numbers them), then any other workspace on
         it, named after the monitor that owns it (`DP2-1`), and named ones by
@@ -482,7 +490,7 @@ Notes on specific features:
         so the app in front keeps both and a click elsewhere goes through; it
         closes 100 ms after the pointer is on neither it nor its icon (Hyprland
         reports no hover on a new menu until the pointer moves).
-        Another icon switches menus, the same icon closes it,
+        Another icon switches menus, the same icon closes it, its monitor going closes it too,
         and a click on the bar besides its buttons closes any open panel.
       - The battery (`Power`) is UPower's display device, shown only when
         UPower is running and it is a laptop battery, so only thonkpad
@@ -492,9 +500,12 @@ Notes on specific features:
       the center's calendar: MET Norway's forecast (yr.no's) for the
       timezone's city (`/etc/localtime`'s zone, placed by the `zone.tab`
       beside it, so Europe/Oslo is Oslo, and no lookup of the public address),
-      fetched with `curl` from the shell's start and every half hour after,
+      fetched with `curl` from the shell's start and every half hour after
+      (five minutes after a failure, and at once when the clock shows a
+      suspend skipped one),
       coordinates at two decimals for
-      MET's cache. `hours` runs hourly from the hour under way (`now`): its
+      MET's cache. `hours` runs hourly from the hour under way (`now`) by the
+      clock, so an old forecast runs out rather than going stale: its
       temperature, MET's symbol code and icon. The card, laid out like
       Windows' weather widget, has the icon, the place over the temperature
       in °C, the condition and the next 24 hours' high / low on the right

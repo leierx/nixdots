@@ -128,7 +128,8 @@ LauncherMode {
 
     name: "nixpkgs-index"
     command: ["nixpkgs-index", list.path]
-    quiet: root.index.lines.length > 0
+    // Only an open with no list waits on it; at login the network may not be up yet.
+    quiet: !root.open || root.index.lines.length > 0
     onDone: output => {
       if (output.trim() !== "updated") return;
       if (root.open && root.index.lines.length > 0) root.stale = true;

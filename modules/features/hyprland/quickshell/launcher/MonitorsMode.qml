@@ -23,9 +23,9 @@ LauncherMode {
   // Only for the pictures; a profile that fails to parse goes without one.
   readonly property var profiles: {
     const profiles = {};
-    for (const line of root.profilesText.split("\n").filter(line => line !== "")) {
+    for (const text of root.profilesText.split("\x1e").filter(text => text.trim() !== "")) {
       try {
-        const profile = JSON.parse(line);
+        const profile = JSON.parse(text);
         profiles[profile.name] = profile.outputs ?? [];
       } catch (error) {
         console.warn(`hyprmoncfg profile: ${error}`);
@@ -255,7 +255,8 @@ LauncherMode {
     id: statusCommand
 
     command: ["hyprmoncfg", "status", "--json"]
-    quiet: !root.open
+    // A refresh that fails, mid-hotplug say, leaves the last status up rather than closing the menu.
+    quiet: !root.open || root.status !== null
     onDone: output => root.statusText = output
   }
 
@@ -263,8 +264,9 @@ LauncherMode {
     id: profilesCommand
 
     name: "hyprmoncfg profiles"
-    quiet: !root.open
-    command: ["sh", "-c", 'for file in "${XDG_CONFIG_HOME:-$HOME/.config}"/hyprmoncfg/profiles/*.json; do cat "$file"; echo; done']
+    quiet: !root.open || root.profilesText !== ""
+    // Parted by a record separator, which JSON never holds, so a file written over several lines still reads as one.
+    command: ["sh", "-c", 'for file in "${XDG_CONFIG_HOME:-$HOME/.config}"/hyprmoncfg/profiles/*.json; do cat "$file"; printf "\\036"; done']
     onDone: output => root.profilesText = output
   }
 }

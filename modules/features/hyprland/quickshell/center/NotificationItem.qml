@@ -189,6 +189,7 @@ Item {
         Layout.fillWidth: true
         visible: root.expanded && actions.length > 0
         actions: root.entry.buttons
+        onInvoked: action => root.entry.invoke(action)
       }
     }
   }

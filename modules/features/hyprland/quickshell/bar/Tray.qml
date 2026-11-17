@@ -16,11 +16,15 @@ Row {
   // Its icon, which keeps the menu open while the pointer rests on it.
   property Item menuButton: null
   property point menuAnchor
-  // A name per screen, so a menu on one monitor closes one open on another.
-  readonly property string panel: `tray:${screen?.name}`
+  // A name per screen, so a menu on one monitor closes one open on another; set once, so it outlives the screen.
+  property string panel: ""
 
   leftPadding: 7
   rightPadding: 7
+
+  Component.onCompleted: panel = `tray:${screen.name}`
+  // Gone with its monitor, the menu would otherwise stay open in Panels.
+  Component.onDestruction: if (Panels.active === panel) Panels.close()
 
   onMenuItemChanged: {
     if (menuItem === null && Panels.active === panel) Panels.close();
@@ -75,6 +79,7 @@ Row {
       required property SystemTrayItem modelData
 
       screen: root.screen
+      name: root.panel
       menu: modelData.menu
       anchor: root.menuAnchor
       held: root.menuButton?.containsMouse ?? false

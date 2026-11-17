@@ -11,7 +11,7 @@ import qs.weather
 Overlay {
   id: root
 
-  readonly property bool open: Panels.active === "center"
+  readonly property bool open: Panels.active === name
   readonly property var apps: [...new Set(Notifs.entries.map(entry => Notifs.appKey(entry)))]
   readonly property int padding: Theme.padding
 
@@ -21,12 +21,15 @@ Overlay {
 
   onOpenChanged: if (open) Notifs.hidePopups()
   onShownChanged: if (shown === 0 && !open) hidden()
+  // A window Hyprland has closed stays closed, so the next open needs a new one.
+  onClosed: hidden()
   // Bound only now, so the first open eases in too.
   Component.onCompleted: {
     Notifs.hidePopups();
     shown = Qt.binding(() => root.open ? 1 : 0);
   }
 
+  name: "center"
   card: panel
   // Below the bar rather than over it.
   exclusionMode: ExclusionMode.Normal

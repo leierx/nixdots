@@ -5,6 +5,7 @@ import Quickshell.Wayland
 PanelWindow {
   id: root
 
+  required property string name
   // A click anywhere but on it closes the panel.
   property Item card: null
 
@@ -21,6 +22,9 @@ PanelWindow {
 
   WlrLayershell.layer: WlrLayer.Overlay
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+
+  // Hyprland closes it with its monitor; still open in Panels, the next toggle would only close it.
+  onClosed: if (Panels.active === root.name) Panels.close()
 
   MouseArea {
     anchors.fill: parent

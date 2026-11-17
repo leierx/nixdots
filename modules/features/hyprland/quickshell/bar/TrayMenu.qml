@@ -13,11 +13,15 @@ PanelWindow {
 
   required property QsMenuHandle menu
   required property point anchor
+  required property string name
   // While the pointer rests on the menu's icon: Hyprland reports none on the menu until the pointer moves.
   property bool held: false
-  // An entry the app has since dropped turns null.
   property list<QsMenuEntry> path: []
-  readonly property var levels: [root.menu, ...root.path.filter(entry => entry !== null)]
+  // An entry the app has since dropped turns null, and takes the submenus from it on.
+  readonly property var levels: {
+    const dropped = root.path.indexOf(null);
+    return [root.menu, ...(dropped < 0 ? root.path : root.path.slice(0, dropped))];
+  }
   // Cards register here, as the window's input region is theirs alone.
   property list<Item> cards: []
   // A moment's delay, so passing over rows opens nothing.
@@ -45,6 +49,14 @@ PanelWindow {
   WlrLayershell.namespace: "quickshell:menu"
   // Like a GTK menu: the app keeps the keyboard, and the menu goes once the pointer leaves it.
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+  // Hyprland closes it with its monitor.
+  onClosed: if (Panels.active === root.name) Panels.close()
+  // A new menu from the app shares no entries with the old one.
+  onMenuChanged: {
+    root.path = [];
+    if (root.menu === null && Panels.active === root.name) Panels.close();
+  }
 
   Timer {
     id: hoverDelay
@@ -118,6 +130,8 @@ PanelWindow {
 
         Component.onCompleted: root.cards = [...root.cards, card]
         Component.onDestruction: root.cards = root.cards.filter(other => other !== card)
+        // A list does not notice its entry dropped, so the submenu says so itself.
+        onModelDataChanged: if (modelData === null && index > 0) root.apply(index - 1, null)
 
         QsMenuOpener {
           id: opener
@@ -150,22 +164,22 @@ PanelWindow {
               readonly property int arrowSpace: card.cascades ? 24 : 0
 
               Layout.fillWidth: true
-              implicitWidth: modelData.isSeparator ? 0 : content.implicitWidth + 24 + arrowSpace
-              implicitHeight: modelData.isSeparator ? 13 : 32
+              implicitWidth: modelData?.isSeparator ? 0 : content.implicitWidth + 24 + arrowSpace
+              implicitHeight: modelData?.isSeparator ? 13 : 32
 
               Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width
                 height: 1
-                visible: entry.modelData.isSeparator
+                visible: entry.modelData?.isSeparator ?? false
                 color: Theme.border
               }
 
               Rectangle {
                 anchors.fill: parent
-                visible: !entry.modelData.isSeparator
+                visible: !entry.modelData?.isSeparator
                 radius: Theme.smallRadius
-                color: (entryHover.hovered || entry.opened) && entry.modelData.enabled ? Theme.hover : "transparent"
+                color: (entryHover.hovered || entry.opened) && entry.modelData?.enabled ? Theme.hover : "transparent"
 
                 Row {
                   id: content
@@ -173,17 +187,17 @@ PanelWindow {
                   x: 12
                   anchors.verticalCenter: parent.verticalCenter
                   spacing: 8
-                  opacity: entry.modelData.enabled ? 1 : 0.5
+                  opacity: entry.modelData?.enabled ? 1 : 0.5
 
                   Item {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 16
                     height: 16
-                    visible: entry.modelData.buttonType !== QsMenuButtonType.None
+                    visible: entry.modelData?.buttonType !== QsMenuButtonType.None
 
                     Shape {
                       anchors.fill: parent
-                      visible: entry.modelData.buttonType === QsMenuButtonType.CheckBox && entry.modelData.checkState === Qt.Checked
+                      visible: entry.modelData?.buttonType === QsMenuButtonType.CheckBox && entry.modelData?.checkState === Qt.Checked
                       preferredRendererType: Shape.CurveRenderer
 
                       ShapePath {
@@ -204,7 +218,7 @@ PanelWindow {
                       width: 6
                       height: 6
                       radius: 3
-                      visible: entry.modelData.buttonType === QsMenuButtonType.RadioButton && entry.modelData.checkState === Qt.Checked
+                      visible: entry.modelData?.buttonType === QsMenuButtonType.RadioButton && entry.modelData?.checkState === Qt.Checked
                       color: Theme.fg
                     }
                   }
@@ -212,13 +226,13 @@ PanelWindow {
                   IconImage {
                     anchors.verticalCenter: parent.verticalCenter
                     implicitSize: 16
-                    visible: entry.modelData.icon !== ""
-                    source: entry.modelData.icon
+                    visible: !!entry.modelData?.icon
+                    source: entry.modelData?.icon ?? ""
                   }
 
                   Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: entry.modelData.text
+                    text: entry.modelData?.text ?? ""
                     color: Theme.fg
                     font: Theme.body
                   }
@@ -227,7 +241,7 @@ PanelWindow {
                 ExpanderArrow {
                   x: parent.width - width - 8
                   anchors.verticalCenter: parent.verticalCenter
-                  visible: entry.modelData.hasChildren
+                  visible: entry.modelData?.hasChildren ?? false
                   rotation: -90
                 }
 
@@ -235,7 +249,7 @@ PanelWindow {
                   id: entryHover
 
                   onHoveredChanged: {
-                    if (!hovered || entry.modelData.isSeparator) return;
+                    if (!hovered || !entry.modelData || entry.modelData.isSeparator) return;
                     if (!entry.modelData.enabled || !entry.modelData.hasChildren) {
                       root.apply(card.index, null);
                       return;
@@ -247,8 +261,9 @@ PanelWindow {
 
                 MouseArea {
                   anchors.fill: parent
-                  enabled: entry.modelData.enabled
+                  enabled: entry.modelData?.enabled ?? false
                   onClicked: {
+                    if (!entry.modelData) return;
                     if (entry.modelData.hasChildren) {
                       root.apply(card.index, entry.opened ? null : entry.modelData);
                     } else {

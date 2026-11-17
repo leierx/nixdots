@@ -29,6 +29,15 @@ MouseArea {
     away.start();
   }
 
+  function finish(): void {
+    const done = root.finished;
+    root.finished = null;
+    done?.();
+  }
+
+  // Gone mid-slide, its panel closed or its monitor unplugged, it still dismisses what it was sliding away.
+  Component.onDestruction: finish()
+
   acceptedButtons: Qt.LeftButton | Qt.RightButton
   preventStealing: dragging
 
@@ -84,11 +93,7 @@ MouseArea {
     property: "x"
     duration: 220
     easing.type: Easing.OutCubic
-    onFinished: {
-      const done = root.finished;
-      root.finished = null;
-      done?.();
-    }
+    onFinished: root.finish()
   }
 
   NumberAnimation {

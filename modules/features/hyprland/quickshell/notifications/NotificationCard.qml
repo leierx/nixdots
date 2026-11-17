@@ -36,6 +36,9 @@ Item {
     onHoveredChanged: root.entry.hovered = hovered
   }
 
+  // A card gone under the pointer, its monitor unplugged say, never reports the pointer leaving.
+  Component.onDestruction: if (root.entry) root.entry.hovered = false
+
   Card {
     id: card
 

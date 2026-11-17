@@ -118,9 +118,14 @@ root: {
         activeConfig = "shell";
         systemd.enable = true;
       };
-      systemd.user.services.quickshell.Unit = {
-        PartOf = [ config.wayland.systemd.target ];
-        X-Restart-Triggers = [ "${shell}" ];
+      systemd.user.services.quickshell = {
+        Unit = {
+          PartOf = [ config.wayland.systemd.target ];
+          X-Restart-Triggers = [ "${shell}" ];
+          # a crash loop through a burst of hotplugs must not leave the session without a shell
+          StartLimitIntervalSec = 0;
+        };
+        Service.RestartSec = 1;
       };
 
       wayland.windowManager.hyprland.settings.bind = [

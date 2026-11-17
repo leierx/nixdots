@@ -10,9 +10,12 @@ Singleton {
   id: root
 
   property string place: ""
-  // From the hour under way: { time, temperature in °C, symbol: MET's symbol code, icon }.
-  property var hours: []
+  // Each hour fetched: { time, temperature in °C, symbol: MET's symbol code, icon }.
+  property var series: []
+  // From the hour under way by the clock, so a forecast that could not be fetched again ages out rather than going stale.
+  readonly property var hours: series.filter(hour => hour.time.getTime() > Time.now.getTime() - 60 * 60 * 1000)
   readonly property var now: hours[0] ?? null
+  property real attempted: 0
 
   // MET's terms ask for a User-Agent naming the app.
   readonly property string userAgent: "nixdots-quickshell github.com/leierx/nixdots"
@@ -32,10 +35,19 @@ Singleton {
     return `${Math.round(celsius)}°`;
   }
 
+  function update(): void {
+    root.attempted = Date.now();
+    refresh.interval = 30 * 60 * 1000;
+    refresh.restart();
+    locate.running = true;
+  }
+
   function retrySoon(): void {
     refresh.interval = 5 * 60 * 1000;
     refresh.restart();
   }
+
+  Component.onCompleted: update()
 
   FileView {
     path: Quickshell.shellPath("weather/icons/legend.csv")
@@ -52,12 +64,16 @@ Singleton {
   Timer {
     id: refresh
 
-    running: true
     repeat: true
-    triggeredOnStart: true
-    onTriggered: {
-      interval = 30 * 60 * 1000;
-      locate.running = true;
+    onTriggered: root.update()
+  }
+
+  // Qt's timers stand still through a suspend; the clock does not.
+  Connections {
+    target: Time
+
+    function onNowChanged(): void {
+      if (Date.now() - root.attempted > refresh.interval + 60 * 1000) root.update();
     }
   }
 
@@ -94,9 +110,8 @@ Singleton {
     onFailed: root.retrySoon()
     onDone: output => {
       try {
-        const hourAgo = Date.now() - 60 * 60 * 1000;
-        root.hours = JSON.parse(output).properties.timeseries
-          .filter(entry => Date.parse(entry.time) > hourAgo && entry.data.next_1_hours)
+        root.series = JSON.parse(output).properties.timeseries
+          .filter(entry => entry.data.next_1_hours)
           .map(entry => {
             const symbol = entry.data.next_1_hours.summary.symbol_code;
             return {

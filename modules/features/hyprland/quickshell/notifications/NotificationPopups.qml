@@ -48,7 +48,7 @@ Variants {
       spacing: Theme.gap
       interactive: false
       model: ScriptModel {
-        values: Notifs.popups.filter(e => e.screen === window.modelData.name || (window.fallback && !Quickshell.screens.some(s => s.name === e.screen)))
+        values: Notifs.popups.filter(e => e.screen === window.modelData?.name || (window.fallback && !Quickshell.screens.some(s => s.name === e.screen)))
       }
 
       delegate: NotificationCard {

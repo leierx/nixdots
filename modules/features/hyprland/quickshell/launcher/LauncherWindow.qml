@@ -22,6 +22,7 @@ Overlay {
   readonly property int rows: Math.max(1, Math.min(8, Math.floor((height - 2 * margin - fieldHeight - 17) / (matches.rowHeight + matches.spacing))))
   readonly property int resultsHeight: rows * matches.rowHeight + (rows - 1) * matches.spacing + (previewing ? 16 : 8)
 
+  name: mode.name
   card: box
 
   WlrLayershell.namespace: "quickshell:launcher"

@@ -24,8 +24,8 @@ ColumnLayout {
     Layout.fillWidth: true
     // Equal shares, whatever their labels.
     Layout.preferredWidth: 1
-    text: modelData.text
-    onClicked: root.invoked(modelData)
+    text: modelData?.text ?? ""
+    onClicked: if (modelData) root.invoked(modelData)
   }
 
   RowLayout {

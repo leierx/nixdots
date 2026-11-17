@@ -24,6 +24,7 @@ Overlay {
     return columns.filter(column => column.groups.length > 0);
   }
 
+  name: "shortcuts"
   card: box
 
   WlrLayershell.namespace: "quickshell:shortcuts"
