@@ -387,7 +387,9 @@ Notes on specific features:
         one past 64 MiB or 50 megapixels gets none. One script fills the
         cache after the rows show, prunes it and reports every thumbnail
         and count, with a fork per new clip and a few in all; both are kept
-        between opens, so only a new clip's arrive late.
+        between opens, so only a new clip's arrive late. It also runs at the
+        shell's start, ordered after cliphist's wipe, so pictures of a past
+        session's clips leave the disk with them.
       - `monitors`, split half and half: `hyprmoncfg status --json`'s
         profiles, the recommended one first, loaded at the shell's start and again on
         every open, and replaced only when the output differs, so it opens

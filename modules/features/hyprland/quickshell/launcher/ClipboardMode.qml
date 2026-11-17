@@ -43,6 +43,8 @@ LauncherMode {
   })
   fields: row => [[1.0, row.title], [1.0, row.subtitle]]
 
+  // At the start too, so pictures from a history wiped at login leave the cache.
+  Component.onCompleted: cacheCommand.running = true
   onOpened: listCommand.running = true
   onOpenChanged: if (!open) entries = []
   onActivated: row => {
@@ -86,7 +88,7 @@ LauncherMode {
             width=\${7%x*} height=\${7#*x}
             case $width$height in "" | *[!0-9]*) continue ;; esac
             [ $((width * height)) -le 50000000 ] || continue
-            [ -s "$id" ] || cliphist decode "$id" > "$id"
+            [ -s "$id" ] || { cliphist decode "$id" > "$id.part" && mv "$id.part" "$id"; }
             ;;
           *)
             [ -s "$id.stats" ] || cliphist decode "$id" | awk '{ count += length($0) + 1 } END { print NR, count - (NR > 0) }' > "$id.stats"

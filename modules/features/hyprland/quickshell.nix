@@ -141,6 +141,8 @@ root: {
       systemd.user.services.quickshell = {
         Unit = {
           PartOf = [ config.wayland.systemd.target ];
+          # cliphist wipes its history as it starts; the shell then prunes the pictures it decoded from it
+          After = [ "cliphist.service" ];
           X-Restart-Triggers = [ "${shell}" ];
           # a crash loop through a burst of hotplugs must not leave the session without a shell
           StartLimitIntervalSec = 0;
