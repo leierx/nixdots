@@ -474,15 +474,15 @@ Notes on specific features:
       the clock and date, five solid tiles (Lock, Suspend, Log Out, Restart,
       Power Off) with their letters as keycaps, then smaller Reload Hyprland
       and, on UEFI machines (`/sys/firmware/efi`), Restart to Firmware above
-      the host and uptime. A letter or Enter picks; Log Out, Restart, Power
-      Off and Firmware take a second press within 5 s, turning red and saying
-      so under the tiles, and moving the selection drops it. Arrows move
-      within a row and Up/Down between them, Tab goes through all, Escape or
+      the host and uptime, which only a click reaches. A tile's letter or
+      Enter picks it; Log Out, Restart, Power Off and Firmware take a second
+      press within 5 s, turning red and saying so under the tiles, and moving
+      the selection drops it. Arrows and Tab move along the tiles, Escape or
       a click off the buttons closes. Every action is a command
       (`loginctl lock-session`, `systemctl suspend|reboot|poweroff|reboot
       --firmware-setup`, `hyprctl dispatch 'hl.dsp.exit()'`, `hyprctl reload
       full-reset`), so `qst actions` shows what it would have done. Delegates
-      get copies of the action objects, so actions are told apart by letter.
+      get copies of the action objects, so actions are told apart by title.
     - `bar/` is the bar along the top of every monitor (`Bar.qml`, one
       `BarWindow` per screen), sized and lettered like the waybar it replaced
       (Adwaita Sans at 16 px, on GNOME Shell's panel black): the NixOS logo

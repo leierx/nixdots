@@ -23,14 +23,13 @@ Overlay {
   ]
   // Material Symbols' refresh and developer_board
   readonly property var extras: [
-    { title: "Reload Hyprland", letter: "H", command: ["hyprctl", "reload", "full-reset"], glyph: "M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-70q0-17 11.5-28.5T760-800q17 0 28.5 11.5T800-760v200q0 17-11.5 28.5T760-520H560q-17 0-28.5-11.5T520-560q0-17 11.5-28.5T560-600h128q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q68 0 124.5-34.5T692-367q8-14 22.5-19.5t29.5-.5q16 5 23 21t-1 30q-41 80-117 128t-169 48Z" },
-    ...(root.firmware ? [{ title: "Restart to Firmware", letter: "F", command: ["systemctl", "reboot", "--firmware-setup"], glyph: "M160-120q-33 0-56.5-23.5T80-200v-560q0-33 23.5-56.5T160-840h560q33 0 56.5 23.5T800-760v80h40q17 0 28.5 11.5T880-640q0 17-11.5 28.5T840-600h-40v80h40q17 0 28.5 11.5T880-480q0 17-11.5 28.5T840-440h-40v80h40q17 0 28.5 11.5T880-320q0 17-11.5 28.5T840-280h-40v80q0 33-23.5 56.5T720-120H160Zm0-80h560v-560H160v560Zm120-80h120q17 0 28.5-11.5T440-320v-80q0-17-11.5-28.5T400-440H280q-17 0-28.5 11.5T240-400v80q0 17 11.5 28.5T280-280Zm240-280h80q17 0 28.5-11.5T640-600v-40q0-17-11.5-28.5T600-680h-80q-17 0-28.5 11.5T480-640v40q0 17 11.5 28.5T520-560Zm-240 80h120q17 0 28.5-11.5T440-520v-120q0-17-11.5-28.5T400-680H280q-17 0-28.5 11.5T240-640v120q0 17 11.5 28.5T280-480Zm240 200h80q17 0 28.5-11.5T640-320v-160q0-17-11.5-28.5T600-520h-80q-17 0-28.5 11.5T480-480v160q0 17 11.5 28.5T520-280ZM160-760v560-560Z", confirm: true }] : []),
+    { title: "Reload Hyprland",command: ["hyprctl", "reload", "full-reset"], glyph: "M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-70q0-17 11.5-28.5T760-800q17 0 28.5 11.5T800-760v200q0 17-11.5 28.5T760-520H560q-17 0-28.5-11.5T520-560q0-17 11.5-28.5T560-600h128q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q68 0 124.5-34.5T692-367q8-14 22.5-19.5t29.5-.5q16 5 23 21t-1 30q-41 80-117 128t-169 48Z" },
+    ...(root.firmware ? [{ title: "Restart to Firmware",command: ["systemctl", "reboot", "--firmware-setup"], glyph: "M160-120q-33 0-56.5-23.5T80-200v-560q0-33 23.5-56.5T160-840h560q33 0 56.5 23.5T800-760v80h40q17 0 28.5 11.5T880-640q0 17-11.5 28.5T840-600h-40v80h40q17 0 28.5 11.5T880-480q0 17-11.5 28.5T840-440h-40v80h40q17 0 28.5 11.5T880-320q0 17-11.5 28.5T840-280h-40v80q0 33-23.5 56.5T720-120H160Zm0-80h560v-560H160v560Zm120-80h120q17 0 28.5-11.5T440-320v-80q0-17-11.5-28.5T400-440H280q-17 0-28.5 11.5T240-400v80q0 17 11.5 28.5T280-280Zm240-280h80q17 0 28.5-11.5T640-600v-40q0-17-11.5-28.5T600-680h-80q-17 0-28.5 11.5T480-640v40q0 17 11.5 28.5T520-560Zm-240 80h120q17 0 28.5-11.5T440-520v-120q0-17-11.5-28.5T400-680H280q-17 0-28.5 11.5T240-640v120q0 17 11.5 28.5T280-480Zm240 200h80q17 0 28.5-11.5T640-320v-160q0-17-11.5-28.5T600-520h-80q-17 0-28.5 11.5T480-480v160q0 17 11.5 28.5T520-280ZM160-760v560-560Z", confirm: true }] : []),
   ]
-  readonly property var actions: [...root.tiles, ...root.extras]
-  readonly property var armedAction: root.actions.find(action => action.letter === root.armed) ?? null
+  readonly property var armedAction: [...root.tiles, ...root.extras].find(action => action.title === root.armed) ?? null
 
   property int current: 0
-  // The letter of the action waiting for a second press; a delegate's modelData is a copy, so actions go by letter.
+  // The title of the action waiting for a second press; a delegate's modelData is a copy, so actions go by title.
   property string armed: ""
 
   readonly property string uptimeText: {
@@ -49,9 +48,11 @@ Overlay {
 
   // Ending the session or the machine takes a second press, so one stray key cannot.
   function trigger(action: var): void {
-    if (action.confirm && root.armed !== action.letter) {
-      root.current = root.actions.findIndex(other => other.letter === action.letter);
-      root.armed = action.letter;
+    if (action.confirm && root.armed !== action.title) {
+      const tile = root.tiles.findIndex(other => other.title === action.title);
+      if (tile !== -1)
+        root.current = tile;
+      root.armed = action.title;
       return;
     }
     Panels.close();
@@ -88,8 +89,8 @@ Overlay {
     id: surface
 
     required property var action
-    readonly property bool current: root.actions[root.current]?.letter === surface.action.letter
-    readonly property bool armed: root.armed === surface.action.letter
+    readonly property bool current: root.tiles[root.current]?.title === surface.action.title
+    readonly property bool armed: root.armed === surface.action.title
     readonly property bool hovered: area.containsMouse
 
     color: surface.armed || surface.current && surface.action.destructive ? Theme.destructiveBg : Qt.tint(Theme.bg, surface.current ? Theme.buttonChecked : surface.hovered ? Theme.buttonHover : Theme.hover)
@@ -131,17 +132,12 @@ Overlay {
 
     Keys.onPressed: event => {
       const tiles = root.tiles.length;
-      const onTiles = root.current < tiles;
       const letter = event.text.toUpperCase();
-      const action = letter === "" ? null : root.actions.find(action => action.letter === letter);
+      const action = letter === "" ? null : root.tiles.find(action => action.letter === letter);
       if (event.key === Qt.Key_Escape) Panels.close();
-      else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) root.trigger(root.actions[root.current]);
-      else if (event.key === Qt.Key_Tab) root.select((root.current + 1) % root.actions.length);
-      else if (event.key === Qt.Key_Backtab) root.select((root.current + root.actions.length - 1) % root.actions.length);
-      else if (event.key === Qt.Key_Right) root.select(onTiles ? (root.current + 1) % tiles : tiles + (root.current - tiles + 1) % root.extras.length);
-      else if (event.key === Qt.Key_Left) root.select(onTiles ? (root.current + tiles - 1) % tiles : tiles + (root.current - tiles + root.extras.length - 1) % root.extras.length);
-      else if (event.key === Qt.Key_Down && onTiles) root.select(tiles + (root.current <= 2 ? 0 : root.extras.length - 1));
-      else if (event.key === Qt.Key_Up && !onTiles) root.select(root.extras.length === 1 ? 2 : root.current === tiles ? 1 : 3);
+      else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) root.trigger(root.tiles[root.current]);
+      else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Right) root.select((root.current + 1) % tiles);
+      else if (event.key === Qt.Key_Backtab || event.key === Qt.Key_Left) root.select((root.current + tiles - 1) % tiles);
       else if (action) root.trigger(action);
       else return;
       event.accepted = true;
@@ -227,7 +223,7 @@ Overlay {
         Text {
           Layout.alignment: Qt.AlignHCenter
           opacity: root.armedAction ? 1 : 0
-          text: root.armedAction ? `Press ${root.armedAction.letter} or Enter again to ${root.armedAction.title.toLowerCase()}` : " "
+          text: !root.armedAction ? " " : root.armedAction.letter ? `Press ${root.armedAction.letter} or Enter again to ${root.armedAction.title.toLowerCase()}` : `Click again to ${root.armedAction.title.toLowerCase()}`
           color: Theme.fg
           font: Theme.body
         }
@@ -270,10 +266,6 @@ Overlay {
                   text: extra.armed ? `${extra.modelData.title}?` : extra.modelData.title
                   color: Theme.fg
                   font: Theme.body
-                }
-
-                Keycap {
-                  text: extra.modelData.letter
                 }
               }
             }
