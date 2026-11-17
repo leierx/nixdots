@@ -17,6 +17,10 @@
             match.class = ".*";
             suppress_event = "maximize";
           }
+          {
+            match.float = false;
+            no_shadow = true;
+          }
           # smart gaps / no gaps when single client (wiki recipe; v counts a group once)
           {
             match = {
@@ -25,7 +29,6 @@
             };
             border_size = 0;
             rounding = 0;
-            no_shadow = true;
           }
           {
             match = {
