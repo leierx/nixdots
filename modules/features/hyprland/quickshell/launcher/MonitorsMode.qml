@@ -32,8 +32,7 @@ LauncherMode {
     }
     return profiles;
   }
-  // Each output as the profile turning on the most outputs has it: hyprmoncfg saves no size for one a profile turns off,
-  // and its place there says which side of the others it is on.
+  // hyprmoncfg saves no size for an output turned off, and the fullest profile says which side it is on.
   readonly property var reference: {
     const reference = {};
     const enabled = outputs => outputs.filter(output => output.enabled).length;

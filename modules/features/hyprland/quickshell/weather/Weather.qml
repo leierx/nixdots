@@ -61,7 +61,6 @@ Singleton {
     }
   }
 
-  // The zone /etc/localtime points at, and its line in the zone.tab beside it.
   Command {
     id: locate
 
