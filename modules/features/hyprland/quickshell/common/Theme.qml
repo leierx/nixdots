@@ -21,6 +21,8 @@ Singleton {
   readonly property color destructive: Colors.destructive_color
   readonly property color warning: Colors.warning_color
   readonly property color success: Colors.success_color
+  readonly property color nixosLight: "#7ebae4"
+  readonly property color nixosDark: "#5277c3"
 
   readonly property color outline: overlay(0.07)
   readonly property color border: overlay(0.15)

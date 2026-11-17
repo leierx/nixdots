@@ -269,7 +269,7 @@ Notes on specific features:
     closes the panel it is in), `Button` (libadwaita's button, `flat` or
     not, with an optional expander arrow), and `Panels`, the one open panel by name, with
     the IPC target `panels` (`qs ipc -c shell call panels open|close|toggle
-    <name>`; `apps`, `clipboard`, `monitors`, `windows`, `center`, `shortcuts`): opening any panel (a
+    <name>`; `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`): opening any panel (a
     launcher mode, the notification center, a tray menu) closes the others, and
     `close` closes whichever is open.
     - Conventions for the QML:
@@ -304,7 +304,7 @@ Notes on specific features:
     - The shell is written like any Hyprland rice, so it works on other
       setups: the QML runs its tools by name from PATH (`cliphist`, `wl-copy`,
       `pw-play`, `notify-send`, `xdg-open`, `systemd-run`, `hyprmoncfg`,
-      `wezterm`, `curl`) rather than store paths, an exception to the rule above;
+      `wezterm`, `curl`, `nixpkgs-index`, `nixpkgs-run`) rather than store paths, an exception to the rule above;
       `quickshell.nix` installs the ones no other feature does. The only Nix
       in the QML is `palettes.adwaita_dark` as the `Colors` singleton (translucent
       colours turned into Qt's `#aarrggbb`) and `hyprland.workspaces` as
@@ -318,7 +318,7 @@ Notes on specific features:
     - `launcher/` is one launcher with a mode per feature, each opened by its
       own global shortcut (`quickshell:launcher-<name>`, or `qs ipc -c shell
       call panels toggle <name>`): SUPER+D `apps`, SUPER+V `clipboard`,
-      SUPER+P `monitors`, SUPER+Tab `windows`. Nothing in one mode points to
+      SUPER+P `monitors`, SUPER+Tab `windows`, SUPER+N `nixpkgs`. Nothing in one mode points to
       the others; a second shortcut while open starts that mode afresh.
       Keyboard driven: Up/Down, Ctrl+P/Ctrl+N, Tab and Shift+Tab move a
       row and go round at the ends (the wheel stops there). Enter picks,
@@ -327,9 +327,12 @@ Notes on specific features:
       `Launcher.qml`, which makes its shortcut. It sets a `name`, a `title`,
       a `glyph` (a Material Symbols Rounded path, Apache-2.0, pasted in and
       named in a comment; drawn bare in white, so a mode never looks like
-      an app) and a `placeholder`; its `rows` and the `fields` searched in
+      an app), or an `image` in its own colours instead, an optional `accent`
+      (two colours drawn round the card as Hyprland draws an active border:
+      30°, half each) and a `placeholder`; its `rows` and the `fields` searched in
       them; an `activated` handler, a `removed` one where it is `removable`;
-      `opened` to load what it lists; `wide` for a wider card;
+      `opened` to load what it lists; `wide` for a wider card; `find`, its
+      own search for a list too long for the shared one;
       `split`,
       the list's share beside a preview (0.6); and
       optionally a `preview`, a component (inline in the mode's file) shown
@@ -391,6 +394,34 @@ Notes on specific features:
         and lists the outputs, six lines at most, each with its connector,
         model, size in inches (Hyprland's mm, while plugged in), mode, scale, and position (`at 2560x0`) for one not plugged in; one turned off has an
         outlined badge.
+      - `nixpkgs`: every package of nixos-unstable not marked broken, with
+        the NixOS logo and its two blues as the accent. `nixpkgs-index`
+        (`scripts/`) keeps the list in Quickshell's cache as TSV, revision
+        first: it follows the channel's redirect to its release and only
+        when that moved fetches `packages.json.br` (curl decodes the
+        `Content-Encoding: br`) and has jq cut it down, a few seconds and
+        about 3 GB at idle priority. It runs at the shell's start and on
+        every open, and a list it brings while open is read on the close,
+        so each open searches the list it opened with. The mode keeps
+        columns rather than an object per package, searches the matches of
+        the last query when the new one extends it, keeps only the best 50,
+        and before anything is typed lists only what was run before
+        (`AppUsage`, under `nixpkgs:`). Enter runs `nixpkgs-run <rev> <attr>
+        <program>` in its own scope: `nix build` of
+        `github:NixOS/nixpkgs/<rev>#<attr>` (unfree allowed), then the
+        program `nix run` would pick, as a transient `systemd-run --user`
+        service sandboxed by systemd alone: `ProtectSystem=strict`,
+        `PrivateTmp`, a writable tmpfs over `$HOME` and `$XDG_RUNTIME_DIR`
+        (`ProtectHome=tmpfs` is read-only, which apps fail on), only the
+        Wayland, PipeWire and X11 sockets and GTK/fontconfig/cursor settings
+        bound back in, and the nix daemon socket and both D-Bus buses out of
+        reach, since through any of them it could have something outside
+        write for it. The user manager implies `PrivateUsers`, so it needs
+        no privileges; scopes take no sandboxing, hence a service. A package
+        with a desktop entry for the program (not `Terminal=true`) runs
+        on its own, anything else in wezterm under `--pty --wait`, held open
+        on a failure or a run under 5 s. A failed build notifies with nix's
+        last lines; what it builds stays in the store until GC.
       - `windows`: every window from wlr-foreign-toplevel
         (`ToplevelManager`), so it works on any compositor, the focused one
         last. On Hyprland the rest come in focus order (a `refreshToplevels`

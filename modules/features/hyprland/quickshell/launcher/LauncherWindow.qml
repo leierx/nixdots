@@ -349,8 +349,15 @@ Overlay {
       spacing: 16
 
       Glyph {
+        visible: root.mode.image === ""
         path: root.mode.glyph
         size: 26
+      }
+
+      Image {
+        visible: root.mode.image !== ""
+        source: root.mode.image
+        sourceSize: Qt.size(28, 28)
       }
 
       SearchField {
@@ -417,6 +424,50 @@ Overlay {
         Layout.fillHeight: true
         Layout.margins: 20
         sourceComponent: root.mode.preview
+      }
+    }
+
+    // Hyprland's active border: across at 30°, one colour to each side of a blend through the middle fifth.
+    Shape {
+      id: edge
+
+      readonly property real reach: (width * Math.cos(Math.PI / 6) + height * Math.sin(Math.PI / 6)) / 2
+
+      anchors.fill: parent
+      visible: root.mode.accent.length === 2
+      preferredRendererType: Shape.CurveRenderer
+
+      ShapePath {
+        strokeColor: "transparent"
+        fillRule: ShapePath.OddEvenFill
+        fillGradient: LinearGradient {
+          x1: edge.width / 2 - Math.cos(Math.PI / 6) * edge.reach
+          y1: edge.height / 2 + Math.sin(Math.PI / 6) * edge.reach
+          x2: edge.width / 2 + Math.cos(Math.PI / 6) * edge.reach
+          y2: edge.height / 2 - Math.sin(Math.PI / 6) * edge.reach
+
+          GradientStop {
+            position: 0.4
+            color: root.mode.accent[0] ?? "transparent"
+          }
+          GradientStop {
+            position: 0.6
+            color: root.mode.accent[1] ?? "transparent"
+          }
+        }
+
+        PathRectangle {
+          width: edge.width
+          height: edge.height
+          radius: box.radius
+        }
+        PathRectangle {
+          x: 2
+          y: 2
+          width: edge.width - 4
+          height: edge.height - 4
+          radius: box.radius - 2
+        }
       }
     }
   }

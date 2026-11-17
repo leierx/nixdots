@@ -11,6 +11,7 @@ Scope {
     ClipboardMode {},
     MonitorsMode {},
     WindowsMode {},
+    NixpkgsMode {},
   ]
   readonly property LauncherMode mode: modes.find(mode => mode.open) ?? null
   // The window outlives its mode by a moment as it closes.

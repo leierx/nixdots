@@ -2,6 +2,7 @@ root: {
   flake.modules.homeManager.hyprland =
     {
       config,
+      osConfig,
       pkgs,
       lib,
       ...
@@ -61,6 +62,30 @@ root: {
         cp ${weathericons}/weather/svg/*.svg ${weathericons}/weather/legend.csv $out/weather/icons/
       '';
 
+      nixpkgsIndex = pkgs.writeShellApplication {
+        name = "nixpkgs-index";
+        runtimeInputs = with pkgs; [
+          coreutils
+          curl
+          jq
+        ];
+        text = builtins.readFile ./scripts/nixpkgs-index.sh;
+      };
+
+      nixpkgsRun = pkgs.writeShellApplication {
+        name = "nixpkgs-run";
+        runtimeInputs = [
+          osConfig.nix.package
+          pkgs.coreutils
+          pkgs.gnugrep
+          pkgs.libnotify
+        ];
+        text = ''
+          terminal=${lib.escapeShellArg (lib.getExe config.programs.wezterm.package)}
+        ''
+        + builtins.readFile ./scripts/nixpkgs-run.sh;
+      };
+
       # a GlobalShortcut in the shell, reached without starting a `qs ipc` process
       globalBind = key: name: desc: {
         _args = [
@@ -81,6 +106,8 @@ root: {
         pkgs.wl-clipboard
         pkgs.xdg-utils
         config.services.cliphist.package
+        nixpkgsIndex
+        nixpkgsRun
       ];
 
       programs.quickshell = {
@@ -102,6 +129,7 @@ root: {
         # SUPER+P, after Windows' display "Project" switcher
         (globalBind "p" "launcher-monitors" "Monitor layouts")
         (globalBind "Tab" "launcher-windows" "Window switcher")
+        (globalBind "n" "launcher-nixpkgs" "Run from nixpkgs")
         # SUPER+?, as GTK apps show theirs on Ctrl+?; Hyprland matches the unshifted key, plus on the no layout
         (globalBind "SHIFT + plus" "shortcuts" "Keyboard shortcuts")
       ];

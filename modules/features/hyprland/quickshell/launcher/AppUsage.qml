@@ -17,6 +17,14 @@ Singleton {
     return rank === undefined ? 0 : 1 - Math.pow(2, -Math.pow(2, rank - Date.now() / week));
   }
 
+  function uses(prefix: string): var {
+    const found = {};
+    for (const id in state.ranks) {
+      if (id.startsWith(prefix)) found[id.slice(prefix.length)] = root.use(id);
+    }
+    return found;
+  }
+
   function launched(id: string): void {
     const now = Date.now() / week;
     const rank = state.ranks[id];

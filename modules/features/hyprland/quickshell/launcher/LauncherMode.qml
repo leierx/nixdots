@@ -8,7 +8,9 @@ Scope {
 
   required property string name
   required property string title
-  required property string glyph
+  property string glyph: ""
+  property string image: ""
+  property var accent: []
   property string placeholder: "Search…"
   property var rows: []
   property bool removable: false
@@ -17,6 +19,7 @@ Scope {
   property var fields: row => [[1.0, row.title, true], [0.8, row.subtitle]]
   property Component preview: null
   property var selected: null
+  property var find: null
 
   readonly property bool open: Panels.active === name
 
@@ -31,6 +34,7 @@ Scope {
 
   // A row's boost only reorders matches, so it is added after the filter.
   function search(query: string): var {
+    if (root.find) return root.find(query);
     const typed = Search.words(query);
     return root.rows
       .map((row, index) => ({ row, index, score: Search.scoreFields(typed, root.fields(row)) }))

@@ -12,8 +12,11 @@ function score(typed, text, loose) {
   if (!text) {
     return -1;
   }
+  return scoreLowered(typed, text.toLowerCase(), loose);
+}
 
-  const haystack = text.toLowerCase();
+// For text lowered once ahead, as a long list wants.
+function scoreLowered(typed, haystack, loose) {
   let total = 0;
   for (const word of typed) {
     const at = haystack.indexOf(word);
