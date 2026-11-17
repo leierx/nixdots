@@ -381,14 +381,15 @@ Notes on specific features:
         `~/.config/hyprmoncfg/profiles`, so any machine's layouts draw
         themselves: outputs at their logical size (scale and rotation
         applied), numbered left to right, those a profile turns off outlined
-        beside the rest, at the size and on the side the profile turning on the
-        most outputs gives them (so `left-only` and `right-only` of a pair
-        differ), each labelled with its connector (`DP-1`) while plugged in,
-        and those saved without a size left out. Past eight outputs, or once one would be
-        under 4 px, the drawing becomes a count. The preview draws it as
+        where the profile turning on the most outputs has them (above, below or
+        beside, shifted so an output on in both lines up, or in a row to the
+        right when that fails), each labelled with its connector (`DP-1`) while
+        plugged in, and those saved without a size left out. Past eight outputs
+        (four in a row's icon), or once one would be under 4 px, the drawing
+        becomes a count. The preview draws it as
         large as fits
         and lists the outputs, six lines at most, each with its connector,
-        model, mode, scale and position (`at 2560x0`); one turned off has an
+        model, size in inches (Hyprland's mm, while plugged in), mode, scale and position (`at 2560x0`); one turned off has an
         outlined badge.
       - `windows`: every window from wlr-foreign-toplevel
         (`ToplevelManager`), so it works on any compositor, the focused one
@@ -472,8 +473,10 @@ Notes on specific features:
       focused when each arrived (the first one's once it is gone), below the bar, sliding in and out (the
       window stays mapped with an empty input region, so the last one does
       too); the app's timeout or 8 s, critical never, hovering holds it;
-      click runs the default action, right or middle click or a swipe towards
-      the edge dismisses; more than three actions fold into a "More" dropdown.
+      a click expands a cut-off body (or its arrow does), and otherwise runs
+      the default action; right click, a swipe or a fast flick towards the edge,
+      or the close cross shown under the pointer (GNOME's) slides it away and
+      dismisses it; more than three actions fold into a "More" dropdown.
       A transient notification leaves the history with its popup, and one that
       cannot pop up (the center open, Do Not Disturb, fullscreen) is never kept.
       Like GNOME, while the focused window is fullscreen (Wayland's
@@ -501,15 +504,16 @@ Notes on specific features:
       where the screen is too short for both. Opening it puts the popups away. Notifications are grouped
       per app the way end-4's dots do (`NotificationGroup`,
       `NotificationItem`): one card with the app's icon, name and count, and a
-      flat arrow button, over its two newest notifications a line each with
+      flat arrow button and, under the pointer, a close cross, over its two newest notifications a line each with
       their own age (a lone notification has its age in the header, and the
       arrow only when expanding shows more: buttons, progress or a cut-off
       body); expanded,
-      each gets an inset card with its image, whole body and actions. Left
-      click on a notification (a lone one, or one in an expanded group) runs
+      each gets an inset card with its image, whole body, actions and a close
+      cross under the pointer. Left click on a lone notification with more to
+      show expands it; on a lone one otherwise, or one in an expanded group, it runs
       its default action, or dismisses it when it has none and at most one
       action (`NotifEntry.clickDismisses`); on a group of several it expands
-      and collapses. Right or middle click or a swipe dismisses the group,
+      and collapses. Right click or a swipe dismisses the group,
       or once expanded, one notification. Mouse only, and unlike the launcher
       it is smooth: the list drags and flicks with Qt's overshoot, a wheel
       notch glides 120 px (Qt's own moves the 15 px Wayland reports), and

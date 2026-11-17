@@ -19,20 +19,21 @@ Item {
 
     anchors.fill: parent
     target: card
-    // The list slides it out from where it was let go.
     onSwiped: left => {
-      if (left) return;
-      swipe.hold();
-      root.entry.notification.dismiss();
+      if (!left) swipe.slideAway(false);
     }
+    onGone: root.entry.notification.dismiss()
     onTapped: button => {
-      if (button !== Qt.LeftButton) root.entry.notification.dismiss();
+      if (button !== Qt.LeftButton) swipe.slideAway(false);
+      else if (body.truncated) root.expanded = true;
       else if (root.entry.defaultAction) root.entry.defaultAction.invoke();
       else root.entry.popup = false;
     }
   }
 
   HoverHandler {
+    id: hover
+
     onHoveredChanged: root.entry.hovered = hovered
   }
 
@@ -89,6 +90,24 @@ Item {
           color: Theme.fgDim
           font: Theme.caption
         }
+
+        Button {
+          visible: body.truncated || root.expanded
+          implicitWidth: 24
+          implicitHeight: 24
+          radius: height / 2
+          flat: true
+          expander: true
+          open: root.expanded
+          onClicked: root.expanded = !root.expanded
+        }
+
+        // Only under the pointer, as GNOME shows it.
+        CloseButton {
+          opacity: hover.hovered ? 1 : 0
+          enabled: hover.hovered
+          onClicked: swipe.slideAway(false)
+        }
       }
 
       RowLayout {
@@ -137,18 +156,6 @@ Item {
             }
           }
 
-          Text {
-            visible: body.truncated || root.expanded
-            text: root.expanded ? "Show less" : "Show more"
-            color: Theme.accent
-            font: Theme.caption
-
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.expanded = !root.expanded
-            }
-          }
         }
       }
 

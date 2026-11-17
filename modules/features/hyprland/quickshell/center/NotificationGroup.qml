@@ -57,7 +57,7 @@ Item {
     onTapped: button => {
       if (button !== Qt.LeftButton) {
         swipe.slideAway(false);
-      } else if (!root.single) {
+      } else if (!root.single || (root.expandable && !root.expanded)) {
         root.expanded = !root.expanded;
       } else if (root.newest.defaultAction) {
         root.newest.defaultAction.invoke();
@@ -105,7 +105,7 @@ Item {
     HoverHandler {
       id: hover
 
-      cursorShape: !root.single || root.newest?.defaultAction || root.newest?.clickDismisses ? Qt.PointingHandCursor : Qt.ArrowCursor
+      cursorShape: root.expandable || root.newest?.defaultAction || root.newest?.clickDismisses ? Qt.PointingHandCursor : Qt.ArrowCursor
     }
 
     RowLayout {
@@ -207,6 +207,13 @@ Item {
             expander: true
             open: root.expanded
             onClicked: root.expanded = !root.expanded
+          }
+
+          // Only under the pointer, as GNOME shows it.
+          CloseButton {
+            opacity: hover.hovered ? 1 : 0
+            enabled: hover.hovered
+            onClicked: swipe.slideAway(false)
           }
         }
 

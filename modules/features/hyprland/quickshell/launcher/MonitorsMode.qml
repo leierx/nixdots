@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Hyprland
 import qs.common
 
 LauncherMode {
@@ -49,6 +50,15 @@ LauncherMode {
     for (const monitor of root.status?.monitors ?? []) connectors[monitor.key] = monitor.name;
     return connectors;
   }
+  // Hyprland reports each plugged-in output's size in mm.
+  readonly property var inches: {
+    const inches = {};
+    for (const monitor of Hyprland.monitors.values) {
+      const ipc = monitor.lastIpcObject;
+      if (ipc?.physicalWidth > 0 && ipc?.physicalHeight > 0) inches[monitor.name] = Math.round(Math.hypot(ipc.physicalWidth, ipc.physicalHeight) / 25.4);
+    }
+    return inches;
+  }
 
   name: "monitors"
   title: "Monitor layouts"
@@ -88,21 +98,32 @@ LauncherMode {
     const outputs = (root.profiles[name] ?? [])
       .filter(output => !output.enabled || root.sized(output))
       .map(output => {
-        const shape = root.sized(output) ? output : root.reference[output.key];
         const reference = root.reference[output.key];
+        const shape = root.sized(output) ? output : reference;
+        const connector = root.connectors[output.key] ?? "";
         return Object.assign({
           key: output.key,
           name: [output.make, output.model].filter(part => part).join(" ") || output.description,
-          connector: root.connectors[output.key] ?? "",
-          ref: reference ? reference.x : output.enabled ? output.x : Infinity,
+          connector,
+          inches: root.inches[connector] ?? 0,
           enabled: output.enabled,
-          x: output.x,
-          y: output.y,
+          x: output.enabled ? output.x : null,
+          y: output.enabled ? output.y : null,
+          reference,
           mode: output.enabled ? `${output.width}×${output.height} @ ${Math.round(output.refresh)} Hz` : "",
           position: `${output.x}x${output.y}`,
           scale: output.scale,
         }, shape ? logical(shape) : { width: 1920, height: 1080 });
       });
+    // One turned off goes where the fullest profile has it, shifted so an output on in both lines up.
+    const anchor = outputs.find(output => output.enabled && output.reference);
+    const dx = anchor ? anchor.x - anchor.reference.x : 0;
+    const dy = anchor ? anchor.y - anchor.reference.y : 0;
+    const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+    for (const output of outputs.filter(output => !output.enabled && output.reference)) {
+      const spot = { x: output.reference.x + dx, y: output.reference.y + dy, width: output.width, height: output.height };
+      if (!outputs.some(other => other.enabled && overlaps(spot, other))) Object.assign(output, { x: spot.x, y: spot.y });
+    }
     const order = outputs.filter(output => output.enabled).sort((a, b) => a.x - b.x || a.y - b.y);
     return outputs.map(output => Object.assign(output, { number: order.indexOf(output) + 1 }));
   }
@@ -113,7 +134,10 @@ LauncherMode {
   }
 
   Component.onCompleted: load()
-  onOpened: load()
+  onOpened: {
+    load();
+    if (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE")) Hyprland.refreshMonitors();
+  }
   onActivated: row => {
     // The launcher is gone by then, so a failure comes back as a notification.
     Quickshell.execDetached(["sh", "-c", 'out=$(hyprmoncfg apply --confirm-timeout 0 "$1" 2>&1) || notify-send -u critical "hyprmoncfg: $1" "$out"', "sh", row.profile]);
@@ -203,7 +227,7 @@ LauncherMode {
 
         Text {
           Layout.fillWidth: true
-          text: output.modelData.name
+          text: [output.modelData.name, output.modelData.inches > 0 ? `${output.modelData.inches}″` : ""].filter(part => part).join(" · ")
           color: output.modelData.enabled ? Theme.fg : Theme.fgDim
           font: Theme.body
           elide: Text.ElideRight

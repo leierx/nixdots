@@ -174,6 +174,13 @@ Item {
               color: Theme.fgDim
               font: Theme.caption
             }
+
+            CloseButton {
+              Layout.alignment: Qt.AlignTop
+              opacity: hover.hovered ? 1 : 0
+              enabled: hover.hovered
+              onClicked: swipe.slideAway(false)
+            }
           }
 
           Text {

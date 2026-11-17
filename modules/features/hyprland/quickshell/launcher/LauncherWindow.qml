@@ -281,6 +281,7 @@ Overlay {
         LayoutDiagram {
           anchors.fill: parent
           anchors.margins: 6
+          limit: 4
           layout: row.modelData.layout ?? []
         }
       }
