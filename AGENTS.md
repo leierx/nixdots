@@ -580,7 +580,8 @@ Notes on specific features:
       link to the site Chromium puts first, and stray blank lines, and keep
       only the markup the spec allows without body-images (`b`, `i`, `u`,
       `br` and `a`, links only to http, https and mailto), since StyledText
-      would load images and obey `font` and the rest.
+      would load images and obey `font` and the rest; that filter is
+      `markup.js`, tested by `checks.<system>.notification-markup`.
       `NotificationActions`, `NotificationImage`, `NotificationText` (a body
       whose links open, with a pointing hand over them), `NotificationAge` and
       `SwipeArea` (which moves its card itself, and slides it away carrying on
@@ -759,6 +760,9 @@ nix fmt                  # formatter = nixfmt-tree
   from `--json`, since the text output drops some files' warnings while still
   failing. Fix what it finds; where qmllint is wrong, a
   `// qmllint disable <category>` … `enable` pair around the lines.
+- `checks.<system>.notification-markup` (Linux) — `qmltestrunner` over
+  `tests/tst_markup.qml`: what the notification body filter
+  (`notifications/markup.js`) keeps, drops and escapes.
 
 `nix flake check` skips `aarch64-darwin` unless `--all-systems`.
 

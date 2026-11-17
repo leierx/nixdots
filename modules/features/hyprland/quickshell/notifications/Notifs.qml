@@ -7,6 +7,7 @@ import Quickshell.Io
 import Quickshell.Services.Notifications
 import Quickshell.Wayland
 import qs.common
+import "markup.js" as Markup
 
 Singleton {
   id: root
@@ -104,32 +105,7 @@ Singleton {
   function cleanBody(body) {
     const origin = /^<a href="([^"]*)">([^<]*)<\/a>(?:\n|$)/.exec(body);
     if (origin && origin[1].includes(origin[2])) body = body.slice(origin[0].length);
-    return root.markup(body).trim().replace(/\n{3,}/g, "\n\n");
-  }
-
-  // Only the markup the spec allows without body-images; StyledText would also load <img> and obey <font> and the rest.
-  function markup(body) {
-    const anchors = [];
-    return body.split(/(<\/?[a-zA-Z][^>]*>)/).map(part => {
-      if (!part.startsWith("<")) return part.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      const tag = /^<\s*(\/?)\s*([a-zA-Z]+)([^>]*)>$/.exec(part);
-      if (!tag) return "";
-      const closing = tag[1] === "/";
-      const name = tag[2].toLowerCase();
-      if (["b", "i", "u"].includes(name)) return `<${closing ? "/" : ""}${name}>`;
-      if (name === "br") return "<br>";
-      if (name !== "a") return "";
-      if (closing) return anchors.pop() ? "</a>" : "";
-      const href = /href\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(tag[3]);
-      const url = href ? href[1] ?? href[2] : "";
-      anchors.push(root.safeLink(url));
-      return root.safeLink(url) ? `<a href="${url.replace(/"/g, "&quot;")}">` : "";
-    }).join("");
-  }
-
-  // Others (file:, an app's own schemes) are not for a notification to open.
-  function safeLink(url) {
-    return /^(https?:\/\/|mailto:)/i.test(url);
+    return Markup.markup(body).trim().replace(/\n{3,}/g, "\n\n");
   }
 
   function appIcon(notification) {
@@ -144,7 +120,7 @@ Singleton {
   }
 
   function openUrl(url) {
-    if (!root.safeLink(url)) return;
+    if (!Markup.safeLink(url)) return;
     Quickshell.execDetached({
       command: ["systemd-run", "--user", "--scope", "--quiet", "xdg-open", url],
       // The shell's own scale, from shell.qml, is not the browser's.

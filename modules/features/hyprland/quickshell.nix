@@ -239,5 +239,15 @@ root: {
         ${lib.concatMapStrings (shell: "${lib.getExe qsLint} ${shell}\n") (lib.unique shells)}
         touch "$out"
       '';
+      # The notification body filter, which no lint can see is right.
+      checks.notification-markup = pkgs.runCommand "notification-markup" { } ''
+        mkdir -p quickshell/notifications tests
+        cp ${./quickshell/notifications/markup.js} quickshell/notifications/markup.js
+        cp ${./tests/tst_markup.qml} tests/tst_markup.qml
+        XDG_CACHE_HOME=$TMPDIR QT_QPA_PLATFORM=offscreen QT_PLUGIN_PATH=${unstable.qt6.qtbase}/lib/qt-6/plugins \
+          QML_IMPORT_PATH=${qtdeclarative}/lib/qt-6/qml \
+          ${qtdeclarative}/bin/qmltestrunner -input tests/tst_markup.qml
+        touch "$out"
+      '';
     };
 }
