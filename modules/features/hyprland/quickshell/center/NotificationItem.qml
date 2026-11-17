@@ -112,19 +112,14 @@ Item {
           font: Theme.heading
         }
 
-        Text {
+        NotificationText {
           id: line
 
           Layout.fillWidth: true
           text: root.entry.body.replace(/\n/g, " ")
-          textFormat: Text.StyledText
-          color: Theme.fg
-          linkColor: Theme.accent
           // Eliding StyledText takes wrapping to one line.
-          wrapMode: Text.Wrap
           maximumLineCount: 1
-          elide: Text.ElideRight
-          font: Theme.body
+          onLinkOpened: Panels.close()
         }
 
         Text {
@@ -183,25 +178,11 @@ Item {
             }
           }
 
-          Text {
-            id: body
-
+          NotificationText {
             Layout.fillWidth: true
             visible: text !== ""
             text: root.entry.body
-            textFormat: Text.StyledText
-            color: Theme.fg
-            linkColor: Theme.accent
-            wrapMode: Text.Wrap
-            font: Theme.body
-            onLinkActivated: link => {
-              Notifs.openUrl(link);
-              Panels.close();
-            }
-
-            HoverHandler {
-              cursorShape: body.hoveredLink ? Qt.PointingHandCursor : undefined
-            }
+            onLinkOpened: Panels.close()
           }
         }
       }

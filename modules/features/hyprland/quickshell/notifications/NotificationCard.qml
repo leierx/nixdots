@@ -34,6 +34,7 @@ Item {
   HoverHandler {
     id: hover
 
+    cursorShape: body.truncated || root.entry.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     onHoveredChanged: root.entry.hovered = hovered
   }
 
@@ -136,24 +137,13 @@ Item {
             font: Theme.heading
           }
 
-          Text {
+          NotificationText {
             id: body
 
             Layout.fillWidth: true
             visible: text !== ""
             text: root.entry.body
-            textFormat: Text.StyledText
-            color: Theme.fg
-            linkColor: Theme.accent
-            wrapMode: Text.Wrap
             maximumLineCount: root.expanded ? 1000 : 4
-            elide: Text.ElideRight
-            font: Theme.body
-            onLinkActivated: link => Notifs.openUrl(link)
-
-            HoverHandler {
-              cursorShape: body.hoveredLink ? Qt.PointingHandCursor : undefined
-            }
           }
 
         }

@@ -94,6 +94,17 @@ Singleton {
     if (file) Quickshell.execDetached(["pw-play", file]);
   }
 
+  // A tag's replacement takes the entry over, and the notification it replaced closes without it.
+  function watch(entry) {
+    const notification = entry.notification;
+    notification.closed.connect(() => {
+      if (entry.notification !== notification) return;
+      root.entries = root.entries.filter(e => e !== entry);
+      // Once the views have slid it away.
+      entry.destroy(1000);
+    });
+  }
+
   function focusedScreen() {
     return Hyprland.focusedMonitor?.name ?? Quickshell.screens[0]?.name ?? "";
   }
@@ -122,33 +133,40 @@ Singleton {
     persistenceSupported: true
 
     onNotification: notification => {
-      // Same tag replaces, as volume and brightness scripts expect.
+      // Same tag replaces, as volume and brightness scripts expect: in place, like a replaced id, so it does not slide out and in again.
       const tag = notification.hints["x-canonical-private-synchronous"];
-      if (tag) {
-        for (const entry of root.entries.slice()) {
-          if (entry.notification.hints["x-canonical-private-synchronous"] === tag) entry.notification.expire();
-        }
-      }
-
+      const same = tag ? root.entries.find(entry => entry.notification.hints["x-canonical-private-synchronous"] === tag) ?? null : null;
       const popup = root.wantsPopup(notification.urgency === NotificationUrgency.Critical);
       // Left untracked, so the server drops it: expired in this handler, it is freed without a closed signal.
-      if (notification.transient && !popup) return;
+      if (notification.transient && !popup) {
+        same?.notification.expire();
+        return;
+      }
       notification.tracked = true;
 
-      const entry = entryComponent.createObject(root, {
-        notification,
-        screen: root.focusedScreen()
-      });
-      notification.closed.connect(() => {
-        root.entries = root.entries.filter(e => e !== entry);
-        // Once the views have slid it away.
-        entry.destroy(1000);
-      });
-      root.entries = [entry, ...root.entries];
-      entry.popup = popup;
-      if (popup) root.playSound(notification);
+      if (same) {
+        const old = same.notification;
+        const shown = same.popup;
+        same.notification = notification;
+        root.watch(same);
+        old.expire();
+        same.reshow();
+        if (same.popup && !shown) root.playSound(notification);
+      } else {
+        const entry = entryComponent.createObject(root, {
+          notification,
+          screen: root.focusedScreen()
+        });
+        root.watch(entry);
+        root.entries = [entry, ...root.entries];
+        entry.popup = popup;
+        if (popup) root.playSound(notification);
+      }
 
-      for (const old of root.popups.slice(root.maxPopups)) old.popup = false;
+      // Over the limit the oldest go first, and those meant to stay (critical, or no timeout) last.
+      const oldest = root.popups.slice().reverse();
+      const order = [...oldest.filter(entry => entry.timeout > 0), ...oldest.filter(entry => entry.timeout === 0)];
+      for (const entry of order.slice(0, Math.max(0, root.popups.length - root.maxPopups))) entry.popup = false;
     }
   }
 }

@@ -510,14 +510,19 @@ Notes on specific features:
       dismisses it; more than three actions fold into a "More" dropdown.
       A transient notification leaves the history with its popup, and one that
       cannot pop up (the center open, Do Not Disturb, fullscreen) is never kept.
+      One with the same `x-canonical-private-synchronous` tag as an earlier one
+      (volume, brightness) updates it in place, as a replaced id does, rather
+      than sliding a new card in. Past five popups the oldest go first, and
+      critical or never-expiring ones last.
       Like GNOME, while the focused window is fullscreen (Wayland's
       foreign-toplevel state, so maximised windows don't count) only critical
       notifications pop up, on the overlay layer above it, and going
       fullscreen puts the others away. Ages read "now", "5m", the time today,
       "Yesterday", the weekday within a week, then the date. Bodies drop the
       link to the site Chromium puts first, and stray blank lines.
-      `NotificationActions`, `NotificationImage` and `SwipeArea` are shared
-      with the center. Do not disturb is saved in Quickshell's state dir and
+      `NotificationActions`, `NotificationImage`, `NotificationText` (a body
+      whose links open, with a pointing hand over them) and `SwipeArea` are
+      shared with the center. Do not disturb is saved in Quickshell's state dir and
       lets only critical notifications pop up. Sounds are elementary OS's
       (Unlicense) in `sounds/`, played with `pw-play` (Quickshell has no
       QtMultimedia) when a popup shows; low urgency is silent, and
