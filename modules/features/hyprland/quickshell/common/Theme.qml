@@ -30,7 +30,6 @@ Singleton {
   readonly property color cardHover: overlay(0.11)
   readonly property color hover: overlay(0.07)
   readonly property color selected: overlay(0.10)
-  readonly property color selectedHover: overlay(0.13)
   readonly property color button: overlay(0.10)
   readonly property color buttonHover: overlay(0.15)
   readonly property color buttonChecked: overlay(0.25)
