@@ -135,6 +135,7 @@ root: {
         (globalBind "p" "launcher-monitors" "Monitor layouts")
         (globalBind "Tab" "launcher-windows" "Window switcher")
         (globalBind "n" "launcher-nixpkgs" "Run from nixpkgs")
+        (globalBind "x" "power" "Power menu")
         # SUPER+?, as GTK apps show theirs on Ctrl+?; Hyprland matches the unshifted key, plus on the no layout
         (globalBind "SHIFT + plus" "shortcuts" "Keyboard shortcuts")
       ];

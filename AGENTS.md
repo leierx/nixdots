@@ -248,7 +248,7 @@ Notes on specific features:
     appends hyprmoncfg's `dofile` include itself with `lib.mkAfter`; it must stay
     the file's last line.
   - The desktop components (the bar, the launcher's SUPER+D apps, SUPER+V
-    clipboard, SUPER+P monitor layouts and SUPER+Tab windows, SUPER+? keyboard
+    clipboard, SUPER+P monitor layouts and SUPER+Tab windows, SUPER+X power, SUPER+? keyboard
     shortcuts, the notification
     center from the bar's clock) are a [Quickshell](https://quickshell.org)
     shell in `quickshell/`, wired by `quickshell.nix`: one `quickshell.service`
@@ -272,9 +272,10 @@ Notes on specific features:
     popups: libadwaita's window background, outline and shadow; Escape
     closes the panel it is in), `Button` (libadwaita's button, `flat` or
     not, with an optional expander arrow; `ExpandButton` and `CloseButton` are
-    its round flat 24 px forms), and `Panels`, the one open panel by name, with
+    its round flat 24 px forms), `Glyph` (a Material Symbols path at a size),
+    and `Panels`, the one open panel by name, with
     the IPC target `panels` (`qs ipc -c shell call panels open|close|toggle
-    <name>`; `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`): opening any panel (a
+    <name>`; `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`, `power`): opening any panel (a
     launcher mode, the notification center, a tray menu) closes the others, and
     `close` closes whichever is open.
     - Conventions for the QML:
@@ -451,15 +452,29 @@ Notes on specific features:
       columns, each row a description and its keys as keycaps. It reads
       `hyprctl binds -j` on every open, so it lists whatever binds carry a
       description: numbered ones ("Focus workspace 1" … "6") fold into one
-      row, a submap's binds form a group under the bind whose description its
-      name begins ("system_control", "System controls") and read "Super X
-      then L", media keys are left out, and the rest are grouped by their
-      description into General, Windows, Workspaces and Mouse. Its
+      row, a submap's binds (none now) form a group under the bind whose
+      description its name begins ("system_control", "System controls") and
+      read "Super X then L", media keys are left out, and the rest are grouped
+      by their description into General, Windows, Workspaces and Mouse. Its
       `quickshell:shortcuts` layer rule dims behind it.
+    - `power/` is the power menu (SUPER+X, or the bar's NixOS logo), full
+      screen over a backdrop of its own (black at 88%, so no layer rule):
+      the clock and date, five solid tiles (Lock, Suspend, Log Out, Restart,
+      Power Off) with their letters as keycaps, then smaller Reload Hyprland
+      and, on UEFI machines (`/sys/firmware/efi`), Restart to Firmware above
+      the host and uptime. A letter or Enter picks; Log Out, Restart, Power
+      Off and Firmware take a second press within 5 s, turning red and saying
+      so under the tiles, and moving the selection drops it. Arrows move
+      within a row and Up/Down between them, Tab goes through all, Escape or
+      a click off the buttons closes. Every action is a command
+      (`loginctl lock-session`, `systemctl suspend|reboot|poweroff|reboot
+      --firmware-setup`, `hyprctl dispatch 'hl.dsp.exit()'`, `hyprctl reload
+      full-reset`), so `qst actions` shows what it would have done. Delegates
+      get copies of the action objects, so actions are told apart by letter.
     - `bar/` is the bar along the top of every monitor (`Bar.qml`, one
       `BarWindow` per screen), sized and lettered like the waybar it replaced
       (Adwaita Sans at 16 px, on GNOME Shell's panel black): the NixOS logo
-      (`nixos.svg`, which does nothing yet), the monitor's workspaces, the
+      (`nixos.svg`, opening the power menu), the monitor's workspaces, the
       clock (a flat round button with a pointing hand, as GNOME's panel draws its date: shaded on
       hover and while the center it opens is open), the battery and the tray. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
@@ -597,7 +612,7 @@ Notes on specific features:
   - hyprlock talks to fprintd itself (`auth:fingerprint`, on when
     `services.fprintd` is), so the NixOS half turns `fprintAuth` off for
     hyprlock's PAM service.
-  - Every lock (idle, sleep, the SUPER+X L bind) goes through
+  - Every lock (idle, sleep, the power menu's Lock) goes through
     `loginctl lock-session`, so hypridle's `lock_cmd`, which never starts a
     second hyprlock, is the only thing that runs it.
   - The screenshot binds call one `writeShellApplication` (`scripts/freeze-region.sh`,

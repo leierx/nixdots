@@ -143,16 +143,6 @@ root: {
             dispatcher = exec "${lib.getExe freezeRegion} save";
             desc = "Screenshot region to file";
           })
-          (mkBind {
-            key = "X";
-            dispatcher = ''
-              function()
-                hl.dispatch(hl.dsp.submap("system_control"))
-                hl.timer(function() hl.dispatch(hl.dsp.submap("reset")) end,
-                         { timeout = 2000, type = "oneshot" })
-              end'';
-            desc = "System controls";
-          })
         ]
         ++ lib.concatMap (
           n:
@@ -263,36 +253,6 @@ root: {
                 repeating = false;
               };
             };
-
-        submaps.system_control = {
-          onDispatch = "reset";
-          settings.bind = [
-            (mkBind {
-              key = "ESCAPE";
-              withMod = false;
-              dispatcher = exec "systemctl poweroff";
-              desc = "Power off";
-            })
-            (mkBind {
-              key = "Q";
-              withMod = false;
-              dispatcher = "hl.dsp.exit()";
-              desc = "Exit Hyprland";
-            })
-            (mkBind {
-              key = "R";
-              withMod = false;
-              dispatcher = exec "${lib.getExe' config.wayland.windowManager.hyprland.package "hyprctl"} reload full-reset";
-              desc = "Reload config (full reset)";
-            })
-            (mkBind {
-              key = "L";
-              withMod = false;
-              dispatcher = exec "loginctl lock-session";
-              desc = "Lock screen";
-            })
-          ];
-        };
       };
     };
 }
