@@ -525,9 +525,6 @@ Notes on specific features:
       `qs ipc -c shell call notifications
       <toggleDnd|setDnd|dnd|count|clear|hidePopups>`. History lives in memory;
       a restart of the service empties it, by design.
-      `notify-test` (`scripts/notify-test.sh`, installed by `quickshell.nix`)
-      sends every kind of notification it handles: all of them a moment apart,
-      `notify-test list`, or `notify-test NAME…`.
     - `center/` is the notification center (`qs ipc -c shell call panels
       toggle center`), GNOME's layout, dropping down from the middle of the bar with
       a short fade and slide: notifications on the left (40em, wider than
@@ -755,7 +752,6 @@ $T/x.sh wtype -s 300 -M ctrl -k n -m ctrl
 $T/x.sh grim $T/shot-3.png                     # a new name each time; reads cache by path
 $T/x.sh grim -g "360,330 600x260" $T/crop-3.png
 $T/x.sh notify-send -a Discord loft01 "hello"
-$T/x.sh notify-test long actions group           # not dnd: its qs ipc -c shell reaches the live shell
 $T/x.sh swaymsg output HEADLESS-1 mode 2560x1440 scale 1.5
 grep -E 'WARN|ERROR' $T/qs.log                 # GlobalShortcut, UPower and Hyprland warnings are expected
 ```
