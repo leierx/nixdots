@@ -86,6 +86,21 @@ root: {
         + builtins.readFile ./scripts/nixpkgs-run.sh;
       };
 
+      notifyTest = pkgs.writeShellApplication {
+        name = "notify-test";
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.libnotify
+          config.programs.quickshell.package
+        ];
+        text = ''
+          wide=${./assets/wallpaper.png}
+          photo=${./assets/lockscreen-background.jpg}
+          bell=${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/bell.oga
+        ''
+        + builtins.readFile ./scripts/notify-test.sh;
+      };
+
       # a GlobalShortcut in the shell, reached without starting a `qs ipc` process
       globalBind = key: name: desc: {
         _args = [
@@ -108,6 +123,7 @@ root: {
         config.services.cliphist.package
         nixpkgsIndex
         nixpkgsRun
+        notifyTest
       ];
 
       programs.quickshell = {
