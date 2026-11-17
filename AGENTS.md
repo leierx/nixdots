@@ -705,7 +705,7 @@ nix build --no-link --print-out-paths ".#nixosConfigurations.$host.config.system
 
 nix build --no-link --print-out-paths ".#nixosConfigurations.offlineInstaller-$host.config.system.build.isoImage"
 
-nix flake check          # runs both checks below
+nix flake check          # runs the checks below
 nix fmt                  # formatter = nixfmt-tree
 ```
 
@@ -717,6 +717,19 @@ nix fmt                  # formatter = nixfmt-tree
   `system.config.system.build.toplevel.drvPath` for every NixOS host and
   installer, forcing the whole derivation graph without building it (the
   string context is discarded).
+
+`modules/features/hyprland/quickshell.nix` adds:
+
+- `checks.<system>.qmllint` (Linux) — `qs-lint` (`scripts/qs-lint.sh`) over
+  every host's built shell: qmllint from the Qt Quickshell was built with,
+  failing on any warning. It writes the `qmldir` files Quickshell makes for
+  `qs.*` imports itself, and mends Quickshell's type info in its copy
+  (a `depends Quickshell` `_GlobalShortcuts` lacks, opaque stubs that hide
+  core types, `FileView.adapter`'s unqualified type, `DBusMenuHandle`'s
+  base), so only `uncreatable-type` (`PanelWindow`) is off. Output comes
+  from `--json`, since the text output drops some files' warnings while still
+  failing. Fix what it finds; where qmllint is wrong, a
+  `// qmllint disable <category>` … `enable` pair around the lines.
 
 `nix flake check` skips `aarch64-darwin` unless `--all-systems`.
 
@@ -732,104 +745,54 @@ notifications and tray are left alone. A nested Hyprland is no option: with
 no parent Wayland it falls through to DRM, logind refuses it, and it hangs in
 its crash path leaving `/run/user/$UID/hypr/<sig>/` behind.
 
-Set it up once per session (`T` in the scratchpad; sway, grim, wtype and wlrctl come
-from nixpkgs, not installed):
+`qs-test` (`scripts/qs-test.sh`, the flake package `qs-test`) is the whole
+session; agents set `QS_TEST_DIR` to a directory in their scratchpad, so each
+has its own:
 
 ```bash
-T=<scratchpad>/t; mkdir -p $T/bin $T/cfg
-pkg() { nix build --no-link --print-out-paths "nixpkgs#$1" | head -1; }
-SWAY=$(pkg sway) GRIM=$(pkg grim) WTYPE=$(pkg wtype) WLRCTL=$(pkg wlrctl)
+export QS_TEST_DIR=<scratchpad>/qs-test
+qst() { nix run "path:$PWD#qs-test" -- "$@"; }   # or build it once and call the binary
 
-# path:, since a git flake leaves untracked files out
-out=$(nix build --no-link --print-out-paths --impure --expr \
-  '(builtins.getFlake "path:'$PWD'").nixosConfigurations.desktop.config.home-manager.users.'$USER'.programs.quickshell.configs.shell')
-rm -rf $T/shell && cp -rL "$out" $T/shell && chmod -R u+w $T/shell
-
-# Fakes: hyprmoncfg logs applies instead of making them; cliphist reads a copy;
-# hyprctl gives the real binds (the shortcuts window), as there is no Hyprland.
-hyprctl binds -j > $T/binds.json
-printf '#!/bin/sh\ncat %s/binds.json\n' $T > $T/bin/hyprctl
-hyprmoncfg status --json > $T/status.json
-cp ~/.cache/cliphist/db $T/clip.db
-printf '#!/bin/sh\ncase $1 in status) cat %s/status.json ;; *) echo "$@" >> %s/hyprmoncfg.log ;; esac\n' $T $T > $T/bin/hyprmoncfg
-printf '#!/bin/sh\nexec %s -db-path %s/clip.db "$@"\n' "$(command -v cliphist)" $T > $T/bin/cliphist
-chmod +x $T/bin/*
-ln -sf ~/.config/* $T/cfg/ && rm $T/cfg/hyprmoncfg   # profiles to fake go in $T/cfg/hyprmoncfg/profiles
-
-cat > $T/sway.cfg <<EOF
-output HEADLESS-1 mode 1920x1080 scale 1
-exec sh -c 'echo \$WAYLAND_DISPLAY > $T/display'
-EOF
-cat > $T/run.sh <<EOF
-#!/bin/sh
-echo \$DBUS_SESSION_BUS_ADDRESS > $T/bus
-echo \$\$ > $T/sway.pid
-unset HYPRLAND_INSTANCE_SIGNATURE
-WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 exec $SWAY/bin/sway -c $T/sway.cfg
-EOF
-cat > $T/x.sh <<EOF
-#!/bin/sh
-export WAYLAND_DISPLAY=\$(cat $T/display) DBUS_SESSION_BUS_ADDRESS=\$(cat $T/bus) XDG_CONFIG_HOME=$T/cfg
-unset HYPRLAND_INSTANCE_SIGNATURE
-export PATH=$T/bin:$GRIM/bin:$WTYPE/bin:$WLRCTL/bin:$SWAY/bin:\$PATH
-exec "\$@"
-EOF
-chmod +x $T/run.sh $T/x.sh
-
-setsid dbus-run-session -- $T/run.sh > $T/sway.log 2>&1 < /dev/null &
-until [ -s $T/display ]; do sleep 0.2; done
-# setsid may fork, so $! is not qs; find the test shell by its config path.
-testqs() { qs list --all | awk -v p=$T/shell/shell.qml '/Process ID/ { pid = $3 } /Config path/ && $3 == p { print pid }'; }
-setsid $T/x.sh qs -p $T/shell > $T/qs.log 2>&1 < /dev/null &
+qst up                         # the checkout's shell (path:, so untracked files count) for this host
+qst ipc panels open apps       # qs ipc call, with a timeout
+qst type fire                  # wtype drops each call's first key; qs-test sends a shift first
+qst key ctrl+n Down Return     # one key per argument
+qst shot apps                  # numbered PNG in $QS_TEST_DIR/shots, path printed
+qst shot crop "360,330 600x260"
+qst x notify-send -a Discord loft01 hello   # anything else, inside the session
+qst output 2560x1440 1.5
+qst sync                       # copy edited QML in, restart qs, print its warnings; non-zero if it fails to load
+qst problems                   # warnings and errors, less the expected ones
+qst actions                    # what the shell tried to run on the machine
+qst lint                       # the qmllint check, on the checkout
+qst down                       # kills sway, qs and the portals the private bus started; deletes the test shell's state
 ```
 
-Everything that should land in the test session goes through `$T/x.sh`:
+The session reaches nothing real: it has its own D-Bus, `systemctl`,
+`loginctl`, `hyprctl` and `hyprmoncfg` are fakes that log to `qst actions`
+(`hyprctl binds` replays the live binds, `hyprmoncfg status` the live
+profiles), and cliphist reads a copy of the database. The config dir is the
+user's, symlinked, except `hyprmoncfg/`; profiles to fake go in
+`$QS_TEST_DIR/cfg/hyprmoncfg/profiles`.
 
-```bash
-timeout 5 $T/x.sh qs ipc -p $T/shell call panels open apps
-$T/x.sh wtype -s 300 " fire"                  # the first key of every call is dropped
-$T/x.sh wtype -s 300 -M ctrl -k n -m ctrl
-$T/x.sh grim $T/shot-3.png                     # a new name each time; reads cache by path
-$T/x.sh grim -g "360,330 600x260" $T/crop-3.png
-$T/x.sh notify-send -a Discord loft01 "hello"
-$T/x.sh swaymsg output HEADLESS-1 mode 2560x1440 scale 1.5
-grep -E 'WARN|ERROR' $T/qs.log                 # GlobalShortcut, UPower and Hyprland warnings are expected
-```
-
-- Iterate by copying edited QML over `$T/shell` and restarting `qs`
-  (`kill $(testqs)`, start it again): no rebuild needed, since the copy carries
-  `qs.nix`. Restart rather than hot-reload: a reload keeps inline
-  components' old types ("X is not a type") and only watches files the last
-  load used.
-- Wrap every `qs ipc` in `timeout`: against a config that failed to load it
-  blocks forever, and with two instances for one path it talks to the old
-  one (`qs list --all`).
+- `sync` copies over rather than rebuilds: the copy keeps the built `nix/`
+  and weather icons. It restarts rather than hot-reloads: a reload keeps
+  inline components' old types ("X is not a type") and only watches files the
+  last load used.
+- `notify-send -A` waits for the action; background it.
 - Screenshot pixels are logical × 1.2 (`QT_SCALE_FACTOR`) × the output scale.
-- Animation: background `grim -s 0.25` shots about 35 ms apart, then
+- Animation: background `qst x grim -s 0.25 <file>` shots about 35 ms apart, then
   `md5sum` to see which frames settled.
-- `wlrctl pointer move` reaches the shell, so hover can be tested; its
+- `qst pointer` (wlrctl) reaches the shell, so hover can be tested; its
   clicks do not. Sway has no `dim_around`, toplevel capture or global
   shortcuts, and Hyprland cannot nest in it (it wants `xdg_wm_base` 6,
   sway 1.12 offers 5) nor start headless on its own. Check those, and
   clicks, on Hyprland after the rebuild: on the user's session only when
   they allow it (`wlrctl` moves their pointer; `grim -o <output>`).
 - Never `pgrep -f <pattern> | xargs kill`: the pattern is in the calling
-  shell's own command line. Use `testqs` and the pid files.
-
-Tear it down:
-
-```bash
-kill $(testqs) $(cat $T/sway.pid)
-# Portals the private bus activated outlive it, reparented to pid 1.
-for p in /proc/[0-9]*; do
-  tr '\0' '\n' 2>/dev/null < $p/environ | grep -qxF "DBUS_SESSION_BUS_ADDRESS=$(cat $T/bus)" && echo ${p#/proc/}
-done   # kill what it lists, ignoring this loop's own sh and sleep
-id=$(grep -o 'Shell ID: "[0-9a-f]*' $T/qs.log | cut -d'"' -f2)
-rm -rf ~/.local/state/quickshell/by-shell/$id ~/.cache/quickshell/by-shell/$id $T/clip.db
-```
-
-Quickshell keys those dirs by the config path, so the test shell's are its
-own; the live shell's id is in `qs list --all`. Delete only the test's.
+  shell's own command line. `qst down` finds the test shell by its config path.
+- Quickshell keys its state and cache dirs by config path, so the test
+  shell's are its own; `qst down` deletes only those.
 
 ## Sharp edges
 

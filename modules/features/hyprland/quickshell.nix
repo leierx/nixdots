@@ -139,4 +139,82 @@ root: {
         (globalBind "SHIFT + plus" "shortcuts" "Keyboard shortcuts")
       ];
     };
+
+  perSystem =
+    {
+      pkgs,
+      lib,
+      inputs,
+      system,
+      ...
+    }:
+    let
+      # the session's own quickshell (pkgs.unstable on the hosts) and the Qt it was built with
+      unstable = inputs.nixpkgs-unstable.legacyPackages.${system};
+      inherit (unstable) quickshell;
+      inherit (unstable.qt6) qtdeclarative;
+
+      qsLint = pkgs.writeShellApplication {
+        name = "qs-lint";
+        runtimeInputs = [
+          qtdeclarative
+          pkgs.coreutils
+          pkgs.findutils
+          pkgs.gawk
+          pkgs.gnugrep
+          pkgs.gnused
+          pkgs.jq
+        ];
+        text = ''
+          quickshellQml=${quickshell}/lib/qt-6/qml
+          qtQml=${qtdeclarative}/lib/qt-6/qml
+        ''
+        + builtins.readFile ./scripts/qs-lint.sh;
+      };
+
+      qsTest = pkgs.writeShellApplication {
+        name = "qs-test";
+        runtimeInputs = with pkgs; [
+          quickshell
+          qsLint
+          sway
+          swaybg
+          grim
+          wtype
+          wlrctl
+          dbus
+          libnotify
+          git
+          coreutils
+          findutils
+          gawk
+          gnugrep
+          util-linux
+        ];
+        text = builtins.readFile ./scripts/qs-test.sh;
+      };
+
+      shells =
+        map
+          (
+            host:
+            host.config.home-manager.users.${root.config.identity.username}.programs.quickshell.configs.shell
+          )
+          (
+            lib.filter (
+              host:
+              host.pkgs.stdenv.hostPlatform.system == system
+              && (host.config.home-manager.users.${root.config.identity.username}.programs.quickshell.enable
+                or false
+              )
+            ) (lib.attrValues root.config.flake.nixosConfigurations)
+          );
+    in
+    lib.optionalAttrs (lib.hasSuffix "-linux" system) {
+      packages.qs-test = qsTest;
+      checks.qmllint = pkgs.runCommand "qmllint" { } ''
+        ${lib.concatMapStrings (shell: "${lib.getExe qsLint} ${shell}\n") (lib.unique shells)}
+        touch "$out"
+      '';
+    };
 }
