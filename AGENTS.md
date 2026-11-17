@@ -267,7 +267,8 @@ Notes on specific features:
     click anywhere but its `card`), `Card` (the surface of panels and
     popups: libadwaita's window background, outline and shadow; Escape
     closes the panel it is in), `Button` (libadwaita's button, `flat` or
-    not, with an optional expander arrow), and `Panels`, the one open panel by name, with
+    not, with an optional expander arrow; `ExpandButton` and `CloseButton` are
+    its round flat 24 px forms), and `Panels`, the one open panel by name, with
     the IPC target `panels` (`qs ipc -c shell call panels open|close|toggle
     <name>`; `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`): opening any panel (a
     launcher mode, the notification center, a tray menu) closes the others, and
@@ -321,7 +322,8 @@ Notes on specific features:
       SUPER+P `monitors`, SUPER+Tab `windows`, SUPER+N `nixpkgs`. Nothing in one mode points to
       the others; a second shortcut while open starts that mode afresh.
       Keyboard driven: Up/Down, Ctrl+P/Ctrl+N, Tab and Shift+Tab move a
-      row and go round at the ends (the wheel stops there). Enter picks,
+      row and go round at the ends (the wheel stops there). Ctrl+U/Ctrl+D
+      jump half a page and Page Up/Page Down a page, stopping at the ends. Enter picks,
       Shift+Delete removes, Escape closes.
       A mode is a `LauncherMode` in `<Name>Mode.qml`, listed in
       `Launcher.qml`, which makes its shortcut. It sets a `name`, a `title`,
@@ -504,29 +506,46 @@ Notes on specific features:
       focused when each arrived (the first one's once it is gone), below the bar, sliding in and out (the
       window stays mapped with an empty input region, so the last one does
       too); the app's timeout or 8 s, critical never, hovering holds it;
-      a click expands a cut-off body (or its arrow does), and otherwise runs
-      the default action; right click, a swipe or a fast flick towards the edge,
-      or the close cross shown under the pointer (GNOME's) slides it away and
+      a click on one with more to show (a cut-off title or body) expands and
+      collapses it, as its arrow does, and otherwise runs the default action,
+      or puts the popup away when there is none; an action or a link puts it
+      away too (a resident notification stays open, as GNOME's banners do);
+      right click, a swipe or a fast flick towards the edge slides it away and
       dismisses it; more than three actions fold into a "More" dropdown.
+      Popups have no close cross; the center's notifications do.
       A transient notification leaves the history with its popup, and one that
-      cannot pop up (the center open, Do Not Disturb, fullscreen) is never kept.
-      One with the same `x-canonical-private-synchronous` tag as an earlier one
-      (volume, brightness) updates it in place, as a replaced id does, rather
-      than sliding a new card in. Past five popups the oldest go first, and
-      critical or never-expiring ones last.
+      cannot pop up (the center open, Do Not Disturb, fullscreen) is dropped as
+      expired. One with the same `x-canonical-private-synchronous` or
+      `x-dunst-stack-tag` tag as an earlier one (volume, brightness) updates it
+      in place, as an update by id does, rather than sliding a new card in;
+      either moves it first, pops it up again on the focused monitor, and
+      plays its sound only when it pops up anew. Past five popups the newest
+      always shows, the oldest go first, and critical or never-expiring ones
+      last; one past the screen's edge waits out of sight, its timeout held,
+      until there is room, and the window's input region is the cards alone,
+      so the gaps between them click through. Like GNOME, each app keeps its
+      newest three notifications (one still popped up stays until its popup
+      goes), and a reload of the shell lists the notifications it hands over
+      again without popping them up.
       Like GNOME, while the focused window is fullscreen (Wayland's
       foreign-toplevel state, so maximised windows don't count) only critical
       notifications pop up, on the overlay layer above it, and going
       fullscreen puts the others away. Ages read "now", "5m", the time today,
       "Yesterday", the weekday within a week, then the date. Bodies drop the
-      link to the site Chromium puts first, and stray blank lines.
+      link to the site Chromium puts first, and stray blank lines, and keep
+      only the markup the spec allows without body-images (`b`, `i`, `u`,
+      `br` and `a`, links only to http, https and mailto), since StyledText
+      would load images and obey `font` and the rest.
       `NotificationActions`, `NotificationImage`, `NotificationText` (a body
-      whose links open, with a pointing hand over them) and `SwipeArea` are
-      shared with the center. Do not disturb is saved in Quickshell's state dir and
-      lets only critical notifications pop up. Sounds are elementary OS's
-      (Unlicense) in `sounds/`, played with `pw-play` (Quickshell has no
-      QtMultimedia) when a popup shows; low urgency is silent, and
-      `suppress-sound` and `sound-file` hints are honoured. Scripts use
+      whose links open, with a pointing hand over them), `NotificationAge` and
+      `SwipeArea` (which moves its card itself, and slides it away carrying on
+      from the drag) are shared with the center. Do not disturb is saved in
+      Quickshell's state dir and lets only critical notifications pop up.
+      Sounds are elementary OS's (Unlicense) in `sounds/`, played with
+      `pw-play` (Quickshell has no QtMultimedia) when a popup shows; low
+      urgency is silent whatever it asks, and `suppress-sound`, `sound-file`
+      and `sound-name` (looked up in the freedesktop sound theme) are
+      honoured, so the server advertises `sound`. Scripts use
       `qs ipc -c shell call notifications
       <toggleDnd|setDnd|dnd|count|clear|hidePopups>`. History lives in memory;
       a restart of the service empties it, by design.
@@ -542,15 +561,15 @@ Notes on specific features:
       `NotificationItem`): one card with the app's icon, name and count, and a
       flat arrow button and, under the pointer, a close cross, over its two newest notifications a line each with
       their own age (a lone notification has its age in the header, and the
-      arrow only when expanding shows more: buttons, progress or a cut-off
-      body); expanded,
+      arrow only when expanding shows more: buttons, progress, or a cut-off
+      title or body); expanded,
       each gets an inset card with its image, whole body, actions and a close
-      cross under the pointer. Left click on a lone notification with more to
-      show expands it; on a lone one otherwise, or one in an expanded group, it runs
-      its default action, or dismisses it when it has none and at most one
-      action (`NotifEntry.clickDismisses`); on a group of several it expands
-      and collapses. Right click or a swipe dismisses the group,
-      or once expanded, one notification. Mouse only, and unlike the launcher
+      cross under the pointer, and a lone one's title wraps in full. A click on
+      a group with more to show expands and collapses it; on a lone one with
+      nothing more it runs the default action; in an expanded group of several
+      a notification's click runs its own. Right click or a swipe dismisses the group,
+      or once expanded, one notification. The list grows with its
+      notifications up to the screen's height, then scrolls. Mouse only, and unlike the launcher
       it is smooth: the list drags and flicks with Qt's overshoot, a wheel
       notch glides 120 px (Qt's own moves the 15 px Wayland reports), and
       groups animate their height. Escape or a click

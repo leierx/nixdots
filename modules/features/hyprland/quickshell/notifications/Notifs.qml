@@ -11,15 +11,16 @@ import qs.common
 Singleton {
   id: root
 
-  // Newest first.
   property var entries: []
   readonly property var popups: entries.filter(e => e.popup)
 
-  // Only critical notifications pop up; saved, so a rebuild restarting the shell keeps it.
+  // Saved, so a rebuild restarting the shell keeps it.
   property alias dnd: state.dnd
 
   readonly property int defaultTimeout: 8000
   readonly property int maxPopups: 5
+  // As GNOME keeps per app.
+  readonly property int perApp: 3
 
   // Like GNOME: over a fullscreen window only critical notifications pop up, and going fullscreen puts the others away.
   readonly property bool fullscreen: ToplevelManager.activeToplevel?.fullscreen ?? false
@@ -31,8 +32,49 @@ Singleton {
     }
   }
 
+  function appKey(entry) {
+    return entry.notification.desktopEntry || entry.notification.appName;
+  }
+
+  // Volume and brightness scripts send one of these so a new value replaces the last.
+  function tag(notification) {
+    return notification.hints["x-canonical-private-synchronous"] || notification.hints["x-dunst-stack-tag"] || "";
+  }
+
   function wantsPopup(critical) {
     return Panels.active !== "center" && (critical || (!dnd && !fullscreen));
+  }
+
+  // First in the list, on the focused monitor once it pops up again, with its sound, within the limit.
+  function present(entry, popup) {
+    const wasShown = entry.popup;
+    root.entries = [entry, ...root.entries.filter(e => e !== entry)];
+    entry.time = new Date();
+    if (popup && !wasShown) entry.screen = root.focusedScreen();
+    entry.popup = popup;
+    if (entry.timer.running) entry.timer.restart();
+    root.trimPopups(entry);
+    root.trimHistory();
+    if (entry.popup && !wasShown) root.playSound(entry.notification);
+  }
+
+  // The newest one stays; of the rest the oldest go first, and those meant to stay (critical, or no timeout) last.
+  function trimPopups(newest) {
+    const extra = root.popups.length - root.maxPopups;
+    if (extra <= 0) return;
+    const oldest = root.popups.filter(e => e !== newest).reverse();
+    const order = [...oldest.filter(e => e.timeout > 0), ...oldest.filter(e => e.timeout === 0)];
+    for (const entry of order.slice(0, extra)) entry.popup = false;
+  }
+
+  // One still popped up is kept until its popup goes.
+  function trimHistory() {
+    const counts = {};
+    for (const entry of root.entries.slice()) {
+      const key = root.appKey(entry);
+      counts[key] = (counts[key] ?? 0) + 1;
+      if (counts[key] > root.perApp && !entry.popup) entry.notification.expire();
+    }
   }
 
   function hidePopups() {
@@ -62,7 +104,32 @@ Singleton {
   function cleanBody(body) {
     const origin = /^<a href="([^"]*)">([^<]*)<\/a>(?:\n|$)/.exec(body);
     if (origin && origin[1].includes(origin[2])) body = body.slice(origin[0].length);
-    return body.trim().replace(/\n{3,}/g, "\n\n");
+    return root.markup(body).trim().replace(/\n{3,}/g, "\n\n");
+  }
+
+  // Only the markup the spec allows without body-images; StyledText would also load <img> and obey <font> and the rest.
+  function markup(body) {
+    const anchors = [];
+    return body.split(/(<\/?[a-zA-Z][^>]*>)/).map(part => {
+      if (!part.startsWith("<")) return part.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const tag = /^<\s*(\/?)\s*([a-zA-Z]+)([^>]*)>$/.exec(part);
+      if (!tag) return "";
+      const closing = tag[1] === "/";
+      const name = tag[2].toLowerCase();
+      if (["b", "i", "u"].includes(name)) return `<${closing ? "/" : ""}${name}>`;
+      if (name === "br") return "<br>";
+      if (name !== "a") return "";
+      if (closing) return anchors.pop() ? "</a>" : "";
+      const href = /href\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(tag[3]);
+      const url = href ? href[1] ?? href[2] : "";
+      anchors.push(root.safeLink(url));
+      return root.safeLink(url) ? `<a href="${url.replace(/"/g, "&quot;")}">` : "";
+    }).join("");
+  }
+
+  // Others (file:, an app's own schemes) are not for a notification to open.
+  function safeLink(url) {
+    return /^(https?:\/\/|mailto:)/i.test(url);
   }
 
   function appIcon(notification) {
@@ -77,6 +144,7 @@ Singleton {
   }
 
   function openUrl(url) {
+    if (!root.safeLink(url)) return;
     Quickshell.execDetached({
       command: ["systemd-run", "--user", "--scope", "--quiet", "xdg-open", url],
       // The shell's own scale, from shell.qml, is not the browser's.
@@ -84,14 +152,20 @@ Singleton {
     });
   }
 
-  // Low urgency is silent.
+  // Low urgency is silent, whatever the app asks; a sound-name is looked up in the freedesktop theme, ours if it is not there.
   function playSound(notification) {
     const hints = notification.hints;
-    if (hints["suppress-sound"]) return;
-    const own = hints["sound-file"]?.replace(/^file:\/\//, "");
-    const ours = ["", "notification.oga", "critical.ogg"][notification.urgency];
-    const file = own || (ours && Quickshell.shellPath(`notifications/sounds/${ours}`));
-    if (file) Quickshell.execDetached(["pw-play", file]);
+    if (hints["suppress-sound"] || notification.urgency === NotificationUrgency.Low) return;
+    const ours = Quickshell.shellPath(`notifications/sounds/${notification.urgency === NotificationUrgency.Critical ? "critical.ogg" : "notification.oga"}`);
+    const file = hints["sound-file"]?.replace(/^file:\/\//, "");
+    const name = hints["sound-name"] ?? "";
+    if (file) {
+      Quickshell.execDetached(["pw-play", file]);
+    } else if (/^[a-z0-9-]+$/.test(name)) {
+      Quickshell.execDetached(["sh", "-c", 'IFS=:; for dir in ${XDG_DATA_HOME:-$HOME/.local/share}:${XDG_DATA_DIRS:-/usr/share}; do for ext in oga ogg wav; do [ -f "$dir/sounds/freedesktop/stereo/$1.$ext" ] && exec pw-play "$dir/sounds/freedesktop/stereo/$1.$ext"; done; done; exec pw-play "$2"', "sh", name, ours]);
+    } else {
+      Quickshell.execDetached(["pw-play", ours]);
+    }
   }
 
   // A tag's replacement takes the entry over, and the notification it replaced closes without it.
@@ -131,42 +205,35 @@ Singleton {
     bodyMarkupSupported: true
     imageSupported: true
     persistenceSupported: true
+    extraHints: ["sound"]
 
     onNotification: notification => {
-      // Same tag replaces, as volume and brightness scripts expect: in place, like a replaced id, so it does not slide out and in again.
-      const tag = notification.hints["x-canonical-private-synchronous"];
-      const same = tag ? root.entries.find(entry => entry.notification.hints["x-canonical-private-synchronous"] === tag) ?? null : null;
-      const popup = root.wantsPopup(notification.urgency === NotificationUrgency.Critical);
-      // Left untracked, so the server drops it: expired in this handler, it is freed without a closed signal.
+      const tag = root.tag(notification);
+      const same = tag ? root.entries.find(entry => root.tag(entry.notification) === tag) ?? null : null;
+      // A reload hands every notification over again; they have been seen.
+      const popup = !notification.lastGeneration && root.wantsPopup(notification.urgency === NotificationUrgency.Critical);
       if (notification.transient && !popup) {
         same?.notification.expire();
+        // Untracked, the server drops it; expired here, the app hears it expired rather than that it was dismissed.
+        notification.expire();
         return;
       }
       notification.tracked = true;
 
+      // In place, as an update by id is, so it does not slide out and in again.
+      let entry = same;
       if (same) {
         const old = same.notification;
-        const shown = same.popup;
         same.notification = notification;
-        root.watch(same);
         old.expire();
-        same.reshow();
-        if (same.popup && !shown) root.playSound(notification);
       } else {
-        const entry = entryComponent.createObject(root, {
+        entry = entryComponent.createObject(root, {
           notification,
           screen: root.focusedScreen()
         });
-        root.watch(entry);
-        root.entries = [entry, ...root.entries];
-        entry.popup = popup;
-        if (popup) root.playSound(notification);
       }
-
-      // Over the limit the oldest go first, and those meant to stay (critical, or no timeout) last.
-      const oldest = root.popups.slice().reverse();
-      const order = [...oldest.filter(entry => entry.timeout > 0), ...oldest.filter(entry => entry.timeout === 0)];
-      for (const entry of order.slice(0, Math.max(0, root.popups.length - root.maxPopups))) entry.popup = false;
+      root.watch(entry);
+      root.present(entry, popup);
     }
   }
 }

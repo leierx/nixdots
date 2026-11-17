@@ -14,6 +14,9 @@ Variants {
     required property ShellScreen modelData
     // Takes the popups of a monitor that has gone.
     readonly property bool fallback: modelData === Quickshell.screens[0]
+    readonly property int shadowRoom: 24
+    // Cards register here, as the window's input region is theirs alone: a click between them reaches the window behind.
+    property list<Item> cards: []
 
     screen: modelData
     anchors {
@@ -22,12 +25,12 @@ Variants {
       bottom: true
     }
     // Narrower than GNOME Shell's 34em banners, with room on the left for their shadows.
-    implicitWidth: 24 + Math.round(30 * Theme.em) + Theme.gap
+    implicitWidth: shadowRoom + Math.round(30 * Theme.em) + Theme.gap
     exclusiveZone: 0
     color: "transparent"
-    // Stays mapped while empty, so the last popup still slides out; only the cards take clicks.
+    // Stays mapped while empty, so the last popup still slides out.
     mask: Region {
-      item: list.contentItem
+      regions: window.cards.filter(card => card.visible).map(card => card.region)
     }
 
     // Above fullscreen windows, where critical notifications still pop up.
@@ -40,7 +43,7 @@ Variants {
       anchors {
         fill: parent
         margins: Theme.gap
-        leftMargin: 24
+        leftMargin: window.shadowRoom
       }
       spacing: Theme.gap
       interactive: false
@@ -49,10 +52,28 @@ Variants {
       }
 
       delegate: NotificationCard {
+        id: card
+
         required property NotifEntry modelData
+        required property int index
+        // One past the screen's edge could not be clicked, so it waits, out of sight, for room.
+        readonly property bool fits: index === 0 || y + height <= ListView.view.height
+        readonly property Region region: Region {
+          item: card
+        }
 
         width: ListView.view.width
+        visible: fits
         entry: modelData
+
+        Component.onCompleted: window.cards = [...window.cards, card]
+        Component.onDestruction: window.cards = window.cards.filter(other => other !== card)
+
+        Binding {
+          target: card.modelData
+          property: "waiting"
+          value: !card.fits
+        }
       }
 
       add: Transition {

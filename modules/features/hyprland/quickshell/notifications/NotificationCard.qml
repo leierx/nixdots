@@ -11,6 +11,7 @@ Item {
   required property NotifEntry entry
 
   property bool expanded: false
+  readonly property bool expandable: expanded || summary.truncated || body.truncated
 
   implicitHeight: card.height
 
@@ -19,43 +20,30 @@ Item {
 
     anchors.fill: parent
     target: card
+    rightOnly: true
     onSwiped: left => {
-      if (!left) swipe.slideAway(false);
+      if (!left) swipe.slideAway(false, root.entry.dismissal());
     }
-    onGone: root.entry.notification.dismiss()
     onTapped: button => {
-      if (button !== Qt.LeftButton) swipe.slideAway(false);
-      else if (body.truncated) root.expanded = true;
-      else if (root.entry.defaultAction) root.entry.defaultAction.invoke();
+      if (button !== Qt.LeftButton) swipe.slideAway(false, root.entry.dismissal());
+      else if (root.expandable) root.expanded = !root.expanded;
+      else if (root.entry.defaultAction) root.entry.invoke(root.entry.defaultAction);
       else root.entry.popup = false;
     }
   }
 
   HoverHandler {
-    id: hover
-
-    cursorShape: body.truncated || root.entry.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
+    cursorShape: root.expandable || root.entry.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     onHoveredChanged: root.entry.hovered = hovered
   }
 
   Card {
     id: card
 
-    // Popups only leave towards the screen's edge.
-    x: Math.max(0, swipe.distance)
     width: root.width
-    height: content.implicitHeight + 24
+    height: content.implicitHeight + 2 * Theme.padding
     border.color: root.entry.critical ? Theme.destructive : Theme.outline
     opacity: 1 - x / width
-
-    Behavior on x {
-      enabled: !swipe.dragging
-
-      NumberAnimation {
-        duration: 150
-        easing.type: Easing.OutCubic
-      }
-    }
 
     ColumnLayout {
       id: content
@@ -64,12 +52,13 @@ Item {
         top: parent.top
         left: parent.left
         right: parent.right
-        margins: 12
+        margins: Theme.padding
       }
       spacing: 8
 
       RowLayout {
         Layout.fillWidth: true
+        Layout.minimumHeight: 24
         spacing: 6
 
         IconImage {
@@ -86,28 +75,14 @@ Item {
           font: Theme.caption
         }
 
-        Text {
-          text: Notifs.age(root.entry.time)
-          color: Theme.fgDim
-          font: Theme.caption
+        NotificationAge {
+          entry: root.entry
         }
 
-        Button {
-          visible: body.truncated || root.expanded
-          implicitWidth: 24
-          implicitHeight: 24
-          radius: height / 2
-          flat: true
-          expander: true
+        ExpandButton {
+          visible: root.expandable
           open: root.expanded
           onClicked: root.expanded = !root.expanded
-        }
-
-        // Only under the pointer, as GNOME shows it.
-        CloseButton {
-          opacity: hover.hovered ? 1 : 0
-          enabled: hover.hovered
-          onClicked: swipe.slideAway(false)
         }
       }
 
@@ -127,25 +102,29 @@ Item {
           spacing: 2
 
           Text {
+            id: summary
+
             Layout.fillWidth: true
+            visible: text !== ""
             text: root.entry.notification.summary
             textFormat: Text.PlainText
             color: Theme.fg
             wrapMode: Text.Wrap
-            maximumLineCount: 2
+            maximumLineCount: root.expanded ? 6 : 2
             elide: Text.ElideRight
             font: Theme.heading
           }
 
+          // Expanded, still short enough that a popup always fits on the screen.
           NotificationText {
             id: body
 
             Layout.fillWidth: true
             visible: text !== ""
             text: root.entry.body
-            maximumLineCount: root.expanded ? 1000 : 4
+            maximumLineCount: root.expanded ? 15 : 4
+            onLinkOpened: root.entry.popup = false
           }
-
         }
       }
 
@@ -167,6 +146,7 @@ Item {
       NotificationActions {
         Layout.fillWidth: true
         actions: root.entry.buttons
+        onInvoked: action => root.entry.invoke(action)
       }
     }
   }

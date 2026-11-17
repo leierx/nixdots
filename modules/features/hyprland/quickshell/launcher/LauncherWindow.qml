@@ -100,8 +100,13 @@ Overlay {
       const shift = event.modifiers & Qt.ShiftModifier;
       const back = event.key === Qt.Key_Up || control && event.key === Qt.Key_P || event.key === Qt.Key_Backtab || shift && event.key === Qt.Key_Tab;
       const forward = event.key === Qt.Key_Down || control && event.key === Qt.Key_N || event.key === Qt.Key_Tab;
+      const half = Math.max(1, Math.floor(list.page / 2));
       if (back) list.step(-1);
       else if (forward) list.step(1);
+      else if (event.key === Qt.Key_PageUp) list.select(list.currentIndex - list.page);
+      else if (event.key === Qt.Key_PageDown) list.select(list.currentIndex + list.page);
+      else if (control && event.key === Qt.Key_U) list.select(list.currentIndex - half);
+      else if (control && event.key === Qt.Key_D) list.select(list.currentIndex + half);
       else if (event.key === Qt.Key_Delete && shift) list.remove(list.currentIndex);
       else return;
       event.accepted = true;
@@ -125,6 +130,7 @@ Overlay {
     property int rowHeight: 50
     readonly property var results: list.mode.search(list.query)
     readonly property var current: list.results[list.currentIndex] ?? null
+    readonly property int page: Math.max(1, Math.floor((list.height + list.spacing) / (list.rowHeight + list.spacing)))
 
     // Keeps the selection where it is while a row goes.
     property bool removing: false
@@ -166,13 +172,19 @@ Overlay {
     // One hover for the list rather than each row's: it holds across the gaps between rows and a pointer leaving for a moment.
     property int hovered: -1
 
+    // From the scene: a handler declared in a ListView belongs to its content, whose coordinates scroll.
+    function updateHover(): void {
+      const at = list.contentItem.mapFromItem(null, hover.point.scenePosition.x, hover.point.scenePosition.y);
+      const index = list.indexAt(at.x, at.y);
+      if (index >= 0) list.hovered = index;
+    }
+
+    onContentYChanged: if (hover.hovered) list.updateHover()
+
     HoverHandler {
       id: hover
 
-      onPointChanged: {
-        const index = list.indexAt(hover.point.position.x + list.contentX, hover.point.position.y + list.contentY);
-        if (index >= 0) list.hovered = index;
-      }
+      onPointChanged: list.updateHover()
     }
 
     Timer {

@@ -2,13 +2,13 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// No screen is set, so Hyprland opens it on the focused monitor.
 PanelWindow {
   id: root
 
   // A click anywhere but on it closes the panel.
   property Item card: null
 
+  // No screen is set, so Hyprland opens it on the focused monitor.
   color: "transparent"
   anchors {
     top: true

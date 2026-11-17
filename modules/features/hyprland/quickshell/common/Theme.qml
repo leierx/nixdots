@@ -53,6 +53,8 @@ Singleton {
   readonly property real em: body.pointSize * 96 / 72
 
   readonly property int gap: 10
+  // Inside cards, as libadwaita pads its boxed rows.
+  readonly property int padding: 12
 
   // The foreground over whatever lies below, as libadwaita mixes currentColor.
   function overlay(alpha: real): color {

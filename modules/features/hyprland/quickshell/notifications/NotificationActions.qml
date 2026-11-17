@@ -13,6 +13,8 @@ ColumnLayout {
 
   readonly property bool overflow: actions.length > 3
 
+  signal invoked(NotificationAction action)
+
   visible: actions.length > 0
   spacing: 6
 
@@ -23,7 +25,7 @@ ColumnLayout {
     // Equal shares, whatever their labels.
     Layout.preferredWidth: 1
     text: modelData.text
-    onClicked: modelData.invoke()
+    onClicked: root.invoked(modelData)
   }
 
   RowLayout {

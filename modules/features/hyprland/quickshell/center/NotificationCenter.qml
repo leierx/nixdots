@@ -12,18 +12,12 @@ Overlay {
   id: root
 
   readonly property bool open: Panels.active === "center"
-  // In the order of their newest notification.
-  readonly property var apps: [...new Set(Notifs.entries.map(entry => root.appKey(entry)))]
-  readonly property int padding: 12
-  readonly property int maxListHeight: 520
+  readonly property var apps: [...new Set(Notifs.entries.map(entry => Notifs.appKey(entry)))]
+  readonly property int padding: Theme.padding
 
   property real shown: 0
 
   signal hidden()
-
-  function appKey(entry) {
-    return entry.notification.desktopEntry || entry.notification.appName;
-  }
 
   onOpenChanged: if (open) Notifs.hidePopups()
   onShownChanged: if (shown === 0 && !open) hidden()
@@ -132,8 +126,8 @@ Overlay {
 
         Item {
           Layout.fillWidth: true
-          // As tall as the calendar and weather at least, so the panel keeps its shape.
-          Layout.preferredHeight: Math.max(side.implicitHeight - footer.implicitHeight - root.padding, Math.min(list.contentHeight, root.maxListHeight))
+          // As tall as the calendar and weather at least, so the panel keeps its shape, and no taller than the screen.
+          Layout.preferredHeight: Math.min(root.height - 2 * Theme.gap - 3 * root.padding - footer.implicitHeight, Math.max(side.implicitHeight - footer.implicitHeight - root.padding, list.contentHeight))
 
           ListView {
             id: list
@@ -153,7 +147,7 @@ Overlay {
               required property string modelData
 
               width: ListView.view.width
-              entries: Notifs.entries.filter(entry => root.appKey(entry) === modelData)
+              entries: Notifs.entries.filter(entry => Notifs.appKey(entry) === modelData)
             }
 
             add: Transition {

@@ -1,13 +1,13 @@
 import QtQuick
 import QtQuick.Shapes
 
-// GNOME's notifications close from a round flat button with Adwaita's window-close-symbolic.
 Button {
   implicitWidth: 24
   implicitHeight: 24
   radius: height / 2
   flat: true
 
+  // Adwaita's window-close-symbolic, as GNOME's notifications have it.
   Shape {
     anchors.centerIn: parent
     width: 16

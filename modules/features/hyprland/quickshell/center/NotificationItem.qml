@@ -15,7 +15,6 @@ Item {
 
   readonly property bool boxed: expanded && !single
   readonly property bool truncated: line.truncated
-  readonly property int pad: 12
 
   implicitHeight: box.height
 
@@ -24,13 +23,12 @@ Item {
 
     anchors.fill: parent
     target: box
-    // Collapsed, the group takes every click.
-    enabled: root.expanded
-    onSwiped: left => swipe.slideAway(left)
-    onGone: root.entry.notification.dismiss()
+    // Collapsed, or alone, the group takes every click.
+    enabled: root.boxed
+    onSwiped: left => swipe.slideAway(left, root.entry.dismissal())
     onTapped: button => {
-      if (button !== Qt.LeftButton || root.entry.clickDismisses) {
-        swipe.slideAway(false);
+      if (button !== Qt.LeftButton) {
+        swipe.slideAway(false, root.entry.dismissal());
       } else if (root.entry.defaultAction) {
         root.entry.defaultAction.invoke();
         Panels.close();
@@ -41,24 +39,14 @@ Item {
   Rectangle {
     id: box
 
-    x: swipe.distance
     width: root.width
-    height: content.implicitHeight + (root.boxed ? root.pad * 2 : 0)
+    height: content.implicitHeight + (root.boxed ? Theme.padding * 2 : 0)
     radius: Theme.buttonRadius
     color: !root.boxed ? "transparent" : hover.hovered ? Theme.cardHover : Theme.card
     border.width: root.boxed && root.entry.critical ? 1 : 0
     border.color: Theme.destructive
     opacity: root.dimmed ? 0.55 : 1
     clip: true
-
-    Behavior on x {
-      enabled: !swipe.dragging
-
-      NumberAnimation {
-        duration: 250
-        easing.type: Easing.OutCubic
-      }
-    }
 
     Behavior on height {
       NumberAnimation {
@@ -82,8 +70,8 @@ Item {
     HoverHandler {
       id: hover
 
-      enabled: root.expanded
-      cursorShape: root.entry.defaultAction || root.entry.clickDismisses ? Qt.PointingHandCursor : Qt.ArrowCursor
+      enabled: root.boxed
+      cursorShape: root.entry.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     }
 
     ColumnLayout {
@@ -93,7 +81,7 @@ Item {
         top: parent.top
         left: parent.left
         right: parent.right
-        margins: root.boxed ? root.pad : 0
+        margins: root.boxed ? Theme.padding : 0
       }
       spacing: 8
 
@@ -122,11 +110,9 @@ Item {
           onLinkOpened: Panels.close()
         }
 
-        Text {
+        NotificationAge {
           visible: !root.single
-          text: Notifs.age(root.entry.time)
-          color: Theme.fgDim
-          font: Theme.caption
+          entry: root.entry
         }
       }
 
@@ -163,18 +149,16 @@ Item {
               font: Theme.heading
             }
 
-            Text {
+            NotificationAge {
               Layout.alignment: Qt.AlignTop
-              text: Notifs.age(root.entry.time)
-              color: Theme.fgDim
-              font: Theme.caption
+              entry: root.entry
             }
 
             CloseButton {
               Layout.alignment: Qt.AlignTop
               opacity: hover.hovered ? 1 : 0
               enabled: hover.hovered
-              onClicked: swipe.slideAway(false)
+              onClicked: swipe.slideAway(false, root.entry.dismissal())
             }
           }
 

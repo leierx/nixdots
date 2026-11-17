@@ -3,11 +3,11 @@ import Quickshell
 import qs.common
 import qs.weather
 
-// Created as it opens, so every group starts collapsed, and unloaded once it has animated closed.
 Scope {
   // The forecast is fetched from the start, so the first open has it.
   Component.onCompleted: Weather.now
 
+  // Created as it opens, so every group starts collapsed, and unloaded once it has animated closed.
   LazyLoader {
     id: loader
 
