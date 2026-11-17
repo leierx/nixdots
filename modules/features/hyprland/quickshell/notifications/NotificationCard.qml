@@ -33,7 +33,6 @@ Item {
   }
 
   HoverHandler {
-    cursorShape: root.expandable || root.entry.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     onHoveredChanged: root.entry.hovered = hovered
   }
 

@@ -71,7 +71,6 @@ Item {
       id: hover
 
       enabled: root.boxed
-      cursorShape: root.entry.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     }
 
     ColumnLayout {

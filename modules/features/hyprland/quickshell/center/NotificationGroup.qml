@@ -91,8 +91,6 @@ Item {
 
     HoverHandler {
       id: hover
-
-      cursorShape: root.expandable || root.newest?.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     }
 
     RowLayout {
