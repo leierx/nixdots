@@ -122,8 +122,6 @@ Singleton {
     persistenceSupported: true
 
     onNotification: notification => {
-      notification.tracked = true;
-
       // Same tag replaces, as volume and brightness scripts expect.
       const tag = notification.hints["x-canonical-private-synchronous"];
       if (tag) {
@@ -131,6 +129,11 @@ Singleton {
           if (entry.notification.hints["x-canonical-private-synchronous"] === tag) entry.notification.expire();
         }
       }
+
+      const popup = root.wantsPopup(notification.urgency === NotificationUrgency.Critical);
+      // Left untracked, so the server drops it: expired in this handler, it is freed without a closed signal.
+      if (notification.transient && !popup) return;
+      notification.tracked = true;
 
       const entry = entryComponent.createObject(root, {
         notification,
@@ -142,9 +145,8 @@ Singleton {
         entry.destroy(1000);
       });
       root.entries = [entry, ...root.entries];
-      entry.popup = root.wantsPopup(entry.critical);
-      if (entry.popup) root.playSound(notification);
-      else if (notification.transient) notification.expire();
+      entry.popup = popup;
+      if (popup) root.playSound(notification);
 
       for (const old of root.popups.slice(root.maxPopups)) old.popup = false;
     }

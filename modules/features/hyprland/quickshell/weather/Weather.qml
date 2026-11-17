@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 import qs.common
 
-// For where the public address puts the machine, so it follows a laptop around.
+// The timezone's city, from tzdata's coordinates, rather than a lookup of the public address.
 Singleton {
   id: root
 
@@ -61,24 +61,29 @@ Singleton {
     }
   }
 
+  // The zone /etc/localtime points at, and its line in the zone.tab beside it.
   Command {
     id: locate
 
     name: "Weather: locating"
     quiet: true
-    command: ["curl", "--fail", "--silent", "--max-time", "20", "https://ipinfo.io/json"]
+    command: ["sh", "-c", 'path=$(readlink -f /etc/localtime) && zone=${path#*/zoneinfo/} && echo "$zone" && awk -F "\t" -v zone="$zone" "\\$3 == zone { print \\$2 }" "${path%%/zoneinfo/*}/zoneinfo/zone.tab"']
     onFailed: root.retrySoon()
     onDone: output => {
-      try {
-        const location = JSON.parse(output);
-        // About a kilometre; MET asks for at most four decimals, and fewer share its cache.
-        const [lat, lon] = location.loc.split(",").map(n => Number(n).toFixed(2));
-        root.place = location.city;
-        forecast.command = ["curl", "--fail", "--silent", "--max-time", "20", "--user-agent", root.userAgent, `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`];
-        forecast.running = true;
-      } catch (error) {
-        locate.fail(String(error));
+      const [zone, coordinates] = output.trim().split("\n");
+      // ISO 6709, as zone.tab writes it: +DDMM+DDDMM, seconds after each where known.
+      const parts = /^([+-])(\d{2})(\d{2})(\d{2})?([+-])(\d{3})(\d{2})(\d{2})?$/.exec(coordinates ?? "");
+      if (!parts) {
+        locate.fail(`no coordinates for ${zone}`);
+        return;
       }
+      const angle = (sign, degrees, minutes, seconds) => (sign === "-" ? -1 : 1) * (Number(degrees) + Number(minutes) / 60 + Number(seconds ?? 0) / 3600);
+      // About a kilometre; MET asks for at most four decimals, and fewer share its cache.
+      const lat = angle(parts[1], parts[2], parts[3], parts[4]).toFixed(2);
+      const lon = angle(parts[5], parts[6], parts[7], parts[8]).toFixed(2);
+      root.place = zone.split("/").pop().replace(/_/g, " ");
+      forecast.command = ["curl", "--fail", "--silent", "--max-time", "20", "--user-agent", root.userAgent, `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`];
+      forecast.running = true;
     }
   }
 

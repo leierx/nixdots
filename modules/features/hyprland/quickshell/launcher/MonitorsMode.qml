@@ -32,15 +32,23 @@ LauncherMode {
     }
     return profiles;
   }
-  // hyprmoncfg saves no size for an output a profile turns off, so it takes the one another profile gives it.
-  readonly property var known: {
-    const known = {};
-    for (const outputs of Object.values(root.profiles)) {
+  // Each output as the profile turning on the most outputs has it: hyprmoncfg saves no size for one a profile turns off,
+  // and its place there says which side of the others it is on.
+  readonly property var reference: {
+    const reference = {};
+    const enabled = outputs => outputs.filter(output => output.enabled).length;
+    for (const outputs of Object.values(root.profiles).sort((a, b) => enabled(b) - enabled(a))) {
       for (const output of outputs) {
-        if (output.enabled && root.sized(output)) known[output.key] = output;
+        if (output.enabled && root.sized(output) && !(output.key in reference)) reference[output.key] = output;
       }
     }
-    return known;
+    return reference;
+  }
+  // Connector names for the outputs plugged in, which tell two of one model apart.
+  readonly property var connectors: {
+    const connectors = {};
+    for (const monitor of root.status?.monitors ?? []) connectors[monitor.key] = monitor.name;
+    return connectors;
   }
 
   name: "monitors"
@@ -81,10 +89,13 @@ LauncherMode {
     const outputs = (root.profiles[name] ?? [])
       .filter(output => !output.enabled || root.sized(output))
       .map(output => {
-        const shape = root.sized(output) ? output : root.known[output.key];
+        const shape = root.sized(output) ? output : root.reference[output.key];
+        const reference = root.reference[output.key];
         return Object.assign({
           key: output.key,
           name: [output.make, output.model].filter(part => part).join(" ") || output.description,
+          connector: root.connectors[output.key] ?? "",
+          ref: reference ? reference.x : output.enabled ? output.x : Infinity,
           enabled: output.enabled,
           x: output.x,
           y: output.y,
@@ -164,21 +175,31 @@ LauncherMode {
         Layout.maximumWidth: preview.width
         spacing: 10
 
+        // Outlined for one turned off, as the drawing has it.
         Rectangle {
-          visible: output.modelData.enabled
           implicitWidth: Math.max(20, number.implicitWidth + 10)
           implicitHeight: 20
           radius: Theme.smallRadius
-          color: Theme.fg
+          color: output.modelData.enabled ? Theme.fg : "transparent"
+          border.width: output.modelData.enabled ? 0 : 1
+          border.color: Theme.fgDim
 
           Text {
             id: number
 
             anchors.centerIn: parent
+            visible: output.modelData.enabled
             text: output.modelData.number
             color: Theme.bg
             font: Theme.captionHeading
           }
+        }
+
+        Text {
+          visible: text !== ""
+          text: output.modelData.connector
+          color: output.modelData.enabled ? Theme.fg : Theme.fgDim
+          font: Theme.heading
         }
 
         Text {
@@ -189,7 +210,7 @@ LauncherMode {
           elide: Text.ElideRight
         }
 
-        // The position tells two of the same model apart.
+        // The position tells apart two of one model that are not plugged in.
         Text {
           text: output.modelData.enabled ? [output.modelData.mode, output.modelData.scale !== 1 ? `×${output.modelData.scale}` : "", `at ${output.modelData.position}`].filter(part => part).join(" · ") : "off"
           color: Theme.fgDim

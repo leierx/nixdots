@@ -20,13 +20,25 @@ Item {
   readonly property real minY: Math.min(...on.map(output => output.y))
   readonly property real maxX: Math.max(...on.map(output => output.x + output.width))
   readonly property real gap: 240
-  readonly property var placed: on.length > limit ? [] : [
-    ...on.map(output => Object.assign({}, output, { x: output.x - minX, y: output.y - minY })),
-    ...off.map((output, index) => Object.assign({}, output, {
-      x: (on.length > 0 ? maxX - minX + gap : 0) + off.slice(0, index).reduce((sum, other) => sum + other.width + gap, 0),
+  // Outputs turned off go on the side their `ref` puts them, so left-only and right-only differ.
+  readonly property var placed: {
+    if (on.length > limit) return [];
+    const firstRef = Math.min(...on.map(output => output.ref ?? output.x));
+    const byRef = (a, b) => (a.ref ?? Infinity) - (b.ref ?? Infinity);
+    const before = off.filter(output => output.ref < firstRef).sort(byRef);
+    const after = off.filter(output => !(output.ref < firstRef)).sort(byRef);
+    const row = (outputs, start) => outputs.map((output, index) => Object.assign({}, output, {
+      x: start + outputs.slice(0, index).reduce((sum, other) => sum + other.width + gap, 0),
       y: 0,
-    })),
-  ]
+    }));
+    const beforeWidth = before.reduce((sum, output) => sum + output.width + gap, 0);
+    const onWidth = on.length > 0 ? maxX - minX + gap : 0;
+    return [
+      ...row(before, 0),
+      ...on.map(output => Object.assign({}, output, { x: output.x - minX + beforeWidth, y: output.y - minY })),
+      ...row(after, beforeWidth + onWidth),
+    ];
+  }
   readonly property real totalWidth: Math.max(1, ...placed.map(output => output.x + output.width))
   readonly property real totalHeight: Math.max(1, ...placed.map(output => output.y + output.height))
   readonly property real ratio: Math.min(width / totalWidth, height / totalHeight)
@@ -56,14 +68,26 @@ Item {
         border.width: modelData.enabled ? 0 : 1
         border.color: Qt.rgba(root.color.r, root.color.g, root.color.b, 0.6)
 
-        Text {
+        Column {
           anchors.centerIn: parent
           visible: root.numbered && output.height >= 20 && output.width >= 20
-          text: output.modelData.enabled ? output.modelData.number : "off"
-          color: output.modelData.enabled ? Theme.bg : Theme.fgDim
-          font.family: Theme.body.family
-          font.weight: Font.Bold
-          font.pixelSize: Math.min(22, Math.round(output.height * 0.4))
+
+          Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: output.modelData.enabled ? output.modelData.number : "off"
+            color: output.modelData.enabled ? Theme.bg : Theme.fgDim
+            font.family: Theme.body.family
+            font.weight: Font.Bold
+            font.pixelSize: Math.min(22, Math.round(output.height * 0.4))
+          }
+
+          Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: text !== "" && output.height >= 60 && implicitWidth <= output.width - 8
+            text: output.modelData.connector ?? ""
+            color: output.modelData.enabled ? Theme.bg : Theme.fgDim
+            font: Theme.caption
+          }
         }
       }
     }

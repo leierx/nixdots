@@ -381,12 +381,15 @@ Notes on specific features:
         `~/.config/hyprmoncfg/profiles`, so any machine's layouts draw
         themselves: outputs at their logical size (scale and rotation
         applied), numbered left to right, those a profile turns off outlined
-        to the side at the size another profile gives them, and those saved
-        without a size left out. Past eight outputs, or once one would be
+        beside the rest, at the size and on the side the profile turning on the
+        most outputs gives them (so `left-only` and `right-only` of a pair
+        differ), each labelled with its connector (`DP-1`) while plugged in,
+        and those saved without a size left out. Past eight outputs, or once one would be
         under 4 px, the drawing becomes a count. The preview draws it as
         large as fits
-        and lists the outputs, six lines at most, each with its mode,
-        scale and position (`at 2560x0`), which tells two of one model apart.
+        and lists the outputs, six lines at most, each with its connector,
+        model, mode, scale and position (`at 2560x0`); one turned off has an
+        outlined badge.
       - `windows`: every window from wlr-foreign-toplevel
         (`ToplevelManager`), so it works on any compositor, the focused one
         last. On Hyprland the rest come in focus order (a `refreshToplevels`
@@ -447,8 +450,9 @@ Notes on specific features:
         enables UPower; `qs ipc -c shell call bar fakeBattery 15 false` shows a
         made-up one anywhere, `realBattery` drops it.
     - `weather/` is the `Weather` singleton and `Forecast`, its card under
-      the center's calendar: MET Norway's forecast (yr.no's) for where the
-      public address puts the machine (ipinfo.io), so it follows the laptop,
+      the center's calendar: MET Norway's forecast (yr.no's) for the
+      timezone's city (`/etc/localtime`'s zone, placed by the `zone.tab`
+      beside it, so Europe/Oslo is Oslo, and no lookup of the public address),
       fetched with `curl` from the shell's start and every half hour after,
       coordinates at two decimals for
       MET's cache. `hours` runs hourly from the hour under way (`now`): its
@@ -470,6 +474,8 @@ Notes on specific features:
       too); the app's timeout or 8 s, critical never, hovering holds it;
       click runs the default action, right or middle click or a swipe towards
       the edge dismisses; more than three actions fold into a "More" dropdown.
+      A transient notification leaves the history with its popup, and one that
+      cannot pop up (the center open, Do Not Disturb, fullscreen) is never kept.
       Like GNOME, while the focused window is fullscreen (Wayland's
       foreign-toplevel state, so maximised windows don't count) only critical
       notifications pop up, on the overlay layer above it, and going
