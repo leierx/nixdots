@@ -24,6 +24,51 @@ PanelWindow {
   property var pending: null
   readonly property int padding: 6
 
+  // libadwaita's check button: an outlined box (a ring for a radio), filled with the accent once checked.
+  component CheckIndicator: Rectangle {
+    id: indicator
+
+    property bool radio: false
+    property int checkState: Qt.Unchecked
+    readonly property bool on: checkState !== Qt.Unchecked
+
+    width: 14
+    height: 14
+    radius: radio ? 7 : 4
+    color: on ? Theme.accentBg : "transparent"
+    border.width: on ? 0 : 2
+    border.color: Theme.border
+
+    Rectangle {
+      anchors.centerIn: parent
+      width: 6
+      height: 6
+      radius: 3
+      visible: indicator.radio && indicator.on
+      color: Theme.accentFg
+    }
+
+    Shape {
+      anchors.fill: parent
+      visible: !indicator.radio && indicator.on
+      preferredRendererType: Shape.CurveRenderer
+
+      ShapePath {
+        strokeColor: Theme.accentFg
+        strokeWidth: 2
+        fillColor: "transparent"
+        capStyle: ShapePath.RoundCap
+        joinStyle: ShapePath.RoundJoin
+
+        PathPolyline {
+          path: indicator.checkState === Qt.PartiallyChecked
+            ? [Qt.point(4, 7), Qt.point(10, 7)]
+            : [Qt.point(3.5, 7.5), Qt.point(6, 10), Qt.point(10.5, 4.5)]
+        }
+      }
+    }
+  }
+
   function apply(level: int, label: string): void {
     root.pending = null;
     root.path = [...root.path.slice(0, level), ...(label ? [label] : [])];
@@ -124,6 +169,8 @@ PanelWindow {
           if (entries.length > 0 && entries[entries.length - 1].isSeparator) entries.pop();
           return entries;
         }
+        readonly property bool indicators: entries.some(entry => entry.buttonType !== QsMenuButtonType.None)
+        readonly property bool icons: entries.some(entry => !!entry.icon)
         readonly property real openerY: parentCard?.rowY(handle) ?? 0
 
         function rowY(entry: var): real {
@@ -206,45 +253,32 @@ PanelWindow {
                   spacing: 8
                   opacity: entry.modelData?.enabled ? 1 : 0.5
 
+                  // A column every row keeps once any has one, so the labels line up as in GTK's menus.
                   Item {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 16
                     height: 16
-                    visible: entry.modelData?.buttonType !== QsMenuButtonType.None
+                    visible: card.indicators
 
-                    Shape {
-                      anchors.fill: parent
-                      visible: entry.modelData?.buttonType === QsMenuButtonType.CheckBox && entry.modelData?.checkState === Qt.Checked
-                      preferredRendererType: Shape.CurveRenderer
-
-                      ShapePath {
-                        strokeColor: Theme.fg
-                        strokeWidth: 2
-                        fillColor: "transparent"
-                        capStyle: ShapePath.RoundCap
-                        joinStyle: ShapePath.RoundJoin
-
-                        PathPolyline {
-                          path: [Qt.point(3, 8.5), Qt.point(6.5, 12), Qt.point(13, 4.5)]
-                        }
-                      }
-                    }
-
-                    Rectangle {
+                    CheckIndicator {
                       anchors.centerIn: parent
-                      width: 6
-                      height: 6
-                      radius: 3
-                      visible: entry.modelData?.buttonType === QsMenuButtonType.RadioButton && entry.modelData?.checkState === Qt.Checked
-                      color: Theme.fg
+                      visible: entry.modelData?.buttonType !== QsMenuButtonType.None
+                      radio: entry.modelData?.buttonType === QsMenuButtonType.RadioButton
+                      checkState: entry.modelData?.checkState ?? Qt.Unchecked
                     }
                   }
 
-                  IconImage {
+                  Item {
                     anchors.verticalCenter: parent.verticalCenter
-                    implicitSize: 16
-                    visible: !!entry.modelData?.icon
-                    source: entry.modelData ? entry.modelData.icon : ""
+                    width: 16
+                    height: 16
+                    visible: card.icons
+
+                    IconImage {
+                      anchors.fill: parent
+                      visible: !!entry.modelData?.icon
+                      source: entry.modelData ? entry.modelData.icon : ""
+                    }
                   }
 
                   Text {

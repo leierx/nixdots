@@ -508,7 +508,9 @@ Notes on specific features:
         `QsMenuOpener` with its corner at the pointer (leftwards where it would
         run off the screen), on an overlay (a `Panels` panel per screen) whose
         input region is only its cards (`Region.regions`), stray separators
-        dropped. Submenus cascade as GTK's do: a card each, beside the row that
+        dropped. Check and radio items get libadwaita's check buttons, and a
+        card that has any (or any icon) keeps their column on every row, so the
+        labels line up. Submenus cascade as GTK's do: a card each, beside the row that
         opens it (held highlighted), opened by a click or 150 ms of hover, so
         passing over rows opens nothing, and closed as soon as the pointer is on
         another row of its parent; each goes the way the last
