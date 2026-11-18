@@ -1,3 +1,21 @@
+root@{ lib, ... }:
+let
+  adw = root.config.palettes.adwaita_darker;
+  surfaces = [
+    "window_bg_color"
+    "view_bg_color"
+    "headerbar_bg_color"
+    "headerbar_backdrop_color"
+    "sidebar_bg_color"
+    "sidebar_backdrop_color"
+    "secondary_sidebar_bg_color"
+    "secondary_sidebar_backdrop_color"
+    "overview_bg_color"
+    "thumbnail_bg_color"
+    "dialog_bg_color"
+    "popover_bg_color"
+  ];
+in
 {
   flake.modules.nixos.gtk.programs.dconf.enable = true;
 
@@ -43,9 +61,30 @@
         gtk3 = {
           bookmarks = [ ];
           inherit extraConfig;
+          # adw-gtk3 takes libadwaita's named colours, less those it never reads
+          extraCss = lib.concatMapStrings (name: "@define-color ${name} ${adw.${name}};\n") (
+            lib.subtractLists [
+              "secondary_sidebar_bg_color"
+              "secondary_sidebar_backdrop_color"
+              "overview_bg_color"
+              "thumbnail_bg_color"
+            ] surfaces
+          );
         };
 
-        gtk4 = { inherit extraConfig; };
+        gtk4 = {
+          inherit extraConfig;
+          extraCss = ''
+            @media (prefers-color-scheme: dark) {
+              :root {
+            ${
+              lib.concatMapStrings (
+                name: "    --${lib.replaceStrings [ "_" ] [ "-" ] name}: ${adw.${name}};\n"
+              ) surfaces
+            }  }
+            }
+          '';
+        };
       };
     };
 }

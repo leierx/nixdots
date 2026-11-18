@@ -1,6 +1,6 @@
 root@{ lib, ... }:
 let
-  adw = root.config.palettes.adwaita_dark;
+  adw = root.config.palettes.adwaita_darker;
   hex = lib.removePrefix "#";
   # libadwaita draws these as the foreground at a percentage; hyprtoolkit brightens them, so they must be opaque
   over =

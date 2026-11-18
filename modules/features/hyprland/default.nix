@@ -1,6 +1,6 @@
 root@{ inputs, lib, ... }:
 let
-  adw = root.config.palettes.adwaita_dark;
+  adw = root.config.palettes.adwaita_darker;
   hex = lib.removePrefix "#";
 in
 {

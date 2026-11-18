@@ -7,7 +7,7 @@ root: {
       ...
     }:
     let
-      c = root.config.palettes.adwaita_dark;
+      c = root.config.palettes.adwaita_darker;
       paneLabel = "#{?#{==:#{pane_title},#{host}},#{pane_current_command} · #{b:pane_current_path},#{pane_title}}";
       tmux = lib.getExe pkgs.tmux;
       scrollback = pkgs.writeShellScript "tmux-scrollback" ''

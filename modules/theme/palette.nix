@@ -7,8 +7,9 @@
   };
 
   # libadwaita 1.9's dark style under its own names (doc/css-variables.md),
-  # plus ghostty's "Adwaita Dark" terminal colours; translucent ones are CSS #rrggbbaa
-  config.palettes.adwaita_dark = {
+  # plus ghostty's "Adwaita Dark" terminal colours; translucent ones are CSS #rrggbbaa.
+  # The opaque surfaces and the terminal background are libadwaita's less 14 per channel, so its steps survive
+  config.palettes.adwaita_darker = {
     accent_bg_color = "#3584e4";
     accent_fg_color = "#ffffff";
     accent_color = "#81d0ff";
@@ -25,38 +26,38 @@
     error_fg_color = "#ffffff";
     error_color = "#ff938c";
 
-    window_bg_color = "#222226";
+    window_bg_color = "#141418";
     window_fg_color = "#ffffff";
-    view_bg_color = "#1d1d20";
+    view_bg_color = "#0f0f12";
     view_fg_color = "#ffffff";
-    headerbar_bg_color = "#2e2e32";
+    headerbar_bg_color = "#202024";
     headerbar_fg_color = "#ffffff";
     headerbar_border_color = "#ffffff";
-    headerbar_backdrop_color = "#222226";
+    headerbar_backdrop_color = "#141418";
     headerbar_shade_color = "#0000065c";
     headerbar_darker_shade_color = "#00000ce6";
-    sidebar_bg_color = "#2e2e32";
+    sidebar_bg_color = "#202024";
     sidebar_fg_color = "#ffffff";
-    sidebar_backdrop_color = "#28282c";
+    sidebar_backdrop_color = "#1a1a1e";
     sidebar_border_color = "#0000065c";
     sidebar_shade_color = "#00000640";
-    secondary_sidebar_bg_color = "#28282c";
+    secondary_sidebar_bg_color = "#1a1a1e";
     secondary_sidebar_fg_color = "#ffffff";
-    secondary_sidebar_backdrop_color = "#252529";
+    secondary_sidebar_backdrop_color = "#17171b";
     secondary_sidebar_border_color = "#0000065c";
     secondary_sidebar_shade_color = "#00000640";
     card_bg_color = "#ffffff14";
     card_fg_color = "#ffffff";
     card_shade_color = "#0000065c";
-    overview_bg_color = "#28282c";
+    overview_bg_color = "#1a1a1e";
     overview_fg_color = "#ffffff";
-    thumbnail_bg_color = "#39393d";
+    thumbnail_bg_color = "#2b2b2f";
     thumbnail_fg_color = "#ffffff";
     active_toggle_bg_color = "#ffffff33";
     active_toggle_fg_color = "#ffffff";
-    dialog_bg_color = "#36363a";
+    dialog_bg_color = "#28282c";
     dialog_fg_color = "#ffffff";
-    popover_bg_color = "#36363a";
+    popover_bg_color = "#28282c";
     popover_fg_color = "#ffffff";
     popover_shade_color = "#00000640";
     shade_color = "#00000640";
@@ -118,10 +119,10 @@
     dark_4 = "#241f31";
     dark_5 = "#000000";
 
-    background = "#1d1d20";
+    background = "#0f0f12";
     foreground = "#ffffff";
     cursor = "#ffffff";
-    cursor_text_color = "#1d1d20";
+    cursor_text_color = "#0f0f12";
     selection_background = "#ffffff";
     selection_foreground = "#5e5c64";
     color0 = "#241f31";

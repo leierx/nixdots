@@ -29,7 +29,7 @@ root: {
           lib.concatStrings (
             lib.mapAttrsToList (
               name: value: "  readonly property color ${name}: ${builtins.toJSON (qtColor value)}\n"
-            ) root.config.palettes.adwaita_dark
+            ) root.config.palettes.adwaita_darker
           )
         }}
       '';

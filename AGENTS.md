@@ -129,7 +129,7 @@ importer changes behaviour through the aspect's own options or `lib.mkForce`.
 | Option | Type | Notes |
 | --- | --- | --- |
 | `identity` | `{ username, fullName, email }` | Primary user; read by `users`, `git`, `home-manager`, profiles. |
-| `palettes` | `attrsOf (attrsOf str)` | `adwaita_dark` (libadwaita 1.9's dark style under its own names: every named colour, translucent ones as CSS `#rrggbbaa`, the accent swatches and the GNOME palette, plus ghostty's terminal colours; quickshell, hyprland, hyprlock, wezterm, tmux). |
+| `palettes` | `attrsOf (attrsOf str)` | `adwaita_darker` (libadwaita 1.9's dark style under its own names: every named colour, translucent ones as CSS `#rrggbbaa`, the accent swatches and the GNOME palette, plus ghostty's "Adwaita Dark" terminal colours; its opaque surfaces and the terminal background darkened together by 14 per channel, so libadwaita's steps between them survive and `view_bg_color` lands on `#0f0f12`, after [Darkwaita](https://github.com/varunbpatil/Darkwaita)'s darker GNOME Shell; accents, text, translucent colours and the ANSI colours unchanged; quickshell, hyprland, hyprlock, hyprtoolkit, GTK, wezterm, tmux). |
 | `hyprland.workspaces` | positive int | Workspaces per monitor; read by hyprsplit's config, the binds and the quickshell bar. |
 | `nixosHosts.<name>` | submodule `{ system }` | Drives `flake.nixosConfigurations`. |
 | `systems` | `listOf str` | Option default `[ ]`; `per-system.nix` defines `[ "x86_64-linux" "aarch64-darwin" ]`. Drives `perSystem`. |
@@ -204,9 +204,9 @@ One flat file per feature; a directory when it has parts. Every file exports
 | `plymouth.nix` | nixos | `plymouth` | plymouth + quiet boot params |
 | `podman.nix` | nixos | `podman` | podman + docker compat, DNS on `podman0` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
-| `tmux/` | homeManager | `tmux` | tmux on built-ins, themed from `palettes.adwaita_dark`: a bare `tmux` attaching to the session `main` (a package wrapper), a vim keymap on `C-b` (prefix table reset, no arrows), `choose-tree` for jumping, a copy-mode selection on the clipboard (OSC 52) as it changes, `prefix e` opening the scrollback in nvim (only with `programs.neovim`), framed pane titles, rounded popups/menus, bells from background windows marked (pi rings one) and `prefix o` to jump; resurrect + continuum loaded last by `run-shell`, since home-manager's `plugins` load before `extraConfig`; a post-save-layout hook saves each pi pane as `pi --session <its @pi_session>`, so panes sharing a directory each get their own session back |
+| `tmux/` | homeManager | `tmux` | tmux on built-ins, themed from `palettes.adwaita_darker`: a bare `tmux` attaching to the session `main` (a package wrapper), a vim keymap on `C-b` (prefix table reset, no arrows), `choose-tree` for jumping, a copy-mode selection on the clipboard (OSC 52) as it changes, `prefix e` opening the scrollback in nvim (only with `programs.neovim`), framed pane titles, rounded popups/menus, bells from background windows marked (pi rings one) and `prefix o` to jump; resurrect + continuum loaded last by `run-shell`, since home-manager's `plugins` load before `extraConfig`; a post-save-layout hook saves each pi pane as `pi --session <its @pi_session>`, so panes sharing a directory each get their own session back |
 | `users.nix` | nixos, homeManager | `users` | primary user, groups, hashed password, zsh (no global compinit; oh-my-zsh runs it) + starship, root locked |
-| `wezterm.nix` | homeManager | `wezterm` | wezterm with an "Adwaita Dark" scheme from `palettes.adwaita_dark`, Hack font, notifications only while its window is unfocused |
+| `wezterm.nix` | homeManager | `wezterm` | wezterm with an "Adwaita Darker" scheme from `palettes.adwaita_darker`, Hack font, notifications only while its window is unfocused |
 | `xdg.nix` | homeManager | `xdg-user-dirs` | XDG user dirs (created; projects = HM default `~/Projects`) |
 | `zsh.nix` | homeManager | `zsh` | oh-my-zsh, autosuggestions, syntax highlight, 100k history, `programs.fzf` keybindings (Ctrl-R/Ctrl-T/Alt-C) |
 
@@ -302,8 +302,8 @@ Notes on specific features:
         others (to catch the wheel, say) or beside a parent's `HoverHandler`
         needs `cursorShape: undefined`. Qt's `qt.quick.hover.cursor` logging
         names the item that won.
-    - `Theme` is libadwaita's dark style 1:1: its named colours
-      (`palettes.adwaita_dark`, `view_bg_color` surfaces), hover/selection/
+    - `Theme` is libadwaita's dark style 1:1, on the darker palette: its named colours
+      (`palettes.adwaita_darker`, `view_bg_color` surfaces), hover/selection/
       border as the foreground at libadwaita's alphas over any surface, its
       type scale as `font` values (`Theme.body`, `heading`, `caption`,
       `title4`, …; Adwaita Sans at GTK's 11pt) and its radii (button 9, card
@@ -317,7 +317,7 @@ Notes on specific features:
       `pw-play`, `notify-send`, `xdg-open`, `systemd-run`, `hyprmoncfg`,
       `wezterm`, `curl`, `nixpkgs-index`, `nixpkgs-run`) rather than store paths, an exception to the rule above;
       `quickshell.nix` installs the ones no other feature does. The only Nix
-      in the QML is `palettes.adwaita_dark` as the `Colors` singleton (translucent
+      in the QML is `palettes.adwaita_darker` as the `Colors` singleton (translucent
       colours turned into Qt's `#aarrggbb`) and `hyprland.workspaces` as
       `Hyprsplit.workspaces`, in a `qs.nix`
       module added to the store copy, so it only runs from the built copy
@@ -646,7 +646,7 @@ Notes on specific features:
       `pan-down-symbolic` as a `Shape`).
   - `hyprtoolkit.nix` themes hyprtoolkit (`~/.config/hypr/hyprtoolkit.conf`),
     which hyprpolkitagent ≥ 0.2 and hyprland-guiutils' dialogs (app not
-    responding, permissions) draw with, as libadwaita's dark style: window
+    responding, permissions) draw with, as libadwaita's dark style on the darker palette: window
     background, buttons and borders as the foreground at 10 % and 15 % made
     opaque, Adwaita Sans, Papirus-Dark, radii 9/12. The accent is `blue_5`,
     since hyprtoolkit writes dark text on an accent lighter than OkLab 0.5.
@@ -715,7 +715,10 @@ to take.
 
 `palette.nix` declares `palettes` and is the canonical example of a top-level
 value option. `fonts` is nixos; `gtk` is nixos + homeManager; `cursor` and
-`qt` are homeManager.
+`qt` are homeManager. `gtk` recolours apps with the palette's darker surfaces:
+GTK4 through libadwaita's `:root` variables (dark style only), GTK3 through
+adw-gtk3's `@define-color` names, both in the user `gtk.css`. Qt's adwaita-dark
+style keeps its own colours.
 
 ### Hosts (`modules/hosts/`)
 
@@ -891,7 +894,7 @@ reads a copy of the database. The config dir is the user's, symlinked, except
   instead. pi's own files (`auth.json`, `sessions/`, `npm/`) are unaffected.
 - **pi themes cannot paint the screen background.** The theme format has no
   global background token; only the per-box `*Bg` tokens exist. The backdrop is
-  the terminal's, i.e. wezterm's Adwaita Dark background.
+  the terminal's, i.e. wezterm's Adwaita Darker background.
 - **Formatters/checks are per-system.** A new `perSystem` definition merges;
   don't redeclare `systems`.
 - **`stateVersion`** defaults to the nixpkgs release (NixOS and home-manager);

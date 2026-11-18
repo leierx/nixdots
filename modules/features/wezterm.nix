@@ -2,7 +2,7 @@ root: {
   flake.modules.homeManager.wezterm =
     { pkgs, ... }:
     let
-      palette = root.config.palettes.adwaita_dark;
+      palette = root.config.palettes.adwaita_darker;
     in
     {
       home.packages = [ pkgs.hack-font ];
@@ -87,7 +87,7 @@ root: {
           config.macos_forward_to_ime_modifier_mask = "SHIFT" -- Ctrl/Alt combos reach wezterm and nvim, not the IME
 
           config.color_schemes = {
-            ["Adwaita Dark"] = {
+            ["Adwaita Darker"] = {
               background = "${palette.background}",
               foreground = "${palette.foreground}",
               cursor_bg = "${palette.cursor}",
@@ -116,7 +116,7 @@ root: {
               },
             },
           }
-          config.color_scheme = "Adwaita Dark"
+          config.color_scheme = "Adwaita Darker"
 
           return config
         '';
