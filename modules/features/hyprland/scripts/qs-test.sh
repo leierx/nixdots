@@ -7,27 +7,39 @@ usage() {
   cat << EOF
 usage: qs-test COMMAND
 
-  up                 build the checkout's shell, start a headless sway and qs in $T
-  down               stop both and remove the session and the test shell's state
-  status             whether a session is up
-  sync               copy the checkout's QML in, restart qs, print its warnings
-  restart            restart qs, print its warnings
-  lint               qmllint the checkout's shell, as nix flake check does
+  up                    build the checkout's Hyprland config and shell, start them in $T
+  down                  stop the session and remove it and the test shell's state
+  status                whether a session is up
+  sync                  copy the checkout's QML in, restart qs, print its warnings
+  restart               restart qs, print its warnings
+  lint                  qmllint the checkout's shell, as nix flake check does
 
-  ipc ARGS...        qs ipc call ARGS (panels open apps, notifications count, ...)
-  type TEXT          type into the focused surface
-  key [MOD+]...KEY   press a key (ctrl+n, shift+Tab, Escape)
-  pointer DX DY      move the pointer by DX DY
-  shot [NAME] [GEOM] screenshot ("x,y wxh" for a region), prints its path
-  output MODE [SCALE] resize the output (2560x1440 1.5)
-  x CMD...           run CMD inside the session (notify-send, swaymsg, ...)
+  ipc ARGS...           qs ipc call ARGS (panels open apps, notifications count, ...)
+  key COMBO...          press keys in turn (ctrl+n, super+d, shift+Tab, Escape)
+  type TEXT             type TEXT into the focused surface
+  pointer X Y           put the pointer at X Y in layout coordinates (hover)
+  move DX DY            move the pointer by DX DY
+  click [BUTTON] [X Y]  click left (or right, middle), at X Y if given
+  press|release BUTTON  hold or let go of a button
+  drag X Y DX DY [MS]   press left at X Y, glide DX DY over MS (300) ms, release
+  wheel STEPS [horizontal]  scroll STEPS notches, positive down or right
+  layers                the layer surfaces up, by namespace and monitor
+  shot [NAME] [WHERE]   screenshot of everything, a monitor, or "x,y wxh"; prints its path
+  monitor add NAME [MODE] [SCALE] [POSITION]   plug a monitor in (1920x1080, 1, auto-right)
+  monitor remove NAME   unplug it
+  monitors              the monitors
+  output MODE [SCALE]   change the first monitor's mode (2560x1440 1.5)
+  spawn CMD...          start CMD in the session, detached (output in spawn.log)
+  tray [log]            add a test tray item with submenus (tests/tray.qml), or show what it was told
+  x CMD...              run CMD in the session (notify-send, hyprctl, ...)
 
-  log                qs's whole log
-  problems           its warnings and errors, less the expected ones
-  actions            what the shell tried to run on the machine (power, hyprctl, ...)
+  log                   qs's whole log
+  hyprlog               Hyprland's log
+  problems              qs's warnings and errors, less the expected ones
+  actions               what the session tried to run on the machine (power, systemd-run, ...)
 
-env: QS_TEST_DIR (session dir), QS_TEST_HOST (host whose shell is built, $host),
-     QS_TEST_REPO (checkout), QS_TEST_MODE (1920x1080), QS_TEST_SCALE (1)
+env: QS_TEST_DIR (session dir), QS_TEST_HOST (host whose config is built, $host),
+     QS_TEST_REPO (checkout), QS_TEST_MONITORS (NAME:MODE:SCALE ..., DP-1:1920x1080:1)
 EOF
 }
 
@@ -36,26 +48,32 @@ die() {
   exit 1
 }
 
-running() { [ -s "$T/sway.pid" ] && kill -0 "$(cat "$T/sway.pid")" 2> /dev/null; }
+running() { [ -s "$T/hyprland.pid" ] && kill -0 "$(cat "$T/hyprland.pid")" 2> /dev/null; }
 need_up() { running || die "no session in $T; run qs-test up"; }
+
+enter() {
+  XDG_RUNTIME_DIR=$(cat "$T/runtime")
+  WAYLAND_DISPLAY=$(cat "$T/display")
+  HYPRLAND_INSTANCE_SIGNATURE=$(cat "$T/signature")
+  DBUS_SESSION_BUS_ADDRESS=$(cat "$T/bus")
+  XDG_CONFIG_HOME=$T/cfg
+  XDG_CURRENT_DESKTOP=Hyprland
+  PATH=$T/bin:$PATH
+  HC=$(cat "$T/build")/hyprland/bin/hyprctl
+  export XDG_RUNTIME_DIR WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE DBUS_SESSION_BUS_ADDRESS XDG_CONFIG_HOME XDG_CURRENT_DESKTOP PATH
+  unset DISPLAY SWAYSOCK
+}
 
 # By config path, since setsid may fork and leave no pid to remember.
 testqs() {
-  qs list --all 2> /dev/null | awk -v path="$T/shell/shell.qml" '/Process ID/ { pid = $3 } /Config path/ && $3 == path { print pid }'
-}
-
-enter() {
-  WAYLAND_DISPLAY=$(cat "$T/display")
-  SWAYSOCK=$(cat "$T/swaysock")
-  DBUS_SESSION_BUS_ADDRESS=$(cat "$T/bus")
-  XDG_CONFIG_HOME=$T/cfg
-  PATH=$T/bin:$PATH
-  export WAYLAND_DISPLAY SWAYSOCK DBUS_SESSION_BUS_ADDRESS XDG_CONFIG_HOME PATH
-  unset HYPRLAND_INSTANCE_SIGNATURE
+  (
+    enter
+    qs list --all 2> /dev/null | awk -v path="$T/shell/shell.qml" '/Process ID/ { pid = $3 } /Config path/ && $3 == path { print pid }'
+  )
 }
 
 problems() {
-  grep -E 'WARN|ERROR' "$T/qs.log" | grep -vE 'GlobalShortcut|UPower|[Hh]yprland|qt\.qpa\.wayland|portal' || true
+  grep -E 'WARN|ERROR' "$T/qs.log" | grep -vE 'UPower|qt\.qpa\.services|Could not register app ID|qt\.qpa\.wayland\.textinput' || true
 }
 
 start_qs() {
@@ -80,10 +98,21 @@ stop_qs() {
   done
 }
 
-build_shell() {
-  # path:, since a git flake leaves untracked files out
-  nix build --no-link --print-out-paths --impure --expr \
-    "(builtins.getFlake \"path:$repo\").nixosConfigurations.$host.config.home-manager.users.$USER.programs.quickshell.configs.shell"
+# path:, since a git flake leaves untracked files out
+build() {
+  nix build --no-link --print-out-paths --impure --expr "
+    let
+      system = (builtins.getFlake \"path:$repo\").nixosConfigurations.$host;
+      home = system.config.home-manager.users.$USER;
+    in
+    system.pkgs.linkFarm \"qs-test-$host\" {
+      shell = home.programs.quickshell.configs.shell;
+      hyprland = system.config.programs.hyprland.package;
+      \"hyprland.lua\" = home.xdg.configFile.\"hypr/hyprland.lua\".source;
+      hyprsplit = home.xdg.configFile.\"hypr/hyprsplit\".source;
+      hyprpaper = home.services.hyprpaper.package;
+      \"hyprpaper.conf\" = home.xdg.configFile.\"hypr/hyprpaper.conf\".source;
+    }"
 }
 
 # nix/ and the weather icons exist only in the built copy.
@@ -103,23 +132,29 @@ sync_source() {
 fakes() {
   local config=${XDG_CONFIG_HOME:-$HOME/.config} cliphist entry
   mkdir -p "$T/bin" "$T/cfg/hyprmoncfg"
-  if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl > /dev/null; then
-    hyprctl binds -j > "$T/binds.json"
-  else
-    echo '[]' > "$T/binds.json"
-  fi
   hyprmoncfg status --json > "$T/status.json" 2> /dev/null || echo '{"profiles":[]}' > "$T/status.json"
   : > "$T/actions.log"
 
   cat > "$T/bin/hyprctl" << EOF
 #!/bin/sh
-case "\$1" in binds) cat "$T/binds.json" ;; *) echo "hyprctl \$*" >> "$T/actions.log" ;; esac
+case "\$*" in *'hl.dsp.exit()'*) echo "hyprctl \$*" >> "$T/actions.log"; exit ;; esac
+case "\$1" in dispatch | reload | keyword | eval) echo "hyprctl \$*" >> "$T/actions.log" ;; esac
+exec "$1/hyprland/bin/hyprctl" "\$@"
 EOF
   cat > "$T/bin/hyprmoncfg" << EOF
 #!/bin/sh
 case "\$1" in status) cat "$T/status.json" ;; *) echo "hyprmoncfg \$*" >> "$T/actions.log" ;; esac
 EOF
-  for entry in systemctl loginctl; do
+  # A scope is how the shell starts apps, so those still open in the session.
+  cat > "$T/bin/systemd-run" << EOF
+#!/bin/sh
+echo "systemd-run \$*" >> "$T/actions.log"
+case " \$* " in *' --scope '*) ;; *) exit ;; esac
+while [ "\${1#-}" != "\$1" ]; do shift; done
+case "\$1" in nixpkgs-run | xdg-open) exit ;; esac
+exec "\$@"
+EOF
+  for entry in systemctl loginctl pw-play xdg-open nixpkgs-run; do
     printf '#!/bin/sh\necho "%s $*" >> "%s/actions.log"\n' "$entry" "$T" > "$T/bin/$entry"
   done
   cliphist=$(command -v cliphist || true)
@@ -130,10 +165,65 @@ EOF
   chmod +x "$T/bin/"*
 
   for entry in "$config"/*; do
-    [ "$(basename "$entry")" = hyprmoncfg ] || ln -sfn "$entry" "$T/cfg/"
+    case $(basename "$entry") in hypr | hyprmoncfg) ;; *) ln -sfn "$entry" "$T/cfg/" ;; esac
   done
   [ -e "$config/hyprmoncfg/profiles" ] && ln -sfn "$config/hyprmoncfg/profiles" "$T/cfg/hyprmoncfg/profiles"
   return 0
+}
+
+# The host's own config, less what starts with the session and the monitors, which are the test's.
+hypr_config() {
+  local hypr=$T/cfg/hypr
+  mkdir -p "$hypr"
+  cp "$1/hyprland.lua" "$hypr/host.lua"
+  cp -r "$1/hyprsplit" "$hypr/hyprsplit"
+  cp "$1/hyprpaper.conf" "$hypr/hyprpaper.conf"
+  chmod -R u+w "$hypr"
+  : > "$hypr/monitors.lua"
+  cat > "$hypr/hyprland.lua" << EOF
+local on, monitor = hl.on, hl.monitor
+hl.on = function(event, fn) if event ~= "hyprland.start" then return on(event, fn) end end
+hl.monitor = function() end
+dofile("$hypr/host.lua")
+hl.on, hl.monitor = on, monitor
+hl.config({ misc = { disable_watchdog_warning = true } })
+dofile("$hypr/monitors.lua")
+EOF
+}
+
+monitor_rule() {
+  printf 'hl.monitor({ output = "%s", mode = "%s", position = "%s", scale = %s })\n' "$1" "${2:-1920x1080}" "${4:-auto-right}" "${3:-1}"
+}
+
+monitor_add() {
+  local rule
+  rule=$(monitor_rule "$@")
+  grep -v "output = \"$1\"" "$T/cfg/hypr/monitors.lua" > "$T/monitors.tmp" || true
+  echo "$rule" >> "$T/monitors.tmp"
+  mv "$T/monitors.tmp" "$T/cfg/hypr/monitors.lua"
+  "$HC" eval "$rule" > /dev/null
+  "$HC" monitors all -j | jq -e --arg name "$1" 'any(.name == $name)' > /dev/null || "$HC" output create headless "$1" > /dev/null
+}
+
+monitor_remove() {
+  grep -v "output = \"$1\"" "$T/cfg/hypr/monitors.lua" > "$T/monitors.tmp" || true
+  mv "$T/monitors.tmp" "$T/cfg/hypr/monitors.lua"
+  "$HC" output remove "$1" > /dev/null
+}
+
+# Monitor ids go to the lowest one free, so a placeholder keeps WAYLAND-1's id 0 for the first test monitor.
+monitors_up() {
+  local spec name mode scale first=1
+  "$HC" output create headless qst-placeholder > /dev/null
+  "$HC" output remove WAYLAND-1 > /dev/null
+  for spec in ${QS_TEST_MONITORS:-DP-1:1920x1080:1}; do
+    IFS=: read -r name mode scale <<< "$spec"
+    monitor_add "$name" "$mode" "$scale" "$([ $first = 1 ] && echo 0x0 || echo auto-right)"
+    if [ $first = 1 ]; then
+      first=0
+      "$HC" output remove qst-placeholder > /dev/null
+    fi
+  done
 }
 
 up() {
@@ -141,77 +231,115 @@ up() {
     echo "up in $T"
     return
   fi
-  local shell
-  shell=$(build_shell)
-  mkdir -p "$T/shots"
-  rm -rf "$T/shell" "$T/display" "$T/swaysock"
-  cp -rL "$shell" "$T/shell"
+  local build runtime
+  build=$(build)
+  mkdir -p "$T/shots" "$T/labwc"
+  rm -rf "$T/shell" "$T/cfg" "$T/display" "$T/signature"
+  echo "$build" > "$T/build"
+  cp -rL "$build/shell" "$T/shell"
   chmod -R u+w "$T/shell"
-  fakes
+  fakes "$build"
+  hypr_config "$build"
+  # Hyprland's sockets go in here, and their paths must stay under 108 bytes.
+  runtime=$(mktemp -d -p "${XDG_RUNTIME_DIR:-/tmp}" qs.XXX)
+  echo "$runtime" > "$T/runtime"
 
-  cat > "$T/sway.cfg" << EOF
-output HEADLESS-1 mode ${QS_TEST_MODE:-1920x1080} scale ${QS_TEST_SCALE:-1}
-output * bg $repo/modules/features/hyprland/assets/wallpaper.png fill
-exec sh -c 'echo \$SWAYSOCK > "$T/swaysock"; echo \$WAYLAND_DISPLAY > "$T/display"'
-EOF
+  # labwc only lends Hyprland a GPU: headless, it offers the xdg_wm_base 6 Hyprland needs to nest.
+  # libseat pointed at no seatd keeps Hyprland off DRM and logind, so it never touches the real session.
   cat > "$T/run.sh" << EOF
 #!/bin/sh
 echo \$DBUS_SESSION_BUS_ADDRESS > "$T/bus"
-echo \$\$ > "$T/sway.pid"
-unset HYPRLAND_INSTANCE_SIGNATURE
-WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 exec sway -c "$T/sway.cfg"
+export XDG_RUNTIME_DIR="$runtime" XDG_CONFIG_HOME="$T/cfg" PATH="$T/bin:\$PATH"
+export LIBSEAT_BACKEND=seatd SEATD_SOCK="$runtime/no-seatd"
+unset WAYLAND_DISPLAY DISPLAY HYPRLAND_INSTANCE_SIGNATURE SWAYSOCK
+WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 labwc -C "$T/labwc" > "$T/labwc.log" 2>&1 &
+echo \$! > "$T/labwc.pid"
+for _ in \$(seq 100); do [ -S "$runtime/wayland-0" ] && break; sleep 0.1; done
+export WAYLAND_DISPLAY=wayland-0 XDG_CURRENT_DESKTOP=Hyprland
+export HYPRLAND_NO_SD_VARS=1 HYPRLAND_NO_SD_NOTIFY=1 HYPRLAND_NO_SD_TARGET=1 HYPRLAND_NO_CRASHREPORTER=1
+echo \$\$ > "$T/hyprland.pid"
+exec "$build/hyprland/bin/Hyprland"
 EOF
   chmod +x "$T/run.sh"
-  setsid dbus-run-session -- "$T/run.sh" > "$T/sway.log" 2>&1 < /dev/null &
-  for _ in $(seq 100); do
-    [ -s "$T/display" ] && break
+  setsid dbus-run-session -- "$T/run.sh" > "$T/hyprland.log" 2>&1 < /dev/null &
+  local instance=""
+  for _ in $(seq 150); do
+    instance=$(XDG_RUNTIME_DIR=$runtime "$build/hyprland/bin/hyprctl" instances -j 2> /dev/null | jq -r '.[0] | select(.) | "\(.instance) \(.wl_socket)"' 2> /dev/null || true)
+    [ -n "$instance" ] && break
     sleep 0.1
   done
-  [ -s "$T/display" ] || die "sway did not start, see $T/sway.log"
+  [ -n "$instance" ] || die "Hyprland did not start, see $T/hyprland.log and $T/labwc.log"
+  echo "${instance% *}" > "$T/signature"
+  echo "${instance#* }" > "$T/display"
+
+  enter
+  monitors_up
+  XKB_DEFAULT_LAYOUT=$("$HC" getoption input:kb_layout -j | jq -r .str) \
+    XKB_DEFAULT_VARIANT=$("$HC" getoption input:kb_variant -j | jq -r .str) \
+    setsid qs-input serve "$XDG_RUNTIME_DIR/input" > "$T/input.log" 2>&1 < /dev/null &
+  setsid "$build/hyprpaper/bin/hyprpaper" > "$T/hyprpaper.log" 2>&1 < /dev/null &
+  for _ in $(seq 50); do
+    [ -S "$XDG_RUNTIME_DIR/input" ] && break
+    sleep 0.1
+  done
+  [ -S "$XDG_RUNTIME_DIR/input" ] || die "qs-input did not start, see $T/input.log"
   start_qs
   echo "up in $T"
 }
 
 down() {
-  local bus="" pid id
-  stop_qs
+  local bus="" runtime="" pid id
+  [ -s "$T/runtime" ] && runtime=$(cat "$T/runtime")
   [ -s "$T/bus" ] && bus=$(cat "$T/bus")
-  if running; then kill "$(cat "$T/sway.pid")"; fi
-  # Portals the private bus activated outlive it, reparented to pid 1.
-  if [ -n "$bus" ]; then
-    for pid in /proc/[0-9]*; do
-      pid=${pid#/proc/}
-      tr '\0' '\n' 2> /dev/null < "/proc/$pid/environ" | grep -qxF "DBUS_SESSION_BUS_ADDRESS=$bus" && kill "$pid" 2> /dev/null
-    done
-  fi
+  [ -s "$T/runtime" ] && [ -s "$T/display" ] && stop_qs
+  if running; then kill "$(cat "$T/hyprland.pid")"; fi
+  # Whatever the session started outlives it, portals reparented to pid 1 among them.
+  for pid in /proc/[0-9]*; do
+    pid=${pid#/proc/}
+    [ "$pid" = $$ ] && continue
+    tr '\0' '\n' 2> /dev/null < "/proc/$pid/environ" |
+      grep -qxF -e "DBUS_SESSION_BUS_ADDRESS=${bus:-none}" -e "XDG_RUNTIME_DIR=${runtime:-none}" &&
+      kill "$pid" 2> /dev/null
+  done
   # Quickshell keys its dirs by config path, so these are the test shell's own.
   id=$(grep -o 'Shell ID: "[0-9a-f]*' "$T/qs.log" 2> /dev/null | head -1 | cut -d'"' -f2 || true)
   if [ -n "$id" ]; then
     rm -rf "$HOME/.local/state/quickshell/by-shell/$id" "$HOME/.cache/quickshell/by-shell/$id"
   fi
+  [ -n "$runtime" ] && rm -rf "$runtime"
   rm -rf "$T"
   echo down
+}
+
+input() {
+  enter
+  qs-input "$XDG_RUNTIME_DIR/input" "$@"
+}
+
+# Absolute motion from the virtual pointer, which hovers where a warp (hl.dsp.cursor.move) may not.
+pointer() {
+  local box
+  enter
+  box=$("$HC" monitors -j | jq -r --argjson x "$1" --argjson y "$2" '
+    map(if .transform % 2 == 1 then [.x, .y, .height / .scale, .width / .scale] else [.x, .y, .width / .scale, .height / .scale] end)
+    | (map(.[0]) | min) as $left | (map(.[1]) | min) as $top
+    | "\($x - $left) \($y - $top) \(map(.[0] + .[2]) | max | . - $left | round) \(map(.[1] + .[3]) | max | . - $top | round)"')
+  # shellcheck disable=SC2086
+  input to $box
 }
 
 shot() {
   local name=${1:-shot} file
   file=$T/shots/$(printf '%03d' "$(find "$T/shots" -name '*.png' | wc -l)")-$name.png
   enter
-  if [ -n "${2:-}" ]; then grim -g "$2" "$file"; else grim "$file"; fi
+  if [ -z "${2:-}" ]; then
+    grim "$file"
+  elif "$HC" monitors -j | jq -e --arg name "$2" 'any(.name == $name)' > /dev/null; then
+    grim -o "$2" "$file"
+  else
+    grim -g "$2" "$file"
+  fi
   echo "$file"
-}
-
-# wtype's first key reaches nobody, so a shift goes first.
-key() {
-  local parts mods=() mod
-  IFS=+ read -ra parts <<< "$1"
-  for mod in "${parts[@]:0:${#parts[@]}-1}"; do mods+=("$mod"); done
-  local args=(-s 150 -k Shift_L)
-  for mod in "${mods[@]}"; do args+=(-M "$mod"); done
-  args+=(-k "${parts[-1]}")
-  for mod in "${mods[@]}"; do args+=(-m "$mod"); done
-  enter
-  wtype "${args[@]}"
 }
 
 cmd=${1:-help}
@@ -222,15 +350,60 @@ case $cmd in
   status) if running; then echo "up in $T, qs $(testqs)"; else echo down; fi ;;
   sync) need_up; stop_qs; sync_source; start_qs ;;
   restart) need_up; stop_qs; start_qs ;;
-  lint) qs-lint "$(build_shell)" ;;
+  lint) qs-lint "$(readlink -f "$(build)/shell")" ;;
   ipc) need_up; enter; timeout 5 qs ipc -p "$T/shell" call "$@" ;;
-  type) need_up; enter; wtype -s 150 -k Shift_L "$*" ;;
-  key) need_up; for k in "$@"; do key "$k"; done ;;
-  pointer) need_up; enter; wlrctl pointer move "$@" ;;
+  key) need_up; input key "$@" ;;
+  type) need_up; input type "$*" ;;
+  pointer) need_up; pointer "$1" "$2" ;;
+  move) need_up; input move "$1" "$2" ;;
+  click)
+    need_up
+    button=left
+    case ${1:-} in left | right | middle) button=$1; shift ;; esac
+    [ $# -ge 2 ] && pointer "$1" "$2"
+    input click "$button"
+    ;;
+  press | release) need_up; input "$cmd" "${1:-left}" ;;
+  drag)
+    need_up
+    pointer "$1" "$2"
+    input press left
+    input glide "$3" "$4" "${5:-300}"
+    input release left
+    ;;
+  wheel) need_up; input wheel "$@" ;;
+  layers) need_up; enter; "$HC" layers -j | jq -r 'to_entries[] | .key as $m | .value.levels[][] | "\($m) \(.namespace)"' ;;
   shot) need_up; shot "$@" ;;
-  output) need_up; enter; swaymsg output HEADLESS-1 mode "$1" scale "${2:-1}" ;;
+  monitor)
+    need_up
+    enter
+    case ${1:-} in
+      add) shift; monitor_add "$@" ;;
+      remove) monitor_remove "$2" ;;
+      *) die "monitor add|remove NAME" ;;
+    esac
+    ;;
+  monitors) need_up; enter; "$HC" monitors -j | jq -r '.[] | "\(.name) id \(.id) \(.width)x\(.height) scale \(.scale) at \(.x)x\(.y)"' ;;
+  output)
+    need_up
+    enter
+    monitor_add "$("$HC" monitors -j | jq -r 'min_by(.id).name')" "$1" "${2:-1}" 0x0
+    ;;
+  spawn) need_up; enter; setsid "$@" >> "$T/spawn.log" 2>&1 < /dev/null & ;;
+  tray)
+    need_up
+    if [ "${1:-}" = log ]; then
+      grep -o 'qml: .*' "$T/tray.log"
+    else
+      enter
+      [ -s "$T/tray.pid" ] && kill "$(cat "$T/tray.pid")" 2> /dev/null || true
+      qs-tray > "$T/tray.log" 2>&1 < /dev/null &
+      echo $! > "$T/tray.pid"
+    fi
+    ;;
   x) need_up; enter; exec "$@" ;;
   log) cat "$T/qs.log" ;;
+  hyprlog) enter; cat "$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/hyprland.log" ;;
   problems) problems ;;
   actions) cat "$T/actions.log" ;;
   help | -h | --help) usage ;;

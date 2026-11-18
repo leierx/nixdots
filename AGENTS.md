@@ -292,7 +292,7 @@ Notes on specific features:
         resetting state by hand.
       - Every panel goes through `Panels`; saved state through `StateFile`.
       - Behaviour is checked against the source (Quickshell, Qt, Hyprland)
-        rather than guessed, and tested before it lands, in a headless sway
+        rather than guessed, and tested before it lands, in a Hyprland
         of its own (see [Testing the Quickshell shell](#testing-the-quickshell-shell)).
       - An inline component sees the file's ids before its own properties,
         so it reads those through its own id (`list.results`, not
@@ -771,12 +771,28 @@ in the tree.
 
 ## Testing the Quickshell shell
 
-Test the shell in a headless sway of its own, on its own D-Bus, never in the
-live session. Nothing in it reaches the running Hyprland, so neither
-hyprmoncfgd nor the live shell needs pausing, and the user's screens, focus,
-notifications and tray are left alone. A nested Hyprland is no option: with
-no parent Wayland it falls through to DRM, logind refuses it, and it hangs in
-its crash path leaving `/run/user/$UID/hypr/<sig>/` behind.
+Test the shell in a Hyprland of its own, never in the live session: the
+host's Hyprland and its config, built from the checkout, nested in a headless
+labwc, on its own D-Bus and its own `XDG_RUNTIME_DIR`. Nothing in it reaches
+the running Hyprland, so neither hyprmoncfgd nor the live shell needs pausing,
+and the user's screens, pointer, focus, notifications and tray are left alone.
+
+- labwc only lends Hyprland a GPU: Hyprland needs a parent Wayland (or DRM)
+  for its allocator, and binds `xdg_wm_base` 6, which headless labwc offers and
+  sway and cage (5) do not.
+- libseat is pointed at a seatd that does not exist, so Hyprland never asks
+  logind for the DRM device, and the `HYPRLAND_NO_SD_*` variables keep it off
+  the user's systemd environment and `hyprland-session.target`.
+- The config is the host's `hyprland.lua` with its `hyprland.start` handlers
+  and monitor rules dropped, plus the test's own monitors. Monitors are
+  Hyprland's headless outputs, ids from 0 as on the real machine, so
+  hyprsplit, `dim_around`, global shortcuts, workspaces, real windows and
+  hotplug all behave as they do in the session.
+- Input is `qs-input` (`scripts/qs-input.c`): one virtual pointer and keyboard
+  held for the whole session, fed over a socket. A device per call (wtype,
+  wlrctl) drops the seat's pointer or keyboard capability between calls, so
+  Qt rebinds and loses the first events: clicks and keys went missing. Its
+  keymap is the host's (`input:kb_layout`), so `super+shift+plus` is SUPER+?.
 
 `qs-test` (`scripts/qs-test.sh`, the flake package `qs-test`) is the whole
 session; agents set `QS_TEST_DIR` to a directory in their scratchpad, so each
@@ -786,44 +802,57 @@ has its own:
 export QS_TEST_DIR=<scratchpad>/qs-test
 qst() { nix run "path:$PWD#qs-test" -- "$@"; }   # or build it once and call the binary
 
-qst up                         # the checkout's shell (path:, so untracked files count) for this host
+qst up                         # the checkout's Hyprland config and shell (path:, so untracked files count) for this host
 qst ipc panels open apps       # qs ipc call, with a timeout
-qst type fire                  # wtype drops each call's first key; qs-test sends a shift first
+qst key super+d                # through Hyprland's bind and the shell's global shortcut
+qst type fire
 qst key ctrl+n Down Return     # one key per argument
+qst pointer 960 21             # hover, in layout coordinates
+qst click                      # left, where the pointer is; or `qst click right 1896 21`
+qst drag 1631 112 320 0 250    # press at x y, move dx dy over ms, release: a swipe
+qst wheel 3                    # notches, positive down
+qst layers                     # the layer surfaces up: which panels are open, on which monitor
 qst shot apps                  # numbered PNG in $QS_TEST_DIR/shots, path printed
 qst shot crop "360,330 600x260"
-qst x notify-send -a Discord loft01 hello   # anything else, inside the session
-qst output 2560x1440 1.5
+qst shot dp2 DP-2              # one monitor
+qst monitor add DP-2 2560x1440 1.25   # hotplug; `monitor remove DP-2` unplugs
+qst output 2560x1440 1.5       # the first monitor's mode
+qst key super+Return           # real windows, for workspaces and the window switcher
+qst tray                       # a tray item with nested submenus (tests/tray.qml); `qst tray log` shows what it was told
+qst x notify-send -a Discord loft01 hello   # anything else, inside the session (hyprctl talks to the test Hyprland)
 qst sync                       # copy edited QML in, restart qs, print its warnings; non-zero if it fails to load
 qst problems                   # warnings and errors, less the expected ones
-qst actions                    # what the shell tried to run on the machine
+qst actions                    # what the session tried to run on the machine
 qst lint                       # the qmllint check, on the checkout
-qst down                       # kills sway, qs and the portals the private bus started; deletes the test shell's state
+qst down                       # kills everything the session started; deletes it and the test shell's state
 ```
 
-The session reaches nothing real: it has its own D-Bus, `systemctl`,
-`loginctl`, `hyprctl` and `hyprmoncfg` are fakes that log to `qst actions`
-(`hyprctl binds` replays the live binds, `hyprmoncfg status` the live
-profiles), and cliphist reads a copy of the database. The config dir is the
-user's, symlinked, except `hyprmoncfg/`; profiles to fake go in
+The session reaches nothing real: it has its own D-Bus and runtime dir;
+`systemctl`, `loginctl`, `pw-play`, `xdg-open`, `nixpkgs-run` and
+`hyprmoncfg` are fakes that log to `qst actions` (`hyprmoncfg status` replays
+the live profiles); `systemd-run --scope` logs and runs the app in the test
+session, so the launcher's apps open there; `hyprctl` is the test Hyprland's,
+logging dispatches and reloads, with `hl.dsp.exit()` only logged; cliphist
+reads a copy of the database. The config dir is the user's, symlinked, except
+`hypr/` (the test's) and `hyprmoncfg/`; profiles to fake go in
 `$QS_TEST_DIR/cfg/hyprmoncfg/profiles`.
 
 - `sync` copies over rather than rebuilds: the copy keeps the built `nix/`
   and weather icons. It restarts rather than hot-reloads: a reload keeps
   inline components' old types ("X is not a type") and only watches files the
-  last load used.
+  last load used. A change to Hyprland's config needs `qst down` and `up`.
+- `qst pointer` is an absolute motion of the virtual pointer, as a tablet's:
+  a warp (`hl.dsp.cursor.move`) moves the cursor but may not hover.
+- Pointer coordinates are layout coordinates; screenshot pixels are those ×
+  the output's scale (the shell draws at `QT_SCALE_FACTOR` 1.2 within them).
+- Tray menus take no keyboard and close on a click elsewhere or on their icon,
+  not on Escape.
 - `notify-send -A` waits for the action; background it.
-- Screenshot pixels are logical × 1.2 (`QT_SCALE_FACTOR`) × the output scale.
 - Animation: background `qst x grim -s 0.25 <file>` shots about 35 ms apart, then
   `md5sum` to see which frames settled.
-- `qst pointer` (wlrctl) reaches the shell, so hover can be tested; its
-  clicks do not. Sway has no `dim_around`, toplevel capture or global
-  shortcuts, and Hyprland cannot nest in it (it wants `xdg_wm_base` 6,
-  sway 1.12 offers 5) nor start headless on its own. Check those, and
-  clicks, on Hyprland after the rebuild: on the user's session only when
-  they allow it (`wlrctl` moves their pointer; `grim -o <output>`).
 - Never `pgrep -f <pattern> | xargs kill`: the pattern is in the calling
-  shell's own command line. `qst down` finds the test shell by its config path.
+  shell's own command line. `qst down` finds the session's processes by its
+  runtime dir and D-Bus address in their environment.
 - Quickshell keys its state and cache dirs by config path, so the test
   shell's are its own; `qst down` deletes only those.
 

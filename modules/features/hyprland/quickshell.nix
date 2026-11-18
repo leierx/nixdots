@@ -195,16 +195,67 @@ root: {
         + builtins.readFile ./scripts/qs-lint.sh;
       };
 
+      # one virtual pointer and keyboard for the whole session: a device per call drops the seat's
+      # capability between calls, and the first event after one comes back is lost
+      qsInput = pkgs.stdenv.mkDerivation {
+        name = "qs-input";
+        src = ./scripts/qs-input.c;
+        dontUnpack = true;
+        nativeBuildInputs = [
+          pkgs.pkg-config
+          pkgs.wayland-scanner
+        ];
+        buildInputs = [
+          pkgs.wayland
+          pkgs.libxkbcommon
+        ];
+        buildPhase = ''
+          for xml in \
+            ${pkgs.wlr-protocols}/share/wlr-protocols/unstable/wlr-virtual-pointer-unstable-v1.xml \
+            ${pkgs.wtype.src}/protocol/virtual-keyboard-unstable-v1.xml; do
+            name=$(basename "$xml" .xml)
+            wayland-scanner client-header "$xml" "$name-client-protocol.h"
+            wayland-scanner private-code "$xml" "$name-protocol.c"
+          done
+          $CC -O2 -Wall -Werror -I. -o qs-input "$src" *-protocol.c \
+            $(pkg-config --cflags --libs wayland-client xkbcommon)
+        '';
+        installPhase = "install -Dm755 qs-input $out/bin/qs-input";
+        meta.mainProgram = "qs-input";
+      };
+
+      # a tray item whose menu can be clicked through without touching anything real
+      qsTray =
+        let
+          tray = pkgs.runCommand "qs-tray-qml" { } ''
+            mkdir $out
+            cp ${./tests/tray.qml} $out/tray.qml
+            cp ${./quickshell/common/nixos.svg} $out/icon.svg
+          '';
+        in
+        pkgs.writeShellScriptBin "qs-tray" ''
+          export QT_PLUGIN_PATH=${
+            lib.concatMapStringsSep ":" (qt: "${qt}/lib/qt-6/plugins") [
+              unstable.qt6.qtbase
+              unstable.qt6.qtwayland
+              unstable.qt6.qtsvg
+            ]
+          }
+          export QML_IMPORT_PATH=${qtdeclarative}/lib/qt-6/qml
+          export QT_FORCE_STDERR_LOGGING=1
+          exec ${qtdeclarative}/bin/qml ${tray}/tray.qml
+        '';
+
       qsTest = pkgs.writeShellApplication {
         name = "qs-test";
         runtimeInputs = with pkgs; [
           quickshell
           qsLint
-          sway
-          swaybg
+          qsInput
+          qsTray
+          labwc
           grim
-          wtype
-          wlrctl
+          jq
           dbus
           libnotify
           git
