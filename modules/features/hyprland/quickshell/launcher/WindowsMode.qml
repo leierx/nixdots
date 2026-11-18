@@ -84,6 +84,8 @@ LauncherMode {
       Layout.fillHeight: true
 
       ClippingRectangle {
+        id: shape
+
         anchors.centerIn: parent
         width: frame.size ? Math.round(frame.size.width * frame.ratio) : parent.width
         height: frame.size ? Math.round(frame.size.height * frame.ratio) : parent.height
@@ -112,6 +114,15 @@ LauncherMode {
           source: preview.row?.icon ?? ""
           implicitSize: 96
         }
+      }
+
+      // A dark window on the dark card has no edge of its own, and a terminal with only a prompt reads as nothing.
+      Rectangle {
+        anchors.fill: shape
+        radius: shape.radius
+        color: "transparent"
+        border.width: 1
+        border.color: Theme.border
       }
     }
 

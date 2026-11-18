@@ -456,8 +456,10 @@ Notes on specific features:
         elsewhere it calls `Toplevel.activate()`. The preview is the window
         live (`ScreencopyView`, mipmapped from up to twice its shown size so
         it shrinks smoothly) in a frame shaped by the size Hyprland reports
-        before the first frame arrives. Quickshell can only capture it through
-        Hyprland's toplevel export; elsewhere it shows the app's icon.
+        before the first frame arrives, outlined, since a dark window on the dark
+        card has no edge of its own. A window on a hidden workspace shows its
+        last frame. Quickshell can only capture it through Hyprland's toplevel
+        export; elsewhere it shows the app's icon.
     - `shortcuts/` is the keyboard shortcuts window (SUPER+?, bound as
       SUPER+SHIFT+plus since Hyprland matches binds on the unshifted key; as GTK apps
       use Ctrl+?), GTK's shortcuts window in groups balanced over up to three
