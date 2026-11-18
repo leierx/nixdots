@@ -62,16 +62,16 @@ Item {
     readonly property bool shown: workspace !== null && root.monitor?.activeWorkspace === workspace
     readonly property bool occupied: (workspace?.toplevels.values.length ?? 0) > 0
     readonly property bool urgent: workspace?.urgent ?? false
-    // Half as strong on a monitor without focus.
-    readonly property real strength: root.focused ? 1 : 0.5
     readonly property bool filled: shown && !mine
+    // A step darker on a monitor without focus.
+    readonly property color bright: root.focused ? Theme.fg : Theme.fgDim
 
     anchors.verticalCenter: parent?.verticalCenter
     width: Math.max(mine ? 26 : 20, text.implicitWidth + 14)
     height: mine ? 26 : 20
     radius: mine ? 8 : 10
     color: {
-      if (filled) return Theme.overlay(strength);
+      if (filled) return bright;
       if (shown) return area.containsMouse ? Theme.buttonChecked : root.focused ? Theme.buttonHover : Theme.button;
       if (area.containsMouse) return Theme.buttonHover;
       return "transparent";
@@ -114,8 +114,8 @@ Item {
       color: {
         if (button.filled) return Theme.panel;
         if (button.urgent) return Theme.destructive;
-        if (button.shown) return Theme.overlay(button.mine ? (button.strength === 1 ? 1 : 0.75) : 1);
-        return Theme.overlay(area.containsMouse ? 0.9 : button.occupied ? 0.6 : 0.3);
+        if (area.containsMouse) return Theme.fg;
+        return button.shown || button.occupied ? button.bright : Theme.fgFaint;
       }
       font: Qt.font({ family: Theme.body.family, pointSize: button.mine ? 10 : 8, weight: button.shown && button.mine ? Font.ExtraBold : Font.Bold })
     }
