@@ -39,28 +39,17 @@ else
     resync = true
   end
 
+  -- only vim.pack's own calls: update's confirm buffer writes the lockfile long after update() returns
   local orig_stdpath = vim.fn.stdpath
-  local function with_writable_config(fn)
-    return function(...)
-      ---@diagnostic disable-next-line: duplicate-set-field
-      vim.fn.stdpath = function(what)
-        if what == "config" then
-          return writable_config
-        end
-        return orig_stdpath(what)
-      end
-      local ok, result = pcall(fn, ...)
-      vim.fn.stdpath = orig_stdpath
-      if not ok then
-        error(result)
-      end
-      return result
+  ---@diagnostic disable-next-line: duplicate-set-field
+  vim.fn.stdpath = function(what)
+    if what == "config" and debug.getinfo(2, "S").source:find("vim/pack%.lua$") then
+      return writable_config
     end
+    return orig_stdpath(what)
   end
 
-  vim.pack.add = with_writable_config(add)
-  vim.pack.update = with_writable_config(vim.pack.update)
-  vim.pack.del = with_writable_config(vim.pack.del)
+  vim.pack.add = add
 end
 
 require("config")

@@ -45,6 +45,6 @@ k.set("n", "s", "<Nop>", { desc = "use `cl` or `r`" })
 k.set("n", "<leader>hp", function() require("gitsigns").preview_hunk() end, { desc = "Preview hunk" })
 k.set("n", "<leader>hb", function() require("gitsigns").blame_line({ full = true }) end, { desc = "Blame line" })
 
-k.set("n", "<leader>e", ":Oil --preview<cr>", { silent = true })
+k.set("n", "<leader>e", ":Oil --preview<cr>", { silent = true, desc = "File explorer" })
 
 vim.keymap.set("n", "J", function() require("treesj").toggle() end, { desc = "Toggle split/join node" })

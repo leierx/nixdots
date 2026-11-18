@@ -21,6 +21,7 @@ require("nvim-treesitter").install({
   "query",
   "regex",
   "scss",
+  "terraform",
   "toml",
   "tsx",
   "typescript",
@@ -28,6 +29,8 @@ require("nvim-treesitter").install({
   "vimdoc",
   "yaml",
 })
+
+vim.treesitter.language.register("terraform", { "opentofu", "opentofu-vars" })
 
 vim.api.nvim_create_autocmd("FileType", {
   desc = "Start treesitter highlighting where a parser exists",

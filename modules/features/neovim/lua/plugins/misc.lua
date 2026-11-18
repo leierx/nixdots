@@ -17,7 +17,7 @@ require("conform").setup({
     go = { "goimports", "gofumpt" },
     qml = { "qmlformat" },
   },
-  format_on_save = { timeout_ms = 1000 },
+  format_on_save = { timeout_ms = 1000, lsp_format = "fallback" },
 })
 
 require("treesj").setup({ use_default_keymaps = false })

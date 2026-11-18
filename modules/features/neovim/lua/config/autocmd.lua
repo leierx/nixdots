@@ -23,6 +23,10 @@ vim.api.nvim_create_autocmd({ "FileType" }, {
 
 vim.api.nvim_create_autocmd("BufReadPost", {
   callback = function(args)
+    -- runs before filetype detection; commit messages and rebase todos live in .git/
+    if vim.api.nvim_buf_get_name(args.buf):find("/%.git/") then
+      return
+    end
     local mark = vim.api.nvim_buf_get_mark(args.buf, '"')
     local line_count = vim.api.nvim_buf_line_count(args.buf)
     if mark[1] > 0 and mark[1] <= line_count then
@@ -42,7 +46,9 @@ vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter", "WinLeave", "BufLeave" }, 
 vim.api.nvim_create_autocmd("VimResized", {
   desc = "Equalize splits on resize",
   callback = function()
+    local tab = vim.api.nvim_get_current_tabpage()
     vim.cmd("tabdo wincmd =")
+    vim.api.nvim_set_current_tabpage(tab)
   end,
 })
 

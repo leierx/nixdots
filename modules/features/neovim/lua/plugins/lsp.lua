@@ -14,9 +14,14 @@ vim.lsp.enable({
 })
 
 -- LspAttach, not on_attach: a server's own on_attach (ts_ls) would replace ours
+local populated = {}
 vim.api.nvim_create_autocmd("LspAttach", {
   desc = "Workspace diagnostics",
   callback = function(args)
+    if populated[args.data.client_id] then
+      return
+    end
+    populated[args.data.client_id] = true
     local client = assert(vim.lsp.get_client_by_id(args.data.client_id))
     if client:supports_method("workspace/diagnostic", args.buf) then
       vim.lsp.buf.workspace_diagnostics({ client_id = client.id })
