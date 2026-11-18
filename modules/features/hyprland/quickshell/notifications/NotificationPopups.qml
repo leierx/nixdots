@@ -6,14 +6,12 @@ import Quickshell.Wayland
 import qs.common
 
 Variants {
-  model: Quickshell.screens
+  model: Screens.real
 
   PanelWindow {
     id: window
 
     required property ShellScreen modelData
-    // Takes the popups of a monitor that has gone.
-    readonly property bool fallback: modelData === Quickshell.screens[0]
     readonly property int shadowRoom: 24
     // Cards register here, as the window's input region is theirs alone: a click between them reaches the window behind.
     property list<Item> cards: []
@@ -48,7 +46,7 @@ Variants {
       spacing: Theme.gap
       interactive: false
       model: ScriptModel {
-        values: Notifs.popups.filter(e => e.screen === window.modelData?.name || (window.fallback && !Quickshell.screens.some(s => s.name === e.screen)))
+        values: Notifs.popups.filter(e => e.screen === window.modelData?.name)
       }
 
       delegate: NotificationCard {

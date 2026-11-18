@@ -2,7 +2,6 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.Notifications
 import Quickshell.Wayland
@@ -51,7 +50,7 @@ Singleton {
     const wasShown = entry.popup;
     root.entries = [entry, ...root.entries.filter(e => e !== entry)];
     entry.time = new Date();
-    if (popup && !wasShown) entry.screen = root.focusedScreen();
+    if (popup && !wasShown) entry.screen = Screens.focused;
     entry.popup = popup;
     if (entry.timer.running) entry.timer.restart();
     root.trimPopups(entry);
@@ -155,8 +154,15 @@ Singleton {
     });
   }
 
-  function focusedScreen() {
-    return Hyprland.focusedMonitor?.name ?? Quickshell.screens[0]?.name ?? "";
+  // One whose monitor has gone moves to the focused one for good, rather than back when it returns.
+  Connections {
+    target: Screens
+
+    function onRealChanged() {
+      for (const entry of root.entries) {
+        if (!Screens.has(entry.screen)) entry.screen = Screens.focused;
+      }
+    }
   }
 
   StateFile {
@@ -205,7 +211,7 @@ Singleton {
       } else {
         entry = entryComponent.createObject(root, {
           notification,
-          screen: root.focusedScreen()
+          screen: Screens.focused
         });
       }
       root.watch(entry);

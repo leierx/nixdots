@@ -261,8 +261,11 @@ Notes on specific features:
     `shell.qml` only instantiates them; `common/` holds what several share:
     `Theme`, `StateFile` (a `JsonAdapter`'s file in Quickshell's state dir),
     `Shadow`, `ExpanderArrow`, `Time` (one minute clock for the bar, the
-    calendar and notification ages), `WorkspaceOwners` (hyprsplit's numbering,
-    for the bar and the window switcher), `Command` (a process whose output
+    calendar and notification ages), `Screens` (the screens someone can see:
+    Quickshell's, less the headless `FALLBACK` Hyprland stands in while no
+    monitor is on, and the focused one among them, the first while Hyprland
+    still reports one just gone), `WorkspaceOwners` (hyprsplit's numbering,
+    and what the bar calls a workspace, for the bar and the window switcher), `Command` (a process whose output
     arrives as `done`, and whose failure, a program that cannot start or
     crashes included, becomes a notification that closes
     the panel open as it started, or only a log line while `quiet`, a load nobody waits
@@ -276,7 +279,9 @@ Notes on specific features:
     and `Panels`, the one open panel by name, with
     the IPC target `panels` (`qs ipc -c shell call panels open|close|toggle
     <name>`; `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`, `power`): opening any panel (a
-    launcher mode, the notification center, a tray menu) closes the others, and
+    launcher mode, the notification center, a tray menu) closes the others,
+    nothing opens while no monitor is on (it would land on `FALLBACK`, unseen,
+    holding the keyboard), and
     `close` closes whichever is open.
     - Conventions for the QML:
       - Comments follow the repo rule strictly: none by default, no file
@@ -394,7 +399,9 @@ Notes on specific features:
         profiles, the recommended one first, loaded at the shell's start and again on
         every open, and replaced only when the output differs, so it opens
         whole and a refresh changes nothing that is the same; one that fails,
-        mid-hotplug say, only logs while there is a status to show.
+        mid-hotplug say, only logs while there is a status to show. It loads
+        again a second after the last of a burst of hotplugs, once hyprmoncfgd
+        has applied its pick, so the next open already shows it.
         Each is drawn by `LayoutDiagram` from its file in
         `~/.config/hyprmoncfg/profiles`, so any machine's layouts draw
         themselves: outputs at their logical size (scale and rotation
@@ -464,8 +471,8 @@ Notes on specific features:
       - `windows`: every window from wlr-foreign-toplevel
         (`ToplevelManager`), so it works on any compositor, the focused one
         last. On Hyprland the rest come in focus order (a `refreshToplevels`
-        as it opens), each with its monitor and workspace as the bar numbers
-        it, and Enter dispatches `hl.dsp.focus({ window = "address:0x…" })`;
+        as it opens), each with its monitor and workspace as the bar names
+        it (`DP2-1` for one left by an unplugged DP-2), and Enter dispatches `hl.dsp.focus({ window = "address:0x…" })`;
         elsewhere it calls `Toplevel.activate()`. The preview is the window
         live (`ScreencopyView`, mipmapped from up to twice its shown size so
         it shrinks smoothly) in a frame shaped by the size Hyprland reports
@@ -502,7 +509,7 @@ Notes on specific features:
       full-reset`), so `qst actions` shows what it would have done. Delegates
       get copies of the action objects, so actions are told apart by title.
     - `bar/` is the bar along the top of every monitor (`Bar.qml`, one
-      `BarWindow` per screen), sized and lettered like the waybar it replaced
+      `BarWindow` per screen but `FALLBACK`), sized and lettered like the waybar it replaced
       (Adwaita Sans at 16 px, on GNOME Shell's panel black): the NixOS logo
       (`nixos.svg`, opening the power menu), the monitor's workspaces, the
       clock (a flat round button with a pointing hand, as GNOME's panel draws its date: shaded on
@@ -517,7 +524,7 @@ Notes on specific features:
         name; specials are left out. `WorkspaceOwners` remembers the connector
         last seen with each monitor id in the state dir, so a workspace left
         behind by an unplugged monitor still carries its name (the bare id if
-        never seen). Bold and centred on its ink, dim while empty, a pill while shown, outlined when
+        never seen; never `FALLBACK`, whose id is a real monitor's). Bold and centred on its ink, dim while empty, a pill while shown, outlined when
         foreign, red when urgent; pressing one focuses it by id wherever it
         is.
       - The tray is bare icons without hover states, hiding passive items;
@@ -568,7 +575,8 @@ Notes on specific features:
       notification as a `NotifEntry` until it is dismissed; the entry holds a
       `RetainableLock` and outlives the close by a second, so views slide a
       closed notification away whole. Popups stack top right on the monitor
-      focused when each arrived (the first one's once it is gone), below the bar, sliding in and out (the
+      focused when each arrived (one whose monitor goes moves to the focused one
+      for good, and while none is on it waits with its timeout held), below the bar, sliding in and out (the
       window stays mapped with an empty input region, so the last one does
       too); the app's timeout or 8 s, critical never, hovering holds it;
       a click on one with more to show (a cut-off title or body) expands and
@@ -845,7 +853,16 @@ qst shot apps                  # numbered PNG in $QS_TEST_DIR/shots, path printe
 qst shot crop "360,330 600x260"
 qst shot dp2 DP-2              # one monitor
 qst monitor add DP-2 2560x1440 1.25   # hotplug; `monitor remove DP-2` unplugs
+qst monitor disable DP-2       # off as a hyprmoncfg profile turns it off; `monitor enable DP-2`
+qst monitors                   # Hyprland's, disabled ones too
+qst focus DP-2                 # focus a monitor, so the next panel or popup opens there
 qst output 2560x1440 1.5       # the first monitor's mode
+qst state                      # what the shell sees (JSON), with Hyprland's layers and monitors
+qst state '.popups | map(.screen)'    # through jq
+qst wait '.panel == ""'        # until it holds (5 s; `qst wait FILTER 10`), else fail printing the state
+qst stays '.panel == "apps"' 2 # fail if it stops holding within 2 s (1)
+qst reset                      # QS_TEST_MONITORS again with ids from 0, no windows, a fresh qs without state
+qst run                        # sync, then every tests/scenarios/*.sh; `qst run FILE` for one
 qst key super+Return           # real windows, for workspaces and the window switcher
 qst tray                       # a tray item with nested submenus (tests/tray.qml); `qst tray log` shows what it was told
 qst x notify-send -a Discord loft01 hello   # anything else, inside the session (hyprctl talks to the test Hyprland)
@@ -884,6 +901,47 @@ reads a copy of the database. The config dir is the user's, symlinked, except
   runtime dir and D-Bus address in their environment.
 - Quickshell keys its state and cache dirs by config path, so the test
   shell's are its own; `qst down` deletes only those.
+
+### State and scenario tests
+
+`qst state` is `tests/Probe.qml`, an IPC target `probe` that qs-test adds to
+the session's copy of the shell (never the built one): the open panel, the
+screens and the Hyprland monitor each resolves to, the focused monitor,
+workspaces with the label the bar gives them, windows, and every popup with
+the screen it is on, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
+(`hyprctl monitors all`). Something a test needs to see goes in the probe,
+read through the shell's own singletons rather than worked out again.
+`wait`, `stays` and `state` fail with "qs is not running" once qs has
+crashed, and `problems` says so too.
+
+`tests/scenarios/*.sh` are regression tests, run by `qst run` in the session
+(`notify-send` and `hyprctl` reach the test's, `qst` is on PATH) under
+`set -euo pipefail`. Each `qst case "what should happen"` prints the case and
+resets; the file sets `QS_TEST_MONITORS` for its cases, and stops at its first
+failure with the case named and the state that failed. Assert with `wait`
+and `stays`, never `sleep`. `hotplug.sh` covers unplugging, disabling and
+replugging under every panel, a tray menu and popups, every monitor going,
+bursts and mode changes. Behaviour that broke once gets a case; check that
+the case fails without the fix (a `git worktree` of `HEAD` with the new
+`tests/` copied in, run with `QS_TEST_REPO` pointing at it).
+
+What Hyprland does that tests run into:
+
+- With no monitor on, Hyprland puts up a headless `FALLBACK` output; Quickshell
+  lists it, so the probe's `screens` holds it.
+- Removing any monitor focuses the first one.
+- A connector gets back the id it last had unless another monitor holds it,
+  and otherwise the lowest free one, which it keeps from then on; after
+  `FALLBACK` held 0, a monitor plugged back in takes 1 for good. `reset` holds
+  ids with fresh placeholder outputs to give the test's back 0, 1, ….
+- A monitor rule without `disabled = false` leaves a disabled monitor off,
+  so qs-test writes it in every rule.
+- Going to and from no output at all, Qt moves windows to a placeholder screen
+  for a moment, and each warns "Layershell screen does not correspond to a
+  real screen"; `problems` drops those only right after Qt's "creating
+  placeholder screen".
+- In jq a pipe binds loosest: `(.popups | map(.screen)) == [...]`, not
+  `.popups | map(.screen) == [...]`.
 
 ## Sharp edges
 

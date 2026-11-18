@@ -46,8 +46,7 @@ LauncherMode {
   function where(hyprland): string {
     const workspace = hyprland?.workspace;
     if (!workspace) return "";
-    const label = workspace.id > 0 ? String(WorkspaceOwners.index(workspace.id)) : workspace.name.replace(/^special:/, "");
-    return [hyprland.monitor?.name, label].filter(part => part).join(" · ");
+    return [hyprland.monitor?.name, WorkspaceOwners.label(workspace, hyprland.monitor)].filter(part => part).join(" · ");
   }
 
   // Focus history only comes with a full refresh.

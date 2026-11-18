@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import qs.common
 
 Scope {
   IpcHandler {
@@ -40,7 +41,7 @@ Scope {
   }
 
   Variants {
-    model: Quickshell.screens
+    model: Screens.real
 
     BarWindow {
       required property ShellScreen modelData

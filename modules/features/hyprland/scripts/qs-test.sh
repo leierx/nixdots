@@ -2,6 +2,8 @@ T=${QS_TEST_DIR:-${XDG_RUNTIME_DIR:-/tmp}/qs-test}
 repo=${QS_TEST_REPO:-$(git rev-parse --show-toplevel 2> /dev/null || pwd)}
 host=${QS_TEST_HOST:-$(uname -n)}
 src=$repo/modules/features/hyprland/quickshell
+tests=$repo/modules/features/hyprland/tests
+self=$(readlink -f "$0")
 
 usage() {
   cat << EOF
@@ -15,6 +17,12 @@ usage: qs-test COMMAND
   lint                  qmllint the checkout's shell, as nix flake check does
 
   ipc ARGS...           qs ipc call ARGS (panels open apps, notifications count, ...)
+  state [JQ]            what the shell sees (tests/Probe.qml) with Hyprland's layers and monitors, through JQ
+  wait JQ [SECONDS]     until JQ holds on the state (5 s), or fail and print it
+  stays JQ [SECONDS]    fail if JQ stops holding within SECONDS (1)
+  reset                 QS_TEST_MONITORS again, ids from 0, no windows, and a fresh qs without saved state
+  case NAME             a test's next case: print it and reset
+  run [FILE...]         copy the checkout's QML in, run tests (tests/scenarios/*.sh) in the session, qst on PATH
   key COMBO...          press keys in turn (ctrl+n, super+d, shift+Tab, Escape)
   type TEXT             type TEXT into the focused surface
   pointer X Y           put the pointer at X Y in layout coordinates (hover)
@@ -27,7 +35,9 @@ usage: qs-test COMMAND
   shot [NAME] [WHERE]   screenshot of everything, a monitor, or "x,y wxh"; prints its path
   monitor add NAME [MODE] [SCALE] [POSITION]   plug a monitor in (1920x1080, 1, auto-right)
   monitor remove NAME   unplug it
-  monitors              the monitors
+  monitor disable NAME  turn it off as a hyprmoncfg profile does; enable turns it back on
+  monitors              the monitors, disabled ones too
+  focus NAME            focus a monitor
   output MODE [SCALE]   change the first monitor's mode (2560x1440 1.5)
   spawn CMD...          start CMD in the session, detached (output in spawn.log)
   tray [log]            add a test tray item with submenus (tests/tray.qml), or show what it was told
@@ -73,7 +83,11 @@ testqs() {
 }
 
 problems() {
-  grep -E 'WARN|ERROR' "$T/qs.log" | grep -vE 'UPower|qt\.qpa\.services|Could not register app ID|qt\.qpa\.wayland\.textinput' || true
+  # Quickshell never tracks Hyprland's FALLBACK, so warns as it goes; with no output at all, Qt moves
+  # windows to a placeholder screen for a moment, and each warns before it is gone or placed.
+  awk '/creating placeholder screen/ { held = 1; next } held && /Layershell screen does not correspond/ { next } { held = 0; print }' "$T/qs.log" |
+    grep -E 'WARN|ERROR' | grep -vE 'UPower|qt\.qpa\.services|Could not register app ID|qt\.qpa\.wayland\.textinput|removal for monitor "FALLBACK"' || true
+  if running && [ -s "$T/display" ] && ! alive; then echo "qs is not running: it crashed or failed to load"; fi
 }
 
 start_qs() {
@@ -126,6 +140,15 @@ sync_source() {
   chmod -R u+w "$T/shell"
   mv "$keep/nix" "$T/shell/nix"
   mv "$keep/icons" "$T/shell/weather/icons"
+  install_probe
+}
+
+# The test's own window into the shell, in its copy only.
+install_probe() {
+  mkdir -p "$T/shell/probe"
+  cp "$tests/Probe.qml" "$T/shell/probe/Probe.qml"
+  sed -i -e 's/^import Quickshell$/&\nimport qs.probe/' -e '$ s/^}$/\n  Probe {}\n}/' "$T/shell/shell.qml"
+  grep -q 'Probe {}' "$T/shell/shell.qml" || die "could not add the probe to shell.qml"
 }
 
 # Nothing in the session may reach the real machine: these log what would have run instead.
@@ -192,7 +215,7 @@ EOF
 }
 
 monitor_rule() {
-  printf 'hl.monitor({ output = "%s", mode = "%s", position = "%s", scale = %s })\n' "$1" "${2:-1920x1080}" "${4:-auto-right}" "${3:-1}"
+  printf 'hl.monitor({ output = "%s", mode = "%s", position = "%s", scale = %s, disabled = false })\n' "$1" "${2:-1920x1080}" "${4:-auto-right}" "${3:-1}"
 }
 
 monitor_add() {
@@ -208,22 +231,85 @@ monitor_add() {
 monitor_remove() {
   grep -v "output = \"$1\"" "$T/cfg/hypr/monitors.lua" > "$T/monitors.tmp" || true
   mv "$T/monitors.tmp" "$T/cfg/hypr/monitors.lua"
+  rm -f "$T/disabled/$1"
   "$HC" output remove "$1" > /dev/null
 }
 
-# Monitor ids go to the lowest one free, so a placeholder keeps WAYLAND-1's id 0 for the first test monitor.
-monitors_up() {
-  local spec name mode scale first=1
-  "$HC" output create headless qst-placeholder > /dev/null
-  "$HC" output remove WAYLAND-1 > /dev/null
-  for spec in ${QS_TEST_MONITORS:-DP-1:1920x1080:1}; do
-    IFS=: read -r name mode scale <<< "$spec"
-    monitor_add "$name" "$mode" "$scale" "$([ $first = 1 ] && echo 0x0 || echo auto-right)"
-    if [ $first = 1 ]; then
-      first=0
-      "$HC" output remove qst-placeholder > /dev/null
-    fi
+# As a hyprmoncfg profile turns one off: the output stays, Wayland's wl_output goes.
+monitor_disable() {
+  local rule
+  rule=$(grep "output = \"$1\"" "$T/cfg/hypr/monitors.lua") || die "no monitor $1"
+  mkdir -p "$T/disabled"
+  case $rule in *"disabled = true"*) ;; *) echo "$rule" > "$T/disabled/$1" ;; esac
+  rule=$(printf 'hl.monitor({ output = "%s", disabled = true })' "$1")
+  grep -v "output = \"$1\"" "$T/cfg/hypr/monitors.lua" > "$T/monitors.tmp" || true
+  echo "$rule" >> "$T/monitors.tmp"
+  mv "$T/monitors.tmp" "$T/cfg/hypr/monitors.lua"
+  "$HC" eval "$rule" > /dev/null
+}
+
+monitor_enable() {
+  local rule
+  [ -s "$T/disabled/$1" ] || die "$1 is not disabled"
+  rule=$(cat "$T/disabled/$1")
+  rm "$T/disabled/$1"
+  grep -v "output = \"$1\"" "$T/cfg/hypr/monitors.lua" > "$T/monitors.tmp" || true
+  echo "$rule" >> "$T/monitors.tmp"
+  mv "$T/monitors.tmp" "$T/cfg/hypr/monitors.lua"
+  "$HC" eval "$rule" > /dev/null
+}
+
+monitor_id() { "$HC" monitors all -j | jq -r --arg name "$1" '.[] | select(.name == $name) | .id'; }
+
+# A headless output of a name Hyprland has never seen, which takes the lowest id free.
+fresh_output() {
+  local name
+  name=qst-hold-$(date +%s%N)
+  "$HC" output create headless "$name" > /dev/null
+  echo "$name"
+}
+
+# Fresh outputs until one takes id $1; the others go again.
+hold_id() {
+  local name others=() tries=0
+  while :; do
+    name=$(fresh_output)
+    [ "$(monitor_id "$name")" -ge "$1" ] && break
+    others+=("$name")
+    tries=$((tries + 1))
+    [ $tries -lt 32 ] || die "could not hold monitor id $1"
   done
+  for other in "${others[@]}"; do "$HC" output remove "$other" > /dev/null; done
+  echo "$name"
+}
+
+# Exactly QS_TEST_MONITORS, ids from 0 in order. Hyprland gives a name back the id it last had
+# unless a monitor holds it, and otherwise the lowest one free; one stays up throughout, or
+# Hyprland stands its FALLBACK in.
+monitors_reset() {
+  local specs spec name mode scale position i=0 id held hold
+  read -ra specs <<< "${QS_TEST_MONITORS:-DP-1:1920x1080:1}"
+  held=$(hold_id ${#specs[@]})
+  for name in $("$HC" monitors all -j | jq -r --arg held "$held" '.[] | select(.name != $held and .name != "FALLBACK") | .name'); do
+    "$HC" output remove "$name" > /dev/null
+  done
+  : > "$T/cfg/hypr/monitors.lua"
+  rm -rf "$T/disabled"
+  for spec in "${specs[@]}"; do
+    IFS=: read -r name mode scale <<< "$spec"
+    position=$([ $i = 0 ] && echo 0x0 || echo auto-right)
+    monitor_add "$name" "$mode" "$scale" "$position"
+    id=$(monitor_id "$name")
+    if [ "$id" != $i ]; then
+      "$HC" output remove "$name" > /dev/null
+      hold=$(hold_id "$id")
+      monitor_add "$name" "$mode" "$scale" "$position"
+      "$HC" output remove "$hold" > /dev/null
+      [ "$(monitor_id "$name")" = $i ] || die "could not give $name monitor id $i"
+    fi
+    i=$((i + 1))
+  done
+  "$HC" output remove "$held" > /dev/null
 }
 
 up() {
@@ -238,6 +324,7 @@ up() {
   echo "$build" > "$T/build"
   cp -rL "$build/shell" "$T/shell"
   chmod -R u+w "$T/shell"
+  install_probe
   fakes "$build"
   hypr_config "$build"
   # Hyprland's sockets go in here, and their paths must stay under 108 bytes.
@@ -273,7 +360,7 @@ EOF
   echo "${instance#* }" > "$T/display"
 
   enter
-  monitors_up
+  monitors_reset
   XKB_DEFAULT_LAYOUT=$("$HC" getoption input:kb_layout -j | jq -r .str) \
     XKB_DEFAULT_VARIANT=$("$HC" getoption input:kb_variant -j | jq -r .str) \
     setsid qs-input serve "$XDG_RUNTIME_DIR/input" > "$T/input.log" 2>&1 < /dev/null &
@@ -328,6 +415,93 @@ pointer() {
   input to $box
 }
 
+alive() { [ -n "$(testqs)" ]; }
+
+# The probe's view of the shell, plus Hyprland's layers ("DP-1 quickshell:bar") and monitors.
+snapshot() {
+  local probe layers monitors
+  enter
+  alive || die "qs is not running: it crashed or failed to load, see qs-test log"
+  probe=$(timeout 5 qs ipc -p "$T/shell" call probe state) || die "the probe did not answer, see qs-test log"
+  layers=$("$HC" layers -j | jq -c '[to_entries[] | .key as $m | .value.levels[][] | "\($m) \(.namespace)"]')
+  monitors=$("$HC" monitors all -j | jq -c 'map({ name, id, disabled, x, y, width, height, scale, focused })')
+  jq -c --argjson layers "$layers" --argjson hypr "$monitors" '. + { layers: $layers, hypr: $hypr }' <<< "$probe"
+}
+
+state() { snapshot | jq -c "${1:-.}"; }
+
+# Until FILTER holds, as jq -e reads it, or fails after SECONDS.
+wait_for() {
+  local filter=$1 deadline json
+  deadline=$(($(date +%s%N) / 1000000 + ${2:-5} * 1000))
+  while :; do
+    json=$(snapshot)
+    jq -e "$filter" <<< "$json" > /dev/null 2>&1 && return
+    if [ "$(($(date +%s%N) / 1000000))" -ge "$deadline" ]; then
+      echo "qs-test: timed out after ${2:-5} s waiting for: $filter" >&2
+      jq -c "del(.workspaces)" <<< "$json" >&2
+      exit 1
+    fi
+    sleep 0.1
+  done
+}
+
+# FILTER holds throughout SECONDS (1): what should stay as it is.
+stays() {
+  local filter=$1 deadline json
+  deadline=$(($(date +%s%N) / 1000000 + $(awk -v s="${2:-1}" 'BEGIN { print int(s * 1000) }')))
+  while [ "$(($(date +%s%N) / 1000000))" -lt "$deadline" ]; do
+    json=$(snapshot)
+    if ! jq -e "$filter" <<< "$json" > /dev/null 2>&1; then
+      echo "qs-test: no longer holds: $filter" >&2
+      jq -c "del(.workspaces)" <<< "$json" >&2
+      exit 1
+    fi
+    sleep 0.1
+  done
+}
+
+# A fresh start for a test: QS_TEST_MONITORS again, the focus on the first, and a new qs with no state.
+reset() {
+  local id pid
+  enter
+  [ -s "$T/tray.pid" ] && kill "$(cat "$T/tray.pid")" 2> /dev/null || true
+  rm -f "$T/tray.pid"
+  for pid in $("$HC" clients -j | jq -r '.[].pid'); do kill "$pid" 2> /dev/null || true; done
+  stop_qs
+  monitors_reset
+  "$HC" dispatch "hl.dsp.focus({ monitor = \"$("$HC" monitors -j | jq -r 'min_by(.id).name')\" })" > /dev/null
+  id=$(grep -o 'Shell ID: "[0-9a-f]*' "$T/qs.log" 2> /dev/null | head -1 | cut -d'"' -f2 || true)
+  [ -n "$id" ] && rm -rf "$HOME/.local/state/quickshell/by-shell/$id"
+  : > "$T/actions.log"
+  start_qs > /dev/null
+  problems
+  wait_for "(.screens | length) == ($("$HC" monitors -j | jq length)) and (.layers | map(select(endswith(\" quickshell:bar\"))) | length) == (.screens | length)" 10
+}
+
+# Each test file runs in the session, calling qst; one that fails stops at its first failure.
+run_tests() {
+  local file name failed=0
+  mkdir -p "$T/tests"
+  ln -sfn "$self" "$T/bin/qst"
+  export QS_TEST_DIR=$T QS_TEST_REPO=$repo QS_TEST_HOST=$host
+  [ $# -gt 0 ] || set -- "$tests"/scenarios/*.sh
+  stop_qs
+  sync_source
+  start_qs > /dev/null
+  for file in "$@"; do
+    name=$(basename "$file" .sh)
+    if (enter && bash -euo pipefail "$file") > "$T/tests/$name.log" 2>&1; then
+      echo "ok   $name ($(grep -c '^== ' "$T/tests/$name.log") cases)"
+    else
+      failed=1
+      echo "FAIL $name, in: $(grep '^== ' "$T/tests/$name.log" | tail -1 | cut -c4-)"
+      grep -v '^== ' "$T/tests/$name.log" | tail -15 | sed 's/^/     /'
+    fi
+  done
+  return $failed
+}
+
 shot() {
   local name=${1:-shot} file
   file=$T/shots/$(printf '%03d' "$(find "$T/shots" -name '*.png' | wc -l)")-$name.png
@@ -352,6 +526,12 @@ case $cmd in
   restart) need_up; stop_qs; start_qs ;;
   lint) qs-lint "$(readlink -f "$(build)/shell")" ;;
   ipc) need_up; enter; timeout 5 qs ipc -p "$T/shell" call "$@" ;;
+  state) need_up; state "$@" ;;
+  wait) need_up; wait_for "$@" ;;
+  stays) need_up; stays "$@" ;;
+  reset) need_up; reset ;;
+  case) need_up; echo "== $*"; reset ;;
+  run) need_up; run_tests "$@" ;;
   key) need_up; input key "$@" ;;
   type) need_up; input type "$*" ;;
   pointer) need_up; pointer "$1" "$2" ;;
@@ -380,10 +560,13 @@ case $cmd in
     case ${1:-} in
       add) shift; monitor_add "$@" ;;
       remove) monitor_remove "$2" ;;
-      *) die "monitor add|remove NAME" ;;
+      disable) monitor_disable "$2" ;;
+      enable) monitor_enable "$2" ;;
+      *) die "monitor add|remove|disable|enable NAME" ;;
     esac
     ;;
-  monitors) need_up; enter; "$HC" monitors -j | jq -r '.[] | "\(.name) id \(.id) \(.width)x\(.height) scale \(.scale) at \(.x)x\(.y)"' ;;
+  monitors) need_up; enter; "$HC" monitors all -j | jq -r '.[] | "\(.name) id \(.id) \(.width)x\(.height) scale \(.scale) at \(.x)x\(.y)\(if .disabled then " disabled" else "" end)\(if .focused then " focused" else "" end)"' ;;
+  focus) need_up; enter; "$HC" dispatch "hl.dsp.focus({ monitor = \"$1\" })" > /dev/null ;;
   output)
     need_up
     enter

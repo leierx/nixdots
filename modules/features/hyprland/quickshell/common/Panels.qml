@@ -6,8 +6,9 @@ import Quickshell.Io
 Singleton {
   property string active: ""
 
+  // With no monitor on, a panel would open on Hyprland's FALLBACK, unseen and holding the keyboard.
   function open(name) {
-    active = name;
+    if (Screens.real.length > 0) active = name;
   }
 
   function close() {
@@ -15,7 +16,8 @@ Singleton {
   }
 
   function toggle(name) {
-    active = active === name ? "" : name;
+    if (active === name) close();
+    else open(name);
   }
 
   IpcHandler {

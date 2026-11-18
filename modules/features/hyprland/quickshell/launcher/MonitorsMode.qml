@@ -134,6 +134,23 @@ LauncherMode {
   }
 
   Component.onCompleted: load()
+
+  // What is active and recommended changes with every hotplug; once hyprmoncfgd has applied its pick, the next open shows it.
+  Connections {
+    target: Hyprland
+
+    function onRawEvent(event: HyprlandEvent): void {
+      if (["monitoraddedv2", "monitorremovedv2"].includes(event.name)) hotplugged.restart();
+    }
+  }
+
+  Timer {
+    id: hotplugged
+
+    interval: 1000
+    onTriggered: root.load()
+  }
+
   onOpened: {
     load();
     if (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE")) Hyprland.refreshMonitors();

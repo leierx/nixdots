@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
+import qs.common
 
 QtObject {
   id: root
@@ -11,8 +12,9 @@ QtObject {
   property bool popup: false
   // The popup under the pointer holds the timeout.
   property bool hovered: false
-  // So does one below the screen's edge, until there is room for it.
+  // So does one below the screen's edge, until there is room for it, or one with no monitor on to show it.
   property bool waiting: false
+  readonly property bool unseen: waiting || !Screens.has(screen)
 
   readonly property bool critical: notification.urgency === NotificationUrgency.Critical
   readonly property string appIcon: Notifs.appIcon(notification)
@@ -63,7 +65,7 @@ QtObject {
   // Hovering restarts the countdown rather than resuming it.
   property Timer timer: Timer {
     interval: root.timeout
-    running: root.popup && root.timeout > 0 && !root.hovered && !root.waiting && !root.lock.retained
+    running: root.popup && root.timeout > 0 && !root.hovered && !root.unseen && !root.lock.retained
     onTriggered: root.popup = false
   }
 
