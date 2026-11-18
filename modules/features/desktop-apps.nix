@@ -5,7 +5,7 @@
       home.packages = with pkgs; [
         mousepad
         spotify
-        pavucontrol
+        pwvucontrol
         firefox-bin
         obsidian
         discord-canary
