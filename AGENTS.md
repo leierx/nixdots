@@ -469,10 +469,13 @@ Notes on specific features:
     - `shortcuts/` is the keyboard shortcuts window (SUPER+?, bound as
       SUPER+SHIFT+plus since Hyprland matches binds on the unshifted key; as GTK apps
       use Ctrl+?), GTK's shortcuts window in groups balanced over up to three
-      columns, each row a description and its keys as keycaps. It reads
+      columns, each row a description and its keys as keycaps. It takes the
+      column count that needs the least shrinking to fit the screen, and
+      shrinks whole only when none fits. It reads
       `hyprctl binds -j` on every open, so it lists whatever binds carry a
       description: numbered ones ("Focus workspace 1" … "6") fold into one
-      row, a submap's binds (none now) form a group under the bind whose
+      row, as do directions ("Focus left" … "right" become "Focus", keys
+      `H J K L` in Vim's order), a submap's binds (none now) form a group under the bind whose
       description its name begins ("system_control", "System controls") and
       read "Super X then L", media keys are left out, and the rest are grouped
       by their description into General, Windows, Workspaces and Mouse. Its

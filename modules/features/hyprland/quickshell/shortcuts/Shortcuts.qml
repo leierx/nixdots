@@ -48,13 +48,34 @@ Scope {
       }
     }
 
+    // Directions fold as numbers do: "Focus left" to "Focus right" become one row, its keys in Vim's order.
+    const order = ["left", "down", "up", "right"];
+    const folded = [];
+    for (const row of rows) {
+      const direction = row.mouse ? null : /^(.*?)\s*\b(left|down|up|right)\b\s*(.*)$/i.exec(row.title);
+      if (!direction) {
+        folded.push(row);
+        continue;
+      }
+      const base = `${direction[1]} ${direction[3]}`.trim();
+      let into = folded.find(other => other.base === base && other.modmask === row.modmask);
+      if (!into) {
+        into = Object.assign({}, row, { base, single: row.title, ways: [] });
+        folded.push(into);
+      }
+      into.ways.push({ at: order.indexOf(direction[2].toLowerCase()), key: row.first });
+      into.ways.sort((a, b) => a.at - b.at);
+      into.title = into.ways.length > 1 ? base : into.single;
+      into.keys = [[...root.chord(row.modmask, row.first).slice(0, -1), into.ways.map(way => root.chord(0, way.key)[0]).join(" ")]];
+    }
+
     const titled = [
       { title: "General", rows: [] },
       { title: "Windows", rows: [] },
       { title: "Workspaces", rows: [] },
       { title: "Mouse", rows: [] },
     ];
-    for (const row of rows) {
+    for (const row of folded) {
       const index = row.mouse ? 3 : /workspace/i.test(row.title) ? 2 : /window|focus|fullscreen|maximi|float/i.test(row.title) ? 1 : 0;
       titled[index].rows.push(row);
     }

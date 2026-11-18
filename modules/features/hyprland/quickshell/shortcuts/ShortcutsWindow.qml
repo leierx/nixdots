@@ -12,10 +12,23 @@ Overlay {
   required property var groups
   readonly property int columnWidth: Math.round(24 * Theme.em)
   readonly property int rowHeight: 34
-  readonly property int columnCount: Math.max(1, Math.min(3, Math.floor((width - 2 * Theme.gap - 48) / (columnWidth + 32))))
-  // A group's title counts as a row and a half.
+  // The count that needs the least shrinking to fit, the most columns among those.
   readonly property var columns: {
-    const columns = Array.from({ length: root.columnCount }, () => ({ groups: [], size: 0 }));
+    let best = null;
+    for (let count = 3; count >= 1; count--) {
+      const columns = root.arrange(count);
+      const width = columns.length * (root.columnWidth + 32) + 16;
+      const height = Math.max(...columns.map(column => column.size)) * root.rowHeight + 120;
+      const fit = Math.min(1, (root.width - 2 * Theme.gap) / width, (root.height - 2 * Theme.gap) / height);
+      if (!best || fit > best.fit + 0.001) best = { columns, fit };
+    }
+    return best.columns;
+  }
+  readonly property real fit: Math.min(1, (width - 2 * Theme.gap) / (content.implicitWidth + 48), (height - 2 * Theme.gap) / (content.implicitHeight + 48))
+
+  // A group's title counts as a row and a half.
+  function arrange(count: int): var {
+    const columns = Array.from({ length: count }, () => ({ groups: [], size: 0 }));
     for (const group of root.groups) {
       const shortest = columns.reduce((best, column) => column.size < best.size ? column : best);
       shortest.groups.push(group);
@@ -53,20 +66,22 @@ Overlay {
     id: box
 
     anchors.centerIn: parent
-    width: Math.min(content.implicitWidth + 48, root.width - 2 * Theme.gap)
-    height: Math.min(content.implicitHeight + 48, root.height - 2 * Theme.gap)
+    width: (content.implicitWidth + 48) * root.fit
+    height: (content.implicitHeight + 48) * root.fit
     focus: true
-    clip: true
 
+    // Shrunk whole on a screen too small for it, rather than cut off.
     ColumnLayout {
       id: content
 
       anchors {
         top: parent.top
         horizontalCenter: parent.horizontalCenter
-        topMargin: 20
+        topMargin: 20 * root.fit
       }
       spacing: 18
+      scale: root.fit
+      transformOrigin: Item.Top
 
       Text {
         Layout.alignment: Qt.AlignHCenter
