@@ -525,8 +525,8 @@ Notes on specific features:
       once more 300 ms after the last, since Quickshell drops a refresh while
       one is under way and a hotplug comes as a burst.
       - Workspaces: the monitor's own `1 … n` (monitor id × n + 1 onwards, as
-        hyprsplit numbers them) as bare numbers, bright with windows, dim
-        without, red when urgent, in a 26 px squircle shown only while it is
+        hyprsplit numbers them) as bare numbers, white while shown, grey with
+        windows, faint without, red when urgent, in a 26 px squircle shown only while it is
         shown (a button's shade, and bolder lettering) or under the pointer; a step darker on a
         monitor without focus, read from `Hyprland.focusedMonitor`
         since Quickshell binds `HyprlandMonitor.focused` only on monitors

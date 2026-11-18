@@ -11,7 +11,8 @@ Singleton {
   readonly property color bg: Colors.view_bg_color
   readonly property color fg: Colors.view_fg_color
   readonly property color fgDim: overlay(0.55)
-  readonly property color fgFaint: overlay(0.3)
+  readonly property color fgMuted: overlay(0.4)
+  readonly property color fgFaint: overlay(0.22)
   // GNOME Shell's panel black.
   readonly property color panel: Colors.dark_5
   readonly property color accentBg: Colors.accent_bg_color

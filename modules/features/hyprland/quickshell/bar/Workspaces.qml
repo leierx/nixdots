@@ -114,7 +114,9 @@ Item {
         if (button.filled) return Theme.panel;
         if (button.urgent) return Theme.destructive;
         if (area.containsMouse) return Theme.fg;
-        return button.shown || button.occupied ? button.bright : Theme.fgFaint;
+        if (button.shown) return button.bright;
+        if (button.occupied) return root.focused ? Theme.fgDim : Theme.fgMuted;
+        return Theme.fgFaint;
       }
       font: Qt.font({ family: Theme.body.family, pointSize: button.mine ? 10 : 8, weight: button.shown && button.mine ? Font.ExtraBold : Font.Bold })
     }
