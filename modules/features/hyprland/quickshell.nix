@@ -97,11 +97,14 @@ root: {
           osConfig.nix.package
           pkgs.coreutils
           pkgs.gnugrep
+          pkgs.gnused
+          pkgs.jq
           pkgs.libnotify
           securityContext
         ];
         text = ''
           terminal=${lib.escapeShellArg (lib.getExe config.programs.wezterm.package)}
+          progress=${./scripts/nixpkgs-progress.jq}
         ''
         + builtins.readFile ./scripts/nixpkgs-run.sh;
       };

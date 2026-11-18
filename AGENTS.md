@@ -452,8 +452,15 @@ Notes on specific features:
         with a desktop entry for the program (not `Terminal=true`) runs
         on its own, notifying if it stops with an error, anything else in
         wezterm under `--pty --wait`, held open on a failure or a run under
-        5 s. A failed build notifies with nix's last lines; what it builds
-        stays in the store until GC.
+        5 s. While it builds, a low-urgency card that never expires shows
+        the progress from nix's `--log-format internal-json`, which
+        `scripts/nixpkgs-progress.jq` reduces: "Fetching" while evaluating,
+        then the download's MiB against the total nix expects, and
+        "Building" with builds done of expected while one runs, updated by id
+        at most twice a second. A `notify-send --wait` holds the card, so one
+        dismissed mid-build stays gone; it closes as the program starts. A
+        failed build replaces it with a critical one and nix's last lines;
+        what it builds stays in the store until GC.
       - `windows`: every window from wlr-foreign-toplevel
         (`ToplevelManager`), so it works on any compositor, the focused one
         last. On Hyprland the rest come in focus order (a `refreshToplevels`
