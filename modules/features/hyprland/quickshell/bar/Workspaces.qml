@@ -67,18 +67,17 @@ Item {
     readonly property bool filled: shown && !mine
 
     anchors.verticalCenter: parent?.verticalCenter
-    width: Math.max(mine ? 22 : 20, text.implicitWidth + 14)
-    height: mine ? 22 : 20
-    radius: mine ? 7 : 10
+    width: Math.max(mine ? 26 : 20, text.implicitWidth + 14)
+    height: mine ? 26 : 20
+    radius: mine ? 8 : 10
     color: {
       if (filled) return Theme.overlay(strength);
+      if (shown) return area.containsMouse ? Theme.buttonChecked : root.focused ? Theme.buttonHover : Theme.button;
       if (area.containsMouse) return Theme.buttonHover;
-      if (shown) return Theme.overlay(0.12 * strength);
       return "transparent";
     }
     border.width: mine ? 0 : 1
     border.color: Theme.border
-    scale: area.pressed ? 0.88 : 1
 
     Behavior on color {
       ColorAnimation {
@@ -86,9 +85,24 @@ Item {
       }
     }
 
-    Behavior on scale {
+    // Played through on the press rather than held while pressed: after a switch the release may not arrive until the pointer moves.
+    SequentialAnimation {
+      id: tap
+
       NumberAnimation {
-        duration: 100
+        target: button
+        property: "scale"
+        to: 0.86
+        duration: 70
+        easing.type: Easing.OutQuad
+      }
+
+      NumberAnimation {
+        target: button
+        property: "scale"
+        to: 1
+        duration: 160
+        easing.type: Easing.OutBack
       }
     }
 
@@ -116,7 +130,10 @@ Item {
       hoverEnabled: true
       cursorShape: Qt.PointingHandCursor
       // On press, which feels quicker than a click.
-      onPressed: root.go(button.target)
+      onPressed: {
+        tap.restart();
+        root.go(button.target);
+      }
     }
   }
 

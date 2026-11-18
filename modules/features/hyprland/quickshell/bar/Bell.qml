@@ -2,7 +2,7 @@ import QtQuick
 import qs.common
 import qs.notifications
 
-// The notification center's button: how many it holds, struck through while Do Not Disturb is on.
+// Do Not Disturb's switch: how many notifications there are, struck through while it is on.
 Item {
   id: root
 
@@ -14,23 +14,11 @@ Item {
   implicitWidth: 30
   implicitHeight: 26
 
-  Rectangle {
-    anchors.fill: parent
-    radius: Theme.smallRadius
-    color: Panels.active === "center" ? Theme.buttonChecked : area.containsMouse ? Theme.buttonHover : "transparent"
-
-    Behavior on color {
-      ColorAnimation {
-        duration: 150
-      }
-    }
-  }
-
   Glyph {
     anchors.centerIn: parent
     path: Notifs.dnd ? root.off : root.bell
     size: 18
-    color: Notifs.dnd ? Theme.fgDim : Theme.fg
+    color: Theme.fg
   }
 
   Rectangle {
@@ -55,11 +43,8 @@ Item {
   }
 
   MouseArea {
-    id: area
-
     anchors.fill: parent
-    hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
-    onClicked: Panels.toggle("center")
+    onClicked: Notifs.dnd = !Notifs.dnd
   }
 }

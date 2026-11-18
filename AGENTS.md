@@ -513,10 +513,7 @@ Notes on specific features:
       (GNOME Shell's panel black). Left: the NixOS logo (`nixos.svg`, opening
       the power menu, a third of a turn in 0.6 s each time the pointer
       arrives, after which its two blues are where they were; a turn under
-      way finishes rather than starting over), the workspaces, and the window
-      in front (`WindowTitle`): its icon, its program's name from its desktop
-      entry and its title, cut short before the clock; on a monitor without
-      focus the first window of its shown workspace, dimmer. Centre: the
+      way finishes rather than starting over) and the workspaces. Centre: the
       clock (a flat round button with a pointing hand, as GNOME's panel draws
       its date: shaded on hover and while the center it opens is open).
       Right: the tray, the volume, the battery and the bell. Quickshell keeps Hyprland's state by
@@ -526,9 +523,9 @@ Notes on specific features:
       one is under way and a hotplug comes as a burst.
       - Workspaces: the monitor's own `1 … n` (monitor id × n + 1 onwards, as
         hyprsplit numbers them) as bare numbers, bright with windows, dim
-        without, red when urgent, with a squircle behind one only while it is
-        shown (faint, and bolder lettering) or under the pointer; half as
-        strong on a monitor without focus, read from `Hyprland.focusedMonitor`
+        without, red when urgent, in a 26 px squircle shown only while it is
+        shown (a button's shade, and bolder lettering) or under the pointer; a step darker on a
+        monitor without focus, read from `Hyprland.focusedMonitor`
         since Quickshell binds `HyprlandMonitor.focused` only on monitors
         added after it started. Any other workspace on it follows as an
         outlined pill named after the monitor that owns it (`DP2-1`), white
@@ -537,7 +534,7 @@ Notes on specific features:
         id in the state dir, so a workspace left behind by an unplugged
         monitor still carries its name (the bare id if never seen; never
         `FALLBACK`, whose id is a real monitor's). Each one's target is the
-        bar's whole height and the gaps beside it; pressing one focuses it by
+        bar's whole height and the gaps beside it; pressing one dips it once (an animation played through, not held while pressed) and focuses it by
         id wherever it is, and the wheel over them steps one a notch in the
         order the bar shows them, stopping at the ends (a touchpad's small
         steps add up to notches).
@@ -580,9 +577,9 @@ Notes on specific features:
         clipped to the fill), green, yellow from 25 %, red from 10 %, with a
         bolt while charging. `qs ipc -c shell call bar fakeBattery 15 false`
         shows a made-up one anywhere, `realBattery` drops it.
-      - The bell opens the notification center and carries a red count of the
-        notifications it holds; under Do Not Disturb it is struck through
-        (Material Symbols' notifications_off), dimmed, and the count hides.
+      - The bell, a bare icon, is Do Not Disturb's switch, a click turning it
+        on or off, and carries a red count of the notifications
+        it holds; under Do Not Disturb it is struck through (Material Symbols' notifications_off) and the count hides.
     - `weather/` is the `Weather` singleton and `Forecast`, its card under
       the center's calendar: MET Norway's forecast (yr.no's) for the
       timezone's city (`/etc/localtime`'s zone, placed by the `zone.tab`
