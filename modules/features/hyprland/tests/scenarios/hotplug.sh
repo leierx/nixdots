@@ -44,12 +44,12 @@ qst case "a tray menu closes with its monitor"
 qst tray
 qst wait '.layers | length > 0'
 sleep 1
-# The tray's last icon on DP-2's bar: 2560 / 1.25 wide, the icon 24 px in from its edge.
-qst click right $((1920 + 2048 - 24)) 21
+# The tray's last icon on DP-2's bar: 2560 / 1.25 wide, the icon 31 px in from its edge.
+qst click right $((1920 + 2048 - 31)) 20
 qst wait "$(layer "DP-2 quickshell:menu") and .panel == \"tray:DP-2\""
 qst monitor remove DP-2
 qst wait "$(no_layer quickshell:menu) and .panel == \"\""
-qst click right $((1920 - 24)) 21
+qst click right $((1920 - 31)) 20
 qst wait "$(layer "DP-1 quickshell:menu") and .panel == \"tray:DP-1\""
 
 qst case "a popup leaves a monitor that goes, and stays where it went"

@@ -233,7 +233,7 @@ root: {
           tray = pkgs.runCommand "qs-tray-qml" { } ''
             mkdir $out
             cp ${./tests/tray.qml} $out/tray.qml
-            cp ${./quickshell/common/nixos.svg} $out/icon.svg
+            cp ${./tests/tray-icon.svg} $out/icon.svg
           '';
         in
         pkgs.writeShellScriptBin "qs-tray" ''

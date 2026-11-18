@@ -19,6 +19,7 @@ Row {
   // A name per screen, so a menu on one monitor closes one open on another; set once, so it outlives the screen.
   property string panel: ""
 
+  visible: icons.count > 0
   leftPadding: 7
   rightPadding: 7
 
@@ -31,6 +32,8 @@ Row {
   }
 
   Repeater {
+    id: icons
+
     model: ScriptModel {
       values: SystemTray.items.values.filter(item => item.status !== Status.Passive)
     }

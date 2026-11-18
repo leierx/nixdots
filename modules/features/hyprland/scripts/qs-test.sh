@@ -101,6 +101,8 @@ start_qs() {
   done
   problems
   grep -q 'Configuration Loaded' "$T/qs.log" || die "the shell did not load, see qs-test log"
+  # Always a battery, so the bar shows everything it can on any host; `ipc bar realBattery` drops it.
+  (enter && timeout 5 qs ipc -p "$T/shell" call bar fakeBattery 76 false > /dev/null) || echo "qs-test: could not fake a battery" >&2
 }
 
 stop_qs() {

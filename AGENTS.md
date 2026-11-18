@@ -509,24 +509,37 @@ Notes on specific features:
       full-reset`), so `qst actions` shows what it would have done. Delegates
       get copies of the action objects, so actions are told apart by title.
     - `bar/` is the bar along the top of every monitor (`Bar.qml`, one
-      `BarWindow` per screen but `FALLBACK`), sized and lettered like the waybar it replaced
-      (Adwaita Sans at 16 px, on GNOME Shell's panel black): the NixOS logo
-      (`nixos.svg`, opening the power menu), the monitor's workspaces, the
-      clock (a flat round button with a pointing hand, as GNOME's panel draws its date: shaded on
-      hover and while the center it opens is open), the battery and the tray. Quickshell keeps Hyprland's state by
+      `BarWindow` per screen but `FALLBACK`), after
+      [minflair](https://github.com/t4lentles5/minflair)'s Convex style
+      without its frame round the screen: `ConvexShape`, a black strip
+      (GNOME Shell's panel black) with three tabs hanging from it, flared into
+      it with concave curves and rounded below, but flat where they meet the
+      screen's edges; each tab is as wide as what it holds, the right one gone
+      while it holds nothing, and windows start below the tabs. Left: the
+      NixOS logo (`nixos.svg`, opening the power menu, one 0.7 s turn with an
+      overshoot each time the pointer arrives, a turn under way finishing
+      rather than starting over) and the workspaces; centre: the clock (a flat
+      round button with a pointing hand, as GNOME's panel draws its date:
+      shaded on hover and while the center it opens is open); right: the
+      battery and the tray. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
       renames, so `Bar.qml` refreshes monitors and workspaces on those, and
       once more 300 ms after the last, since Quickshell drops a refresh while
       one is under way and a hotplug comes as a burst.
-      - Workspaces: each bar shows its monitor's own `1 … n` (monitor id × n
-        + 1 onwards, as hyprsplit numbers them), then any other workspace on
-        it, named after the monitor that owns it (`DP2-1`), and named ones by
-        name; specials are left out. `WorkspaceOwners` remembers the connector
+      - Workspaces: Convex's dots in a well (the foreground at 7 %): the
+        monitor's own `1 … n` (monitor id × n + 1 onwards, as hyprsplit
+        numbers them), white for the one shown, drawn as a pill (half as
+        bright on a monitor without focus, read from `Hyprland.focusedMonitor`
+        since Quickshell binds `HyprlandMonitor.focused` only on monitors added
+        after it started), the foreground at 65 % with windows and 25 %
+        without, red when urgent, growing under the pointer. Any other
+        workspace on it follows in a chip per monitor that owns them, named
+        after it (`DP2 ● ●`), and named ones in a chip of their own name;
+        specials are left out. `WorkspaceOwners` remembers the connector
         last seen with each monitor id in the state dir, so a workspace left
         behind by an unplugged monitor still carries its name (the bare id if
-        never seen; never `FALLBACK`, whose id is a real monitor's). Bold and centred on its ink, dim while empty, a pill while shown, outlined when
-        foreign, red when urgent; pressing one focuses it by id wherever it
-        is.
+        never seen; never `FALLBACK`, whose id is a real monitor's). Pressing
+        one focuses it by id wherever it is.
       - The tray is bare icons without hover states, hiding passive items;
         left click activates (or opens the menu of a menu-only item), middle is the secondary action, right opens
         the menu: `TrayMenu`, libadwaita's popover menu drawn from
@@ -845,7 +858,7 @@ qst key super+d                # through Hyprland's bind and the shell's global 
 qst type fire
 qst key ctrl+n Down Return     # one key per argument
 qst pointer 960 21             # hover, in layout coordinates
-qst click                      # left, where the pointer is; or `qst click right 1896 21`
+qst click                      # left, where the pointer is; or `qst click right 1889 20` (the tray)
 qst drag 1631 112 320 0 250    # press at x y, move dx dy over ms, release: a swipe
 qst wheel 3                    # notches, positive down
 qst layers                     # the layer surfaces up: which panels are open, on which monitor
@@ -864,7 +877,7 @@ qst stays '.panel == "apps"' 2 # fail if it stops holding within 2 s (1)
 qst reset                      # QS_TEST_MONITORS again with ids from 0, no windows, a fresh qs without state
 qst run                        # sync, then every tests/scenarios/*.sh; `qst run FILE` for one
 qst key super+Return           # real windows, for workspaces and the window switcher
-qst tray                       # a tray item with nested submenus (tests/tray.qml); `qst tray log` shows what it was told
+qst tray                       # a tray item (a yellow star) with nested submenus (tests/tray.qml); `qst tray log` shows what it was told
 qst x notify-send -a Discord loft01 hello   # anything else, inside the session (hyprctl talks to the test Hyprland)
 qst sync                       # copy edited QML in, restart qs, print its warnings; non-zero if it fails to load
 qst problems                   # warnings and errors, less the expected ones
@@ -881,7 +894,9 @@ session, so the launcher's apps open there; `hyprctl` is the test Hyprland's,
 logging dispatches and reloads, with `hl.dsp.exit()` only logged; cliphist
 reads a copy of the database. The config dir is the user's, symlinked, except
 `hypr/` (the test's) and `hyprmoncfg/`; profiles to fake go in
-`$QS_TEST_DIR/cfg/hyprmoncfg/profiles`.
+`$QS_TEST_DIR/cfg/hyprmoncfg/profiles`. Every qs it starts has a fake battery at 76 %
+(`bar fakeBattery`), so the bar shows all it can on any host; `qst ipc bar
+realBattery` drops it.
 
 - `sync` copies over rather than rebuilds: the copy keeps the built `nix/`
   and weather icons. It restarts rather than hot-reloads: a reload keeps
