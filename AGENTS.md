@@ -516,7 +516,7 @@ Notes on specific features:
       way finishes rather than starting over) and the workspaces. Centre: the
       clock (a flat round button with a pointing hand, as GNOME's panel draws
       its date: shaded on hover and while the center it opens is open).
-      Right: the tray, the volume, the battery and the bell. Quickshell keeps Hyprland's state by
+      Right: the volume, the battery, the bell and, always last, the tray. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
       renames, so `Bar.qml` refreshes monitors and workspaces on those, and
       once more 300 ms after the last, since Quickshell drops a refresh while
@@ -544,9 +544,9 @@ Notes on specific features:
         `QsMenuOpener` with its corner at the pointer (leftwards where it would
         run off the screen), on an overlay (a `Panels` panel per screen) whose
         input region is only its cards (`Region.regions`), stray separators
-        dropped. Check and radio items get libadwaita's check buttons, and a
-        card that has any (or any icon) keeps their column on every row, so the
-        labels line up. Submenus cascade as GTK's do: a card each, beside the row that
+        dropped. Check and radio items get libadwaita's check buttons, and only
+        rows with a check button or an icon make room for one, so the others start at the edge.
+        Submenus cascade as GTK's do: a card each, beside the row that
         opens it (held highlighted), opened by a click or 150 ms of hover, so
         passing over rows opens nothing, and closed as soon as the pointer is on
         another row of its parent; each goes the way the last

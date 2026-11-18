@@ -169,8 +169,6 @@ PanelWindow {
           if (entries.length > 0 && entries[entries.length - 1].isSeparator) entries.pop();
           return entries;
         }
-        readonly property bool indicators: entries.some(entry => entry.buttonType !== QsMenuButtonType.None)
-        readonly property bool icons: entries.some(entry => !!entry.icon)
         readonly property real openerY: parentCard?.rowY(handle) ?? 0
 
         function rowY(entry: var): real {
@@ -253,16 +251,14 @@ PanelWindow {
                   spacing: 8
                   opacity: entry.modelData?.enabled ? 1 : 0.5
 
-                  // A column every row keeps once any has one, so the labels line up as in GTK's menus.
                   Item {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 16
                     height: 16
-                    visible: card.indicators
+                    visible: (entry.modelData?.buttonType ?? QsMenuButtonType.None) !== QsMenuButtonType.None
 
                     CheckIndicator {
                       anchors.centerIn: parent
-                      visible: entry.modelData?.buttonType !== QsMenuButtonType.None
                       radio: entry.modelData?.buttonType === QsMenuButtonType.RadioButton
                       checkState: entry.modelData?.checkState ?? Qt.Unchecked
                     }
@@ -272,11 +268,10 @@ PanelWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 16
                     height: 16
-                    visible: card.icons
+                    visible: !!entry.modelData?.icon
 
                     IconImage {
                       anchors.fill: parent
-                      visible: !!entry.modelData?.icon
                       source: entry.modelData ? entry.modelData.icon : ""
                     }
                   }

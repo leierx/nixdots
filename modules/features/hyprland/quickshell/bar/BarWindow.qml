@@ -55,11 +55,6 @@ PanelWindow {
     }
     spacing: 4
 
-    Tray {
-      anchors.verticalCenter: parent.verticalCenter
-      screen: root.screen
-    }
-
     VolumeButton {
       anchors.verticalCenter: parent.verticalCenter
       screen: root.screen
@@ -71,6 +66,11 @@ PanelWindow {
 
     Bell {
       anchors.verticalCenter: parent.verticalCenter
+    }
+
+    Tray {
+      anchors.verticalCenter: parent.verticalCenter
+      screen: root.screen
     }
   }
 }
