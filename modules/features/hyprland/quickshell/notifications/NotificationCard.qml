@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import Quickshell.Widgets
 import qs.common
 
 Item {
@@ -26,8 +25,9 @@ Item {
     }
     onTapped: button => {
       if (button !== Qt.LeftButton) swipe.slideAway(false, root.entry.dismissal());
-      else if (root.expandable) root.expanded = !root.expanded;
+      else if (root.expandable && !root.expanded) root.expanded = true;
       else if (root.entry.defaultAction) root.entry.invoke(root.entry.defaultAction);
+      else if (root.entry.buttons.length === 1) root.entry.invoke(root.entry.buttons[0]);
       else root.entry.popup = false;
     }
   }
@@ -47,12 +47,24 @@ Item {
     border.color: root.entry.critical ? Theme.destructive : Theme.outline
     opacity: 1 - x / width
 
+    // Over a dark terminal the card alone blends in.
+    Rectangle {
+      id: stripe
+
+      x: 8
+      y: Theme.padding
+      width: 3
+      height: parent.height - 2 * Theme.padding
+      radius: width / 2
+      color: root.entry.critical ? Theme.destructive : Theme.accentBg
+    }
+
     ColumnLayout {
       id: content
 
       anchors {
         top: parent.top
-        left: parent.left
+        left: stripe.right
         right: parent.right
         margins: Theme.padding
       }
@@ -62,12 +74,6 @@ Item {
         Layout.fillWidth: true
         Layout.minimumHeight: 24
         spacing: 6
-
-        IconImage {
-          visible: root.entry.appIcon !== ""
-          source: root.entry.appIcon
-          implicitSize: 16
-        }
 
         Text {
           Layout.fillWidth: true

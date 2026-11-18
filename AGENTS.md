@@ -611,10 +611,13 @@ Notes on specific features:
       focused when each arrived (one whose monitor goes moves to the focused one
       for good, and while none is on it waits with its timeout held), below the bar, sliding in and out (the
       window stays mapped with an empty input region, so the last one does
-      too); the app's timeout or 8 s, critical never, hovering holds it;
-      a click on one with more to show (a cut-off title or body) expands and
-      collapses it, as its arrow does, and otherwise runs the default action,
-      or puts the popup away when there is none; an action or a link puts it
+      too); the app's timeout or 8 s, critical never, hovering holds it.
+      Each card has an accent line down its left edge (red when critical), so
+      it stands out over a terminal as dark as it, and the app's name without
+      its icon. A click on one with more to show (a cut-off title or body)
+      expands it, and only its arrow collapses it; a click otherwise runs the
+      default action, or the only action when there is one and no default,
+      or puts the popup away when there is neither; an action or a link puts it
       away too (a resident notification stays open, as GNOME's banners do);
       right click, a swipe or a fast flick towards the edge slides it away and
       dismisses it; more than three actions fold into a "More" dropdown.
