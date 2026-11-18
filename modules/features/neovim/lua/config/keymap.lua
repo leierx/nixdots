@@ -13,8 +13,6 @@ k.set("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
 k.set("n", "<C-d>", "<C-d>zz")
 k.set("n", "<C-u>", "<C-u>zz")
 
-k.set("n", "ss", [[:%s/\S\zs\s\+/ /g | %s/\s\+$//e | nohlsearch<CR>]], { desc = "Normalize spacing" })
-
 k.set("v", "<", "<gv")
 k.set("v", ">", ">gv")
 
@@ -37,7 +35,7 @@ k.set("n", "<leader>g", function() require("fzf-lua").live_grep_native({ cwd = p
 k.set("n", "<leader>ca", function() require("tiny-code-action").code_action() end, { desc = "Code action" })
 k.set("n", "<leader>b", function() require("fzf-lua").buffers() end, { desc = "Buffers" })
 k.set("n", "<leader>o", function() require("fzf-lua").oldfiles() end, { desc = "Find old files" })
-k.set("n", "<leader><space>", function() require("fzf-lua").builtin() end, { desc = "All finders" })
+k.set("n", "<leader><space>", function() require("plugins.menu").open() end, { desc = "Menu" })
 
 -- mini.surround's prefix
 k.set("n", "s", "<Nop>", { desc = "use `cl` or `r`" })

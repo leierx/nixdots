@@ -17,7 +17,11 @@ require("conform").setup({
     go = { "goimports", "gofumpt" },
     qml = { "qmlformat" },
   },
-  format_on_save = { timeout_ms = 1000, lsp_format = "fallback" },
+  format_on_save = function(buf)
+    if not vim.b[buf].skip_format then
+      return { timeout_ms = 1000 }
+    end
+  end,
 })
 
 require("treesj").setup({ use_default_keymaps = false })
