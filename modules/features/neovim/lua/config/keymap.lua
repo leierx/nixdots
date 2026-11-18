@@ -23,7 +23,7 @@ k.set("n", "<C-q>", function() vim.api.nvim_buf_delete(0, {}) end, { desc = "Clo
 k.set("n", "<leader><Tab>", "<C-^>", { desc = "Toggle last buffer" })
 k.set("n", "<C-^>", "<Nop>")
 
-k.set("n", "<A-t>", function() require("plugins.floaterminal").toggle_terminal() end, { desc = "Terminal: toggle" })
+k.set({ "n", "t" }, "<A-t>", function() require("plugins.floaterminal").toggle_terminal() end, { desc = "Terminal: toggle" })
 
 local function project_root()
   return vim.fs.root(0, { ".git" }) or vim.fs.root(vim.fn.getcwd(), { ".git" }) or vim.fn.getcwd()
