@@ -59,7 +59,7 @@ Item {
         radius: Math.min(6, height / 6)
         color: modelData.enabled ? root.color : "transparent"
         border.width: modelData.enabled ? 0 : 1
-        border.color: Qt.rgba(root.color.r, root.color.g, root.color.b, 0.6)
+        border.color: Theme.fgDim
 
         Column {
           anchors.centerIn: parent

@@ -1,0 +1,34 @@
+export QS_TEST_MONITORS="DP-1:1920x1080:1"
+
+summaries() { echo "(.history | map(.summary)) == $1"; }
+
+qst case "an app keeps its newest three notifications once their popups go"
+notify-send -a Mail "mail 1"
+for n in 1 2 3 4; do notify-send -a Chat "chat $n"; done
+qst wait "$(summaries '["chat 4", "chat 3", "chat 2", "chat 1", "mail 1"]')"
+qst ipc notifications hidePopups
+qst wait "$(summaries '["chat 4", "chat 3", "chat 2", "mail 1"]') and (.popups | length) == 0"
+
+qst case "a sixth popup puts the oldest away, and with it its place in the history"
+for n in 1 2 3 4 5 6; do notify-send -a Chat "chat $n"; done
+qst wait "(.popups | map(.summary)) == [\"chat 6\", \"chat 5\", \"chat 4\", \"chat 3\", \"chat 2\"] and $(summaries '["chat 6", "chat 5", "chat 4", "chat 3", "chat 2"]')"
+
+qst case "a stack tag replaces the earlier notification in place"
+notify-send -a Volume -h string:x-dunst-stack-tag:volume "Volume 10"
+notify-send -a Volume -h string:x-dunst-stack-tag:volume "Volume 20"
+qst wait "$(summaries '["Volume 20"]') and (.popups | map(.summary)) == [\"Volume 20\"]"
+qst stays "$(summaries '["Volume 20"]')"
+
+qst case "under Do Not Disturb a transient notification never lands and a normal one stays in the history"
+qst ipc notifications setDnd true
+qst wait '.dnd'
+notify-send -e -a Chat "gone"
+notify-send -a Chat "kept"
+qst wait "$(summaries '["kept"]') and (.popups | length) == 0"
+qst stays "$(summaries '["kept"]') and (.popups | length) == 0"
+
+qst case "under Do Not Disturb a critical notification still pops up"
+qst ipc notifications setDnd true
+qst wait '.dnd'
+notify-send -u critical -a Battery "battery low"
+qst wait '(.popups | map(.summary)) == ["battery low"]'

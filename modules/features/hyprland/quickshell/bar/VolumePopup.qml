@@ -21,7 +21,8 @@ Overlay {
   component Slider: Item {
     id: slider
 
-    readonly property real value: Volume.volume
+    // Past 100 %, set by another app, it reads full.
+    readonly property real value: Math.min(1, Volume.volume)
 
     implicitHeight: 26
 
@@ -67,7 +68,14 @@ Overlay {
       onPositionChanged: mouse => {
         if (pressed) Volume.setVolume(mouse.x / width);
       }
-      onWheel: event => Volume.setVolume(Volume.volume + Math.sign(event.angleDelta.y) * 0.05)
+      onWheel: event => {
+        const steps = notches.steps(event);
+        if (steps !== 0) Volume.step(steps);
+      }
+    }
+
+    WheelSteps {
+      id: notches
     }
   }
 

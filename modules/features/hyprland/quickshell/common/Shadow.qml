@@ -14,7 +14,7 @@ Item {
     radius: root.radius
     blur: 14
     spread: 5
-    color: Qt.rgba(0, 0, 0, 0.15)
+    color: Theme.shadow
   }
 
   RectangularShadow {
@@ -22,6 +22,6 @@ Item {
     radius: root.radius
     blur: 5
     spread: 2
-    color: Qt.rgba(0, 0, 0, 0.1)
+    color: Theme.shadowTight
   }
 }

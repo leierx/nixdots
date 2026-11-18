@@ -25,30 +25,29 @@ Item {
     const ws = monitor?.activeWorkspace;
     return !ws ? "" : ws.id > 0 ? String(ws.id) : `name:${ws.name}`;
   }
-  property real wheel: 0
-
   function go(target: string): void {
     Panels.close();
     Hyprland.dispatch(`hl.dsp.focus({ workspace = ${JSON.stringify(target)} })`);
   }
 
-  // A notch at a time, stopping at the ends; a touchpad's small steps add up to notches.
-  function scroll(delta: real): void {
-    wheel += delta;
-    if (Math.abs(wheel) < 120) return;
-    const step = wheel < 0 ? 1 : -1;
-    wheel = 0;
+  // Stopping at the ends.
+  function scroll(steps: int): void {
+    if (steps === 0) return;
     const at = targets.indexOf(shownTarget);
-    const next = Math.max(0, Math.min(targets.length - 1, (at < 0 ? 0 : at) + step));
+    const next = Math.max(0, Math.min(targets.length - 1, (at < 0 ? 0 : at) - steps));
     if (targets[next] !== shownTarget) go(targets[next]);
   }
 
   implicitWidth: row.implicitWidth
   implicitHeight: row.implicitHeight
 
+  WheelSteps {
+    id: notches
+  }
+
   WheelHandler {
     acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-    onWheel: event => root.scroll(event.angleDelta.y || event.pixelDelta.y)
+    onWheel: event => root.scroll(notches.steps(event))
   }
 
   // Yours a bare number, a squircle under it only while shown (faintly) or under the pointer; another monitor's an outlined pill named after it (DP2-1).

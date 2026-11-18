@@ -46,6 +46,8 @@ Scope {
           waiting: e.waiting
         })),
         notifications: Notifs.entries.length,
+        history: Notifs.entries.map(e => ({ app: Notifs.appKey(e), summary: e.notification?.summary ?? null })),
+        dnd: Notifs.dnd,
         volume: { percent: Volume.percent, muted: Volume.muted, output: Volume.devices.find(d => d.current)?.name ?? null }
       });
     }

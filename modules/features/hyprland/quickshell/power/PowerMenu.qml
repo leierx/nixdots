@@ -117,7 +117,7 @@ Overlay {
     id: backdrop
 
     anchors.fill: parent
-    color: Qt.rgba(0, 0, 0, 0.88)
+    color: Theme.backdrop
     opacity: 0
     focus: true
 

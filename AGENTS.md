@@ -276,7 +276,9 @@ Notes on specific features:
     closes the panel it is in), `Button` (libadwaita's button, `flat` or
     not, with an optional expander arrow; `ExpandButton` and `CloseButton` are
     its round flat 24 px forms), `Glyph` (a Material Symbols path at a size),
-    and `Panels`, the one open panel by name, with
+    `WheelSteps` (wheel events as whole notches, a touchpad's small steps
+    added up, for everything the wheel steps through), and `Panels`, the one
+    open panel by name, with
     the IPC target `panels` (`qs ipc -c shell call panels open|close|toggle
     <name>`; `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`, `power`): opening any panel (a
     launcher mode, the notification center, a tray menu) closes the others,
@@ -312,7 +314,8 @@ Notes on specific features:
       border as the foreground at libadwaita's alphas over any surface, its
       type scale as `font` values (`Theme.body`, `heading`, `caption`,
       `title4`, …; Adwaita Sans at GTK's 11pt) and its radii (button 9, card
-      12, window 15). Panel widths follow GNOME Shell's, in em of the body
+      12, window 15), plus the shadows' and the power menu's black. Every
+      colour the shell draws is one of these. Panel widths follow GNOME Shell's, in em of the body
       font (`Theme.em`): 30em popups (GNOME's are 34em), its calendar
       days. `shell.qml` sets `QT_SCALE_FACTOR=1.2` (an `Env`
       pragma), Qt's own high-DPI scaling, so it all draws 1.2× and sharp;
@@ -536,8 +539,7 @@ Notes on specific features:
         `FALLBACK`, whose id is a real monitor's). Each one's target is the
         bar's whole height and the gaps beside it; pressing one dips it once (an animation played through, not held while pressed) and focuses it by
         id wherever it is, and the wheel over them steps one a notch in the
-        order the bar shows them, stopping at the ends (a touchpad's small
-        steps add up to notches).
+        order the bar shows them, stopping at the ends (`WheelSteps`).
       - The tray is bare icons without hover states, hiding passive items;
         left click activates (or opens the menu of a menu-only item), middle is the secondary action, right opens
         the menu: `TrayMenu`, libadwaita's popover menu drawn from
@@ -562,7 +564,10 @@ Notes on specific features:
       - The volume (`Volume`) is PipeWire's default output: an icon for its
         level (Material Symbols' volume_up, volume_down, volume_mute,
         volume_off) and its percentage, struck through while muted. The wheel
-        on it steps 5 %, a right click mutes, and a click opens
+        on it steps 5 % a notch (`WheelSteps`), onto the 5 % marks and up to
+        100 %, or to wherever past it another app set it, so turning it up
+        never turns it down; the slider reads full past 100 %. A right click
+        mutes, and a click opens
         `VolumePopup` under it (a `Panels` panel per screen, `volume:DP-1`),
         libadwaita's popover: a mute button, a slider (dragged, clicked or
         wheeled), and the outputs, the one in use ticked, a click making
@@ -938,7 +943,8 @@ realBattery` and `realVolume` drop them.
 the session's copy of the shell (never the built one): the open panel, the
 screens and the Hyprland monitor each resolves to, the focused monitor,
 workspaces with the label the bar gives them, windows, and every popup with
-the screen it is on, the volume (percent, muted, output), plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
+the screen it is on, the notification `history` (app and summary, newest
+first) and `dnd`, the volume (percent, muted, output), plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.
 `wait`, `stays` and `state` fail with "qs is not running" once qs has
@@ -951,7 +957,9 @@ resets; the file sets `QS_TEST_MONITORS` for its cases, and stops at its first
 failure with the case named and the state that failed. Assert with `wait`
 and `stays`, never `sleep`. `hotplug.sh` covers unplugging, disabling and
 replugging under every panel, a tray menu and popups, every monitor going,
-bursts and mode changes. Behaviour that broke once gets a case; check that
+bursts and mode changes; `notifications.sh` the history: three per app once
+their popups go, the five-popup limit, stack tags replacing in place, and Do
+Not Disturb with transient and critical notifications. Behaviour that broke once gets a case; check that
 the case fails without the fix (a `git worktree` of `HEAD` with the new
 `tests/` copied in, run with `QS_TEST_REPO` pointing at it).
 

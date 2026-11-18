@@ -36,6 +36,10 @@ Singleton {
   readonly property color buttonChecked: overlay(0.25)
   readonly property color trough: overlay(0.15)
   readonly property color slider: Qt.tint(Colors.view_bg_color, overlay(0.8))
+  // libadwaita's window shadow: a wide soft one and a tight one.
+  readonly property color shadow: Qt.rgba(0, 0, 0, 0.15)
+  readonly property color shadowTight: Qt.rgba(0, 0, 0, 0.1)
+  readonly property color backdrop: Qt.rgba(0, 0, 0, 0.88)
 
   readonly property font body: Qt.font({ family: "Adwaita Sans", pointSize: 11 })
   readonly property font heading: Qt.font({ family: "Adwaita Sans", pointSize: 11, weight: Font.Bold })

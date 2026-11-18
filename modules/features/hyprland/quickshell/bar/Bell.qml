@@ -37,7 +37,7 @@ Item {
 
       anchors.centerIn: parent
       text: root.count > 9 ? "9+" : root.count
-      color: "white"
+      color: Theme.fg
       font: Qt.font({ family: Theme.body.family, pointSize: 6, weight: Font.Bold })
     }
   }

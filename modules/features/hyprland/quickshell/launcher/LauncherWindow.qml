@@ -185,19 +185,16 @@ Overlay {
       onTriggered: list.hovered = -1
     }
 
-    // A row per notch, like rofi; touchpad steps add up to a notch.
-    WheelHandler {
-      property real pending: 0
+    WheelSteps {
+      id: notches
+    }
 
+    // A row per notch, like rofi.
+    WheelHandler {
       target: null
       // The default is mice only.
       acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-      onWheel: event => {
-        pending += event.angleDelta.y;
-        const rows = Math.trunc(pending / 120);
-        pending -= rows * 120;
-        list.select(list.currentIndex - rows);
-      }
+      onWheel: event => list.select(list.currentIndex - notches.steps(event))
     }
   }
 

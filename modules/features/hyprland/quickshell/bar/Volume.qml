@@ -19,13 +19,19 @@ Singleton {
   // What the popup lists: every output, the one in use marked.
   readonly property var devices: fake ? fake.devices.map((name, i) => ({ name, current: i === fake.current, index: i })) : outputs.map((node, i) => ({ name: node.description || node.nickname || node.name, current: node === sink, index: i }))
 
+  // Up to 100 %, or as far past it as something else set it, so turning it up never turns it down.
   function setVolume(value: real): void {
-    const clamped = Math.max(0, Math.min(1, value));
+    const clamped = Math.max(0, Math.min(Math.max(1, root.volume), value));
     if (fake) fake = Object.assign({}, fake, { volume: clamped, muted: false });
     else if (sink?.audio) {
       sink.audio.volume = clamped;
       if (clamped > 0) sink.audio.muted = false;
     }
+  }
+
+  // Five percent a notch, onto the five percent marks.
+  function step(notches: int): void {
+    setVolume(Math.round((root.volume + notches * 0.05) * 20) / 20);
   }
 
   function toggleMute(): void {
