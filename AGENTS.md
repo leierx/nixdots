@@ -214,7 +214,7 @@ Notes on specific features:
 
 - **`hyprland/`** is split across `default.nix` (nixos + HM base),
   `bindings.nix`, `rules.nix`, `hypridle.nix`,
-  `hyprlock.nix`, `hyprmoncfg.nix`, `plugins.nix`, `quickshell.nix`, plus `assets/`, `scripts/`
+  `hyprlock.nix`, `hyprmoncfg.nix`, `hyprtoolkit.nix`, `plugins.nix`, `quickshell.nix`, plus `assets/`, `scripts/`
   and `quickshell/`. It uses the
   pinned Hyprland input and its **Lua-based settings API** — binds and
   events are built with `lib.generators.mkLuaInline` and `_args` rather than
@@ -644,6 +644,12 @@ Notes on specific features:
       (`common/Shadow.qml`, Qt's `RectangularShadow`), and their expand
       toggles use libadwaita's arrow (`common/ExpanderArrow.qml`, Adwaita's
       `pan-down-symbolic` as a `Shape`).
+  - `hyprtoolkit.nix` themes hyprtoolkit (`~/.config/hypr/hyprtoolkit.conf`),
+    which hyprpolkitagent ≥ 0.2 and hyprland-guiutils' dialogs (app not
+    responding, permissions) draw with, as libadwaita's dark style: window
+    background, buttons and borders as the foreground at 10 % and 15 % made
+    opaque, Adwaita Sans, Papirus-Dark, radii 9/12. The accent is `blue_5`,
+    since hyprtoolkit writes dark text on an accent lighter than OkLab 0.5.
   - hyprlock talks to fprintd itself (`auth:fingerprint`, on when
     `services.fprintd` is), so the NixOS half turns `fprintAuth` off for
     hyprlock's PAM service.
