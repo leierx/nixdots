@@ -17,17 +17,9 @@ PanelWindow {
     right: true
   }
   implicitHeight: 34
-  color: "transparent"
+  color: Theme.panel
 
   WlrLayershell.namespace: "quickshell:bar"
-
-  ConvexShape {
-    anchors.fill: parent
-    leftWidth: leftTab.width + 2 * root.inset + flare
-    centerX: centerTab.x - flare - 4
-    centerWidth: centerTab.width + 2 * flare + 8
-    rightWidth: rightTab.width > 0 ? rightTab.width + 2 * root.inset + flare : 0
-  }
 
   MouseArea {
     anchors.fill: parent
@@ -36,44 +28,65 @@ PanelWindow {
   }
 
   Row {
-    id: leftTab
+    id: start
 
     x: root.inset
     anchors.verticalCenter: parent.verticalCenter
-    spacing: 4
+    spacing: 6
 
     NixLogo {
       anchors.verticalCenter: parent.verticalCenter
     }
 
     Workspaces {
+      height: root.height
       anchors.verticalCenter: parent.verticalCenter
       monitor: root.monitor
+    }
+
+    Item {
+      width: 10
+      height: 1
+    }
+
+    // Up to the clock, less a gap.
+    WindowTitle {
+      anchors.verticalCenter: parent.verticalCenter
+      monitor: root.monitor
+      maxWidth: clock.x - start.x - x - 24
     }
   }
 
   Clock {
-    id: centerTab
+    id: clock
 
     anchors.centerIn: parent
   }
 
   Row {
-    id: rightTab
-
     anchors {
       right: parent.right
       rightMargin: root.inset
       verticalCenter: parent.verticalCenter
+    }
+    spacing: 4
+
+    Tray {
+      anchors.verticalCenter: parent.verticalCenter
+      screen: root.screen
+    }
+
+    VolumeButton {
+      anchors.verticalCenter: parent.verticalCenter
+      screen: root.screen
     }
 
     Battery {
       anchors.verticalCenter: parent.verticalCenter
     }
 
-    Tray {
+    Bell {
       anchors.verticalCenter: parent.verticalCenter
-      screen: root.screen
     }
   }
 }

@@ -83,10 +83,10 @@ testqs() {
 }
 
 problems() {
-  # Quickshell never tracks Hyprland's FALLBACK, so warns as it goes; with no output at all, Qt moves
+  # Quickshell warns of a monitor removed it never tracked: FALLBACK, or one a refresh dropped in a burst; the session has no PipeWire; with no output at all, Qt moves
   # windows to a placeholder screen for a moment, and each warns before it is gone or placed.
   awk '/creating placeholder screen/ { held = 1; next } held && /Layershell screen does not correspond/ { next } { held = 0; print }' "$T/qs.log" |
-    grep -E 'WARN|ERROR' | grep -vE 'UPower|qt\.qpa\.services|Could not register app ID|qt\.qpa\.wayland\.textinput|removal for monitor "FALLBACK"' || true
+    grep -E 'WARN|ERROR' | grep -vE 'UPower|qt\.qpa\.services|Could not register app ID|qt\.qpa\.wayland\.textinput|removal for monitor ".*" which was not previously tracked|Failed to connect pipewire context' || true
   if running && [ -s "$T/display" ] && ! alive; then echo "qs is not running: it crashed or failed to load"; fi
 }
 
@@ -101,8 +101,8 @@ start_qs() {
   done
   problems
   grep -q 'Configuration Loaded' "$T/qs.log" || die "the shell did not load, see qs-test log"
-  # Always a battery, so the bar shows everything it can on any host; `ipc bar realBattery` drops it.
-  (enter && timeout 5 qs ipc -p "$T/shell" call bar fakeBattery 76 false > /dev/null) || echo "qs-test: could not fake a battery" >&2
+  # Always a battery and a sound server, so the bar shows everything it can on any host; `ipc bar realBattery` and `realVolume` drop them.
+  (enter && timeout 5 qs ipc -p "$T/shell" call bar fakeBattery 76 false > /dev/null && timeout 5 qs ipc -p "$T/shell" call bar fakeVolume 64 false > /dev/null) || echo "qs-test: could not fake a battery and volume" >&2
 }
 
 stop_qs() {

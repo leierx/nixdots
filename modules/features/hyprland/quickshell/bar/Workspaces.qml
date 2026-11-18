@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Hyprland
 import qs.common
 
-Row {
+Item {
   id: root
 
   required property HyprlandMonitor monitor
@@ -19,136 +19,144 @@ Row {
   readonly property var foreign: !monitor ? [] : Hyprland.workspaces.values
     .filter(ws => ws.monitor === monitor && !ws.name.startsWith("special:") && !own.includes(ws.id))
     .sort((a, b) => (b.id > 0) - (a.id > 0) || a.id - b.id || a.name.localeCompare(b.name))
-  // Per monitor that owns them, by its name; named ones each on their own.
-  readonly property var groups: {
-    const groups = [];
-    for (const ws of foreign) {
-      const name = ws.id > 0 ? WorkspaceOwners.foreignLabel(ws.id).replace(/-\d+$/, "") : ws.name;
-      const group = groups.find(g => g.name === name && ws.id > 0);
-      if (group) group.workspaces.push(ws);
-      else groups.push({ name, workspaces: [ws] });
-    }
-    return groups;
+  // As the bar shows them, which is also the order the wheel goes through.
+  readonly property var targets: [...own.map(id => String(id)), ...foreign.map(ws => ws.id > 0 ? String(ws.id) : `name:${ws.name}`)]
+  readonly property string shownTarget: {
+    const ws = monitor?.activeWorkspace;
+    return !ws ? "" : ws.id > 0 ? String(ws.id) : `name:${ws.name}`;
+  }
+  property real wheel: 0
+
+  function go(target: string): void {
+    Panels.close();
+    Hyprland.dispatch(`hl.dsp.focus({ workspace = ${JSON.stringify(target)} })`);
   }
 
-  spacing: 5
-
-  component Well: Rectangle {
-    default property alias content: row.data
-    property alias spacing: row.spacing
-
-    implicitWidth: row.implicitWidth + 2 * 9
-    implicitHeight: 20
-    radius: height / 2
-    color: Theme.overlay(0.07)
-
-    Row {
-      id: row
-
-      anchors.centerIn: parent
-      spacing: 6
-    }
+  // A notch at a time, stopping at the ends; a touchpad's small steps add up to notches.
+  function scroll(delta: real): void {
+    wheel += delta;
+    if (Math.abs(wheel) < 120) return;
+    const step = wheel < 0 ? 1 : -1;
+    wheel = 0;
+    const at = targets.indexOf(shownTarget);
+    const next = Math.max(0, Math.min(targets.length - 1, (at < 0 ? 0 : at) + step));
+    if (targets[next] !== shownTarget) go(targets[next]);
   }
 
-  component Dot: Item {
-    id: dot
+  implicitWidth: row.implicitWidth
+  implicitHeight: row.implicitHeight
+
+  WheelHandler {
+    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+    onWheel: event => root.scroll(event.angleDelta.y || event.pixelDelta.y)
+  }
+
+  // Yours a bare number, a squircle under it only while shown (faintly) or under the pointer; another monitor's an outlined pill named after it (DP2-1).
+  component Workspace: Rectangle {
+    id: button
 
     property HyprlandWorkspace workspace: null
-    property int number: 0
+    property string target: ""
+    property string label: ""
+    property bool mine: true
     readonly property bool shown: workspace !== null && root.monitor?.activeWorkspace === workspace
     readonly property bool occupied: (workspace?.toplevels.values.length ?? 0) > 0
     readonly property bool urgent: workspace?.urgent ?? false
-    readonly property color ink: urgent ? Theme.destructive : shown ? Theme.fg : Theme.overlay(area.containsMouse ? 0.95 : occupied ? 0.65 : 0.25)
+    // Half as strong on a monitor without focus.
+    readonly property real strength: root.focused ? 1 : 0.5
+    readonly property bool filled: shown && !mine
 
     anchors.verticalCenter: parent?.verticalCenter
-    width: shown ? 20 : 7
-    height: 7
+    width: Math.max(mine ? 22 : 20, text.implicitWidth + 14)
+    height: mine ? 22 : 20
+    radius: mine ? 7 : 10
+    color: {
+      if (filled) return Theme.overlay(strength);
+      if (area.containsMouse) return Theme.buttonHover;
+      if (shown) return Theme.overlay(0.12 * strength);
+      return "transparent";
+    }
+    border.width: mine ? 0 : 1
+    border.color: Theme.border
+    scale: area.pressed ? 0.88 : 1
 
-    Behavior on width {
+    Behavior on color {
+      ColorAnimation {
+        duration: 150
+      }
+    }
+
+    Behavior on scale {
       NumberAnimation {
-        duration: 250
-        easing.type: Easing.OutCubic
+        duration: 100
       }
     }
 
-    Rectangle {
-      anchors.fill: parent
-      radius: height / 2
-      // An unfocused monitor's shown workspace is a dimmer pill.
-      opacity: dot.shown && !root.focused ? 0.5 : 1
-      color: dot.ink
-      scale: area.pressed ? 0.85 : area.containsMouse && !dot.shown ? 1.25 : 1
+    Text {
+      id: text
 
-      Behavior on color {
-        ColorAnimation {
-          duration: 150
-        }
+      anchors.centerIn: parent
+      text: button.label
+      color: {
+        if (button.filled) return Theme.panel;
+        if (button.urgent) return Theme.destructive;
+        if (button.shown) return Theme.overlay(button.mine ? (button.strength === 1 ? 1 : 0.75) : 1);
+        return Theme.overlay(area.containsMouse ? 0.9 : button.occupied ? 0.6 : 0.3);
       }
-
-      Behavior on scale {
-        NumberAnimation {
-          duration: 150
-          easing.type: Easing.OutQuad
-        }
-      }
+      font: Qt.font({ family: Theme.body.family, pointSize: button.mine ? 10 : 8, weight: button.shown && button.mine ? Font.ExtraBold : Font.Bold })
     }
 
+    // As tall as the bar and across the gaps either side.
     MouseArea {
       id: area
 
       anchors.centerIn: parent
-      width: parent.width + 6
-      height: 20
+      width: parent.width + (button.mine ? 2 : 4)
+      height: root.height
       hoverEnabled: true
       cursorShape: Qt.PointingHandCursor
       // On press, which feels quicker than a click.
-      onPressed: {
-        Panels.close();
-        const target = dot.number > 0 ? String(dot.number) : `name:${dot.workspace?.name}`;
-        Hyprland.dispatch(`hl.dsp.focus({ workspace = ${JSON.stringify(target)} })`);
-      }
+      onPressed: root.go(button.target)
     }
   }
 
-  Well {
-    Repeater {
-      model: root.own
+  Row {
+    id: row
 
-      Dot {
-        required property int modelData
+    anchors.verticalCenter: parent.verticalCenter
+    spacing: 8
 
-        number: modelData
-        workspace: Hyprland.workspaces.values.find(ws => ws.id === modelData) ?? null
-      }
-    }
-
-  }
-
-  Repeater {
-    model: root.groups
-
-    Well {
-      id: chip
-
-      required property var modelData
-
-      spacing: 5
-
-      Text {
-        anchors.verticalCenter: parent.verticalCenter
-        text: chip.modelData.name
-        color: Theme.fgDim
-        font: Qt.font({ family: Theme.body.family, pointSize: 8, weight: Font.Bold })
-      }
+    Row {
+      anchors.verticalCenter: parent.verticalCenter
+      spacing: 2
 
       Repeater {
-        model: chip.modelData.workspaces
+        model: root.own
 
-        Dot {
+        Workspace {
+          required property int modelData
+
+          target: String(modelData)
+          label: String(WorkspaceOwners.index(modelData))
+          workspace: Hyprland.workspaces.values.find(ws => ws.id === modelData) ?? null
+        }
+      }
+    }
+
+    Row {
+      anchors.verticalCenter: parent.verticalCenter
+      spacing: 4
+
+      Repeater {
+        model: root.foreign
+
+        Workspace {
           required property HyprlandWorkspace modelData
 
+          mine: false
           workspace: modelData
-          number: modelData?.id ?? 0
+          target: modelData?.id > 0 ? String(modelData.id) : `name:${modelData?.name}`
+          label: modelData ? WorkspaceOwners.label(modelData, root.monitor) : ""
         }
       }
     }

@@ -18,16 +18,15 @@ Item {
     transformOrigin: Item.Center
     antialiasing: true
 
-    // Once each time the pointer arrives; one under way finishes rather than starting over.
+    // A third of a turn, after which its two blues are where they were, once each time the pointer arrives; one under way finishes.
     RotationAnimation on rotation {
       id: spin
 
       running: false
       from: 0
-      to: 360
-      duration: 700
-      easing.type: Easing.OutBack
-      easing.overshoot: 1.4
+      to: 120
+      duration: 600
+      easing.type: Easing.InOutCubic
     }
   }
 

@@ -1,73 +1,90 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
-import QtQuick.Shapes
 import qs.common
 
-Row {
+// A thick meter with its percentage on it, the lettering dark over the fill and light past it.
+Item {
   id: root
 
-  readonly property color level: Power.plugged ? Theme.success : Power.critical ? Theme.destructive : Power.low ? Theme.warning : Theme.fg
+  readonly property real level: Math.max(0, Math.min(Power.percent, 100)) / 100
+  readonly property color fill: Power.critical ? Theme.destructive : Power.low ? Theme.warning : Theme.success
+  // Material Symbols' bolt, filled
+  readonly property string bolt: "M360-360H236q-24 0-35.5-21.5T203-423l299-430q10-14 26-19.5t33 .5q17 6 25 21t6 32l-32 259h155q26 0 36.5 23t-6.5 43L416-100q-11 13-27 17t-31-3q-15-7-23.5-21.5T328-139l32-221Z"
 
   visible: Power.present
-  spacing: 6
-  leftPadding: 8
-  rightPadding: 8
+  implicitWidth: body.width + 3 + 12
+  implicitHeight: 26
 
-  Item {
+  component Lettering: Row {
+    property color color: Theme.fg
+
+    anchors.centerIn: parent
+    spacing: 1
+
+    Glyph {
+      anchors.verticalCenter: parent.verticalCenter
+      visible: Power.plugged
+      path: root.bolt
+      size: 11
+      color: parent.color
+    }
+
+    Text {
+      anchors.verticalCenter: parent.verticalCenter
+      text: Power.percent
+      color: parent.color
+      font: Qt.font({ family: Theme.body.family, pointSize: 8, weight: Font.Bold })
+    }
+  }
+
+  Rectangle {
+    id: body
+
+    x: 6
     anchors.verticalCenter: parent.verticalCenter
-    width: 24
-    height: 12
+    width: 38
+    height: 17
+    radius: 5
+    color: Theme.trough
+    clip: true
+
+    Lettering {}
 
     Rectangle {
-      id: body
+      id: filled
 
-      width: 22
+      width: Math.max(4, parent.width * root.level)
       height: parent.height
-      radius: 3.5
-      color: "transparent"
-      border.width: 1.5
-      border.color: Theme.fgDim
+      radius: parent.radius
+      color: root.fill
+      clip: true
 
-      Rectangle {
-        x: 2.5
-        y: 2.5
-        width: (parent.width - 5) * Math.max(0, Math.min(Power.percent, 100)) / 100
-        height: parent.height - 5
-        radius: 1.5
-        color: root.level
+      Behavior on width {
+        NumberAnimation {
+          duration: 400
+          easing.type: Easing.OutCubic
+        }
       }
-    }
 
-    Rectangle {
-      anchors.left: body.right
-      anchors.leftMargin: 0.5
-      anchors.verticalCenter: body.verticalCenter
-      width: 1.5
-      height: 5
-      radius: 1
-      color: Theme.fgDim
-    }
-  }
+      Item {
+        width: body.width
+        height: body.height
 
-  Shape {
-    anchors.verticalCenter: parent.verticalCenter
-    width: 7
-    height: 11
-    visible: Power.plugged
-    preferredRendererType: Shape.CurveRenderer
-
-    ShapePath {
-      fillColor: root.level
-      strokeColor: "transparent"
-
-      PathSvg {
-        path: "M 4.5 0 L 0 6.2 L 3 6.2 L 2.5 11 L 7 4.8 L 4 4.8 Z"
+        Lettering {
+          color: Theme.panel
+        }
       }
     }
   }
 
-  BarText {
-    anchors.verticalCenter: parent.verticalCenter
-    text: `${Power.percent}%`
-    color: Power.low ? root.level : Theme.fg
+  Rectangle {
+    anchors.left: body.right
+    anchors.leftMargin: 1
+    anchors.verticalCenter: body.verticalCenter
+    width: 2
+    height: 7
+    radius: 1
+    color: root.level >= 0.99 ? root.fill : Theme.trough
   }
 }

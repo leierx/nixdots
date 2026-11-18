@@ -12,6 +12,14 @@ Scope {
       Power.fake = { percent, plugged };
     }
 
+    function fakeVolume(percent: int, muted: bool): void {
+      Volume.fake = { volume: percent / 100, muted, current: 0, devices: ["Speakers", "Headphones", "HDMI / DisplayPort"] };
+    }
+
+    function realVolume(): void {
+      Volume.fake = null;
+    }
+
     function realBattery(): void {
       Power.fake = null;
     }

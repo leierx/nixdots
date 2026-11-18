@@ -509,37 +509,38 @@ Notes on specific features:
       full-reset`), so `qst actions` shows what it would have done. Delegates
       get copies of the action objects, so actions are told apart by title.
     - `bar/` is the bar along the top of every monitor (`Bar.qml`, one
-      `BarWindow` per screen but `FALLBACK`), after
-      [minflair](https://github.com/t4lentles5/minflair)'s Convex style
-      without its frame round the screen: `ConvexShape`, a black strip
-      (GNOME Shell's panel black) with three tabs hanging from it, flared into
-      it with concave curves and rounded below, but flat where they meet the
-      screen's edges; each tab is as wide as what it holds, the right one gone
-      while it holds nothing, and windows start below the tabs. Left: the
-      NixOS logo (`nixos.svg`, opening the power menu, one 0.7 s turn with an
-      overshoot each time the pointer arrives, a turn under way finishing
-      rather than starting over) and the workspaces; centre: the clock (a flat
-      round button with a pointing hand, as GNOME's panel draws its date:
-      shaded on hover and while the center it opens is open); right: the
-      battery and the tray. Quickshell keeps Hyprland's state by
+      `BarWindow` per screen but `FALLBACK`), one black strip across it
+      (GNOME Shell's panel black). Left: the NixOS logo (`nixos.svg`, opening
+      the power menu, a third of a turn in 0.6 s each time the pointer
+      arrives, after which its two blues are where they were; a turn under
+      way finishes rather than starting over), the workspaces, and the window
+      in front (`WindowTitle`): its icon, its program's name from its desktop
+      entry and its title, cut short before the clock; on a monitor without
+      focus the first window of its shown workspace, dimmer. Centre: the
+      clock (a flat round button with a pointing hand, as GNOME's panel draws
+      its date: shaded on hover and while the center it opens is open).
+      Right: the tray, the volume, the battery and the bell. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
       renames, so `Bar.qml` refreshes monitors and workspaces on those, and
       once more 300 ms after the last, since Quickshell drops a refresh while
       one is under way and a hotplug comes as a burst.
-      - Workspaces: Convex's dots in a well (the foreground at 7 %): the
-        monitor's own `1 … n` (monitor id × n + 1 onwards, as hyprsplit
-        numbers them), white for the one shown, drawn as a pill (half as
-        bright on a monitor without focus, read from `Hyprland.focusedMonitor`
-        since Quickshell binds `HyprlandMonitor.focused` only on monitors added
-        after it started), the foreground at 65 % with windows and 25 %
-        without, red when urgent, growing under the pointer. Any other
-        workspace on it follows in a chip per monitor that owns them, named
-        after it (`DP2 ● ●`), and named ones in a chip of their own name;
-        specials are left out. `WorkspaceOwners` remembers the connector
-        last seen with each monitor id in the state dir, so a workspace left
-        behind by an unplugged monitor still carries its name (the bare id if
-        never seen; never `FALLBACK`, whose id is a real monitor's). Pressing
-        one focuses it by id wherever it is.
+      - Workspaces: the monitor's own `1 … n` (monitor id × n + 1 onwards, as
+        hyprsplit numbers them) as bare numbers, bright with windows, dim
+        without, red when urgent, with a squircle behind one only while it is
+        shown (faint, and bolder lettering) or under the pointer; half as
+        strong on a monitor without focus, read from `Hyprland.focusedMonitor`
+        since Quickshell binds `HyprlandMonitor.focused` only on monitors
+        added after it started. Any other workspace on it follows as an
+        outlined pill named after the monitor that owns it (`DP2-1`), white
+        while shown, and named ones by name; specials are left out.
+        `WorkspaceOwners` remembers the connector last seen with each monitor
+        id in the state dir, so a workspace left behind by an unplugged
+        monitor still carries its name (the bare id if never seen; never
+        `FALLBACK`, whose id is a real monitor's). Each one's target is the
+        bar's whole height and the gaps beside it; pressing one focuses it by
+        id wherever it is, and the wheel over them steps one a notch in the
+        order the bar shows them, stopping at the ends (a touchpad's small
+        steps add up to notches).
       - The tray is bare icons without hover states, hiding passive items;
         left click activates (or opens the menu of a menu-only item), middle is the secondary action, right opens
         the menu: `TrayMenu`, libadwaita's popover menu drawn from
@@ -561,10 +562,27 @@ Notes on specific features:
         reports no hover on a new menu until the pointer moves).
         Another icon switches menus, the same icon closes it, its monitor going closes it too,
         and a click on the bar besides its buttons closes any open panel.
+      - The volume (`Volume`) is PipeWire's default output: an icon for its
+        level (Material Symbols' volume_up, volume_down, volume_mute,
+        volume_off) and its percentage, struck through while muted. The wheel
+        on it steps 5 %, a right click mutes, and a click opens
+        `VolumePopup` under it (a `Panels` panel per screen, `volume:DP-1`),
+        libadwaita's popover: a mute button, a slider (dragged, clicked or
+        wheeled), and the outputs, the one in use ticked, a click making
+        another `Pipewire.preferredDefaultAudioSink`. A node's volume only
+        arrives while a `PwObjectTracker` holds it. `qs ipc -c shell call bar
+        fakeVolume 64 false` stands in for a sound server with three outputs,
+        `realVolume` drops it.
       - The battery (`Power`) is UPower's display device, shown only when
         UPower is running and it is a laptop battery, so only thonkpad
-        enables UPower; `qs ipc -c shell call bar fakeBattery 15 false` shows a
-        made-up one anywhere, `realBattery` drops it.
+        enables UPower: a thick meter with its nub, the percentage on it,
+        dark over the fill and light past it (drawn twice, the dark copy
+        clipped to the fill), green, yellow from 25 %, red from 10 %, with a
+        bolt while charging. `qs ipc -c shell call bar fakeBattery 15 false`
+        shows a made-up one anywhere, `realBattery` drops it.
+      - The bell opens the notification center and carries a red count of the
+        notifications it holds; under Do Not Disturb it is struck through
+        (Material Symbols' notifications_off), dimmed, and the count hides.
     - `weather/` is the `Weather` singleton and `Forecast`, its card under
       the center's calendar: MET Norway's forecast (yr.no's) for the
       timezone's city (`/etc/localtime`'s zone, placed by the `zone.tab`
@@ -895,8 +913,8 @@ logging dispatches and reloads, with `hl.dsp.exit()` only logged; cliphist
 reads a copy of the database. The config dir is the user's, symlinked, except
 `hypr/` (the test's) and `hyprmoncfg/`; profiles to fake go in
 `$QS_TEST_DIR/cfg/hyprmoncfg/profiles`. Every qs it starts has a fake battery at 76 %
-(`bar fakeBattery`), so the bar shows all it can on any host; `qst ipc bar
-realBattery` drops it.
+and fake volume at 64 % (`bar fakeBattery`, `bar fakeVolume`), so the bar shows all it can on any host, a sound server included; `qst ipc bar
+realBattery` and `realVolume` drop them.
 
 - `sync` copies over rather than rebuilds: the copy keeps the built `nix/`
   and weather icons. It restarts rather than hot-reloads: a reload keeps
@@ -923,7 +941,7 @@ realBattery` drops it.
 the session's copy of the shell (never the built one): the open panel, the
 screens and the Hyprland monitor each resolves to, the focused monitor,
 workspaces with the label the bar gives them, windows, and every popup with
-the screen it is on, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
+the screen it is on, the volume (percent, muted, output), plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.
 `wait`, `stays` and `state` fail with "qs is not running" once qs has

@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import qs.bar
 import qs.common
 import qs.notifications
 
@@ -44,7 +45,8 @@ Scope {
           hovered: e.hovered,
           waiting: e.waiting
         })),
-        notifications: Notifs.entries.length
+        notifications: Notifs.entries.length,
+        volume: { percent: Volume.percent, muted: Volume.muted, output: Volume.devices.find(d => d.current)?.name ?? null }
       });
     }
   }
