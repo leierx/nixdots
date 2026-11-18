@@ -419,10 +419,16 @@ Notes on specific features:
         every open, and a list it brings while open is read on the close,
         so each open searches the list it opened with; a failed fetch only
         notifies on an open with no list. The mode keeps
-        columns rather than an object per package, searches the matches of
-        the last query when the new one extends it, keeps only the best 50,
-        and before anything is typed lists only what was run before
-        (`AppUsage`, under `nixpkgs:`). Enter runs `nixpkgs-run <rev> <attr>
+        columns rather than an object per package and scores them in one
+        loop of its own (a call into `search.js` per package costs ten times
+        the matching), keeps every query of an open with its matches, so
+        backspace is instant and a query extending one searches only its
+        matches, keeps only the best 50, and before anything is typed lists
+        only what was run before (`AppUsage`, under `nixpkgs:`, its boosts
+        worked out once an open). A mode with its own `find` searches a frame
+        after the key, so the letter shows before the matches and a burst of
+        keys is one search; Enter and the keys that move the selection run
+        the search first. Enter runs `nixpkgs-run <rev> <attr>
         <program>` in its own scope: `nix build` of
         `github:NixOS/nixpkgs/<rev>#<attr>` (unfree allowed), then the
         program `nix run` would pick, as a transient `systemd-run --user`

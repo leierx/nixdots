@@ -62,7 +62,10 @@ Overlay {
 
     // Another mode's shortcut while open starts it afresh.
     onModeChanged: field.clear()
-    onAccepted: field.list.activate(field.list.currentIndex)
+    onAccepted: {
+      field.list.settle();
+      field.list.activate(field.list.currentIndex);
+    }
     // Before the field's own keys, where Shift+Delete would cut.
     Keys.onPressed: event => {
       const list = field.list;
@@ -71,6 +74,9 @@ Overlay {
       const back = event.key === Qt.Key_Up || control && event.key === Qt.Key_P || event.key === Qt.Key_Backtab || shift && event.key === Qt.Key_Tab;
       const forward = event.key === Qt.Key_Down || control && event.key === Qt.Key_N || event.key === Qt.Key_Tab;
       const half = Math.max(1, Math.floor(list.page / 2));
+      const paging = event.key === Qt.Key_PageUp || event.key === Qt.Key_PageDown || control && (event.key === Qt.Key_U || event.key === Qt.Key_D);
+      if (!back && !forward && !paging && !(shift && event.key === Qt.Key_Delete)) return;
+      list.settle();
       if (back) list.step(-1);
       else if (forward) list.step(1);
       else if (event.key === Qt.Key_PageUp) list.select(list.currentIndex - list.page);
@@ -96,6 +102,7 @@ Overlay {
     id: list
 
     required property LauncherMode mode
+    property string typed: ""
     property string query: ""
     property int rowHeight: 50
     readonly property var results: list.mode.search(list.query)
@@ -104,6 +111,14 @@ Overlay {
 
     // Keeps the selection where it is while a row goes.
     property bool removing: false
+
+    // A long list searches a frame after the key, so the letter shows before a slow search; keys that act on the matches catch up first.
+    function settle(): void {
+      settling.stop();
+      list.query = list.typed;
+    }
+
+    onTypedChanged: list.mode.find && list.typed !== "" ? settling.restart() : list.settle()
 
     function select(index: int): void {
       list.currentIndex = Math.max(0, Math.min(list.count - 1, index));
@@ -131,6 +146,13 @@ Overlay {
     // Only ever jumps, to keep the selected row in view.
     interactive: false
     onCurrentChanged: list.mode.selected = list.current
+
+    Timer {
+      id: settling
+
+      interval: 16
+      onTriggered: list.settle()
+    }
 
     model: ScriptModel {
       values: list.results
@@ -383,7 +405,7 @@ Overlay {
         // Without a line across, the field's own padding already parts it from the rows.
         Layout.topMargin: root.previewing ? 8 : 0
         mode: root.mode
-        query: search.text
+        typed: search.text
 
         delegate: ResultRow {
           list: matches

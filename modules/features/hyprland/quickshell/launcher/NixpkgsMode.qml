@@ -13,8 +13,8 @@ LauncherMode {
   property var index: ({ rev: "", lines: [], attrs: [], names: [], texts: [] })
   // A list fetched while open waits for the close, so a search never changes under the keys.
   property bool stale: false
-  // A query typed further only searches what the last one matched.
-  readonly property var memo: ({ index: null, query: "", matched: [] })
+  // What this open searched, so backspace finds a query's matches again and a longer one searches only those.
+  readonly property var memo: ({ state: null })
 
   function parse(text: string): void {
     const lines = text.split("\n");
@@ -45,17 +45,17 @@ LauncherMode {
     };
   }
 
-  function recent(index: var, uses: var): var {
+  function prepare(index: var, uses: var): var {
     const wanted = new Set(Object.keys(uses));
-    if (wanted.size === 0) return [];
-    const found = [];
-    for (let i = 0; i < index.attrs.length; i++) {
-      if (wanted.has(index.attrs[i])) found.push(i);
+    const boost = new Float64Array(index.attrs.length);
+    const used = [];
+    for (let i = 0; wanted.size > 0 && i < index.attrs.length; i++) {
+      if (!wanted.has(index.attrs[i])) continue;
+      boost[i] = 50 * uses[index.attrs[i]];
+      used.push(i);
     }
-    return found
-      .sort((a, b) => uses[index.attrs[b]] - uses[index.attrs[a]])
-      .slice(0, root.limit)
-      .map(i => root.row(index, i));
+    used.sort((a, b) => boost[b] - boost[a]);
+    return { index, uses: JSON.stringify(uses), boost, recent: used.slice(0, root.limit).map(i => root.row(index, i)), queries: {} };
   }
 
   name: "nixpkgs"
@@ -68,36 +68,66 @@ LauncherMode {
   find: query => {
     const index = root.index;
     const uses = AppUsage.uses(root.prefix);
+    let state = root.memo.state;
+    if (!state || state.index !== index || state.uses !== JSON.stringify(uses)) state = root.memo.state = root.prepare(index, uses);
     const typed = Search.words(query);
-    if (typed.length === 0) return root.recent(index, uses);
+    if (typed.length === 0) return state.recent;
 
     const lowered = typed.join(" ");
-    const memo = root.memo;
-    const pool = memo.index === index && lowered.startsWith(memo.query) ? memo.matched : null;
+    const memo = state.queries;
+    if (memo[lowered]) return memo[lowered].rows;
+    let pool = null;
+    for (const query in memo) {
+      if (lowered.startsWith(query) && (!pool || memo[query].matched.length < pool.length)) pool = memo[query].matched;
+    }
     const count = pool ? pool.length : index.attrs.length;
+    const names = index.names;
+    const texts = index.texts;
+    const boost = state.boost;
+    const words = typed.length;
     const matched = [];
     // The best few, kept in order as they come, rather than sorting every match.
     const best = [];
+    // Search.scoreLowered inlined: a call per package costs ten times the matching.
     for (let k = 0; k < count; k++) {
       const i = pool ? pool[k] : k;
-      const score = Math.max(Search.scoreLowered(typed, index.names[i]), 0.5 * Search.scoreLowered(typed, index.texts[i]));
+      let text = names[i];
+      let weight = 1;
+      let score = 0;
+      for (let w = 0; w < words; w++) {
+        const at = text.indexOf(typed[w]);
+        if (at < 0) {
+          // A description match at half weight never beats a name match, so it is only looked at without one.
+          if (weight === 0.5) {
+            score = -1;
+            break;
+          }
+          text = texts[i];
+          weight = 0.5;
+          score = 0;
+          w = -1;
+          continue;
+        }
+        score += at === 0 ? 1000 : " -_./:".indexOf(text[at - 1]) >= 0 ? 900 : 700;
+      }
       if (score < 0) continue;
+      score = weight * (score - text.length / 20);
       matched.push(i);
-      const ranked = score + 50 * (uses[index.attrs[i]] ?? 0);
+      const ranked = score + boost[i];
       if (best.length === root.limit && ranked <= best[best.length - 1].ranked) continue;
       let at = best.length;
       while (at > 0 && best[at - 1].ranked < ranked) at--;
       best.splice(at, 0, { ranked, i });
       if (best.length > root.limit) best.pop();
     }
-    memo.index = index;
-    memo.query = lowered;
-    memo.matched = matched;
-    return best.map(match => root.row(index, match.i));
+    const rows = best.map(match => root.row(index, match.i));
+    memo[lowered] = { matched, rows };
+    return rows;
   }
 
   onOpened: refresh.running = true
   onOpenChanged: {
+    if (!open) root.memo.state = null;
     if (!open && stale) {
       stale = false;
       list.reload();
