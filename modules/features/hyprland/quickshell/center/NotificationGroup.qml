@@ -25,7 +25,11 @@ Item {
   readonly property bool critical: shown.some(e => e.critical)
   readonly property bool showImage: single && newest.notification.image !== ""
   readonly property bool expandable: !single || newest.buttons.length > 0 || newest.progress !== undefined || title.truncated || (root.first?.truncated ?? false)
-  readonly property int iconSize: 40
+  readonly property int iconSize: 32
+  readonly property int padding: 8
+  readonly property int rows: 3
+  // Three lines tall however few it holds, so the stack is even.
+  readonly property real minHeight: expanded ? 0 : heading.height + (rows - 1) * body.height
 
   // itemAt() is not reactive, so the first row is looked up again as rows come and go.
   property NotificationItem first: null
@@ -45,6 +49,18 @@ Item {
     if (single) expanded = false;
   }
 
+  FontMetrics {
+    id: heading
+
+    font: Theme.heading
+  }
+
+  FontMetrics {
+    id: body
+
+    font: Theme.body
+  }
+
   // Under the card, so its buttons, links and notifications come first.
   SwipeArea {
     id: swipe
@@ -61,6 +77,8 @@ Item {
       } else if (root.newest.defaultAction) {
         root.newest.defaultAction.invoke();
         Panels.close();
+      } else {
+        root.slideAway(false);
       }
     }
   }
@@ -68,8 +86,10 @@ Item {
   Rectangle {
     id: card
 
+    readonly property real content: Math.max(row.implicitHeight, root.minHeight)
+
     width: root.width
-    height: row.implicitHeight + Theme.padding * 2
+    height: content + root.padding * 2
     radius: Theme.cardRadius
     color: !root.expanded && hover.hovered ? Theme.cardHover : Theme.card
     border.width: root.critical ? 1 : 0
@@ -96,16 +116,13 @@ Item {
     RowLayout {
       id: row
 
-      anchors {
-        top: parent.top
-        left: parent.left
-        right: parent.right
-        margins: Theme.padding
-      }
-      spacing: 12
+      x: root.padding
+      y: root.padding + (card.content - implicitHeight) / 2
+      width: parent.width - 2 * root.padding
+      spacing: 10
 
       Item {
-        Layout.alignment: Qt.AlignTop
+        Layout.alignment: root.expanded ? Qt.AlignTop : Qt.AlignVCenter
         implicitWidth: root.iconSize
         implicitHeight: root.iconSize
 
@@ -120,7 +137,7 @@ Item {
           anchors.centerIn: parent
           visible: !root.showImage && !!root.newest?.appIcon
           source: root.newest ? root.newest.appIcon : ""
-          implicitSize: 28
+          implicitSize: 22
         }
 
         Text {
@@ -128,7 +145,7 @@ Item {
           visible: !root.showImage && root.newest?.appIcon === ""
           text: (root.newest?.notification.appName || "?")[0].toUpperCase()
           color: Theme.fg
-          font: Theme.title4
+          font: Theme.heading
         }
 
         NotificationImage {
@@ -143,17 +160,45 @@ Item {
           anchors {
             right: parent.right
             bottom: parent.bottom
-            margins: -2
+            margins: -3
           }
           visible: root.showImage && !!root.newest?.appIcon
           source: root.newest ? root.newest.appIcon : ""
-          implicitSize: 18
+          implicitSize: 16
+        }
+
+        // The app's count, where its name used to say it.
+        Rectangle {
+          anchors {
+            right: parent.right
+            bottom: parent.bottom
+            margins: -4
+          }
+          visible: !root.single
+          implicitWidth: Math.max(height, count.implicitWidth + 8)
+          implicitHeight: 16
+          radius: height / 2
+          color: Theme.slider
+          border.width: 2
+          border.color: Theme.bg
+
+          Text {
+            id: count
+
+            anchors.centerIn: parent
+            text: root.shown.length
+            color: Theme.bg
+            font: Theme.captionHeading
+          }
         }
       }
 
       ColumnLayout {
+        id: column
+
         Layout.fillWidth: true
-        spacing: root.expanded ? 6 : 2
+        Layout.alignment: root.expanded ? Qt.AlignTop : Qt.AlignVCenter
+        spacing: root.expanded ? 6 : 0
 
         Behavior on spacing {
           NumberAnimation {
@@ -162,52 +207,31 @@ Item {
           }
         }
 
+        // A lone notification's summary heads it, wrapped in full once expanded.
         RowLayout {
           Layout.fillWidth: true
-          Layout.minimumHeight: 24
-          spacing: 6
+          visible: root.single
+          spacing: 8
 
-          // A lone notification's summary is the header, wrapped in full once expanded.
           Text {
             id: title
 
-            Layout.fillWidth: root.single
-            text: (root.single ? root.newest.notification.summary : root.newest?.notification.appName) || "Notification"
-            textFormat: Text.PlainText
-            color: root.single ? Theme.fg : Theme.fgDim
-            wrapMode: root.single && root.expanded ? Text.Wrap : Text.NoWrap
-            maximumLineCount: root.single && root.expanded ? 6 : 1
-            elide: Text.ElideRight
-            font: root.single ? Theme.heading : Theme.captionHeading
-          }
-
-          NotificationAge {
-            Layout.alignment: Qt.AlignTop
-            visible: root.single
-            entry: root.newest
-          }
-
-          Text {
             Layout.fillWidth: true
-            visible: !root.single
-            text: root.shown.length
-            color: Theme.fgDim
-            font: Theme.caption
+            text: root.newest?.notification.summary || "Notification"
+            textFormat: Text.PlainText
+            color: Theme.fg
+            wrapMode: root.expanded ? Text.Wrap : Text.NoWrap
+            maximumLineCount: root.expanded ? 6 : 1
+            elide: Text.ElideRight
+            font: Theme.heading
           }
 
-          ExpandButton {
+          NotificationStamp {
             Layout.alignment: Qt.AlignTop
-            visible: root.expandable
-            open: root.expanded
-            onClicked: root.expanded = !root.expanded
-          }
-
-          // Only under the pointer, as GNOME shows it.
-          CloseButton {
-            Layout.alignment: Qt.AlignTop
-            opacity: hover.hovered ? 1 : 0
-            enabled: hover.hovered
-            onClicked: root.slideAway(false)
+            Layout.topMargin: 1
+            entry: root.newest
+            closable: root.expandable && hover.hovered
+            onClosed: root.slideAway(false)
           }
         }
 
@@ -217,7 +241,7 @@ Item {
           onItemAdded: Qt.callLater(root.findFirst)
           onItemRemoved: Qt.callLater(root.findFirst)
           model: ScriptModel {
-            values: root.expanded ? root.shown : root.shown.slice(0, 2)
+            values: root.expanded ? root.shown : root.shown.slice(0, root.rows)
           }
 
           NotificationItem {
@@ -228,8 +252,25 @@ Item {
             entry: modelData
             expanded: root.expanded
             single: root.single
-            dimmed: !root.expanded && index === 1 && root.shown.length > 2
+            lines: root.rows - 1
+            closable: !root.expanded && index === 0 && hover.hovered
+            onClosed: root.slideAway(false)
           }
+        }
+      }
+
+      // On every card so the ages line up, overhanging the first line so the arrow costs no height.
+      Item {
+        Layout.alignment: column.Layout.alignment
+        implicitWidth: 24
+        implicitHeight: column.implicitHeight
+
+        ExpandButton {
+          anchors.horizontalCenter: parent.horizontalCenter
+          y: heading.height / 2 - height / 2
+          visible: root.expandable
+          open: root.expanded
+          onClicked: root.expanded = !root.expanded
         }
       }
     }

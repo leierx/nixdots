@@ -695,7 +695,8 @@ Notes on specific features:
       away too (a resident notification stays open, as GNOME's banners do);
       right click, a swipe or a fast flick towards the edge slides it away and
       dismisses it; more than three actions fold into a "More" dropdown.
-      Popups have no close cross; the center's notifications do.
+      Popups are never grouped and have no close cross; in the center only a
+      card a click expands has one.
       A transient notification leaves the history with its popup, and one that
       cannot pop up (the center open, Do Not Disturb, fullscreen) is dropped as
       expired. One with the same `x-canonical-private-synchronous` or
@@ -743,17 +744,24 @@ Notes on specific features:
       months, the date returns to today) with the weather under it, left out
       where the screen is too short for both. Opening it puts the popups away. Notifications are grouped
       per app the way end-4's dots do (`NotificationGroup`,
-      `NotificationItem`): one card with the app's icon, name and count, and a
-      flat arrow button and, under the pointer, a close cross, over its two newest notifications a line each with
-      their own age (a lone notification has its age in the header, and the
-      arrow only when expanding shows more: buttons, progress, or a cut-off
-      title or body); expanded,
-      each gets an inset card with its image, whole body, actions and a close
-      cross under the pointer, and a lone one's title wraps in full. A click on
-      a group with more to show expands and collapses it; on a lone one with
-      nothing more it runs the default action; in an expanded group of several
-      a notification's click runs its own. Right click or a swipe dismisses the group,
-      or once expanded, one notification. The list grows with its
+      `NotificationItem`): one card with the app's icon and its count as a
+      badge on it (no name), always three lines tall with what it holds
+      centred beside the icon, so the stack is even: a lone notification its
+      title and age over two lines of body, a group a line for each of its
+      newest three, each with its own age. The flat arrow, in a column every
+      card keeps so the ages line up, shows only when expanding shows more
+      (buttons, progress, or a cut-off title or body) and overhangs the first
+      line rather than setting its height. Expanded, each gets an inset card
+      with its image, whole body and actions, and a lone one's title wraps in
+      full. A lone notification with a picture shows it in the icon's place,
+      the app's icon a badge on it. Only a card a click expands has a close
+      cross, under the pointer in its first age's place
+      (`NotificationStamp`). A click on a group with more to show expands and
+      collapses it; on a lone one with nothing more it runs the default
+      action, or dismisses it without one; in an expanded group of several a
+      notification's click runs its own, or dismisses it. Right click or a
+      swipe dismisses the group, or once expanded, one notification. Critical
+      ones have a red outline. The list grows with its
       notifications up to the screen's height, then scrolls. Mouse only, and unlike the launcher
       it is smooth: the list drags and flicks with Qt's overshoot, a wheel
       notch glides 120 px (Qt's own moves the 15 px Wayland reports), and

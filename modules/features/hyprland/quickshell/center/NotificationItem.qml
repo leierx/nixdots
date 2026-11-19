@@ -11,7 +11,11 @@ Item {
   required property NotifEntry entry
   property bool expanded: false
   property bool single: false
-  property bool dimmed: false
+  // A lone notification's body has the lines its summary leaves; a group's rows have one each.
+  property int lines: 2
+  property bool closable: false
+
+  signal closed()
 
   readonly property bool boxed: expanded && !single
   readonly property bool truncated: line.truncated
@@ -32,6 +36,8 @@ Item {
       } else if (root.entry.defaultAction) {
         root.entry.defaultAction.invoke();
         Panels.close();
+      } else {
+        swipe.slideAway(false, root.entry.dismissal());
       }
     }
   }
@@ -40,12 +46,11 @@ Item {
     id: box
 
     width: root.width
-    height: content.implicitHeight + (root.boxed ? Theme.padding * 2 : 0)
+    height: content.implicitHeight + (root.boxed ? 16 : 0)
     radius: Theme.buttonRadius
     color: !root.boxed ? "transparent" : hover.hovered ? Theme.cardHover : Theme.card
     border.width: root.boxed && root.entry.critical ? 1 : 0
     border.color: Theme.destructive
-    opacity: root.dimmed ? 0.55 : 1
     clip: true
 
     Behavior on height {
@@ -58,12 +63,6 @@ Item {
     Behavior on color {
       ColorAnimation {
         duration: 120
-      }
-    }
-
-    Behavior on opacity {
-      NumberAnimation {
-        duration: 200
       }
     }
 
@@ -80,9 +79,9 @@ Item {
         top: parent.top
         left: parent.left
         right: parent.right
-        margins: root.boxed ? Theme.padding : 0
+        margins: root.boxed ? 8 : 0
       }
-      spacing: 8
+      spacing: 6
 
       RowLayout {
         visible: !root.expanded && !(root.single && root.entry.body === "")
@@ -104,14 +103,16 @@ Item {
 
           Layout.fillWidth: true
           text: root.entry.body.replace(/\n/g, " ")
-          // Eliding StyledText takes wrapping to one line.
-          maximumLineCount: 1
+          // Eliding StyledText takes a line limit.
+          maximumLineCount: root.single ? root.lines : 1
           onLinkOpened: Panels.close()
         }
 
-        NotificationAge {
+        NotificationStamp {
           visible: !root.single
           entry: root.entry
+          closable: root.closable
+          onClosed: root.closed()
         }
       }
 
@@ -151,13 +152,6 @@ Item {
             NotificationAge {
               Layout.alignment: Qt.AlignTop
               entry: root.entry
-            }
-
-            CloseButton {
-              Layout.alignment: Qt.AlignTop
-              opacity: hover.hovered ? 1 : 0
-              enabled: hover.hovered
-              onClicked: swipe.slideAway(false, root.entry.dismissal())
             }
           }
 

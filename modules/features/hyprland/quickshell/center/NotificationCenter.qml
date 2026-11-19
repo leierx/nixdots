@@ -143,7 +143,7 @@ Overlay {
             id: list
 
             anchors.fill: parent
-            spacing: 8
+            spacing: 6
             clip: true
             flickableDirection: Flickable.VerticalFlick
             maximumFlickVelocity: 3500
