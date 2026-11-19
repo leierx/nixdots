@@ -122,11 +122,7 @@ Singleton {
 
   function openUrl(url) {
     if (!Markup.safeLink(url)) return;
-    Quickshell.execDetached({
-      command: ["systemd-run", "--user", "--scope", "--quiet", "xdg-open", url],
-      // The shell's own scale, from shell.qml, is not the browser's.
-      environment: ({ QT_SCALE_FACTOR: null }),
-    });
+    Detached.run(["xdg-open", url], "");
   }
 
   // Low urgency is silent, whatever the app asks; a sound-name is looked up in the freedesktop theme, ours if it is not there.

@@ -279,7 +279,11 @@ Notes on specific features:
     its round flat 24 px form), `Keycap` (a key as the shortcuts window and
     the power menu draw it, filled), `Glyph` (a Material Symbols path at a size),
     `WheelSteps` (wheel events as whole notches, a touchpad's small steps
-    added up, for everything the wheel steps through), and `Panels`, the one
+    added up, for everything the wheel steps through), `Detached` (what
+    must outlive the shell: apps, links, `nixpkgs-run` and the clipboard's
+    `wl-copy`, which stays behind to serve a picked clip, each in a
+    `systemd-run --user --scope` of its own, since the service's restart
+    kills its whole cgroup, and without `QT_SCALE_FACTOR`), and `Panels`, the one
     open panel by name, with
     the IPC target `panels` (`qs ipc -c shell call panels open|close|toggle
     <name>`; `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`, `power`): opening any panel (a
