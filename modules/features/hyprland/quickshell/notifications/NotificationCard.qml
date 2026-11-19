@@ -13,6 +13,16 @@ Item {
   property bool expanded: false
   readonly property bool expandable: expanded || summary.truncated || body.truncated
   property real remaining: 1
+  readonly property int summaryLines: 2
+  readonly property int bodyLines: 4
+  // The text's height collapsed, worked out from its lines when expanded, so the icon keeps the place it had.
+  readonly property real collapsedHeight: {
+    if (!expanded) return texts.implicitHeight;
+    const clamp = (text, lines) => text.lineCount > lines ? text.implicitHeight * lines / text.lineCount : text.implicitHeight;
+    const head = summaryRow.visible ? Math.max(clamp(summary, summaryLines), line.height) : 0;
+    const rest = body.visible ? clamp(body, bodyLines) : 0;
+    return head + rest + (summaryRow.visible && body.visible ? texts.spacing : 0);
+  }
 
   implicitHeight: card.height
 
@@ -105,17 +115,25 @@ Item {
         spacing: 12
 
         NotificationIcon {
-          Layout.alignment: Qt.AlignVCenter
+          id: icon
+
+          Layout.alignment: Qt.AlignTop
+          Layout.topMargin: Math.max(0, (root.collapsedHeight - height) / 2)
           entry: root.entry
           radius: Theme.buttonRadius
         }
 
         ColumnLayout {
+          id: texts
+
           Layout.fillWidth: true
-          Layout.alignment: Qt.AlignVCenter
+          Layout.alignment: Qt.AlignTop
+          Layout.topMargin: Math.max(0, (icon.height - implicitHeight) / 2)
           spacing: 2
 
           RowLayout {
+            id: summaryRow
+
             Layout.fillWidth: true
             visible: summary.text !== "" || root.expandable
             spacing: 6
@@ -129,7 +147,7 @@ Item {
               textFormat: Text.PlainText
               color: Theme.fg
               wrapMode: Text.Wrap
-              maximumLineCount: root.expanded ? 6 : 2
+              maximumLineCount: root.expanded ? 6 : root.summaryLines
               elide: Text.ElideRight
               font: Theme.heading
             }
@@ -156,7 +174,7 @@ Item {
             Layout.fillWidth: true
             visible: text !== ""
             text: root.entry.body
-            maximumLineCount: root.expanded ? 15 : 4
+            maximumLineCount: root.expanded ? 15 : root.bodyLines
             onLinkOpened: root.entry.popup = false
           }
         }

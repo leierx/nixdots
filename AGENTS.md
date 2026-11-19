@@ -693,7 +693,8 @@ Notes on specific features:
       neither the app
       nor its age: the icon and text say who, and a popup is always now. The
       image and the text are centred on each other, so a summary alone sits
-      level with the image. The image is the picture, the app's icon a badge on
+      level with the image; expanded, the image keeps the place it had
+      collapsed (worked out from the text's lines) while the text grows below. The image is the picture, the app's icon a badge on
       it unless the picture is that icon, or without one the app's icon (its
       initial when it has none) on a plate (`NotificationIcon`, shared with
       the center). A click on one with more to show (a cut-off title or body)
