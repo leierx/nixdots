@@ -56,10 +56,7 @@ Item {
     id: fold
 
     interval: 200
-    onTriggered: {
-      root.unfolded = false;
-      titleFade.play();
-    }
+    onTriggered: root.unfolded = false
   }
 
   // itemAt() is not reactive, so the first row is looked up again as rows come and go.
@@ -231,10 +228,6 @@ Item {
             maximumLineCount: root.unfolded ? 6 : 1
             elide: Text.ElideRight
             font: Theme.heading
-
-            ElideFade {
-              id: titleFade
-            }
           }
 
           NotificationStamp {
@@ -268,17 +261,6 @@ Item {
             settled: root.settled
             onClosed: root.slideAway(false)
           }
-        }
-
-        // Its notifications cover it once expanded, so collapsing has a button of its own.
-        Button {
-          Layout.alignment: Qt.AlignRight
-          visible: root.unfolded && !root.single
-          flat: true
-          text: "Collapse"
-          expander: true
-          open: true
-          onClicked: root.expanded = false
         }
       }
 

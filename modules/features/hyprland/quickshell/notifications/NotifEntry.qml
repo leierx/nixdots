@@ -17,6 +17,12 @@ QtObject {
   // So does one below the screen's edge, until there is room for it, or one with no monitor on to show it.
   property bool waiting: false
   readonly property bool unseen: waiting || !Screens.has(screen)
+  // Above a hovered popup on its screen, so its going would move that one from under the pointer.
+  readonly property bool above: {
+    const stack = Notifs.popups.filter(e => e.screen === screen);
+    const held = stack.findIndex(e => e.hovered);
+    return held > 0 && stack.indexOf(root) < held;
+  }
 
   readonly property bool critical: notification.urgency === NotificationUrgency.Critical
   readonly property string appIcon: Notifs.appIcon(notification)
@@ -77,7 +83,7 @@ QtObject {
     to: 0
     duration: root.timeout
     running: root.popup && root.timeout > 0 && !root.lock.retained
-    paused: running && (root.hovered || root.unseen)
+    paused: running && (root.hovered || root.above || root.unseen)
     onFinished: root.popup = false
   }
 

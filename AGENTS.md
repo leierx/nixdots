@@ -260,9 +260,7 @@ Notes on specific features:
     component is its own directory owning its windows, widgets and sizes, and
     `shell.qml` only instantiates them; `common/` holds what several share:
     `Theme`, `StateFile` (a `JsonAdapter`'s file in Quickshell's state dir),
-    `Shadow`, `ExpanderArrow`, `ElideFade` (a `Text`'s text as it was,
-    fading out over it once it elides, so a collapse's "…" does not snap in),
-    `Time` (one minute clock for the bar, the
+    `Shadow`, `ExpanderArrow`, `Time` (one minute clock for the bar, the
     calendar and notification ages), `Screens` (the screens someone can see:
     Quickshell's, less the headless `FALLBACK` Hyprland stands in while no
     monitor is on, and the focused one among them, the first while Hyprland
@@ -716,7 +714,7 @@ Notes on specific features:
         was closed), in `Theme.bell` (the palette's `yellow_2`) with their
         count in red, and for as long as Do Not Disturb is on, struck through
         (Material Symbols' notifications_off) in `Theme.dnd` (`purple_1`),
-        the count on it still. Purple, a click turns Do Not Disturb off; yellow,
+        without the count. Purple, a click turns Do Not Disturb off; yellow,
         it opens the center, which checks them all, so the bell goes at once. A reload of the shell hands every
         notification over unchecked.
       - Caffeine's cup (`Cup`, Material Symbols' coffee, in `Theme.coffee`, the palette's
@@ -780,7 +778,9 @@ Notes on specific features:
       focused when each arrived (one whose monitor goes moves to the focused one
       for good, and while none is on it waits with its timeout held), below the bar, sliding in and out (the
       window stays mapped with an empty input region, so the last one does
-      too); the app's timeout or 8 s, critical never, hovering pauses it, and it carries on from there after.
+      too); the app's timeout or 8 s, critical never, hovering pauses it, and those above it on its screen too, since their
+      going would move it from under the pointer; each carries on from there
+      after.
       A bar along each card's bottom edge (the accent blue) drains over its
       timeout, so it stands out over a terminal as dark as it. The bar is
       the entry's own countdown (`NotifEntry.remaining`): paused while held (hover,
@@ -793,8 +793,7 @@ Notes on specific features:
       on it. Expanding and collapsing ease the card's height (200 ms
       `OutCubic`), its content clipped; collapsing keeps the whole text until
       the card has eased down to the height it will have (what the text loses
-      worked out from its line counts), then elides it, the text as it was fading out over its "…"
-      (`ElideFade`); the arrow by the title is only a sign of it. The image is the picture, the app's icon a badge on
+      worked out from its line counts), then elides it; the arrow by the title is only a sign of it. The image is the picture, the app's icon a badge on
       it unless the picture is that icon, or without one the app's icon (its
       initial when it has none) on a plate (`NotificationIcon`, shared with
       the center). A click on one with more to show (a cut-off title or body)
@@ -849,7 +848,7 @@ Notes on specific features:
       toggle center`), GNOME's layout, dropping down from the middle of the bar with
       a short fade and slide: notifications on the left (40em, wider than
       GNOME's 29em, which read long and narrow), Do Not Disturb and Caffeine
-      switches and Clear (which also closes it) below, and `Calendar.qml` on
+      switches, Collapse all and Clear (which also closes it) below, and `Calendar.qml` on
       the right (locale's first weekday, ISO week numbers, arrows or wheel for
       months (`WheelSteps`, as every wheel), the date returns to today) with the weather under it, left out
       where the screen is too short for both. Opening it puts the popups away. Notifications are grouped
@@ -866,9 +865,8 @@ Notes on specific features:
       (`Theme.padding` inside) laid out as a popup is: its image at the top,
       the title to two lines and the body to four, with an arrow of its own
       as a sign, and a click on a cut-off one opens it rather than running its
-      action; a lone one's title and body show whole, right under each other.
-      Notifications cover an expanded group, so a flat Collapse button at its
-      foot collapses it. Opening and
+      action; a lone one's title and body show whole, right under each other. Collapse all, beside Clear
+      while any group is expanded, collapses every one. Opening and
       collapsing ease as a popup's do, each holding the whole text until its
       card has eased down, and only then laid out anew, so nothing bounces;
       the text eases between centred and the top as the height does, the

@@ -54,3 +54,18 @@ qst ipc panels close > /dev/null
 qst wait '.panel == ""'
 notify-send -a Chat "new"
 qst wait '.unchecked == 1 and .notifications == 2'
+
+qst case "hovering a popup holds those above it, which would move it away, but not those below"
+notify-send -t 1500 -a Chat "bottom"
+qst wait '(.popups | length) == 1'
+notify-send -t 1500 -a Chat "middle"
+notify-send -t 1500 -a Mail "top"
+qst wait '(.popups | map(.summary)) == ["top", "middle", "bottom"]'
+# The second card from the top of DP-1's stack.
+qst pointer 1640 160
+qst pointer 1642 162
+qst wait '.popups[1].hovered'
+qst wait '(.popups | map(.summary)) == ["top", "middle"]' 4
+qst stays '(.popups | map(.summary)) == ["top", "middle"]' 2
+qst pointer 900 600
+qst wait '(.popups | length) == 0' 4

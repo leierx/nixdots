@@ -35,11 +35,7 @@ Item {
     id: fold
 
     interval: 200
-    onTriggered: {
-      root.full = false;
-      summaryFade.play();
-      bodyFade.play();
-    }
+    onTriggered: root.full = false
   }
 
   SwipeArea {
@@ -159,10 +155,6 @@ Item {
                 maximumLineCount: root.full ? 6 : root.summaryLines
                 elide: Text.ElideRight
                 font: Theme.heading
-
-                ElideFade {
-                  id: summaryFade
-                }
               }
 
               // Overhanging the line, so the arrow costs it no height.
@@ -188,10 +180,6 @@ Item {
               text: root.entry.body
               maximumLineCount: root.full ? 15 : root.bodyLines
               onLinkOpened: root.entry.popup = false
-
-              ElideFade {
-                id: bodyFade
-              }
             }
           }
         }

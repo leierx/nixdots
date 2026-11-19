@@ -38,7 +38,6 @@ Item {
   // Its group collapsing lays it out anew, which nothing eases.
   onExpandedChanged: {
     if (expanded) return;
-    if (single) lineFade.play();
     open = false;
     ease.stop();
     eased = 1;
@@ -81,11 +80,7 @@ Item {
     id: fold
 
     interval: 200
-    onTriggered: {
-      root.whole = false;
-      summaryFade.play();
-      bodyFade.play();
-    }
+    onTriggered: root.whole = false
   }
 
   SwipeArea {
@@ -171,13 +166,6 @@ Item {
           // Eliding StyledText takes a line limit.
           maximumLineCount: root.single ? root.lines : 1
           onLinkOpened: Panels.close()
-
-          // A lone one collapsing, from the whole body it showed.
-          ElideFade {
-            id: lineFade
-
-            whole: root.entry.body
-          }
         }
 
         NotificationStamp {
@@ -229,10 +217,6 @@ Item {
               maximumLineCount: root.whole ? 6 : root.summaryLines
               elide: Text.ElideRight
               font: Theme.heading
-
-              ElideFade {
-                id: summaryFade
-              }
             }
 
             NotificationAge {
@@ -263,10 +247,6 @@ Item {
             text: root.entry.body
             maximumLineCount: root.boxed && !root.whole ? root.bodyLines : 1000
             onLinkOpened: Panels.close()
-
-            ElideFade {
-              id: bodyFade
-            }
           }
         }
       }

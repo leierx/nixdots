@@ -16,8 +16,11 @@ Overlay {
   readonly property int padding: Theme.padding
 
   property real shown: 0
+  // Groups expanded, for Collapse all; each counts itself in and out.
+  property int expandedGroups: 0
 
   signal hidden()
+  signal collapseAll()
 
   onOpenChanged: {
     if (open) Notifs.hidePopups();
@@ -171,10 +174,22 @@ Overlay {
             }
 
             delegate: NotificationGroup {
+              id: group
+
               required property string modelData
 
               width: ListView.view.width
               entries: Notifs.entries.filter(entry => Notifs.appKey(entry) === modelData)
+              onExpandedChanged: root.expandedGroups += expanded ? 1 : -1
+              Component.onDestruction: if (expanded) root.expandedGroups--
+
+              Connections {
+                target: root
+
+                function onCollapseAll(): void {
+                  group.expanded = false;
+                }
+              }
             }
 
             add: Transition {
@@ -296,6 +311,14 @@ Overlay {
 
           Item {
             Layout.fillWidth: true
+          }
+
+          Button {
+            text: "Collapse all"
+            font: Theme.body
+            opacity: root.expandedGroups > 0 ? 1 : 0
+            enabled: opacity === 1
+            onClicked: root.collapseAll()
           }
 
           Button {

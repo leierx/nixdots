@@ -20,7 +20,7 @@ BarButton {
   Rectangle {
     x: parent.width / 2
     y: -1
-    visible: root.count > 0
+    visible: root.count > 0 && !Notifs.dnd
     width: Math.max(16, number.implicitWidth + 7)
     height: 16
     radius: height / 2
