@@ -349,6 +349,26 @@ Notes on specific features:
         property and about `PanelWindow`'s `margins` group; the first takes a
         `// qmllint disable incompatible-type` pair, the second sizing the
         window instead.
+      - An item sized from its `Row`'s implicit width, while a child's width
+        is clamped by the item's own, settles at zero without a warning: the
+        text simply vanishes. Size from the children's implicit widths
+        (`Button.contentWidth`).
+      - `visible` reads false under a hidden ancestor, so a size worked out
+        from a child's `visible` is wrong while the whole is hidden; test what
+        makes it visible (`text !== ""`) instead.
+      - `Theme`'s fonts are point sizes, so `font.pixelSize` reads -1; a
+        line's height is a `FontMetrics`' `height`.
+      - qmllint types `QsWindow.window` as a plain `QObject` ("Member
+        `height` not found"); Qt's attached `Window.height` is typed.
+      - A `Singleton` is created on first use, so an `IpcHandler` in one
+        nothing has read yet does not exist, and `qs ipc` answers a missing
+        target with "Target not found." and exit status 0.
+      - Holding a value at the moment a state flips depends on which binding
+        updates first; derive it from what stays put instead (a popup's
+        collapsed height from its text's line counts).
+      - Switching `Layout.alignment` snaps; to ease something across a
+        layout, animate a `Layout.topMargin` bound to a property with a
+        `Behavior` (the center's text when a card expands).
     - `Theme` is libadwaita's dark style 1:1, on the darker palette: its named colours
       (`palettes.adwaita_darker`, `view_bg_color` surfaces), hover/selection/
       border as the foreground at libadwaita's alphas over any surface, its
@@ -362,6 +382,50 @@ Notes on specific features:
       days. `shell.qml` sets `QT_SCALE_FACTOR=1.2` (an `Env`
       pragma), Qt's own high-DPI scaling, so it all draws 1.2× and sharp;
       apps and links the shell opens get the variable removed.
+    - Design standards, so a new widget looks and behaves like its siblings:
+      - Reach for the shared piece before drawing one. A bar item is a
+        `BarButton` (a text pill, or a circle round an icon), never its own
+        `Rectangle` and `MouseArea`; any other button a `Button` (`flat` on
+        a surface, `glyph` for its icon, `checked` while what it opens is
+        open); the round 24 px ones `ExpandButton` and `CloseButton`; a key a
+        `Keycap`; a Material Symbols icon a `Glyph` and an app's a
+        Quickshell `IconImage`; a notification's `NotificationIcon`; anything
+        floating a `Card` in an `Overlay`.
+      - Shapes: a pill or a circle is `radius: height / 2`, never half its
+        size typed out. Rounded rectangles take `Theme`'s radius for their
+        role: `smallRadius` (6) for list and menu rows, keycaps and
+        workspaces; `buttonRadius` (9) for buttons, inset cards and
+        pictures; `cardRadius` (12) for popovers hung off a bar item and
+        cards on a panel; `windowRadius` (15, `Card`'s default) for panels,
+        windows and notification popups.
+      - Sizes: bar items are 26 px with 18 px glyphs and 10 pt lettering
+        (`BarButton`'s); buttons 34 px (`Button`'s); rows in a popover list
+        32 px with `Theme.border` rules (the tray menu's); count badges 8 to
+        10 pt bold on a pill. Panels and popovers pad `Theme.padding` (12),
+        menus 6, and keep `Theme.gap` (10) from the screen's edges; a popover under the bar
+        sits the bar window's own height (`Window.height`) plus `Theme.gap`
+        down, never a typed bar height.
+      - States: through `Button` where it can; otherwise the same steps
+        (`Theme.button` at rest, `buttonHover` under the pointer,
+        `buttonChecked` pressed or open). Rows hover `Theme.hover` and select
+        `Theme.selected`; cards on a panel are `Theme.card` and `cardHover`;
+        a critical one is `Theme.criticalCard` in a list and outlined in
+        `Theme.destructive` when it floats. Colour changes fade over
+        `Theme.fade`.
+      - Motion: moves, resizes and slides take 200 ms `Easing.OutCubic`
+        (popups slide out `InCubic`); the center opens over 180 ms `OutCubic`
+        and closes over 120 ms `InCubic`. Keyboard selection never animates
+        (the launcher), so the list keeps up with the keys.
+      - Input: the pointer follows the rule under the conventions above;
+        anything the wheel steps through counts notches with `WheelSteps`,
+        and only a list that scrolls smoothly (the center's) glides instead.
+      - Text: `Theme`'s fonts; a size of its own is a whole `Qt.font` from
+        `Theme.body.family`. Long text elides at a line limit rather than
+        being clipped.
+      - A new visual piece is drafted first: a few options shot in the test
+        session for the user to pick from, then built, linted (`qst lint`),
+        given probe fields and a scenario where it has behaviour, and
+        described here.
     - The shell is written like any Hyprland rice, so it works on other
       setups: the QML runs its tools by name from PATH (`cliphist`, `wl-copy`,
       `pw-play`, `notify-send`, `xdg-open`, `systemd-run`, `hyprmoncfg`,
@@ -1095,6 +1159,12 @@ what `qst backlight` appends.
 - Tray menus take no keyboard and close on a click elsewhere or on their icon,
   not on Escape.
 - `notify-send -A` waits for the action; background it.
+- A shot shows the cursor a surface asked for only once the pointer has
+  moved over it after it mapped (a tray menu just opened): move it again
+  before shooting a cursor. A drag's cursor shows mid-drag: background a
+  slow `qst drag` and shoot while it runs.
+- Shots sometimes carry thin grey lines at fixed places across the
+  layout: capture artifacts of the headless outputs, not the shell.
 - Animation: background `qst x grim -s 0.25 <file>` shots about 35 ms apart, then
   `md5sum` to see which frames settled.
 - Never `pgrep -f <pattern> | xargs kill`: the pattern is in the calling
