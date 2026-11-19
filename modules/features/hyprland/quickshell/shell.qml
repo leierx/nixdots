@@ -5,6 +5,7 @@
 import Quickshell
 import qs.bar
 import qs.center
+import qs.idle
 import qs.launcher
 import qs.notifications
 import qs.osd
@@ -25,4 +26,6 @@ ShellRoot {
   Power {}
 
   OsdPopup {}
+
+  Idle {}
 }

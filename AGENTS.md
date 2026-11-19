@@ -380,7 +380,7 @@ Notes on specific features:
       border as the foreground at libadwaita's alphas over any surface, its
       type scale as `font` values (`Theme.body`, `heading`, `caption`,
       `title4`, …; Adwaita Sans at GTK's 11pt) and its radii (button 9, card
-      12, window 15), plus the shadows' and the power menu's black. Every
+      12, window 15), plus the shadows', the power menu's and the idle fade's black. Every
       colour the shell draws is one of these. A button is the foreground at
       10 % at rest (none when flat), 15 % under the pointer and 25 % pressed or
       open, and every hover or press fades over `Theme.fade` (150 ms). Panel widths follow GNOME Shell's, in em of the body
@@ -905,6 +905,13 @@ Notes on specific features:
   - Every lock (idle, sleep, the power menu's Lock) goes through
     `loginctl lock-session`, so hypridle's `lock_cmd`, which never starts a
     second hyprlock, is the only thing that runs it.
+  - An idle lock comes after the screens fade to black (`idle/`, the
+    `quickshell:idle` layer on every screen, on the overlay layer and taking
+    no input): hypridle's listener 10 s before its lock runs `qs ipc -c shell
+    call idle fade 10`, and the same listener's resume `cancel`, so any input
+    during the fade brings the screens back. hypridle stays the one clock and
+    the one watcher of input, and without a shell the lock simply comes. Sleep
+    and the power menu lock at once.
   - Caffeine (the center's switch, `Caffeine`, `qs ipc -c shell call
     caffeine toggle|set|active`) is the `caffeine.service` user unit,
     `systemd-inhibit --what=idle` part of the session target: hypridle honours
