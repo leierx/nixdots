@@ -104,10 +104,9 @@ Item {
         Layout.fillWidth: true
         spacing: 12
 
-        NotificationImage {
-          visible: root.entry.notification.image !== ""
+        NotificationIcon {
           Layout.alignment: Qt.AlignVCenter
-          source: root.entry.notification.image
+          entry: root.entry
           radius: Theme.buttonRadius
         }
 

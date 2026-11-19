@@ -693,7 +693,10 @@ Notes on specific features:
       neither the app
       nor its age: the icon and text say who, and a popup is always now. The
       image and the text are centred on each other, so a summary alone sits
-      level with the image. A click on one with more to show (a cut-off title or body)
+      level with the image. The image is the picture, the app's icon a badge on
+      it unless the picture is that icon, or without one the app's icon (its
+      initial when it has none) on a plate (`NotificationIcon`, shared with
+      the center). A click on one with more to show (a cut-off title or body)
       expands it and a second click collapses it, as in the center, so a
       long one's click never runs its action; a click otherwise runs the
       default action, or the only action when there is one and no default,
@@ -762,7 +765,8 @@ Notes on specific features:
       full; the icon keeps its collapsed place while the text eases between
       centred and the top, as the height does, so neither jumps. A lone notification with a picture shows it in the icon's place,
       the app's icon a badge on it unless the picture is that icon (an app
-      icon sent without an image is Quickshell's `image` too). Only a card a click expands has a close
+      icon sent without an image is Quickshell's `image` too), as popups do
+      (`NotificationIcon`). Only a card a click expands has a close
       cross, under the pointer in its first age's place
       (`NotificationStamp`). The pointer is a hand where a click expands or
       opens something, an arrow where it only dismisses. A click on a group with more to show expands and

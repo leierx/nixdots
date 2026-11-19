@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Widgets
 import qs.common
 import qs.notifications
 
@@ -23,12 +22,10 @@ Item {
   readonly property NotifEntry newest: shown[0] ?? null
   readonly property bool single: shown.length === 1
   readonly property bool critical: shown.some(e => e.critical)
-  readonly property bool showImage: single && newest.notification.image !== ""
   readonly property bool expandable: !single || newest.buttons.length > 0 || newest.progress !== undefined || title.truncated || (root.first?.truncated ?? false)
   readonly property int iconSize: 32
   readonly property int padding: 8
   readonly property int rows: 3
-  readonly property bool badged: showImage && newest.appIcon !== "" && newest.appIcon !== newest.notification.image
   // Three lines tall however few it holds, so the stack is even.
   readonly property real threeLines: heading.height + (rows - 1) * body.height
   // The text centred while collapsed and at the top expanded, easing between them; the icon stays put.
@@ -135,52 +132,13 @@ Item {
       width: parent.width - 2 * root.padding
       spacing: 10
 
-      Item {
+      NotificationIcon {
         Layout.alignment: Qt.AlignTop
         Layout.topMargin: (root.threeLines - root.iconSize) / 2
-        implicitWidth: root.iconSize
-        implicitHeight: root.iconSize
-
-        Rectangle {
-          anchors.fill: parent
-          visible: !root.showImage
-          radius: width / 2
-          color: root.critical ? Theme.destructiveBg : Theme.card
-        }
-
-        IconImage {
-          anchors.centerIn: parent
-          visible: !root.showImage && !!root.newest?.appIcon
-          source: root.newest ? root.newest.appIcon : ""
-          implicitSize: 22
-        }
-
-        Text {
-          anchors.centerIn: parent
-          visible: !root.showImage && root.newest?.appIcon === ""
-          text: (root.newest?.notification.appName || "?")[0].toUpperCase()
-          color: Theme.fg
-          font: Theme.heading
-        }
-
-        NotificationImage {
-          anchors.fill: parent
-          visible: root.showImage
-          source: root.showImage ? root.newest.notification.image : ""
-          size: root.iconSize
-          radius: width / 2
-        }
-
-        IconImage {
-          anchors {
-            right: parent.right
-            bottom: parent.bottom
-            margins: -3
-          }
-          visible: root.badged
-          source: root.badged ? root.newest.appIcon : ""
-          implicitSize: 16
-        }
+        entry: root.newest
+        // A group shows the app, a lone notification its picture.
+        image: root.single ? root.newest?.notification.image ?? "" : ""
+        size: root.iconSize
 
         // The app's count, where its name used to say it.
         Rectangle {
