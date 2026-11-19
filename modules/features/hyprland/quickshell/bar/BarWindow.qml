@@ -57,7 +57,7 @@ PanelWindow {
 
     PrivacyIndicator {
       anchors.verticalCenter: parent.verticalCenter
-      window: root
+      screen: root.screen
     }
 
     VolumeButton {

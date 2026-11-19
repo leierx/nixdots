@@ -596,7 +596,9 @@ Notes on specific features:
         records: a button's grey pill holding a red recording light, breathing,
         and the bar's white symbols for each kind recording (mic, videocam,
         screen_share). Hovering it for 250 ms opens `PrivacyTooltip`, a card
-        under it (a `PopupWindow`) listing each kind with the apps, named and
+        under it (a click-through layer of its own on the bar's screen, since a
+        `PopupWindow` there lands off by the monitor's x times
+        `QT_SCALE_FACTOR` - 1, 512 px on a monitor at x 2560) listing each kind with the apps, named and
         iconed from their desktop entries (`DesktopEntries.heuristicLookup`, so
         a `firefox` process reads as Firefox). `Privacy` is the backend:
         - Microphone: a PipeWire link into a capture stream

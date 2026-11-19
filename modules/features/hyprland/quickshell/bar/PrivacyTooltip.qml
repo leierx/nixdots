@@ -2,16 +2,19 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.common
 
-// Who records what, under the indicator while the pointer is on it.
-PopupWindow {
+// Who records what, under the indicator while the pointer is on it. A layer of its own on the bar's
+// screen, as a PopupWindow lands off by the monitor's x times QT_SCALE_FACTOR - 1.
+PanelWindow {
   id: root
 
   required property Item anchorItem
-  required property var window
   property bool shown: false
+  // The indicator's middle, in the bar's and so the screen's coordinates, taken as it opens.
+  property real anchorX: 0
   // A pass over the bar on the way elsewhere opens nothing.
   property bool settled: false
 
@@ -20,24 +23,31 @@ PopupWindow {
   }
 
   onShownChanged: {
-    if (shown) delay.restart();
+    if (shown) {
+      anchorX = anchorItem.mapToItem(null, anchorItem.width / 2, 0).x;
+      delay.restart();
+    }
     else {
       delay.stop();
       settled = false;
     }
   }
 
-  anchor.window: window
-  anchor.item: anchorItem
-  // qmllint disable incompatible-type
-  anchor.edges: Edges.Bottom
-  anchor.gravity: Edges.Bottom
-  // qmllint enable incompatible-type
-  anchor.margins.top: 6
+  anchors {
+    top: true
+    left: true
+    right: true
+  }
+  // Below the bar, over windows.
+  exclusiveZone: 0
   visible: shown && settled && Privacy.kinds.length > 0
-  implicitWidth: card.implicitWidth + 48
   implicitHeight: card.implicitHeight + 48
   color: "transparent"
+  // Nothing in it takes a click.
+  mask: Region {}
+
+  WlrLayershell.namespace: "quickshell:privacy"
+  WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
   Timer {
     id: delay
@@ -49,8 +59,11 @@ PopupWindow {
   Card {
     id: card
 
-    x: 24
-    y: 8
+    // Centred under the indicator, and kept on the screen.
+    x: Math.max(Theme.gap, Math.min(root.width - width - Theme.gap, root.anchorX - width / 2))
+    y: 6
+    width: implicitWidth
+    height: implicitHeight
     implicitWidth: rows.implicitWidth + 2 * Theme.padding
     implicitHeight: rows.implicitHeight + 2 * Theme.padding
     radius: Theme.cardRadius

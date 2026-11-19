@@ -9,7 +9,7 @@ import qs.common
 Item {
   id: root
 
-  required property QsWindow window
+  required property ShellScreen screen
 
   visible: Privacy.kinds.length > 0
   implicitWidth: visible ? pill.implicitWidth + 6 : 0
@@ -89,7 +89,7 @@ Item {
 
   PrivacyTooltip {
     anchorItem: root
-    window: root.window
+    screen: root.screen
     shown: hover.hovered && root.visible
   }
 }
