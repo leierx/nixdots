@@ -34,7 +34,7 @@ PanelWindow {
 
     width: 14
     height: 14
-    radius: radio ? 7 : 4
+    radius: radio ? width / 2 : 4
     color: on ? Theme.accentBg : "transparent"
     border.width: on ? 0 : 2
     border.color: Theme.border
@@ -43,7 +43,7 @@ PanelWindow {
       anchors.centerIn: parent
       width: 6
       height: 6
-      radius: 3
+      radius: width / 2
       visible: indicator.radio && indicator.on
       color: Theme.accentFg
     }

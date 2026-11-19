@@ -277,7 +277,7 @@ Overlay {
         visible: !!row.modelData.layout
         implicitWidth: 57
         implicitHeight: 32
-        radius: 9
+        radius: Theme.buttonRadius
         color: Theme.button
 
         LayoutDiagram {
@@ -335,7 +335,6 @@ Overlay {
     width: root.cardWidth
     // Full height from the start, so it holds still while typing.
     height: root.fieldHeight + rule.height + root.resultsHeight
-    radius: 22
 
     RowLayout {
       id: field

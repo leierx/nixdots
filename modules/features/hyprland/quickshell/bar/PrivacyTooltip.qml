@@ -88,7 +88,7 @@ PanelWindow {
           Rectangle {
             width: 28
             height: 28
-            radius: 14
+            radius: height / 2
             color: Theme.button
 
             Glyph {

@@ -620,7 +620,8 @@ Notes on specific features:
         `VolumePopup` under it (a `Panels` panel per screen, `volume:DP-1`),
         libadwaita's popover: a mute button, a slider (dragged, clicked or
         wheeled), and the outputs, the one in use ticked, a click making
-        another `Pipewire.preferredDefaultAudioSink`. A node's volume only
+        another `Pipewire.preferredDefaultAudioSink`; its rows are the tray
+        menu's (32 px, `Theme.smallRadius`, `Theme.border` rules). A node's volume only
         arrives while a `PwObjectTracker` holds it. `qs ipc -c shell call bar
         fakeVolume 64 false` stands in for a sound server with three outputs,
         `realVolume` drops it.

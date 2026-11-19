@@ -34,7 +34,7 @@ Overlay {
       anchors.verticalCenter: parent.verticalCenter
       width: parent.width
       height: 6
-      radius: 3
+      radius: height / 2
       color: Theme.trough
 
       Rectangle {
@@ -50,7 +50,7 @@ Overlay {
       anchors.verticalCenter: parent.verticalCenter
       width: 20
       height: 20
-      radius: 10
+      radius: height / 2
       color: Theme.slider
       scale: drag.pressed ? 1.1 : 1
 
@@ -103,29 +103,16 @@ Overlay {
         width: parent.width
         spacing: 10
 
-        Rectangle {
+        Button {
           id: muteButton
 
           anchors.verticalCenter: parent.verticalCenter
-          width: 34
-          height: 34
-          radius: 17
-          color: Volume.muted ? Theme.buttonChecked : muteArea.containsMouse ? Theme.buttonHover : Theme.button
-
-          Glyph {
-            anchors.centerIn: parent
-            path: root.glyph
-            size: 20
-          }
-
-          MouseArea {
-            id: muteArea
-
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: Volume.toggleMute()
-          }
+          radius: height / 2
+          padding: 0
+          checked: Volume.muted
+          glyph: root.glyph
+          glyphSize: 20
+          onClicked: Volume.toggleMute()
         }
 
         Slider {
@@ -148,7 +135,7 @@ Overlay {
       Rectangle {
         width: parent.width
         height: 1
-        color: Theme.outline
+        color: Theme.border
       }
 
       Text {
@@ -170,8 +157,8 @@ Overlay {
             required property var modelData
 
             width: parent.width
-            height: 34
-            radius: Theme.buttonRadius
+            height: 32
+            radius: Theme.smallRadius
             color: rowArea.containsMouse ? Theme.hover : "transparent"
 
             Text {
