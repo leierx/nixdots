@@ -25,8 +25,6 @@ QtObject {
   readonly property var buttons: Array.from(notification.actions).filter(a => a.identifier !== "default")
   readonly property var progress: notification.hints.value
 
-  signal timeoutRestarted()
-
   readonly property int timeout: {
     if (critical) return 0;
     const requested = notification.expireTimeout;
@@ -34,9 +32,7 @@ QtObject {
   }
 
   function restartTimeout(): void {
-    if (!timer.running) return;
-    timer.restart();
-    timeoutRestarted();
+    if (countdown.running) countdown.restart();
   }
 
   function reshow(): void {
@@ -72,11 +68,17 @@ QtObject {
     locked: true
   }
 
-  // Hovering restarts the countdown rather than resuming it.
-  property Timer timer: Timer {
-    interval: root.timeout
-    running: root.popup && root.timeout > 0 && !root.hovered && !root.unseen && !root.lock.retained
-    onTriggered: root.popup = false
+  // The share of the timeout left, which the popup's bar shows; holding it pauses it, so it carries on after.
+  property real remaining: 1
+  property NumberAnimation countdown: NumberAnimation {
+    target: root
+    property: "remaining"
+    from: 1
+    to: 0
+    duration: root.timeout
+    running: root.popup && root.timeout > 0 && !root.lock.retained
+    paused: running && (root.hovered || root.unseen)
+    onFinished: root.popup = false
   }
 
   // An update by id can change any of these alone, a progress value say.

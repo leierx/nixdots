@@ -768,12 +768,12 @@ Notes on specific features:
       focused when each arrived (one whose monitor goes moves to the focused one
       for good, and while none is on it waits with its timeout held), below the bar, sliding in and out (the
       window stays mapped with an empty input region, so the last one does
-      too); the app's timeout or 8 s, critical never, hovering holds it.
+      too); the app's timeout or 8 s, critical never, hovering pauses it, and it carries on from there after.
       A bar along each card's bottom edge (the accent blue) drains over its
       timeout, so it stands out over a terminal as dark as it. The bar is
-      driven by the entry's own timer: frozen while the timer is held (hover,
-      no room, no monitor), full again each time it starts or an update
-      restarts it (`timeoutRestarted`); one that never expires (critical, or
+      the entry's own countdown (`NotifEntry.remaining`): paused while held (hover,
+      no room, no monitor) and carrying on after, full again each time it pops up or an update
+      restarts it; one that never expires (critical, or
       timeout 0) has none, and a critical one has a red outline. It names
       neither the app
       nor its age: the icon and text say who, and a popup is always now. The

@@ -12,7 +12,6 @@ Item {
 
   property bool expanded: false
   readonly property bool expandable: expanded || summary.truncated || body.truncated
-  property real remaining: 1
   readonly property int summaryLines: 2
   readonly property int bodyLines: 4
   // The text's height collapsed, worked out from its lines when expanded, so the icon keeps the place it had.
@@ -53,26 +52,6 @@ Item {
   // A card gone under the pointer, its monitor unplugged say, never reports the pointer leaving.
   Component.onDestruction: if (root.entry) root.entry.hovered = false
 
-  // Follows the timeout's own timer: frozen while it is held, from full each time it starts again.
-  NumberAnimation {
-    id: countdown
-
-    target: root
-    property: "remaining"
-    from: 1
-    to: 0
-    duration: root.entry.timeout
-    running: root.entry.timer.running
-  }
-
-  Connections {
-    target: root.entry
-
-    function onTimeoutRestarted() {
-      countdown.restart();
-    }
-  }
-
   FontMetrics {
     id: line
 
@@ -95,7 +74,7 @@ Item {
 
       Rectangle {
         anchors.bottom: parent.bottom
-        width: parent.width * root.remaining
+        width: parent.width * root.entry.remaining
         height: 3
         color: Theme.accentBg
       }
