@@ -28,6 +28,7 @@ Item {
   readonly property int iconSize: 32
   readonly property int padding: 8
   readonly property int rows: 3
+  readonly property bool badged: showImage && newest.appIcon !== "" && newest.appIcon !== newest.notification.image
   // Three lines tall however few it holds, so the stack is even.
   readonly property real minHeight: expanded ? 0 : heading.height + (rows - 1) * body.height
 
@@ -164,8 +165,8 @@ Item {
             bottom: parent.bottom
             margins: -3
           }
-          visible: root.showImage && !!root.newest?.appIcon
-          source: root.newest ? root.newest.appIcon : ""
+          visible: root.badged
+          source: root.badged ? root.newest.appIcon : ""
           implicitSize: 16
         }
 
