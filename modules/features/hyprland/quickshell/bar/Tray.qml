@@ -20,8 +20,6 @@ Row {
   property string panel: ""
 
   visible: icons.count > 0
-  leftPadding: 7
-  rightPadding: 7
 
   Component.onCompleted: panel = `tray:${screen.name}`
   // Gone with its monitor, the menu would otherwise stay open in Panels.
@@ -43,7 +41,7 @@ Row {
 
       required property SystemTrayItem modelData
 
-      implicitWidth: 21
+      implicitWidth: 27
       implicitHeight: 26
       acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
       hoverEnabled: true

@@ -53,7 +53,7 @@ PanelWindow {
       rightMargin: root.inset
       verticalCenter: parent.verticalCenter
     }
-    spacing: 4
+    spacing: 0
 
     VolumeButton {
       anchors.verticalCenter: parent.verticalCenter

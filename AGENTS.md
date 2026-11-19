@@ -523,10 +523,13 @@ Notes on specific features:
       events but only refreshes monitors as one comes or goes and ignores
       renames, so `Bar.qml` refreshes monitors and workspaces on those, and
       once more 300 ms after the last, since Quickshell drops a refresh while
-      one is under way and a hotplug comes as a burst.
+      one is under way and a hotplug comes as a burst. It also drops for good
+      a window opened on a workspace it has not loaded yet, as at login, so
+      the bar reloads the windows on every `openwindow`, and 300 ms after the
+      last; a workspace is occupied while its `toplevels` hold one.
       - Workspaces: the monitor's own `1 … n` (monitor id × n + 1 onwards, as
-        hyprsplit numbers them) as bare numbers, white while shown, grey with
-        windows, faint without, red when urgent, in a 26 px squircle shown only while it is
+        hyprsplit numbers them) as bare numbers, white while shown, near white with
+        windows (told from the shown one by its squircle), faint without, red when urgent, in a 26 px squircle shown only while it is
         shown (a button's shade, and bolder lettering) or under the pointer; a step darker on a
         monitor without focus, read from `Hyprland.focusedMonitor`
         since Quickshell binds `HyprlandMonitor.focused` only on monitors
@@ -945,7 +948,7 @@ realBattery` and `realVolume` drop them.
 `qst state` is `tests/Probe.qml`, an IPC target `probe` that qs-test adds to
 the session's copy of the shell (never the built one): the open panel, the
 screens and the Hyprland monitor each resolves to, the focused monitor,
-workspaces with the label the bar gives them, windows, and every popup with
+workspaces with the label the bar gives them and their window count, windows, and every popup with
 the screen it is on, the notification `history` (app and summary, newest
 first) and `dnd`, the volume (percent, muted, output), plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
@@ -962,7 +965,8 @@ and `stays`, never `sleep`. `hotplug.sh` covers unplugging, disabling and
 replugging under every panel, a tray menu and popups, every monitor going,
 bursts and mode changes; `notifications.sh` the history: three per app once
 their popups go, the five-popup limit, stack tags replacing in place, and Do
-Not Disturb with transient and critical notifications. Behaviour that broke once gets a case; check that
+Not Disturb with transient and critical notifications; `workspaces.sh`
+windows opened while the shell starts. Behaviour that broke once gets a case; check that
 the case fails without the fix (a `git worktree` of `HEAD` with the new
 `tests/` copied in, run with `QS_TEST_REPO` pointing at it).
 

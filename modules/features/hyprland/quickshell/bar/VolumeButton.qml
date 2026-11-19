@@ -20,7 +20,7 @@ Item {
   readonly property string glyph: Volume.muted ? off : Volume.volume <= 0.001 ? mute : Volume.volume < 0.5 ? down : up
 
   visible: Volume.present
-  implicitWidth: content.implicitWidth + 16
+  implicitWidth: content.implicitWidth + 12
   implicitHeight: 26
 
   Rectangle {
@@ -39,7 +39,7 @@ Item {
     id: content
 
     anchors.centerIn: parent
-    spacing: 5
+    spacing: 3
 
     Glyph {
       anchors.verticalCenter: parent.verticalCenter

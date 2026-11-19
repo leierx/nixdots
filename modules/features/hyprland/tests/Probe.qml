@@ -32,7 +32,8 @@ Scope {
           id: w.id,
           monitor: w.monitor?.name ?? null,
           // As the bar and the window switcher name it.
-          label: WorkspaceOwners.label(w, w.monitor)
+          label: WorkspaceOwners.label(w, w.monitor),
+          windows: w.toplevels.values.length
         })),
         windows: Hyprland.toplevels.values.map(t => ({
           class: t.lastIpcObject?.class ?? null,

@@ -30,6 +30,12 @@ Scope {
     target: Hyprland
 
     function onRawEvent(event: HyprlandEvent): void {
+      // Quickshell drops a window opened on a workspace it has not loaded yet, as at login, for good.
+      if (event.name === "openwindow") {
+        Hyprland.refreshToplevels();
+        windowsSettled.restart();
+        return;
+      }
       if (!["monitoraddedv2", "monitorremovedv2", "changeworkspaceid", "renameworkspace"].includes(event.name)) return;
       Hyprland.refreshMonitors();
       Hyprland.refreshWorkspaces();
@@ -37,7 +43,7 @@ Scope {
     }
   }
 
-  // Quickshell drops a refresh while one is under way, so a burst of hotplugs gets one more once it settles.
+  // Quickshell drops a refresh while one is under way, so a burst gets one more once it settles.
   Timer {
     id: settled
 
@@ -46,6 +52,13 @@ Scope {
       Hyprland.refreshMonitors();
       Hyprland.refreshWorkspaces();
     }
+  }
+
+  Timer {
+    id: windowsSettled
+
+    interval: 300
+    onTriggered: Hyprland.refreshToplevels()
   }
 
   Variants {

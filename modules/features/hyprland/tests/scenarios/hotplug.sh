@@ -113,7 +113,7 @@ qst focus DP-2
 qst key super+Return
 qst wait '.windows | map(.workspace) == [7]' 10
 qst monitor remove DP-2
-qst wait '.workspaces | map(select(.id == 7)) == [{ id: 7, monitor: "DP-1", label: "DP2-1" }]'
+qst wait '.workspaces | map(select(.id == 7)) == [{ id: 7, monitor: "DP-1", label: "DP2-1", windows: 1 }]'
 qst key super+Tab
 qst wait "$(layer "DP-1 quickshell:launcher")"
 qst shot windows DP-1 > /dev/null
