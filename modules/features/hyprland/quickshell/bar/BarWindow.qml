@@ -53,7 +53,7 @@ PanelWindow {
       rightMargin: root.inset
       verticalCenter: parent.verticalCenter
     }
-    spacing: 0
+    spacing: 2
 
     PrivacyIndicator {
       anchors.verticalCenter: parent.verticalCenter

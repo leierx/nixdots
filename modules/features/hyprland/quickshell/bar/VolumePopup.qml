@@ -10,6 +10,8 @@ Overlay {
   id: root
 
   required property real anchorX
+  // The bar's height, which the popup drops below.
+  required property real top
   required property string glyph
   // Material Symbols' check
   readonly property string check: "m382-354 339-339q12-12 28-12t28 12q12 12 12 28.5T777-636L410-268q-12 12-28 12t-28-12L182-440q-12-12-11.5-28.5T183-497q12-12 28.5-12t28.5 12l142 143Z"
@@ -83,7 +85,7 @@ Overlay {
     id: box
 
     x: Math.max(Theme.gap, Math.min(root.anchorX - width / 2, root.width - width - Theme.gap))
-    y: 34 + Theme.gap
+    y: root.top + Theme.gap
     width: Math.round(20 * Theme.em)
     height: column.implicitHeight + 2 * Theme.padding
     radius: Theme.cardRadius

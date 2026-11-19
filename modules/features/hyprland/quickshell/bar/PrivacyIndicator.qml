@@ -24,7 +24,7 @@ Item {
 
     anchors.centerIn: parent
     implicitWidth: row.implicitWidth + 18
-    implicitHeight: 24
+    implicitHeight: 26
     radius: height / 2
     color: hover.hovered ? Theme.buttonHover : Theme.button
 

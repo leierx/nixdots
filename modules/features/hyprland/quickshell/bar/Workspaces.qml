@@ -68,7 +68,7 @@ Item {
     anchors.verticalCenter: parent?.verticalCenter
     width: Math.max(mine ? 26 : 20, text.implicitWidth + 14)
     height: mine ? 26 : 20
-    radius: mine ? 8 : 10
+    radius: mine ? Theme.smallRadius : height / 2
     color: {
       if (filled) return bright;
       if (shown) return area.containsMouse ? Theme.buttonChecked : root.focused ? Theme.buttonHover : Theme.button;

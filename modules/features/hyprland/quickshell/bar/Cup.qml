@@ -3,24 +3,9 @@ import qs.center
 import qs.common
 
 // Keep Awake, while it is on, so it is not left on by mistake.
-Item {
-  // Material Symbols' coffee, filled
-  readonly property string cup: "M440-240q-117 0-198.5-81.5T160-520v-240q0-33 23.5-56.5T240-840h500q58 0 99 41t41 99q0 58-41 99t-99 41h-20v40q0 117-81.5 198.5T440-240ZM240-640h400v-120H240v120Zm480 0h20q25 0 42.5-17.5T800-700q0-25-17.5-42.5T740-760h-20v120ZM200-120q-17 0-28.5-11.5T160-160q0-17 11.5-28.5T200-200h560q17 0 28.5 11.5T800-160q0 17-11.5 28.5T760-120H200Z"
-
+BarButton {
   visible: KeepAwake.active
-  implicitWidth: visible ? 24 : 0
-  implicitHeight: 26
-
-  Glyph {
-    anchors.centerIn: parent
-    path: parent.cup
-    size: 17
-    color: Theme.fg
-  }
-
-  MouseArea {
-    anchors.fill: parent
-    cursorShape: Qt.PointingHandCursor
-    onClicked: Panels.toggle("center")
-  }
+  // Material Symbols' coffee, filled
+  glyph: "M440-240q-117 0-198.5-81.5T160-520v-240q0-33 23.5-56.5T240-840h500q58 0 99 41t41 99q0 58-41 99t-99 41h-20v40q0 117-81.5 198.5T440-240ZM240-640h400v-120H240v120Zm480 0h20q25 0 42.5-17.5T800-700q0-25-17.5-42.5T740-760h-20v120ZM200-120q-17 0-28.5-11.5T160-160q0-17 11.5-28.5T200-200h560q17 0 28.5 11.5T800-160q0 17-11.5 28.5T760-120H200Z"
+  onClicked: Panels.toggle("center")
 }

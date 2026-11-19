@@ -1,15 +1,12 @@
 import QtQuick
 import qs.common
 
-Item {
-  id: root
-
-  implicitWidth: 30
-  implicitHeight: 26
+BarButton {
+  // A third of a turn, after which its two blues are where they were, once each time the pointer arrives; one under way finishes.
+  onHoveredChanged: if (hovered && !spin.running) spin.start()
+  onClicked: Panels.toggle("power")
 
   Image {
-    id: logo
-
     anchors.centerIn: parent
     source: "../common/nixos.svg"
     sourceSize.width: 20
@@ -18,7 +15,6 @@ Item {
     transformOrigin: Item.Center
     antialiasing: true
 
-    // A third of a turn, after which its two blues are where they were, once each time the pointer arrives; one under way finishes.
     RotationAnimation on rotation {
       id: spin
 
@@ -28,13 +24,5 @@ Item {
       duration: 600
       easing.type: Easing.InOutCubic
     }
-  }
-
-  MouseArea {
-    anchors.fill: parent
-    hoverEnabled: true
-    cursorShape: Qt.PointingHandCursor
-    onEntered: if (!spin.running) spin.start()
-    onClicked: Panels.toggle("power")
   }
 }

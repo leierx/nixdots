@@ -274,7 +274,8 @@ Notes on specific features:
     it with its monitor), `Card` (the surface of panels and
     popups: libadwaita's window background, outline and shadow; Escape
     closes the panel it is in), `Button` (libadwaita's button, `flat` or
-    not, with an optional expander arrow; `ExpandButton` and `CloseButton` are
+    not, with an optional glyph before its text and an expander arrow after,
+    and any mouse button it accepts passed to `clicked`; `ExpandButton` and `CloseButton` are
     its round flat 24 px forms), `Glyph` (a Material Symbols path at a size),
     `WheelSteps` (wheel events as whole notches, a touchpad's small steps
     added up, for everything the wheel steps through), and `Panels`, the one
@@ -554,7 +555,10 @@ Notes on specific features:
       clock (a flat round button with a pointing hand, as GNOME's panel draws
       its date: shaded on hover and while the center it opens is open).
       Right: the privacy indicator, the volume, the battery, Keep Awake's cup,
-      the bell and, always last, the tray. Quickshell keeps Hyprland's state by
+      the bell and, always last, the tray. Every one of them but the
+      workspaces and the battery is a `BarButton`, the bar's one shape: a
+      flat 26 px pill, or a circle round an icon alone, its glyphs and icons
+      18 px and its lettering 10 pt. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
       renames, so `Bar.qml` refreshes monitors and workspaces on those, and
       once more 300 ms after the last, since Quickshell drops a refresh while
@@ -578,7 +582,7 @@ Notes on specific features:
         bar's whole height and the gaps beside it; pressing one dips it once (an animation played through, not held while pressed) and focuses it by
         id wherever it is, and the wheel over them steps one a notch in the
         order the bar shows them, stopping at the ends (`WheelSteps`).
-      - The tray is bare icons without hover states, hiding passive items;
+      - The tray is its items' icons, hiding passive ones;
         left click activates (or opens the menu of a menu-only item), middle is the secondary action, right opens
         the menu: `TrayMenu`, libadwaita's popover menu drawn from
         `QsMenuOpener` with its corner at the pointer (leftwards where it would
@@ -620,7 +624,7 @@ Notes on specific features:
         clipped to the fill), green, yellow from 25 %, red from 10 %, with a
         bolt while charging. `qs ipc -c shell call bar fakeBattery 15 false`
         shows a made-up one anywhere, `realBattery` drops it.
-      - The bell, a bare icon, is Do Not Disturb's switch, a click turning it
+      - The bell is Do Not Disturb's switch, a click turning it
         on or off, and carries a red count of the notifications
         it holds; under Do Not Disturb it is struck through (Material Symbols' notifications_off) and the count hides.
       - Keep Awake's cup (`Cup`, Material Symbols' coffee) shows while it is

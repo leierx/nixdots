@@ -14,7 +14,7 @@ Row {
   // Null once the item leaves the tray.
   property SystemTrayItem menuItem: null
   // Its icon, which keeps the menu open while the pointer rests on it.
-  property MouseArea menuButton: null
+  property Button menuButton: null
   property point menuAnchor
   // A name per screen, so a menu on one monitor closes one open on another; set once, so it outlives the screen.
   property string panel: ""
@@ -36,35 +36,37 @@ Row {
       values: SystemTray.items.values.filter(item => item.status !== Status.Passive)
     }
 
-    MouseArea {
+    BarButton {
       id: icon
 
       required property SystemTrayItem modelData
 
-      implicitWidth: 27
-      implicitHeight: 26
       acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-      hoverEnabled: true
-      onClicked: mouse => {
-        const opensMenu = modelData.hasMenu && (mouse.button === Qt.RightButton || (mouse.button === Qt.LeftButton && modelData.onlyMenu));
+      onClicked: button => {
+        const opensMenu = modelData.hasMenu && (button === Qt.RightButton || (button === Qt.LeftButton && modelData.onlyMenu));
         if (opensMenu && Panels.active === root.panel && root.menuItem === modelData) {
           Panels.close();
         } else if (opensMenu) {
           // The menu's window and the bar's both start at the screen's corner.
-          root.menuAnchor = mapToItem(null, mouse.x, mouse.y);
+          root.menuAnchor = mapToItem(null, pointer.point.position.x, pointer.point.position.y);
           root.menuItem = modelData;
           root.menuButton = icon;
           Panels.open(root.panel);
         } else {
           Panels.close();
-          if (mouse.button === Qt.MiddleButton) modelData.secondaryActivate();
-          else if (mouse.button === Qt.LeftButton && !modelData.onlyMenu) modelData.activate();
+          if (button === Qt.MiddleButton) modelData.secondaryActivate();
+          else if (button === Qt.LeftButton && !modelData.onlyMenu) modelData.activate();
         }
+      }
+
+      // Where the menu opens, as a click carries no position.
+      HoverHandler {
+        id: pointer
       }
 
       IconImage {
         anchors.centerIn: parent
-        implicitSize: 17
+        implicitSize: 18
         source: icon.modelData.icon
         // Apps that send pixels get a new source on every change; keep the old one up meanwhile.
         backer.retainWhileLoading: true
@@ -83,7 +85,7 @@ Row {
       name: root.panel
       menu: modelData.menu
       anchor: root.menuAnchor
-      held: root.menuButton?.containsMouse ?? false
+      held: root.menuButton?.hovered ?? false
     }
   }
 }
