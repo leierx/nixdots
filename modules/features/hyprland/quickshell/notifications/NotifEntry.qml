@@ -6,8 +6,14 @@ import qs.common
 QtObject {
   id: root
 
-  required property Notification notification
+  // A live Notification, or a PastNotification read back from the saved history.
+  required property var notification
   required property string screen
+  readonly property bool restored: notification?.past === true
+  // Names its saved pictures, and it in the saved history.
+  property string uid: (Date.now() * 1000 + Math.floor(Math.random() * 1000)).toString(36)
+  // By role ("image", "appIcon"), the saved copies of pictures only the server held.
+  property var kept: ({})
   property date time: new Date()
   property bool popup: false
   // Looked at in the center; the bar's bell shows while any is not.
@@ -38,6 +44,16 @@ QtObject {
     return requested < 0 ? Notifs.defaultTimeout : requested;
   }
 
+  // Saved as it shows, since the server holds it only while the notification lives.
+  function keep(role: string, item: Item): void {
+    const source = String(role === "image" ? notification.image : notification.appIcon);
+    if (root.kept[role] || !Notifs.inMemory(source)) return;
+    const path = `${History.images}/${root.uid}-${role}.png`;
+    item.grabToImage(result => {
+      if (result.saveToFile(path)) root.kept = Object.assign({}, root.kept, { [role]: `file://${path}` });
+    }, Qt.size(item.sourceSize.width, item.sourceSize.height));
+  }
+
   function restartTimeout(): void {
     if (countdown.running) countdown.restart();
   }
@@ -60,6 +76,9 @@ QtObject {
     };
   }
 
+  onNotificationChanged: kept = ({})
+  onKeptChanged: Notifs.remember()
+
   onPopupChanged: {
     if (popup) return;
     // A popup removed under the pointer never reports it gone.
@@ -71,7 +90,7 @@ QtObject {
 
   // Keeps the closed notification readable while the views slide it away.
   property RetainableLock lock: RetainableLock {
-    object: root.notification
+    object: root.restored ? null : root.notification
     locked: true
   }
 
@@ -113,6 +132,7 @@ QtObject {
     }
 
     function onImageChanged() {
+      root.kept = ({});
       Qt.callLater(root.reshow);
     }
   }

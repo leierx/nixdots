@@ -30,6 +30,7 @@ Item {
     visible: !root.picture && root.appIcon !== ""
     source: root.picture ? "" : root.appIcon
     implicitSize: Math.round(root.size * 0.7)
+    onStatusChanged: if (status === Image.Ready) root.entry?.keep("appIcon", backer)
   }
 
   Text {
@@ -43,6 +44,7 @@ Item {
   NotificationImage {
     anchors.fill: parent
     visible: root.picture
+    entry: root.entry
     source: root.image
     size: root.size
     radius: root.radius
@@ -57,5 +59,6 @@ Item {
     visible: root.badged
     source: root.badged ? root.appIcon : ""
     implicitSize: Math.round(root.size / 2)
+    onStatusChanged: if (status === Image.Ready) root.entry?.keep("appIcon", backer)
   }
 }
