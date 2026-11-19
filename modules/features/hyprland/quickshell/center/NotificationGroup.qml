@@ -30,7 +30,16 @@ Item {
   readonly property int rows: 3
   readonly property bool badged: showImage && newest.appIcon !== "" && newest.appIcon !== newest.notification.image
   // Three lines tall however few it holds, so the stack is even.
-  readonly property real minHeight: expanded ? 0 : heading.height + (rows - 1) * body.height
+  readonly property real threeLines: heading.height + (rows - 1) * body.height
+  // The text centred while collapsed and at the top expanded, easing between them; the icon stays put.
+  property real textOffset: expanded ? 0 : Math.max(0, (threeLines - column.implicitHeight) / 2)
+
+  Behavior on textOffset {
+    NumberAnimation {
+      duration: 200
+      easing.type: Easing.OutCubic
+    }
+  }
 
   // itemAt() is not reactive, so the first row is looked up again as rows come and go.
   property NotificationItem first: null
@@ -87,7 +96,7 @@ Item {
   Rectangle {
     id: card
 
-    readonly property real content: Math.max(row.implicitHeight, root.minHeight)
+    readonly property real content: Math.max(row.implicitHeight, root.threeLines)
 
     width: root.width
     height: content + root.padding * 2
@@ -120,12 +129,13 @@ Item {
       id: row
 
       x: root.padding
-      y: root.padding + (card.content - implicitHeight) / 2
+      y: root.padding
       width: parent.width - 2 * root.padding
       spacing: 10
 
       Item {
-        Layout.alignment: root.expanded ? Qt.AlignTop : Qt.AlignVCenter
+        Layout.alignment: Qt.AlignTop
+        Layout.topMargin: (root.threeLines - root.iconSize) / 2
         implicitWidth: root.iconSize
         implicitHeight: root.iconSize
 
@@ -200,7 +210,8 @@ Item {
         id: column
 
         Layout.fillWidth: true
-        Layout.alignment: root.expanded ? Qt.AlignTop : Qt.AlignVCenter
+        Layout.alignment: Qt.AlignTop
+        Layout.topMargin: root.textOffset
         spacing: root.expanded ? 6 : 0
 
         Behavior on spacing {
@@ -264,7 +275,8 @@ Item {
 
       // On every card so the ages line up, overhanging the first line so the arrow costs no height.
       Item {
-        Layout.alignment: column.Layout.alignment
+        Layout.alignment: Qt.AlignTop
+        Layout.topMargin: root.textOffset
         implicitWidth: 24
         implicitHeight: column.implicitHeight
 

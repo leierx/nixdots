@@ -758,7 +758,8 @@ Notes on specific features:
       (buttons, progress, or a cut-off title or body) and overhangs the first
       line rather than setting its height. Expanded, each gets an inset card
       with its image, whole body and actions, and a lone one's title wraps in
-      full. A lone notification with a picture shows it in the icon's place,
+      full; the icon keeps its collapsed place while the text eases between
+      centred and the top, as the height does, so neither jumps. A lone notification with a picture shows it in the icon's place,
       the app's icon a badge on it unless the picture is that icon (an app
       icon sent without an image is Quickshell's `image` too). Only a card a click expands has a close
       cross, under the pointer in its first age's place
