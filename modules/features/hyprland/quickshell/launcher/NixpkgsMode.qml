@@ -135,10 +135,7 @@ LauncherMode {
   }
   onActivated: row => {
     AppUsage.launched(root.prefix + row.attr);
-    Quickshell.execDetached({
-      command: ["systemd-run", "--user", "--scope", "--quiet", "nixpkgs-run", root.index.rev, row.attr, row.program],
-      environment: ({ QT_SCALE_FACTOR: null }),
-    });
+    Detached.run(["nixpkgs-run", root.index.rev, row.attr, row.program], "");
     Panels.close();
   }
 

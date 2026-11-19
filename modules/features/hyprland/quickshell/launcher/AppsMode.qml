@@ -31,16 +31,9 @@ LauncherMode {
     }))
     .sort((a, b) => a.title.localeCompare(b.title))
 
-  // Each app gets its own scope, so restarting the shell's service leaves it running.
   onActivated: row => {
     AppUsage.launched(row.entry.id);
-    const command = row.entry.runInTerminal ? [...root.terminal, ...row.entry.command] : row.entry.command;
-    Quickshell.execDetached({
-      command: ["systemd-run", "--user", "--scope", "--quiet", ...command],
-      workingDirectory: row.entry.workingDirectory,
-      // The shell's own scale, from shell.qml, is not the app's.
-      environment: ({ QT_SCALE_FACTOR: null }),
-    });
+    Detached.run(row.entry.runInTerminal ? [...root.terminal, ...row.entry.command] : row.entry.command, row.entry.workingDirectory);
     Panels.close();
   }
 

@@ -48,7 +48,8 @@ LauncherMode {
   onOpened: listCommand.running = true
   onOpenChanged: if (!open) entries = []
   onActivated: row => {
-    Quickshell.execDetached(["sh", "-c", 'cliphist decode "$1" | wl-copy', "sh", row.id]);
+    // wl-copy stays behind to serve the clip.
+    Detached.run(["sh", "-c", 'cliphist decode "$1" | wl-copy', "sh", row.id], "");
     Panels.close();
   }
   onRemoved: row => {
