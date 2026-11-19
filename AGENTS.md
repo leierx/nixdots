@@ -764,7 +764,7 @@ Notes on specific features:
       GNOME's 29em, which read long and narrow), Do Not Disturb and Keep
       Awake switches and Clear (which also closes it) below, and `Calendar.qml` on
       the right (locale's first weekday, ISO week numbers, arrows or wheel for
-      months, the date returns to today) with the weather under it, left out
+      months (`WheelSteps`, as every wheel), the date returns to today) with the weather under it, left out
       where the screen is too short for both. Opening it puts the popups away. Notifications are grouped
       per app the way end-4's dots do (`NotificationGroup`,
       `NotificationItem`): one card with the app's icon and its count as a

@@ -184,16 +184,15 @@ ColumnLayout {
     }
   }
 
-  // Touchpad steps add up to a notch.
-  WheelHandler {
-    property real pending: 0
+  WheelSteps {
+    id: notches
+  }
 
+  WheelHandler {
     target: null
     acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
     onWheel: event => {
-      pending += event.angleDelta.y;
-      const months = Math.trunc(pending / 120);
-      pending -= months * 120;
+      const months = notches.steps(event);
       if (months !== 0) root.shift(-months);
     }
   }
