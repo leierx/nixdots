@@ -65,7 +65,7 @@ Overlay {
 
     Behavior on color {
       ColorAnimation {
-        duration: 200
+        duration: Theme.fade
       }
     }
 

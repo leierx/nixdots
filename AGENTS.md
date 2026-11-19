@@ -349,7 +349,9 @@ Notes on specific features:
       type scale as `font` values (`Theme.body`, `heading`, `caption`,
       `title4`, …; Adwaita Sans at GTK's 11pt) and its radii (button 9, card
       12, window 15), plus the shadows' and the power menu's black. Every
-      colour the shell draws is one of these. Panel widths follow GNOME Shell's, in em of the body
+      colour the shell draws is one of these. A button is the foreground at
+      10 % at rest (none when flat), 15 % under the pointer and 25 % pressed or
+      open, and every hover or press fades over `Theme.fade` (150 ms). Panel widths follow GNOME Shell's, in em of the body
       font (`Theme.em`): 30em popups (GNOME's are 34em), its calendar
       days. `shell.qml` sets `QT_SCALE_FACTOR=1.2` (an `Env`
       pragma), Qt's own high-DPI scaling, so it all draws 1.2× and sharp;

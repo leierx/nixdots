@@ -26,7 +26,17 @@ Rectangle {
   implicitWidth: Math.max(implicitHeight, contentWidth + 2 * padding)
   implicitHeight: 34
   radius: Theme.buttonRadius
-  color: area.pressed || checked ? Theme.buttonHover : area.containsMouse ? (flat ? Theme.button : Theme.buttonHover) : flat ? "transparent" : Theme.button
+  color: {
+    if (area.pressed || checked) return Theme.buttonChecked;
+    if (area.containsMouse) return Theme.buttonHover;
+    return flat ? "transparent" : Theme.button;
+  }
+
+  Behavior on color {
+    ColorAnimation {
+      duration: Theme.fade
+    }
+  }
 
   Row {
     id: row

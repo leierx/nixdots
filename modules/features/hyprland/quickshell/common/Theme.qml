@@ -65,6 +65,8 @@ Singleton {
   readonly property int gap: 10
   // Inside cards, as libadwaita pads its boxed rows.
   readonly property int padding: 12
+  // How long a hover or press takes to change a colour.
+  readonly property int fade: 150
 
   // The foreground over whatever lies below, as libadwaita mixes currentColor.
   function overlay(alpha: real): color {
