@@ -95,6 +95,13 @@ Overlay {
     }
   }
 
+  // Checked often while open, so a change made elsewhere shows as it is looked at.
+  Binding {
+    target: KeepAwake
+    property: "watched"
+    value: root.open
+  }
+
   Card {
     id: panel
 
@@ -256,6 +263,18 @@ Overlay {
           Switch {
             checked: Notifs.dnd
             onClicked: Notifs.dnd = !Notifs.dnd
+          }
+
+          Text {
+            Layout.leftMargin: 12
+            text: "Keep Awake"
+            color: Theme.fg
+            font: Theme.body
+          }
+
+          Switch {
+            checked: KeepAwake.active
+            onClicked: KeepAwake.toggle()
           }
 
           Item {

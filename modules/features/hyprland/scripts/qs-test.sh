@@ -182,6 +182,17 @@ while [ "\${1#-}" != "\$1" ]; do shift; done
 case "\$1" in nixpkgs-run | xdg-open) exit ;; esac
 exec "\$@"
 EOF
+  # systemctl keeps the state of the units it starts and stops, as the shell reads it back.
+  cat > "$T/bin/systemctl" << EOF
+#!/bin/sh
+[ "\$1" = --user ] && shift
+case "\$1" in
+  is-active) if [ -e "$T/units/\$2" ]; then echo active; else echo inactive; exit 3; fi ;;
+  start) echo "systemctl --user \$*" >> "$T/actions.log"; mkdir -p "$T/units"; touch "$T/units/\$2" ;;
+  stop) echo "systemctl --user \$*" >> "$T/actions.log"; rm -f "$T/units/\$2" ;;
+  *) echo "systemctl \$*" >> "$T/actions.log" ;;
+esac
+EOF
   # The real watchers, on a fake /dev and sysfs; udevadm replays what qst backlight appends.
   mkdir -p "$T/dev" "$T/backlight"
   : > "$T/dev/video0"
@@ -189,7 +200,7 @@ EOF
   printf '#!/bin/sh\nexec tail -n0 -F "%s/udev"\n' "$T" > "$T/bin/udevadm"
   printf '#!/bin/sh\nexec %s "%s/backlight"\n' "$(command -v backlight-watch)" "$T" > "$T/bin/backlight-watch"
   printf '#!/bin/sh\nexec %s "%s/dev"\n' "$(command -v camera-users)" "$T" > "$T/bin/camera-users"
-  for entry in systemctl loginctl pw-play xdg-open nixpkgs-run; do
+  for entry in loginctl pw-play xdg-open nixpkgs-run; do
     printf '#!/bin/sh\necho "%s $*" >> "%s/actions.log"\n' "$entry" "$T" > "$T/bin/$entry"
   done
   cliphist=$(command -v cliphist || true)
@@ -592,7 +603,7 @@ reset() {
   stop_qs
   pw_reset
   camera_reset
-  rm -rf "$T/backlight"
+  rm -rf "$T/units" "$T/backlight"
   mkdir -p "$T/backlight"
   monitors_reset
   "$HC" dispatch "hl.dsp.focus({ monitor = \"$("$HC" monitors -j | jq -r 'min_by(.id).name')\" })" > /dev/null

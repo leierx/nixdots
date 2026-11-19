@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import qs.bar
+import qs.center
 import qs.common
 import qs.notifications
 import qs.osd
@@ -57,7 +58,8 @@ Scope {
         osdSettling: Osd.settling,
         brightness: Brightness.devices,
         caps: CapsLock.on,
-        privacy: { mic: Privacy.mic, screen: Privacy.screenActive ? Privacy.screen : null, camera: Privacy.cameraActive ? Privacy.camera : null }
+        privacy: { mic: Privacy.mic, screen: Privacy.screenActive ? Privacy.screen : null, camera: Privacy.cameraActive ? Privacy.camera : null },
+        keepAwake: KeepAwake.active
       });
     }
   }

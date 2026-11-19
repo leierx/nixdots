@@ -323,7 +323,7 @@ Notes on specific features:
     - The shell is written like any Hyprland rice, so it works on other
       setups: the QML runs its tools by name from PATH (`cliphist`, `wl-copy`,
       `pw-play`, `notify-send`, `xdg-open`, `systemd-run`, `hyprmoncfg`,
-      `wezterm`, `curl`, `nixpkgs-index`, `nixpkgs-run`, `hyprctl`,
+      `wezterm`, `curl`, `nixpkgs-index`, `nixpkgs-run`, `hyprctl`, `systemctl`,
       `camera-users`, `backlight-watch`) rather than store paths, an exception to the rule above;
       `quickshell.nix` installs the ones no other feature does. The only Nix
       in the QML is `palettes.adwaita_darker` as the `Colors` singleton (translucent
@@ -520,7 +520,7 @@ Notes on specific features:
       way finishes rather than starting over) and the workspaces. Centre: the
       clock (a flat round button with a pointing hand, as GNOME's panel draws
       its date: shaded on hover and while the center it opens is open).
-      Right: the privacy indicator, the volume, the battery,
+      Right: the privacy indicator, the volume, the battery, Keep Awake's cup,
       the bell and, always last, the tray. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
       renames, so `Bar.qml` refreshes monitors and workspaces on those, and
@@ -590,6 +590,8 @@ Notes on specific features:
       - The bell, a bare icon, is Do Not Disturb's switch, a click turning it
         on or off, and carries a red count of the notifications
         it holds; under Do Not Disturb it is struck through (Material Symbols' notifications_off) and the count hides.
+      - Keep Awake's cup (`Cup`, Material Symbols' coffee) shows while it is
+        on, so it is not left on by mistake; a click opens the center.
       - The privacy indicator (`PrivacyIndicator`) shows only while something
         records: a button's grey pill holding a red recording light, breathing,
         and the bar's white symbols for each kind recording (mic, videocam,
@@ -697,8 +699,8 @@ Notes on specific features:
     - `center/` is the notification center (`qs ipc -c shell call panels
       toggle center`), GNOME's layout, dropping down from the middle of the bar with
       a short fade and slide: notifications on the left (40em, wider than
-      GNOME's 29em, which read long and narrow), Do Not Disturb
-      switch and Clear (which also closes it) below, and `Calendar.qml` on
+      GNOME's 29em, which read long and narrow), Do Not Disturb and Keep
+      Awake switches and Clear (which also closes it) below, and `Calendar.qml` on
       the right (locale's first weekday, ISO week numbers, arrows or wheel for
       months, the date returns to today) with the weather under it, left out
       where the screen is too short for both. Opening it puts the popups away. Notifications are grouped
@@ -735,6 +737,14 @@ Notes on specific features:
   - Every lock (idle, sleep, the power menu's Lock) goes through
     `loginctl lock-session`, so hypridle's `lock_cmd`, which never starts a
     second hyprlock, is the only thing that runs it.
+  - Keep Awake (the center's switch, `KeepAwake`, `qs ipc -c shell call
+    keepAwake toggle|set|active`) is the `keep-awake.service` user unit,
+    `systemd-inhibit --what=idle` part of the session target: hypridle honours
+    logind's idle inhibitors, so nothing locks or blanks while it runs, and a
+    unit outlives a shell restart. Sleep is not inhibited. The shell reads
+    `systemctl --user is-active` as it starts, after a toggle and every 5 s
+    (2 s while the center is open), since the bar's cup shows it always and a
+    unit can stop by itself.
   - The OSD (`osd/`) shows what just changed, by the right edge of the
     focused monitor on the overlay layer, for 1.5 s, never taking a click: a
     slim upright slider (level filling from the bottom, past 100 % in the
@@ -995,7 +1005,8 @@ default, at 64 %), Headphones and HDMI / DisplayPort, test-tone microphones
 Microphone (the default) and Headset Microphone (`audiotestsrc`, real
 `Audio/Source`s), and a virtual Noise Cancelling source. `wpctl`, `pw-record`,
 `pw-cli` and `pw-dump` in the session reach it; `reset` starts it afresh.
-`backlight-watch`
+`systemctl --user start|stop|is-active` keeps each unit's state in
+`$QS_TEST_DIR/units`, as the shell reads Keep Awake back. `backlight-watch`
 and `camera-users` are the real ones, run on `$QS_TEST_DIR/backlight` and
 `$QS_TEST_DIR/dev` (one camera, `video0`), and `udevadm monitor` replays
 what `qst backlight` appends.
@@ -1029,7 +1040,7 @@ the screen it is on, the notification `history` (app and summary, newest
 first) and `dnd`, the volume (percent, muted, output), the default `input`,
 the `osd` showing (with its screen), `osdShown` (shows so far) and
 `osdSettling`, `brightness`, `caps`, `privacy` (`mic` names, and `screen` and
-`camera` names or null while unused), plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
+`camera` names or null while unused) and `keepAwake`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.
 `wait`, `stays` and `state` fail with "qs is not running" once qs has
@@ -1051,7 +1062,9 @@ default, the popup open, backlights coming and going, the media keys at a
 level's end, Caps Lock both ways, its monitor going); `privacy.sh` microphones
 real and virtual, meters, sink monitors, PipeWire going and coming back,
 screen casts, cameras through PipeWire and held from `/dev` (a short probe,
-PipeWire's own hold, one plugged in later, one unplugged in use). Behaviour that broke once gets a case; check that
+PipeWire's own hold, one plugged in later, one unplugged in use);
+`keepawake.sh` the unit started and stopped from the shell and elsewhere, and
+a shell restart. Behaviour that broke once gets a case; check that
 the case fails without the fix (a `git worktree` of `HEAD` with the new
 `tests/` copied in, run with `QS_TEST_REPO` pointing at it).
 

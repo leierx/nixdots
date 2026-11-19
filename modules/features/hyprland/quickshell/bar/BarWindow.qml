@@ -69,6 +69,10 @@ PanelWindow {
       anchors.verticalCenter: parent.verticalCenter
     }
 
+    Cup {
+      anchors.verticalCenter: parent.verticalCenter
+    }
+
     Bell {
       anchors.verticalCenter: parent.verticalCenter
     }
