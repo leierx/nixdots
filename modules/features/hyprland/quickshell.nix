@@ -1,7 +1,15 @@
 root:
 let
-  # in the shell's PATH and in qs-test's, which runs the real thing against a fake sysfs
+  # in the shell's PATH and in qs-test's, which runs the real thing against a fake /dev and sysfs
   helpers = pkgs: {
+    cameraUsers = pkgs.stdenv.mkDerivation {
+      name = "camera-users";
+      src = ./scripts/camera-users.c;
+      dontUnpack = true;
+      buildPhase = "$CC -O2 -Wall -Werror -o camera-users $src";
+      installPhase = "install -Dm755 camera-users $out/bin/camera-users";
+      meta.mainProgram = "camera-users";
+    };
     # udevadm is the base system's, so qs-test can stand a fake in
     backlightWatch = pkgs.writeShellApplication {
       name = "backlight-watch";
@@ -21,7 +29,7 @@ in
     }:
     let
       inherit (lib.generators) mkLuaInline;
-      inherit (helpers pkgs) backlightWatch;
+      inherit (helpers pkgs) cameraUsers backlightWatch;
 
       # Qt reads #aarrggbb where the palette has CSS's #rrggbbaa
       qtColor =
@@ -144,6 +152,7 @@ in
         config.services.cliphist.package
         nixpkgsIndex
         nixpkgsRun
+        cameraUsers
         backlightWatch
       ];
 
@@ -206,7 +215,7 @@ in
       unstable = inputs.nixpkgs-unstable.legacyPackages.${system};
       inherit (unstable) quickshell;
       inherit (unstable.qt6) qtdeclarative;
-      inherit (helpers pkgs) backlightWatch;
+      inherit (helpers pkgs) cameraUsers backlightWatch;
 
       qsLint = pkgs.writeShellApplication {
         name = "qs-lint";
@@ -284,6 +293,7 @@ in
           qsLint
           qsInput
           qsTray
+          cameraUsers
           backlightWatch
           pipewire
           wireplumber

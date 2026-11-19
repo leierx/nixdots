@@ -56,7 +56,8 @@ Scope {
         osdShown: Osd.serial,
         osdSettling: Osd.settling,
         brightness: Brightness.devices,
-        caps: CapsLock.on
+        caps: CapsLock.on,
+        privacy: { mic: Privacy.mic, screen: Privacy.screenActive ? Privacy.screen : null, camera: Privacy.cameraActive ? Privacy.camera : null }
       });
     }
   }

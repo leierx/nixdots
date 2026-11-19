@@ -41,6 +41,7 @@ usage: qs-test COMMAND
   output MODE [SCALE]   change the first monitor's mode (2560x1440 1.5)
   pipewire start|stop|restart   the session's own sound server (tests/pipewire.conf)
   backlight NAME VALUE [MAX]    set a fake backlight (max 100) and announce it as udev does; NAME remove unplugs it
+  camera open|close NAME [DEV]  a process named NAME holding a fake camera (video0) open; add|remove DEV
   spawn CMD...          start CMD in the session, detached (output in spawn.log)
   tray [log]            add a test tray item with submenus (tests/tray.qml), or show what it was told
   x CMD...              run CMD in the session (notify-send, hyprctl, ...)
@@ -181,11 +182,13 @@ while [ "\${1#-}" != "\$1" ]; do shift; done
 case "\$1" in nixpkgs-run | xdg-open) exit ;; esac
 exec "\$@"
 EOF
-  # The real watcher, on a fake sysfs; udevadm replays what qst backlight appends.
-  mkdir -p "$T/backlight"
+  # The real watchers, on a fake /dev and sysfs; udevadm replays what qst backlight appends.
+  mkdir -p "$T/dev" "$T/backlight"
+  : > "$T/dev/video0"
   : > "$T/udev"
   printf '#!/bin/sh\nexec tail -n0 -F "%s/udev"\n' "$T" > "$T/bin/udevadm"
   printf '#!/bin/sh\nexec %s "%s/backlight"\n' "$(command -v backlight-watch)" "$T" > "$T/bin/backlight-watch"
+  printf '#!/bin/sh\nexec %s "%s/dev"\n' "$(command -v camera-users)" "$T" > "$T/bin/camera-users"
   for entry in systemctl loginctl pw-play xdg-open nixpkgs-run; do
     printf '#!/bin/sh\necho "%s $*" >> "%s/actions.log"\n' "$entry" "$T" > "$T/bin/$entry"
   done
@@ -277,6 +280,38 @@ backlight() {
     tries=$((tries + 1))
     [ $tries -lt 10 ] || die "the shell never saw backlight $1 $event"
   done
+}
+
+# A process named NAME holding a fake camera open, as an app streaming from it would.
+camera() {
+  local name=${2:-}
+  mkdir -p "$T/holders"
+  case $1 in
+    open)
+      [ -e "$T/dev/${3:-video0}" ] || die "no camera ${3:-video0}"
+      # shellcheck disable=SC2016
+      setsid bash -c 'exec 3< "$1"; printf %s "$2" > /proc/$$/comm; while :; do sleep 3600 3<&-; done' _ "$T/dev/${3:-video0}" "$name" < /dev/null > /dev/null 2>&1 &
+      echo $! > "$T/holders/$name"
+      ;;
+    close)
+      [ -s "$T/holders/$name" ] || die "no $name holds a camera"
+      kill -- -"$(cat "$T/holders/$name")" 2> /dev/null || true
+      rm -f "$T/holders/$name"
+      ;;
+    add) : > "$T/dev/$name" ;;
+    remove) rm -f "$T/dev/$name" ;;
+    *) die "camera open|close NAME [DEVICE], or add|remove DEVICE" ;;
+  esac
+}
+
+camera_reset() {
+  local holder
+  for holder in "$T"/holders/*; do
+    [ -s "$holder" ] && kill -- -"$(cat "$holder")" 2> /dev/null
+    rm -f "$holder"
+  done
+  find "$T/dev" -name 'video*' ! -name video0 -delete
+  : > "$T/dev/video0"
 }
 
 # The host's own config, less what starts with the session and the monitors, which are the test's.
@@ -556,6 +591,7 @@ reset() {
   for pid in $("$HC" clients -j | jq -r '.[].pid'); do kill "$pid" 2> /dev/null || true; done
   stop_qs
   pw_reset
+  camera_reset
   rm -rf "$T/backlight"
   mkdir -p "$T/backlight"
   monitors_reset
@@ -671,6 +707,7 @@ case $cmd in
     esac
     ;;
   backlight) need_up; [ $# -ge 2 ] || die "backlight NAME VALUE [MAX], or NAME remove"; backlight "$@" ;;
+  camera) need_up; enter; camera "$@" ;;
   spawn) need_up; enter; setsid "$@" >> "$T/spawn.log" 2>&1 < /dev/null & ;;
   tray)
     need_up

@@ -55,6 +55,11 @@ PanelWindow {
     }
     spacing: 0
 
+    PrivacyIndicator {
+      anchors.verticalCenter: parent.verticalCenter
+      window: root
+    }
+
     VolumeButton {
       anchors.verticalCenter: parent.verticalCenter
       screen: root.screen

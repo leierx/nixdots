@@ -250,7 +250,7 @@ Notes on specific features:
   - The desktop components (the bar, the launcher's SUPER+D apps, SUPER+V
     clipboard, SUPER+P monitor layouts and SUPER+Tab windows, SUPER+X power, SUPER+? keyboard
     shortcuts, the notification
-    center from the bar's clock, the OSD) are a [Quickshell](https://quickshell.org)
+    center from the bar's clock, the OSD, the privacy indicator) are a [Quickshell](https://quickshell.org)
     shell in `quickshell/`, wired by `quickshell.nix`: one `quickshell.service`
     session daemon (restarted when the shell changes, via `X-Restart-Triggers`,
     and a second after a crash, with no start limit, so a crash loop through a
@@ -324,7 +324,7 @@ Notes on specific features:
       setups: the QML runs its tools by name from PATH (`cliphist`, `wl-copy`,
       `pw-play`, `notify-send`, `xdg-open`, `systemd-run`, `hyprmoncfg`,
       `wezterm`, `curl`, `nixpkgs-index`, `nixpkgs-run`, `hyprctl`,
-      `backlight-watch`) rather than store paths, an exception to the rule above;
+      `camera-users`, `backlight-watch`) rather than store paths, an exception to the rule above;
       `quickshell.nix` installs the ones no other feature does. The only Nix
       in the QML is `palettes.adwaita_darker` as the `Colors` singleton (translucent
       colours turned into Qt's `#aarrggbb`) and `hyprland.workspaces` as
@@ -520,7 +520,8 @@ Notes on specific features:
       way finishes rather than starting over) and the workspaces. Centre: the
       clock (a flat round button with a pointing hand, as GNOME's panel draws
       its date: shaded on hover and while the center it opens is open).
-      Right: the volume, the battery, the bell and, always last, the tray. Quickshell keeps Hyprland's state by
+      Right: the privacy indicator, the volume, the battery,
+      the bell and, always last, the tray. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
       renames, so `Bar.qml` refreshes monitors and workspaces on those, and
       once more 300 ms after the last, since Quickshell drops a refresh while
@@ -589,6 +590,36 @@ Notes on specific features:
       - The bell, a bare icon, is Do Not Disturb's switch, a click turning it
         on or off, and carries a red count of the notifications
         it holds; under Do Not Disturb it is struck through (Material Symbols' notifications_off) and the count hides.
+      - The privacy indicator (`PrivacyIndicator`) shows only while something
+        records: a button's grey pill holding a red recording light, breathing,
+        and the bar's white symbols for each kind recording (mic, videocam,
+        screen_share). Hovering it for 250 ms opens `PrivacyTooltip`, a card
+        under it (a `PopupWindow`) listing each kind with the apps, named and
+        iconed from their desktop entries (`DesktopEntries.heuristicLookup`, so
+        a `firefox` process reads as Firefox). `Privacy` is the backend:
+        - Microphone: a PipeWire link into a capture stream
+          (`Stream/Input/Audio`) in state Active, from a source
+          (`Audio/Source` or `Audio/Duplex`, or by its `media.class` a virtual
+          one, which Quickshell leaves untyped), named by the stream's
+          `application.name`. A sink's monitor is no microphone; peak meters
+          (`stream.monitor`, which pipewire-pulse sets for peak detection, and
+          pavucontrol's, GNOME's and KMix's app ids) and passive filters
+          (`node.passive`) are left out. Link state only arrives for link
+          groups a `PwObjectTracker` holds, so it tracks those into capture
+          streams and out of video sources.
+        - Screen: a video source a program makes (xdph's `xdph-streaming-*`,
+          or any `Video/Source` without a `device.api`), shown for as long as
+          it exists, named by the streams linked to it. Programs that capture
+          the screen without the portal (wf-recorder) are not seen.
+        - Camera: a device video source (`device.api`) with an Active link,
+          named by its viewer, and any process holding `/dev/video*` open for
+          half a second (`camera-users`, `scripts/camera-users.c`: inotify on
+          each device node for opens and closes and on `/dev` for devices
+          coming and going, then a scan of `/proc/*/fd`, one JSON line per
+          change), so V4L2 apps (Chrome, Zoom) count and a browser probing
+          devices does not. PipeWire's and WirePlumber's own holds are left
+          out: their clients are named through the links. The watcher is
+          restarted after it stops, backing off to 5 minutes.
     - `weather/` is the `Weather` singleton and `Forecast`, its card under
       the center's calendar: MET Norway's forecast (yr.no's) for the
       timezone's city (`/etc/localtime`'s zone, placed by the `zone.tab`
@@ -936,6 +967,7 @@ qst x notify-send -a Discord loft01 hello   # anything else, inside the session 
 qst x wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.3   # the session's own PipeWire
 qst pipewire restart           # or stop, start
 qst backlight intel_backlight 40 [MAX]   # set a fake backlight and announce it, until the shell has it; `NAME remove` unplugs
+qst camera open zoom [video1]  # a process named zoom holding a fake camera open; `close zoom`, `add video1`, `remove video0`
 qst sync                       # copy edited QML in, restart qs, print its warnings; non-zero if it fails to load
 qst problems                   # warnings and errors, less the expected ones
 qst actions                    # what the session tried to run on the machine
@@ -964,7 +996,8 @@ Microphone (the default) and Headset Microphone (`audiotestsrc`, real
 `Audio/Source`s), and a virtual Noise Cancelling source. `wpctl`, `pw-record`,
 `pw-cli` and `pw-dump` in the session reach it; `reset` starts it afresh.
 `backlight-watch`
-is the real one, run on `$QS_TEST_DIR/backlight`, and `udevadm monitor` replays
+and `camera-users` are the real ones, run on `$QS_TEST_DIR/backlight` and
+`$QS_TEST_DIR/dev` (one camera, `video0`), and `udevadm monitor` replays
 what `qst backlight` appends.
 
 - `sync` copies over rather than rebuilds: the copy keeps the built `nix/`
@@ -995,7 +1028,8 @@ workspaces with the label the bar gives them and their window count, windows, an
 the screen it is on, the notification `history` (app and summary, newest
 first) and `dnd`, the volume (percent, muted, output), the default `input`,
 the `osd` showing (with its screen), `osdShown` (shows so far) and
-`osdSettling`, `brightness` and `caps`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
+`osdSettling`, `brightness`, `caps`, `privacy` (`mic` names, and `screen` and
+`camera` names or null while unused), plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.
 `wait`, `stays` and `state` fail with "qs is not running" once qs has
@@ -1014,7 +1048,10 @@ Not Disturb with transient and critical notifications; `workspaces.sh`
 windows opened while the shell starts; `osd.sh` what shows and what must not
 (the shell starting, PipeWire restarting, a switch's new level, an unplugged
 default, the popup open, backlights coming and going, the media keys at a
-level's end, Caps Lock both ways, its monitor going). Behaviour that broke once gets a case; check that
+level's end, Caps Lock both ways, its monitor going); `privacy.sh` microphones
+real and virtual, meters, sink monitors, PipeWire going and coming back,
+screen casts, cameras through PipeWire and held from `/dev` (a short probe,
+PipeWire's own hold, one plugged in later, one unplugged in use). Behaviour that broke once gets a case; check that
 the case fails without the fix (a `git worktree` of `HEAD` with the new
 `tests/` copied in, run with `QS_TEST_REPO` pointing at it).
 
