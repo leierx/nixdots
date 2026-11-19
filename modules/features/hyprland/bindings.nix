@@ -182,7 +182,7 @@ root: {
             ]
           ) directions
         )
-        ++
+        ++ lib.concatLists (
           lib.mapAttrsToList
             (
               key:
@@ -190,27 +190,39 @@ root: {
                 cmd,
                 desc,
                 repeating,
+                osd ? null,
               }:
-              mkBind {
-                inherit key desc;
+              [
+                (mkBind {
+                  inherit key desc;
+                  withMod = false;
+                  dispatcher = exec cmd;
+                  opts = {
+                    locked = true;
+                  }
+                  // lib.optionalAttrs repeating { inherit repeating; };
+                })
+              ]
+              # the OSD shows a level at its end too; a bind of its own, as Hyprland reruns a global's bind on release
+              ++ lib.optional (osd != null) (mkBind {
+                inherit key;
                 withMod = false;
-                dispatcher = exec cmd;
-                opts = {
-                  locked = true;
-                }
-                // lib.optionalAttrs repeating { inherit repeating; };
-              }
+                dispatcher = ''hl.dsp.global("quickshell:osd-${osd}")'';
+                desc = "Show ${osd}";
+              })
             )
             {
               XF86AudioRaiseVolume = {
                 cmd = "${wpctl} set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+";
                 desc = "Volume up";
                 repeating = true;
+                osd = "volume";
               };
               XF86AudioLowerVolume = {
                 cmd = "${wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%-";
                 desc = "Volume down";
                 repeating = true;
+                osd = "volume";
               };
               XF86AudioMute = {
                 cmd = "${wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle";
@@ -226,11 +238,13 @@ root: {
                 cmd = "${brightnessctl} set 5%+";
                 desc = "Brightness up";
                 repeating = true;
+                osd = "brightness";
               };
               XF86MonBrightnessDown = {
                 cmd = "${brightnessctl} set 5%-";
                 desc = "Brightness down";
                 repeating = true;
+                osd = "brightness";
               };
               XF86AudioPlay = {
                 cmd = "${playerctl} play-pause";
@@ -252,7 +266,8 @@ root: {
                 desc = "Previous track";
                 repeating = false;
               };
-            };
+            }
+        );
       };
     };
 }

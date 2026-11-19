@@ -39,6 +39,8 @@ usage: qs-test COMMAND
   monitors              the monitors, disabled ones too
   focus NAME            focus a monitor
   output MODE [SCALE]   change the first monitor's mode (2560x1440 1.5)
+  pipewire start|stop|restart   the session's own sound server (tests/pipewire.conf)
+  backlight NAME VALUE [MAX]    set a fake backlight (max 100) and announce it as udev does; NAME remove unplugs it
   spawn CMD...          start CMD in the session, detached (output in spawn.log)
   tray [log]            add a test tray item with submenus (tests/tray.qml), or show what it was told
   x CMD...              run CMD in the session (notify-send, hyprctl, ...)
@@ -101,8 +103,8 @@ start_qs() {
   done
   problems
   grep -q 'Configuration Loaded' "$T/qs.log" || die "the shell did not load, see qs-test log"
-  # Always a battery and a sound server, so the bar shows everything it can on any host; `ipc bar realBattery` and `realVolume` drop them.
-  (enter && timeout 5 qs ipc -p "$T/shell" call bar fakeBattery 76 false > /dev/null && timeout 5 qs ipc -p "$T/shell" call bar fakeVolume 64 false > /dev/null) || echo "qs-test: could not fake a battery and volume" >&2
+  # Always a battery, so the bar shows everything it can on any host; `ipc bar realBattery` drops it. The sound server is the session's own.
+  (enter && timeout 5 qs ipc -p "$T/shell" call bar fakeBattery 76 false > /dev/null) || echo "qs-test: could not fake a battery" >&2
 }
 
 stop_qs() {
@@ -179,6 +181,11 @@ while [ "\${1#-}" != "\$1" ]; do shift; done
 case "\$1" in nixpkgs-run | xdg-open) exit ;; esac
 exec "\$@"
 EOF
+  # The real watcher, on a fake sysfs; udevadm replays what qst backlight appends.
+  mkdir -p "$T/backlight"
+  : > "$T/udev"
+  printf '#!/bin/sh\nexec tail -n0 -F "%s/udev"\n' "$T" > "$T/bin/udevadm"
+  printf '#!/bin/sh\nexec %s "%s/backlight"\n' "$(command -v backlight-watch)" "$T" > "$T/bin/backlight-watch"
   for entry in systemctl loginctl pw-play xdg-open nixpkgs-run; do
     printf '#!/bin/sh\necho "%s $*" >> "%s/actions.log"\n' "$entry" "$T" > "$T/bin/$entry"
   done
@@ -194,6 +201,82 @@ EOF
   done
   [ -e "$config/hyprmoncfg/profiles" ] && ln -sfn "$config/hyprmoncfg/profiles" "$T/cfg/hyprmoncfg/profiles"
   return 0
+}
+
+# The session's own sound server (tests/pipewire.conf): null devices, no hardware, no system bus,
+# its state in the session, and the Speakers at 64 %.
+pw_start() {
+  local pw=$T/pw
+  mkdir -p "$pw/cfg/wireplumber/wireplumber.conf.d" "$pw/state"
+  cp "$tests/wireplumber.conf" "$pw/cfg/wireplumber/wireplumber.conf.d/qs-test.conf"
+  (
+    enter
+    export XDG_CONFIG_HOME=$pw/cfg XDG_STATE_HOME=$pw/state DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent
+    setsid pipewire -c "$tests/pipewire.conf" > "$T/pipewire.log" 2>&1 < /dev/null &
+    echo $! > "$T/pipewire.pid"
+    for _ in $(seq 50); do
+      [ -S "$XDG_RUNTIME_DIR/pipewire-0" ] && break
+      sleep 0.1
+    done
+    setsid wireplumber > "$T/wireplumber.log" 2>&1 < /dev/null &
+    echo $! > "$T/wireplumber.pid"
+  )
+  (
+    enter
+    for _ in $(seq 100); do
+      wpctl inspect @DEFAULT_AUDIO_SINK@ > /dev/null 2>&1 && wpctl inspect @DEFAULT_AUDIO_SOURCE@ > /dev/null 2>&1 && break
+      sleep 0.1
+    done
+    wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.64
+  ) || die "PipeWire did not start, see $T/pipewire.log and $T/wireplumber.log"
+}
+
+pw_stop() {
+  local name pid
+  for name in wireplumber pipewire; do
+    [ -s "$T/$name.pid" ] || continue
+    pid=$(cat "$T/$name.pid")
+    kill "$pid" 2> /dev/null || true
+    for _ in $(seq 50); do
+      kill -0 "$pid" 2> /dev/null || break
+      sleep 0.1
+    done
+    rm -f "$T/$name.pid"
+  done
+}
+
+# Each fresh: wireplumber's remembered defaults and volumes go too.
+pw_reset() {
+  pw_stop
+  rm -rf "$T/pw/state"
+  pw_start
+}
+
+# A backlight's level, as the kernel would set it and announce it.
+backlight() {
+  local dir=$T/backlight/$1 event
+  if [ "${2:-}" = remove ]; then
+    rm -rf "$dir"
+    event=remove
+  else
+    mkdir -p "$dir"
+    printf '%s\n' "${3:-100}" > "$dir/max_brightness"
+    printf '%s\n' "$2" > "$dir/brightness"
+    printf '%s\n' "$2" > "$dir/actual_brightness"
+    event=change
+  fi
+  local filter tries=0
+  filter=$(if [ "$event" = remove ]; then echo ".brightness[\"$1\"] == null"; else echo ".brightness[\"$1\"].brightness == $2"; fi)
+  # Until the shell has it: udevadm may not be listening yet, as at a real boot.
+  while :; do
+    printf 'UDEV  [%s] %-8s /devices/qs-test/backlight/%s (backlight)\n' "$(date +%s.%N)" "$event" "$1" >> "$T/udev"
+    for _ in 1 2 3 4 5; do
+      snapshot | jq -e "$filter" > /dev/null && return
+      sleep 0.1
+    done
+    tries=$((tries + 1))
+    [ $tries -lt 10 ] || die "the shell never saw backlight $1 $event"
+  done
 }
 
 # The host's own config, less what starts with the session and the monitors, which are the test's.
@@ -363,6 +446,7 @@ EOF
 
   enter
   monitors_reset
+  pw_start
   XKB_DEFAULT_LAYOUT=$("$HC" getoption input:kb_layout -j | jq -r .str) \
     XKB_DEFAULT_VARIANT=$("$HC" getoption input:kb_variant -j | jq -r .str) \
     setsid qs-input serve "$XDG_RUNTIME_DIR/input" > "$T/input.log" 2>&1 < /dev/null &
@@ -471,6 +555,9 @@ reset() {
   rm -f "$T/tray.pid"
   for pid in $("$HC" clients -j | jq -r '.[].pid'); do kill "$pid" 2> /dev/null || true; done
   stop_qs
+  pw_reset
+  rm -rf "$T/backlight"
+  mkdir -p "$T/backlight"
   monitors_reset
   "$HC" dispatch "hl.dsp.focus({ monitor = \"$("$HC" monitors -j | jq -r 'min_by(.id).name')\" })" > /dev/null
   id=$(grep -o 'Shell ID: "[0-9a-f]*' "$T/qs.log" 2> /dev/null | head -1 | cut -d'"' -f2 || true)
@@ -574,6 +661,16 @@ case $cmd in
     enter
     monitor_add "$("$HC" monitors -j | jq -r 'min_by(.id).name')" "$1" "${2:-1}" 0x0
     ;;
+  pipewire)
+    need_up
+    case ${1:-} in
+      start) pw_start ;;
+      stop) pw_stop ;;
+      restart) pw_stop; pw_start ;;
+      *) die "pipewire start|stop|restart" ;;
+    esac
+    ;;
+  backlight) need_up; [ $# -ge 2 ] || die "backlight NAME VALUE [MAX], or NAME remove"; backlight "$@" ;;
   spawn) need_up; enter; setsid "$@" >> "$T/spawn.log" 2>&1 < /dev/null & ;;
   tray)
     need_up

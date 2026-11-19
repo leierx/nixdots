@@ -5,6 +5,7 @@ import Quickshell.Io
 import qs.bar
 import qs.common
 import qs.notifications
+import qs.osd
 
 // qs-test adds this to the session's copy of the shell only: `qst state` is its `state`.
 Scope {
@@ -49,7 +50,13 @@ Scope {
         notifications: Notifs.entries.length,
         history: Notifs.entries.map(e => ({ app: Notifs.appKey(e), summary: e.notification?.summary ?? null })),
         dnd: Notifs.dnd,
-        volume: { percent: Volume.percent, muted: Volume.muted, output: Volume.devices.find(d => d.current)?.name ?? null }
+        volume: { percent: Volume.percent, muted: Volume.muted, output: Volume.devices.find(d => d.current)?.name ?? null },
+        input: Osd.sourceName,
+        osd: Osd.current ? Object.assign({ screen: Osd.screen }, Osd.current) : null,
+        osdShown: Osd.serial,
+        osdSettling: Osd.settling,
+        brightness: Brightness.devices,
+        caps: CapsLock.on
       });
     }
   }

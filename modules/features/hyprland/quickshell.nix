@@ -1,4 +1,16 @@
-root: {
+root:
+let
+  # in the shell's PATH and in qs-test's, which runs the real thing against a fake sysfs
+  helpers = pkgs: {
+    # udevadm is the base system's, so qs-test can stand a fake in
+    backlightWatch = pkgs.writeShellApplication {
+      name = "backlight-watch";
+      runtimeInputs = [ pkgs.coreutils ];
+      text = builtins.readFile ./scripts/backlight-watch.sh;
+    };
+  };
+in
+{
   flake.modules.homeManager.hyprland =
     {
       config,
@@ -9,6 +21,7 @@ root: {
     }:
     let
       inherit (lib.generators) mkLuaInline;
+      inherit (helpers pkgs) backlightWatch;
 
       # Qt reads #aarrggbb where the palette has CSS's #rrggbbaa
       qtColor =
@@ -131,6 +144,7 @@ root: {
         config.services.cliphist.package
         nixpkgsIndex
         nixpkgsRun
+        backlightWatch
       ];
 
       programs.quickshell = {
@@ -152,6 +166,19 @@ root: {
         };
         Service.RestartSec = 1;
       };
+
+      # Hyprland reports no lock changes, so the Caps Lock key's release asks the shell to look.
+      wayland.windowManager.hyprland.settings.on = [
+        {
+          _args = [
+            "input.keyboard.key"
+            (mkLuaInline ''
+              function(keycode, _, state)
+                if keycode == 66 and state == 0 then hl.dispatch(hl.dsp.global("quickshell:caps-lock")) end
+              end'')
+          ];
+        }
+      ];
 
       wayland.windowManager.hyprland.settings.bind = [
         (globalBind "d" "launcher-apps" "App launcher")
@@ -179,6 +206,7 @@ root: {
       unstable = inputs.nixpkgs-unstable.legacyPackages.${system};
       inherit (unstable) quickshell;
       inherit (unstable.qt6) qtdeclarative;
+      inherit (helpers pkgs) backlightWatch;
 
       qsLint = pkgs.writeShellApplication {
         name = "qs-lint";
@@ -256,6 +284,9 @@ root: {
           qsLint
           qsInput
           qsTray
+          backlightWatch
+          pipewire
+          wireplumber
           labwc
           grim
           jq

@@ -250,7 +250,7 @@ Notes on specific features:
   - The desktop components (the bar, the launcher's SUPER+D apps, SUPER+V
     clipboard, SUPER+P monitor layouts and SUPER+Tab windows, SUPER+X power, SUPER+? keyboard
     shortcuts, the notification
-    center from the bar's clock) are a [Quickshell](https://quickshell.org)
+    center from the bar's clock, the OSD) are a [Quickshell](https://quickshell.org)
     shell in `quickshell/`, wired by `quickshell.nix`: one `quickshell.service`
     session daemon (restarted when the shell changes, via `X-Restart-Triggers`,
     and a second after a crash, with no start limit, so a crash loop through a
@@ -323,7 +323,8 @@ Notes on specific features:
     - The shell is written like any Hyprland rice, so it works on other
       setups: the QML runs its tools by name from PATH (`cliphist`, `wl-copy`,
       `pw-play`, `notify-send`, `xdg-open`, `systemd-run`, `hyprmoncfg`,
-      `wezterm`, `curl`, `nixpkgs-index`, `nixpkgs-run`) rather than store paths, an exception to the rule above;
+      `wezterm`, `curl`, `nixpkgs-index`, `nixpkgs-run`, `hyprctl`,
+      `backlight-watch`) rather than store paths, an exception to the rule above;
       `quickshell.nix` installs the ones no other feature does. The only Nix
       in the QML is `palettes.adwaita_darker` as the `Colors` singleton (translucent
       colours turned into Qt's `#aarrggbb`) and `hyprland.workspaces` as
@@ -665,7 +666,7 @@ Notes on specific features:
     - `center/` is the notification center (`qs ipc -c shell call panels
       toggle center`), GNOME's layout, dropping down from the middle of the bar with
       a short fade and slide: notifications on the left (40em, wider than
-      GNOME's 29em, which read long and narrow), a Do Not Disturb
+      GNOME's 29em, which read long and narrow), Do Not Disturb
       switch and Clear (which also closes it) below, and `Calendar.qml` on
       the right (locale's first weekday, ISO week numbers, arrows or wheel for
       months, the date returns to today) with the weather under it, left out
@@ -703,6 +704,33 @@ Notes on specific features:
   - Every lock (idle, sleep, the power menu's Lock) goes through
     `loginctl lock-session`, so hypridle's `lock_cmd`, which never starts a
     second hyprlock, is the only thing that runs it.
+  - The OSD (`osd/`) shows what just changed, by the right edge of the
+    focused monitor on the overlay layer, for 1.5 s, never taking a click: a
+    slim upright slider (level filling from the bottom, past 100 % in the
+    warning colour, the number above and the symbol below) for output
+    volume and mute and brightness, and a word in its place for microphone
+    mute, a new default output or input, and Caps Lock. `Osd` is the backend,
+    changes as they are made rather than states as they are found: each
+    `Watch` takes in the first value of what it watches, and any arriving
+    within 500 ms of its key (the node's name) or readiness changing, so the
+    shell starting, PipeWire coming back and a new output's own volume show
+    nothing; each `DeviceWatch` shows a default device only once it settles
+    (400 ms) and differs from the last one it knew, so an unplug that leaves
+    no default for a moment shows only where it lands. Nothing shows for the
+    output's level while its popup is open. Brightness is `Brightness`, every
+    backlight from `backlight-watch` (`scripts/backlight-watch.sh`: `udevadm
+    monitor` on the backlight subsystem, since the kernel sends a change
+    uevent for every set however it is made, a line `name brightness max;`
+    per change), the one that changed showing; Caps Lock is `CapsLock`,
+    `hyprctl devices -j`'s main keyboard read when Hyprland's
+    `input.keyboard.key` Lua event sees the Caps Lock key (66) go up and
+    dispatches `quickshell:caps-lock` (`quickshell.nix`), since Hyprland
+    reports no lock changes, and read again 150 ms later. A second bind on the volume and
+    brightness keys dispatches `quickshell:osd-volume` /
+    `quickshell:osd-brightness` (`bindings.nix`), so a level at its end still
+    shows when the key changes nothing; a bind of its own, since Hyprland runs
+    a bind that dispatches a global again on release. `Osd.settling` says it is still
+    taking in, for tests.
   - The screenshot binds call one `writeShellApplication` (`scripts/freeze-region.sh`,
     `copy|save`) that carries its own runtime inputs.
   - Binds reference configured packages (`config.programs.wezterm.package`,
@@ -905,6 +933,9 @@ qst run                        # sync, then every tests/scenarios/*.sh; `qst run
 qst key super+Return           # real windows, for workspaces and the window switcher
 qst tray                       # a tray item (a yellow star) with nested submenus (tests/tray.qml); `qst tray log` shows what it was told
 qst x notify-send -a Discord loft01 hello   # anything else, inside the session (hyprctl talks to the test Hyprland)
+qst x wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.3   # the session's own PipeWire
+qst pipewire restart           # or stop, start
+qst backlight intel_backlight 40 [MAX]   # set a fake backlight and announce it, until the shell has it; `NAME remove` unplugs
 qst sync                       # copy edited QML in, restart qs, print its warnings; non-zero if it fails to load
 qst problems                   # warnings and errors, less the expected ones
 qst actions                    # what the session tried to run on the machine
@@ -921,8 +952,20 @@ logging dispatches and reloads, with `hl.dsp.exit()` only logged; cliphist
 reads a copy of the database. The config dir is the user's, symlinked, except
 `hypr/` (the test's) and `hyprmoncfg/`; profiles to fake go in
 `$QS_TEST_DIR/cfg/hyprmoncfg/profiles`. Every qs it starts has a fake battery at 76 %
-and fake volume at 64 % (`bar fakeBattery`, `bar fakeVolume`), so the bar shows all it can on any host, a sound server included; `qst ipc bar
-realBattery` and `realVolume` drop them.
+(`bar fakeBattery`), so the bar shows all it can on any host; `qst ipc bar
+realBattery` drops it (`bar fakeVolume` still stands in a made-up sound
+server, `realVolume` drops it).
+
+The session has its own sound server, a PipeWire on `tests/pipewire.conf`
+and a WirePlumber with no hardware, logind or portal (`tests/wireplumber.conf`),
+their state in the session and no system bus: null outputs Speakers (the
+default, at 64 %), Headphones and HDMI / DisplayPort, test-tone microphones
+Microphone (the default) and Headset Microphone (`audiotestsrc`, real
+`Audio/Source`s), and a virtual Noise Cancelling source. `wpctl`, `pw-record`,
+`pw-cli` and `pw-dump` in the session reach it; `reset` starts it afresh.
+`backlight-watch`
+is the real one, run on `$QS_TEST_DIR/backlight`, and `udevadm monitor` replays
+what `qst backlight` appends.
 
 - `sync` copies over rather than rebuilds: the copy keeps the built `nix/`
   and weather icons. It restarts rather than hot-reloads: a reload keeps
@@ -950,7 +993,9 @@ the session's copy of the shell (never the built one): the open panel, the
 screens and the Hyprland monitor each resolves to, the focused monitor,
 workspaces with the label the bar gives them and their window count, windows, and every popup with
 the screen it is on, the notification `history` (app and summary, newest
-first) and `dnd`, the volume (percent, muted, output), plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
+first) and `dnd`, the volume (percent, muted, output), the default `input`,
+the `osd` showing (with its screen), `osdShown` (shows so far) and
+`osdSettling`, `brightness` and `caps`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.
 `wait`, `stays` and `state` fail with "qs is not running" once qs has
@@ -966,7 +1011,10 @@ replugging under every panel, a tray menu and popups, every monitor going,
 bursts and mode changes; `notifications.sh` the history: three per app once
 their popups go, the five-popup limit, stack tags replacing in place, and Do
 Not Disturb with transient and critical notifications; `workspaces.sh`
-windows opened while the shell starts. Behaviour that broke once gets a case; check that
+windows opened while the shell starts; `osd.sh` what shows and what must not
+(the shell starting, PipeWire restarting, a switch's new level, an unplugged
+default, the popup open, backlights coming and going, the media keys at a
+level's end, Caps Lock both ways, its monitor going). Behaviour that broke once gets a case; check that
 the case fails without the fix (a `git worktree` of `HEAD` with the new
 `tests/` copied in, run with `QS_TEST_REPO` pointing at it).
 
