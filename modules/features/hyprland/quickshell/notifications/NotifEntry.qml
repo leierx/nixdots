@@ -10,6 +10,8 @@ QtObject {
   required property string screen
   property date time: new Date()
   property bool popup: false
+  // Looked at in the center; the bar's bell shows while any is not.
+  property bool checked: false
   // The popup under the pointer holds the timeout.
   property bool hovered: false
   // So does one below the screen's edge, until there is room for it, or one with no monitor on to show it.

@@ -97,7 +97,7 @@ Overlay {
 
   // Checked often while open, so a change made elsewhere shows as it is looked at.
   Binding {
-    target: KeepAwake
+    target: Caffeine
     property: "watched"
     value: root.open
   }
@@ -267,14 +267,14 @@ Overlay {
 
           Text {
             Layout.leftMargin: 12
-            text: "Keep Awake"
+            text: "Caffeine"
             color: Theme.fg
             font: Theme.body
           }
 
           Switch {
-            checked: KeepAwake.active
-            onClicked: KeepAwake.toggle()
+            checked: Caffeine.active
+            onClicked: Caffeine.toggle()
           }
 
           Item {

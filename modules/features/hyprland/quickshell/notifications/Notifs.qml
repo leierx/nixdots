@@ -13,6 +13,7 @@ Singleton {
 
   property var entries: []
   readonly property var popups: entries.filter(e => e.popup)
+  readonly property int unchecked: entries.filter(e => !e.checked).length
 
   // Saved, so a rebuild restarting the shell keeps it.
   property alias dnd: state.dnd
@@ -51,6 +52,7 @@ Singleton {
     root.entries = [entry, ...root.entries.filter(e => e !== entry)];
     entry.time = new Date();
     if (popup && !wasShown) entry.screen = Screens.focused;
+    entry.checked = Panels.active === "center";
     entry.popup = popup;
     entry.restartTimeout();
     root.trimPopups(entry);
@@ -152,6 +154,15 @@ Singleton {
       // Once the views have slid it away.
       entry.destroy(1000);
     });
+  }
+
+  Connections {
+    target: Panels
+
+    function onActiveChanged(): void {
+      if (Panels.active !== "center") return;
+      for (const entry of root.entries) entry.checked = true;
+    }
   }
 
   // One whose monitor has gone moves to the focused one for good, rather than back when it returns.

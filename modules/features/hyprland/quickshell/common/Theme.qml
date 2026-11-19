@@ -25,6 +25,10 @@ Singleton {
   readonly property color success: Colors.success_color
   // A recording light's red.
   readonly property color recording: Colors.red_2
+  // Caffeine's cup.
+  readonly property color coffee: Colors.brown_1
+  // The bell's, while notifications wait.
+  readonly property color bell: Colors.yellow_3
   readonly property color nixosLight: "#7ebae4"
   readonly property color nixosDark: "#5277c3"
 

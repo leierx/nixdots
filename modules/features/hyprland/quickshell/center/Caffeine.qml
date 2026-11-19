@@ -5,11 +5,11 @@ import Quickshell
 import Quickshell.Io
 import qs.common
 
-// The keep-awake user unit (quickshell.nix), which holds logind's idle inhibitor for as long as it runs.
+// The caffeine user unit (quickshell.nix), which holds logind's idle inhibitor for as long as it runs.
 Singleton {
   id: root
 
-  readonly property string unit: "keep-awake.service"
+  readonly property string unit: "caffeine.service"
   property bool active: false
   // The center is open: checked more often then, for a change made elsewhere showing as it is looked at.
   property bool watched: false
@@ -30,18 +30,18 @@ Singleton {
   }
 
   IpcHandler {
-    target: "keepAwake"
+    target: "caffeine"
 
     function toggle(): void {
-      KeepAwake.toggle();
+      Caffeine.toggle();
     }
 
     function set(on: bool): void {
-      KeepAwake.set(on);
+      Caffeine.set(on);
     }
 
     function active(): bool {
-      return KeepAwake.active;
+      return Caffeine.active;
     }
   }
 
@@ -51,7 +51,7 @@ Singleton {
   Command {
     id: change
 
-    name: "Keep Awake"
+    name: "Caffeine"
     onDone: root.refresh()
     onFailed: root.refresh()
   }

@@ -51,6 +51,7 @@ Scope {
         notifications: Notifs.entries.length,
         history: Notifs.entries.map(e => ({ app: Notifs.appKey(e), summary: e.notification?.summary ?? null })),
         dnd: Notifs.dnd,
+        unchecked: Notifs.unchecked,
         volume: { percent: Volume.percent, muted: Volume.muted, output: Volume.devices.find(d => d.current)?.name ?? null },
         input: Osd.sourceName,
         osd: Osd.current ? Object.assign({ screen: Osd.screen }, Osd.current) : null,
@@ -59,7 +60,7 @@ Scope {
         brightness: Brightness.devices,
         caps: CapsLock.on,
         privacy: { mic: Privacy.mic, screen: Privacy.screenActive ? Privacy.screen : null, camera: Privacy.cameraActive ? Privacy.camera : null },
-        keepAwake: KeepAwake.active
+        caffeine: Caffeine.active
       });
     }
   }

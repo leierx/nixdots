@@ -6,12 +6,13 @@ import Quickshell.Wayland
 import qs.bar
 import qs.common
 
-// What just changed, by the right edge of the focused screen and gone in a moment; clicks go through it.
+// What just changed on the focused screen, gone in a moment; clicks go through it.
 Scope {
   id: root
 
-  // Kept through the fade, which outlasts Osd.current.
-  property var shown: null
+  // Each kept through its own fade, which outlasts Osd.current.
+  property var level: null
+  property var tag: null
 
   // Material Symbols' mic, mic_off, headphones, speaker, light_mode and keyboard_capslock, filled
   readonly property string mic: "M480-400q-50 0-85-35t-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35Zm-40 240v-83q-92-13-157.5-78T203-479q-2-17 9-29t28-12q17 0 28.5 11.5T284-480q14 70 69.5 115T480-320q72 0 127-45.5T676-480q4-17 15.5-28.5T720-520q17 0 28 12t9 29q-14 91-79 157t-158 79v83q0 17-11.5 28.5T480-120q-17 0-28.5-11.5T440-160Z"
@@ -21,10 +22,13 @@ Scope {
   readonly property string sun: "M480-280q-83 0-141.5-58.5T280-480q0-83 58.5-141.5T480-680q83 0 141.5 58.5T680-480q0 83-58.5 141.5T480-280ZM80-440q-17 0-28.5-11.5T40-480q0-17 11.5-28.5T80-520h80q17 0 28.5 11.5T200-480q0 17-11.5 28.5T160-440H80Zm720 0q-17 0-28.5-11.5T760-480q0-17 11.5-28.5T800-520h80q17 0 28.5 11.5T920-480q0 17-11.5 28.5T880-440h-80ZM480-760q-17 0-28.5-11.5T440-800v-80q0-17 11.5-28.5T480-920q17 0 28.5 11.5T520-880v80q0 17-11.5 28.5T480-760Zm0 720q-17 0-28.5-11.5T440-80v-80q0-17 11.5-28.5T480-200q17 0 28.5 11.5T520-160v80q0 17-11.5 28.5T480-40ZM226-678l-43-42q-12-11-11.5-28t11.5-29q12-12 29-12t28 12l42 43q11 12 11 28t-11 28q-11 12-27.5 11.5T226-678Zm494 495-42-43q-11-12-11-28.5t11-27.5q11-12 27.5-11.5T734-282l43 42q12 11 11.5 28T777-183q-12 12-29 12t-28-12Zm-42-495q-12-11-11.5-27.5T678-734l42-43q11-12 28-11.5t29 11.5q12 12 12 29t-12 28l-43 42q-12 11-28 11t-28-11ZM183-183q-12-12-12-29t12-28l43-42q12-11 28.5-11t27.5 11q12 11 11.5 27.5T282-226l-42 43q-11 12-28 11.5T183-183Z"
   readonly property string caps: "M280-240q-17 0-28.5-11.5T240-280q0-17 11.5-28.5T280-320h400q17 0 28.5 11.5T720-280q0 17-11.5 28.5T680-240H280Zm200-384L324-468q-11 11-28 11t-28-11q-11-11-11-28t11-28l184-184q12-12 28-12t28 12l184 184q11 11 11 28t-11 28q-11 11-28 11t-28-11L480-624Z"
 
-  readonly property string glyph: {
-    const item = root.shown;
-    if (!item) return "";
-    switch (item.kind) {
+  function hasLevel(item: var): bool {
+    return item?.level !== null && item?.level !== undefined;
+  }
+
+  function glyphOf(item: var): string {
+    switch (item?.kind) {
+    case undefined: return "";
     case "volume": return Volume.glyphFor(item.level, item.muted);
     case "microphone": return item.muted ? root.micOff : root.mic;
     case "input": return root.mic;
@@ -33,192 +37,215 @@ Scope {
     default: return root.caps;
     }
   }
-  readonly property string label: {
-    const item = root.shown;
-    if (!item) return "";
-    switch (item.kind) {
+
+  function labelOf(item: var): string {
+    switch (item?.kind) {
+    case undefined: return "";
     case "microphone": return item.muted ? "Microphone Off" : "Microphone On";
     case "caps": return item.muted ? "Caps Lock Off" : "Caps Lock On";
     default: return item.title;
     }
   }
-  readonly property string caption: {
-    const item = root.shown;
-    if (!item) return "";
-    switch (item.kind) {
+
+  function captionOf(item: var): string {
+    switch (item?.kind) {
     case "output": return "Output";
     case "input": return "Input";
     case "microphone": return item.title;
     default: return "";
     }
   }
-  readonly property bool hasLevel: root.shown?.level !== null && root.shown?.level !== undefined
-  readonly property real level: root.shown?.level ?? 0
-  readonly property bool dim: root.shown?.muted ?? false
 
   Connections {
     target: Osd
 
     function onSerialChanged(): void {
-      if (Osd.current) root.shown = Osd.current;
+      if (!Osd.current) return;
+      if (root.hasLevel(Osd.current)) root.level = Osd.current;
+      else root.tag = Osd.current;
     }
   }
 
-  component Slider: Item {
-    implicitWidth: root.hasLevel ? 52 : tag.implicitWidth
-    implicitHeight: root.hasLevel ? 236 : 52
+  component Slider: Rectangle {
+    id: slider
+
+    readonly property real value: root.level?.level ?? 0
+    readonly property bool dim: root.level?.muted ?? false
+
+    implicitWidth: 52
+    implicitHeight: 236
+    radius: width / 2
+    color: Theme.bg
+    border.width: 1
+    border.color: Theme.outline
+
+    Shadow {}
+
+    Text {
+      anchors.horizontalCenter: parent.horizontalCenter
+      y: 14
+      text: Math.round(slider.value * 100)
+      color: slider.dim ? Theme.fgDim : Theme.fg
+      font: Theme.captionHeading
+    }
 
     Rectangle {
-      anchors.fill: parent
-      visible: root.hasLevel
+      anchors.horizontalCenter: parent.horizontalCenter
+      y: 38
+      width: 8
+      height: parent.height - 38 - 50
       radius: width / 2
-      color: Theme.bg
-      border.width: 1
-      border.color: Theme.outline
+      color: Theme.trough
 
-      Shadow {}
+      Rectangle {
+        anchors.bottom: parent.bottom
+        width: parent.width
+        height: Math.max(parent.width, parent.height * Math.min(slider.value, 1))
+        radius: parent.radius
+        color: slider.dim ? Theme.fgDim : Theme.fg
+        visible: slider.value > 0
 
-      Text {
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: 14
-        text: Math.round(root.level * 100)
-        color: root.dim ? Theme.fgDim : Theme.fg
-        font: Theme.captionHeading
+        Behavior on height {
+          NumberAnimation {
+            duration: 100
+          }
+        }
       }
 
-      Level {
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: 38
-        width: 8
-        height: parent.height - 38 - 50
+      // Past 100 %, the share over it from the top.
+      Rectangle {
+        visible: slider.value > 1
+        width: parent.width
+        height: parent.height * Math.min(slider.value - 1, 1) / Math.max(slider.value, 1)
+        radius: parent.radius
+        color: Theme.warning
       }
+    }
+
+    Glyph {
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.bottom: parent.bottom
+      anchors.bottomMargin: 15
+      path: root.glyphOf(root.level)
+      size: 22
+      color: slider.dim ? Theme.fgDim : Theme.fg
+    }
+  }
+
+  component Tag: Rectangle {
+    implicitWidth: row.implicitWidth + 36
+    implicitHeight: 52
+    radius: height / 2
+    color: Theme.bg
+    border.width: 1
+    border.color: Theme.outline
+
+    Shadow {}
+
+    Row {
+      id: row
+
+      anchors.centerIn: parent
+      spacing: 12
 
       Glyph {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 15
-        path: root.glyph
+        anchors.verticalCenter: parent.verticalCenter
+        path: root.glyphOf(root.tag)
         size: 22
-        color: root.dim ? Theme.fgDim : Theme.fg
+        color: root.tag?.muted ? Theme.fgDim : Theme.fg
       }
-    }
 
-    Rectangle {
-      id: tag
+      Column {
+        anchors.verticalCenter: parent.verticalCenter
 
-      anchors.right: parent.right
-      visible: !root.hasLevel
-      implicitWidth: tagRow.implicitWidth + 36
-      height: 52
-      radius: height / 2
-      color: Theme.bg
-      border.width: 1
-      border.color: Theme.outline
-
-      Shadow {}
-
-      Row {
-        id: tagRow
-
-        anchors.centerIn: parent
-        spacing: 12
-
-        Glyph {
-          anchors.verticalCenter: parent.verticalCenter
-          path: root.glyph
-          size: 22
-          color: root.dim ? Theme.fgDim : Theme.fg
+        Text {
+          text: root.labelOf(root.tag)
+          color: Theme.fg
+          font: Theme.heading
         }
 
-        Column {
-          anchors.verticalCenter: parent.verticalCenter
-
-          Text {
-            text: root.label
-            color: Theme.fg
-            font: Theme.heading
-          }
-
-          Text {
-            visible: root.caption !== ""
-            text: root.caption
-            color: Theme.fgDim
-            font: Theme.caption
-          }
+        Text {
+          visible: text !== ""
+          text: root.captionOf(root.tag)
+          color: Theme.fgDim
+          font: Theme.caption
         }
       }
     }
   }
 
-  // C: the classic square, a large symbol over a row of steps.
+  component OsdWindow: PanelWindow {
+    id: window
 
-  component Level: Rectangle {
-    radius: width / 2
-    color: Theme.trough
+    required property ShellScreen modelData
+    required property bool levels
+    readonly property bool here: Osd.current !== null && Osd.screen === modelData.name && root.hasLevel(Osd.current) === levels
+    property real fade: here ? 1 : 0
 
-    Rectangle {
-      anchors.bottom: parent.bottom
-      width: parent.width
-      height: Math.max(parent.width, parent.height * Math.min(root.level, 1))
-      radius: parent.radius
-      color: root.dim ? Theme.fgDim : Theme.fg
-      visible: root.level > 0
+    screen: modelData
+    visible: fade > 0
+    color: "transparent"
+    exclusionMode: ExclusionMode.Ignore
+    // Nothing in it takes a click.
+    mask: Region {}
 
-      Behavior on height {
-        NumberAnimation {
-          duration: 100
-        }
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.namespace: "quickshell:osd"
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+    Behavior on fade {
+      NumberAnimation {
+        duration: window.here ? 120 : 400
+        easing.type: window.here ? Easing.OutCubic : Easing.InOutQuad
       }
-    }
-
-    // Past 100 %, the share over it from the top.
-    Rectangle {
-      visible: root.level > 1
-      width: parent.width
-      height: parent.height * Math.min(root.level - 1, 1) / Math.max(root.level, 1)
-      radius: parent.radius
-      color: Theme.warning
     }
   }
 
   Variants {
     model: Screens.real
 
-    PanelWindow {
-      id: window
+    Scope {
+      id: output
 
       required property ShellScreen modelData
-      readonly property bool here: Osd.current !== null && Osd.screen === modelData.name
 
-      screen: modelData
-      visible: card.opacity > 0
-      color: "transparent"
-      anchors.right: true
-      // Room for the shadow, and 18 px off the edge.
-      implicitWidth: card.implicitWidth + 64 + 18
-      implicitHeight: card.implicitHeight + 64
-      exclusionMode: ExclusionMode.Ignore
-      // Nothing in it takes a click.
-      mask: Region {}
+      // Levels by the right edge, words at the bottom as GNOME Shell shows them.
+      OsdWindow {
+        id: side
 
-      WlrLayershell.layer: WlrLayer.Overlay
-      WlrLayershell.namespace: "quickshell:osd"
-      WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        modelData: output.modelData
+        levels: true
+        anchors.right: true
+        // Room for the shadow, and 18 px off the edge.
+        implicitWidth: slider.implicitWidth + 64 + 18
+        implicitHeight: slider.implicitHeight + 64
 
-      Slider {
-        id: card
+        Slider {
+          id: slider
 
-        anchors.centerIn: parent
-        anchors.horizontalCenterOffset: -9
-        width: implicitWidth
-        height: implicitHeight
-        opacity: window.here ? 1 : 0
+          anchors.centerIn: parent
+          anchors.horizontalCenterOffset: -9
+          opacity: side.fade
+        }
+      }
 
-        Behavior on opacity {
-          NumberAnimation {
-            duration: window.here ? 80 : 250
-            easing.type: Easing.OutCubic
-          }
+      OsdWindow {
+        id: below
+
+        modelData: output.modelData
+        levels: false
+        anchors.bottom: true
+        // Room for the shadow, and GNOME Shell's 4em off the edge.
+        implicitWidth: tag.implicitWidth + 64
+        implicitHeight: tag.implicitHeight + 32 + 4 * Theme.em
+
+        Tag {
+          id: tag
+
+          anchors.horizontalCenter: parent.horizontalCenter
+          anchors.bottom: parent.bottom
+          anchors.bottomMargin: 4 * Theme.em
+          opacity: below.fade
         }
       }
     }
