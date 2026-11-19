@@ -34,7 +34,7 @@ Item {
   property bool unfolded: false
   // Expanded, the cards inside keep off its top and bottom edges as they keep off its sides.
   readonly property real inset: expanded ? 8 : 0
-  // The text centred while collapsed and at the top expanded, easing between them; the icon stays put.
+  // The text centred while collapsed and at the top expanded, easing between them; the icon keeps level with the title.
   property real textOffset: expanded ? inset : Math.max(0, (threeLines - column.implicitHeight) / 2)
 
   Behavior on textOffset {
@@ -56,7 +56,10 @@ Item {
     id: fold
 
     interval: 200
-    onTriggered: root.unfolded = false
+    onTriggered: {
+      root.unfolded = false;
+      titleFade.play();
+    }
   }
 
   // itemAt() is not reactive, so the first row is looked up again as rows come and go.
@@ -162,7 +165,7 @@ Item {
 
       NotificationIcon {
         Layout.alignment: Qt.AlignTop
-        Layout.topMargin: (root.threeLines - root.iconSize) / 2
+        Layout.topMargin: root.textOffset
         entry: root.newest
         // A group shows the app, a lone notification its picture.
         image: root.single ? root.newest?.notification.image ?? "" : ""
@@ -200,7 +203,7 @@ Item {
         Layout.fillWidth: true
         Layout.alignment: Qt.AlignTop
         Layout.topMargin: root.textOffset
-        spacing: root.unfolded ? 6 : 0
+        spacing: root.unfolded && !root.single ? 6 : 0
 
         Behavior on spacing {
           enabled: root.settled
@@ -228,6 +231,10 @@ Item {
             maximumLineCount: root.unfolded ? 6 : 1
             elide: Text.ElideRight
             font: Theme.heading
+
+            ElideFade {
+              id: titleFade
+            }
           }
 
           NotificationStamp {
@@ -262,6 +269,17 @@ Item {
             onClosed: root.slideAway(false)
           }
         }
+
+        // Its notifications cover it once expanded, so collapsing has a button of its own.
+        Button {
+          Layout.alignment: Qt.AlignRight
+          visible: root.unfolded && !root.single
+          flat: true
+          text: "Collapse"
+          expander: true
+          open: true
+          onClicked: root.expanded = false
+        }
       }
 
       // On every card so the ages line up, overhanging the first line so the arrow costs no height.
@@ -271,12 +289,11 @@ Item {
         implicitWidth: 24
         implicitHeight: column.implicitHeight
 
-        ExpandButton {
+        ExpanderArrow {
           anchors.horizontalCenter: parent.horizontalCenter
           y: heading.height / 2 - height / 2
           visible: root.expandable
           open: root.expanded
-          onClicked: root.expanded = !root.expanded
         }
       }
     }

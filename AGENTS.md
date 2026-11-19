@@ -260,7 +260,9 @@ Notes on specific features:
     component is its own directory owning its windows, widgets and sizes, and
     `shell.qml` only instantiates them; `common/` holds what several share:
     `Theme`, `StateFile` (a `JsonAdapter`'s file in Quickshell's state dir),
-    `Shadow`, `ExpanderArrow`, `Time` (one minute clock for the bar, the
+    `Shadow`, `ExpanderArrow`, `ElideFade` (a `Text`'s text as it was,
+    fading out over it once it elides, so a collapse's "…" does not snap in),
+    `Time` (one minute clock for the bar, the
     calendar and notification ages), `Screens` (the screens someone can see:
     Quickshell's, less the headless `FALLBACK` Hyprland stands in while no
     monitor is on, and the focused one among them, the first while Hyprland
@@ -275,8 +277,8 @@ Notes on specific features:
     popups: libadwaita's window background, outline and shadow; Escape
     closes the panel it is in), `Button` (libadwaita's button, `flat` or
     not, with an optional glyph before its text and an expander arrow after,
-    and any mouse button it accepts passed to `clicked`; `ExpandButton` and `CloseButton` are
-    its round flat 24 px forms), `Keycap` (a key as the shortcuts window and
+    and any mouse button it accepts passed to `clicked`; `CloseButton` is
+    its round flat 24 px form), `Keycap` (a key as the shortcuts window and
     the power menu draw it, filled), `Glyph` (a Material Symbols path at a size),
     `WheelSteps` (wheel events as whole notches, a touchpad's small steps
     added up, for everything the wheel steps through), and `Panels`, the one
@@ -394,7 +396,9 @@ Notes on specific features:
         `Rectangle` and `MouseArea` (the tray, a module rather than buttons,
         aside); any other button a `Button` (`flat` on
         a surface, `glyph` for its icon, `checked` while what it opens is
-        open); the round 24 px ones `ExpandButton` and `CloseButton`; a key a
+        open); the round 24 px `CloseButton`; what expands a bare
+        `ExpanderArrow`, a sign rather than a button, since a click on the card
+        toggles it; a key a
         `Keycap`; a Material Symbols icon a `Glyph` and an app's a
         Quickshell `IconImage`; a notification's `NotificationIcon`; anything
         floating a `Card` in an `Overlay`.
@@ -712,8 +716,8 @@ Notes on specific features:
         was closed), in `Theme.bell` (the palette's `yellow_2`) with their
         count in red, and for as long as Do Not Disturb is on, struck through
         (Material Symbols' notifications_off) in `Theme.dnd` (`purple_1`),
-        the count on it still; a click opens the center, which checks them
-        all, so a plain bell goes at once. A reload of the shell hands every
+        the count on it still. Purple, a click turns Do Not Disturb off; yellow,
+        it opens the center, which checks them all, so the bell goes at once. A reload of the shell hands every
         notification over unchecked.
       - Caffeine's cup (`Cup`, Material Symbols' coffee, in `Theme.coffee`, the palette's
         `brown_2`) shows while it is on, so it is not left on by mistake; a click
@@ -789,7 +793,8 @@ Notes on specific features:
       on it. Expanding and collapsing ease the card's height (200 ms
       `OutCubic`), its content clipped; collapsing keeps the whole text until
       the card has eased down to the height it will have (what the text loses
-      worked out from its line counts), then elides it. The image is the picture, the app's icon a badge on
+      worked out from its line counts), then elides it, the text as it was fading out over its "…"
+      (`ElideFade`); the arrow by the title is only a sign of it. The image is the picture, the app's icon a badge on
       it unless the picture is that icon, or without one the app's icon (its
       initial when it has none) on a plate (`NotificationIcon`, shared with
       the center). A click on one with more to show (a cut-off title or body)
@@ -853,19 +858,21 @@ Notes on specific features:
       badge on it (no name), always three lines tall with what it holds
       centred beside the icon, so the stack is even: a lone notification its
       title and age over two lines of body, a group a line for each of its
-      newest three, each with its own age. The flat arrow, in a column every
-      card keeps so the ages line up, shows only when expanding shows more
+      newest three, each with its own age. The arrow, a sign rather than a
+      button, in a column every card keeps so the ages line up, shows only when expanding shows more
       (buttons, progress, or a cut-off title or body) and overhangs the first
       line rather than setting its height. Expanded, the card keeps 16 px off its
       top and bottom, and in a group each notification gets an inset card
       (`Theme.padding` inside) laid out as a popup is: its image at the top,
       the title to two lines and the body to four, with an arrow of its own
-      that opens it in full, and a click on a cut-off one opens it rather than
-      running its action; a lone one's title and body show whole. Opening and
+      as a sign, and a click on a cut-off one opens it rather than running its
+      action; a lone one's title and body show whole, right under each other.
+      Notifications cover an expanded group, so a flat Collapse button at its
+      foot collapses it. Opening and
       collapsing ease as a popup's do, each holding the whole text until its
       card has eased down, and only then laid out anew, so nothing bounces;
-      the icon keeps its collapsed place while the text eases between
-      centred and the top, as the height does, so neither jumps. A lone notification with a picture shows it in the icon's place,
+      the text eases between centred and the top as the height does, the
+      icon level with its title throughout, so nothing jumps. A lone notification with a picture shows it in the icon's place,
       the app's icon a badge on it unless the picture is that icon (an app
       icon sent without an image is Quickshell's `image` too), as popups do
       (`NotificationIcon`). Only a card a click expands has a close
@@ -886,7 +893,7 @@ Notes on specific features:
       outside closes it, and its `quickshell:center` layer rule dims behind
       it. The popups and the center cast libadwaita's window shadow
       (`common/Shadow.qml`, Qt's `RectangularShadow`), and their expand
-      toggles use libadwaita's arrow (`common/ExpanderArrow.qml`, Adwaita's
+      signs use libadwaita's arrow (`common/ExpanderArrow.qml`, Adwaita's
       `pan-down-symbolic` as a `Shape`).
   - `hyprtoolkit.nix` themes hyprtoolkit (`~/.config/hypr/hyprtoolkit.conf`),
     which hyprpolkitagent ≥ 0.2 and hyprland-guiutils' dialogs (app not

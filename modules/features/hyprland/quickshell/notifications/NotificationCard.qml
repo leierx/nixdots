@@ -35,7 +35,11 @@ Item {
     id: fold
 
     interval: 200
-    onTriggered: root.full = false
+    onTriggered: {
+      root.full = false;
+      summaryFade.play();
+      bodyFade.play();
+    }
   }
 
   SwipeArea {
@@ -155,6 +159,10 @@ Item {
                 maximumLineCount: root.full ? 6 : root.summaryLines
                 elide: Text.ElideRight
                 font: Theme.heading
+
+                ElideFade {
+                  id: summaryFade
+                }
               }
 
               // Overhanging the line, so the arrow costs it no height.
@@ -164,10 +172,9 @@ Item {
                 implicitWidth: 24
                 implicitHeight: line.height
 
-                ExpandButton {
+                ExpanderArrow {
                   anchors.centerIn: parent
                   open: root.expanded
-                  onClicked: root.expanded = !root.expanded
                 }
               }
             }
@@ -181,6 +188,10 @@ Item {
               text: root.entry.body
               maximumLineCount: root.full ? 15 : root.bodyLines
               onLinkOpened: root.entry.popup = false
+
+              ElideFade {
+                id: bodyFade
+              }
             }
           }
         }

@@ -14,7 +14,8 @@ BarButton {
   glyph: Notifs.dnd ? root.off : root.bell
   foreground: Notifs.dnd ? Theme.dnd : Theme.bell
   visible: count > 0 || Notifs.dnd
-  onClicked: Panels.open("center")
+  // Purple, Do Not Disturb is what it shows, so a click turns it off; yellow, the center has something new.
+  onClicked: Notifs.dnd ? Notifs.dnd = false : Panels.open("center")
 
   Rectangle {
     x: parent.width / 2
