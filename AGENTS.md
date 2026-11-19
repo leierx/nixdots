@@ -685,8 +685,10 @@ Notes on specific features:
       window stays mapped with an empty input region, so the last one does
       too); the app's timeout or 8 s, critical never, hovering holds it.
       Each card has an accent line down its left edge (red when critical), so
-      it stands out over a terminal as dark as it, and the app's name without
-      its icon. A click on one with more to show (a cut-off title or body)
+      it stands out over a terminal as dark as it. It names neither the app
+      nor its age: the icon and text say who, and a popup is always now. The
+      image and the text are centred on each other, so a summary alone sits
+      level with the image. A click on one with more to show (a cut-off title or body)
       expands it, and only its arrow collapses it; a click otherwise runs the
       default action, or the only action when there is one and no default,
       or puts the popup away when there is neither; an action or a link puts it
@@ -719,9 +721,10 @@ Notes on specific features:
       would load images and obey `font` and the rest; that filter is
       `markup.js`, tested by `checks.<system>.notification-markup`.
       `NotificationActions`, `NotificationImage`, `NotificationText` (a body
-      whose links open, with a pointing hand over them), `NotificationAge` and
-      `SwipeArea` (which moves its card itself, and slides it away carrying on
-      from the drag) are shared with the center. Do not disturb is saved in
+      whose links open, with a pointing hand over them) and `SwipeArea`
+      (which moves its card itself, and slides it away carrying on from the
+      drag) are shared with the center, and `NotificationAge` is the
+      center's. Do not disturb is saved in
       Quickshell's state dir and lets only critical notifications pop up.
       Sounds are elementary OS's (Unlicense) in `sounds/`, played with
       `pw-play` (Quickshell has no QtMultimedia) when a popup shows; low

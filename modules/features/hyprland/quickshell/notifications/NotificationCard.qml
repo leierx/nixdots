@@ -39,6 +39,12 @@ Item {
   // A card gone under the pointer, its monitor unplugged say, never reports the pointer leaving.
   Component.onDestruction: if (root.entry) root.entry.hovered = false
 
+  FontMetrics {
+    id: line
+
+    font: Theme.heading
+  }
+
   Card {
     id: card
 
@@ -72,30 +78,6 @@ Item {
 
       RowLayout {
         Layout.fillWidth: true
-        Layout.minimumHeight: 24
-        spacing: 6
-
-        Text {
-          Layout.fillWidth: true
-          text: root.entry.notification.appName || "Notification"
-          color: Theme.fgDim
-          elide: Text.ElideRight
-          font: Theme.caption
-        }
-
-        NotificationAge {
-          entry: root.entry
-        }
-
-        ExpandButton {
-          visible: root.expandable
-          open: root.expanded
-          onClicked: root.expanded = !root.expanded
-        }
-      }
-
-      RowLayout {
-        Layout.fillWidth: true
         spacing: 12
 
         NotificationImage {
@@ -107,20 +89,41 @@ Item {
 
         ColumnLayout {
           Layout.fillWidth: true
+          Layout.alignment: Qt.AlignVCenter
           spacing: 2
 
-          Text {
-            id: summary
-
+          RowLayout {
             Layout.fillWidth: true
-            visible: text !== ""
-            text: root.entry.notification.summary
-            textFormat: Text.PlainText
-            color: Theme.fg
-            wrapMode: Text.Wrap
-            maximumLineCount: root.expanded ? 6 : 2
-            elide: Text.ElideRight
-            font: Theme.heading
+            visible: summary.text !== "" || root.expandable
+            spacing: 6
+
+            Text {
+              id: summary
+
+              Layout.fillWidth: true
+              Layout.alignment: Qt.AlignTop
+              text: root.entry.notification.summary
+              textFormat: Text.PlainText
+              color: Theme.fg
+              wrapMode: Text.Wrap
+              maximumLineCount: root.expanded ? 6 : 2
+              elide: Text.ElideRight
+              font: Theme.heading
+            }
+
+            // Overhanging the line, so the arrow costs it no height.
+            Item {
+              Layout.alignment: Qt.AlignTop
+              visible: root.expandable
+              implicitWidth: 24
+              implicitHeight: line.height
+
+              ExpandButton {
+                anchors.centerIn: parent
+                open: root.expanded
+                onClicked: root.expanded = !root.expanded
+              }
+            }
           }
 
           // Expanded, still short enough that a popup always fits on the screen.
