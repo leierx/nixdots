@@ -148,8 +148,8 @@ Item {
             margins: -4
           }
           visible: !root.single
-          implicitWidth: Math.max(height, count.implicitWidth + 8)
-          implicitHeight: 16
+          implicitWidth: Math.max(height, count.implicitWidth + 9)
+          implicitHeight: 18
           radius: height / 2
           color: Theme.slider
           border.width: 2
@@ -161,7 +161,7 @@ Item {
             anchors.centerIn: parent
             text: root.shown.length
             color: Theme.bg
-            font: Theme.captionHeading
+            font: Qt.font({ family: Theme.body.family, pointSize: 10, weight: Font.Bold })
           }
         }
       }

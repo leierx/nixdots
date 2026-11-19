@@ -22,11 +22,11 @@ Item {
   }
 
   Rectangle {
-    x: parent.width / 2 + 1
-    y: 1
+    x: parent.width / 2
+    y: -1
     visible: root.count > 0 && !Notifs.dnd
-    width: Math.max(13, number.implicitWidth + 6)
-    height: 13
+    width: Math.max(16, number.implicitWidth + 7)
+    height: 16
     radius: height / 2
     color: Theme.destructiveBg
     border.width: 1.5
@@ -38,7 +38,7 @@ Item {
       anchors.centerIn: parent
       text: root.count > 9 ? "9+" : root.count
       color: Theme.fg
-      font: Qt.font({ family: Theme.body.family, pointSize: 6, weight: Font.Bold })
+      font: Qt.font({ family: Theme.body.family, pointSize: 8, weight: Font.Bold })
     }
   }
 
