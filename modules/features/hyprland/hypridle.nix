@@ -10,6 +10,10 @@
       dpms =
         action:
         "${lib.getExe' config.wayland.windowManager.hyprland.package "hyprctl"} dispatch 'hl.dsp.dpms({ action = \"${action}\" })'";
+      idle =
+        call: "${lib.getExe' config.programs.quickshell.package "qs"} ipc -c shell call idle ${call}";
+      lockAfter = 300;
+      fadeFor = 10;
     in
     {
       services.hypridle = {
@@ -24,8 +28,14 @@
             inhibit_sleep = 3;
           };
           listener = [
+            # the shell only draws the fade; input during it resumes this listener, which cancels it
             {
-              timeout = 300;
+              timeout = lockAfter - fadeFor;
+              on-timeout = idle "fade ${toString fadeFor}";
+              on-resume = idle "cancel";
+            }
+            {
+              timeout = lockAfter;
               on-timeout = "loginctl lock-session";
             }
             {

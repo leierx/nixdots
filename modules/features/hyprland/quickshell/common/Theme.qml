@@ -51,6 +51,8 @@ Singleton {
   readonly property color shadow: Qt.rgba(0, 0, 0, 0.15)
   readonly property color shadowTight: Qt.rgba(0, 0, 0, 0.1)
   readonly property color backdrop: Qt.rgba(0, 0, 0, 0.88)
+  // What the screens fade to before the lock.
+  readonly property color idle: Colors.dark_5
 
   readonly property font body: Qt.font({ family: "Adwaita Sans", pointSize: 11 })
   readonly property font heading: Qt.font({ family: "Adwaita Sans", pointSize: 11, weight: Font.Bold })
