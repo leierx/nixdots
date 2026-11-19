@@ -763,7 +763,8 @@ Notes on specific features:
       the app's icon a badge on it unless the picture is that icon (an app
       icon sent without an image is Quickshell's `image` too). Only a card a click expands has a close
       cross, under the pointer in its first age's place
-      (`NotificationStamp`). A click on a group with more to show expands and
+      (`NotificationStamp`). The pointer is a hand where a click expands or
+      opens something, an arrow where it only dismisses. A click on a group with more to show expands and
       collapses it; on a lone one with nothing more it runs the default
       action, or dismisses it without one; in an expanded group of several a
       notification's click runs its own, or dismisses it. Right click or a

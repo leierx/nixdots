@@ -29,6 +29,8 @@ Item {
     target: box
     // Collapsed, or alone, the group takes every click.
     enabled: root.boxed
+    // Even disabled it would set its arrow over the group's hand.
+    cursorShape: !root.boxed ? undefined : root.entry.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     onSwiped: left => swipe.slideAway(left, root.entry.dismissal())
     onTapped: button => {
       if (button !== Qt.LeftButton) {

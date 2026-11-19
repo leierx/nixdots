@@ -78,6 +78,8 @@ Item {
     anchors.fill: parent
     target: card
     swipeEnabled: !root.expanded || root.single
+    // A hand only where the click opens something, an arrow where it only dismisses.
+    cursorShape: root.expandable || root.newest?.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     onSwiped: left => root.slideAway(left)
     onTapped: button => {
       if (button !== Qt.LeftButton) {
