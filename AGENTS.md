@@ -369,6 +369,10 @@ Notes on specific features:
       - Switching `Layout.alignment` snaps; to ease something across a
         layout, animate a `Layout.topMargin` bound to a property with a
         `Behavior` (the center's text when a card expands).
+      - A `Behavior` whose duration or easing follows the flag that drives its
+        value may start before they update, so it runs with the old ones (the
+        OSD faded out in its fade-in's 80 ms): two
+        `NumberAnimation`s started from the flag's change handler instead.
     - `Theme` is libadwaita's dark style 1:1, on the darker palette: its named colours
       (`palettes.adwaita_darker`, `view_bg_color` surfaces), hover/selection/
       border as the foreground at libadwaita's alphas over any surface, its
@@ -699,12 +703,12 @@ Notes on specific features:
         shows a made-up one anywhere, `realBattery` drops it.
       - The bell shows only while there are notifications not yet looked at in
         the center (`Notifs.unchecked`: those that arrived, or came again,
-        while it was closed), in yellow (`Theme.bell`, the palette's `yellow_3`) with their count in red, struck through under Do Not Disturb
+        while it was closed), in `Theme.warning` (the battery's low yellow) with their count in red, struck through under Do Not Disturb
         (Material Symbols' notifications_off); a click opens the center, which
         checks them all, so it goes at once. A reload of the shell hands every
         notification over unchecked.
       - Caffeine's cup (`Cup`, Material Symbols' coffee, in `Theme.coffee`, the palette's
-        `brown_1`) shows while it is on, so it is not left on by mistake; a click
+        `brown_2`) shows while it is on, so it is not left on by mistake; a click
         turns it off.
       - The privacy indicator (`PrivacyIndicator`) shows only while something
         records: a button's grey pill holding a red recording light, breathing slowly (4 s),
@@ -860,7 +864,9 @@ Notes on specific features:
       notifications up to the screen's height, then scrolls. Mouse only, and unlike the launcher
       it is smooth: the list drags and flicks with Qt's overshoot, a wheel
       notch glides 120 px (Qt's own moves the 15 px Wayland reports), and
-      groups animate their height. Escape or a click
+      groups animate their height, but only once laid out (250 ms in), since text
+      wraps a frame or two after a card is made and easing that slid it as the
+      center opened. Escape or a click
       outside closes it, and its `quickshell:center` layer rule dims behind
       it. The popups and the center cast libadwaita's window shadow
       (`common/Shadow.qml`, Qt's `RectangularShadow`), and their expand
@@ -887,7 +893,7 @@ Notes on specific features:
     (2 s while the center is open), since the bar's cup shows it always and a
     unit can stop by itself.
   - The OSD (`osd/`) shows what just changed on the focused monitor, on the
-    overlay layer, for 1.5 s (fading in over 120 ms and out over 400 ms), never taking a click: by its right edge a
+    overlay layer, for 1.5 s (fading in over 120 ms and out over 200 ms), never taking a click: by its right edge a
     slim upright slider (level filling from the bottom, past 100 % in the
     warning colour, the number above and the symbol below) for output
     volume and mute and brightness, and at the bottom centre, 4em up as GNOME

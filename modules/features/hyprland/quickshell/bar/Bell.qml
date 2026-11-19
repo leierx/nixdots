@@ -12,7 +12,7 @@ BarButton {
   readonly property int count: Notifs.unchecked
 
   glyph: Notifs.dnd ? root.off : root.bell
-  foreground: Theme.bell
+  foreground: Theme.warning
   visible: count > 0
   onClicked: Panels.open("center")
 

@@ -14,6 +14,8 @@ Item {
   // A lone notification's body has the lines its summary leaves; a group's rows have one each.
   property int lines: 2
   property bool closable: false
+  // The group's: nothing eases until it has laid out.
+  property bool settled: true
 
   signal closed()
 
@@ -58,6 +60,8 @@ Item {
     clip: true
 
     Behavior on height {
+      enabled: root.settled
+
       NumberAnimation {
         duration: 200
         easing.type: Easing.OutCubic

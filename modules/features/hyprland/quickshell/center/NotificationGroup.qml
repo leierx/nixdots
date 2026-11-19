@@ -29,13 +29,24 @@ Item {
   // Three lines tall however few it holds, so the stack is even.
   readonly property real threeLines: heading.height + (rows - 1) * body.height
   // The text centred while collapsed and at the top expanded, easing between them; the icon stays put.
+  // Its text wraps only once the list gives it a width, a frame or two in; eased, that slid it as the center opened.
+  property bool settled: false
+
   property real textOffset: expanded ? 0 : Math.max(0, (threeLines - column.implicitHeight) / 2)
 
   Behavior on textOffset {
+    enabled: root.settled
+
     NumberAnimation {
       duration: 200
       easing.type: Easing.OutCubic
     }
+  }
+
+  Timer {
+    interval: 250
+    running: true
+    onTriggered: root.settled = true
   }
 
   // itemAt() is not reactive, so the first row is looked up again as rows come and go.
@@ -108,6 +119,8 @@ Item {
     clip: true
 
     Behavior on height {
+      enabled: root.settled
+
       NumberAnimation {
         duration: 200
         easing.type: Easing.OutCubic
@@ -175,6 +188,8 @@ Item {
         spacing: root.expanded ? 6 : 0
 
         Behavior on spacing {
+          enabled: root.settled
+
           NumberAnimation {
             duration: 200
             easing.type: Easing.OutCubic
@@ -228,6 +243,7 @@ Item {
             single: root.single
             lines: root.rows - 1
             closable: !root.expanded && index === 0 && hover.hovered
+            settled: root.settled
             onClosed: root.slideAway(false)
           }
         }

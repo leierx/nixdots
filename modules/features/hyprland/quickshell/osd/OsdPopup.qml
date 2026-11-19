@@ -180,7 +180,13 @@ Scope {
     required property ShellScreen modelData
     required property bool levels
     readonly property bool here: Osd.current !== null && Osd.screen === modelData.name && root.hasLevel(Osd.current) === levels
-    property real fade: here ? 1 : 0
+    property real fade: 0
+
+    // Not a Behavior: one whose duration follows `here` may start before that duration updates.
+    onHereChanged: {
+      (here ? fadeOut : fadeIn).stop();
+      (here ? fadeIn : fadeOut).start();
+    }
 
     screen: modelData
     visible: fade > 0
@@ -193,11 +199,24 @@ Scope {
     WlrLayershell.namespace: "quickshell:osd"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-    Behavior on fade {
-      NumberAnimation {
-        duration: window.here ? 120 : 400
-        easing.type: window.here ? Easing.OutCubic : Easing.InOutQuad
-      }
+    NumberAnimation {
+      id: fadeIn
+
+      target: window
+      property: "fade"
+      to: 1
+      duration: 120
+      easing.type: Easing.OutCubic
+    }
+
+    NumberAnimation {
+      id: fadeOut
+
+      target: window
+      property: "fade"
+      to: 0
+      duration: 200
+      easing.type: Easing.InOutQuad
     }
   }
 

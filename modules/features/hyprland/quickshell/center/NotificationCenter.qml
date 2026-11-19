@@ -19,14 +19,17 @@ Overlay {
 
   signal hidden()
 
-  onOpenChanged: if (open) Notifs.hidePopups()
+  onOpenChanged: {
+    if (open) Notifs.hidePopups();
+    (open ? closing : opening).stop();
+    (open ? opening : closing).start();
+  }
   onShownChanged: if (shown === 0 && !open) hidden()
   // A window Hyprland has closed stays closed, so the next open needs a new one.
   onClosed: hidden()
-  // Bound only now, so the first open eases in too.
   Component.onCompleted: {
     Notifs.hidePopups();
-    shown = Qt.binding(() => root.open ? 1 : 0);
+    if (open) opening.start();
   }
 
   name: "center"
@@ -44,11 +47,25 @@ Overlay {
     id: nothing
   }
 
-  Behavior on shown {
-    NumberAnimation {
-      duration: root.open ? 180 : 120
-      easing.type: root.open ? Easing.OutCubic : Easing.InCubic
-    }
+  // Not a Behavior: one whose duration follows `open` may start before that duration updates.
+  NumberAnimation {
+    id: opening
+
+    target: root
+    property: "shown"
+    to: 1
+    duration: 180
+    easing.type: Easing.OutCubic
+  }
+
+  NumberAnimation {
+    id: closing
+
+    target: root
+    property: "shown"
+    to: 0
+    duration: 120
+    easing.type: Easing.InCubic
   }
 
   component Switch: Rectangle {
