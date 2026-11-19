@@ -42,26 +42,6 @@ Overlay {
 
   WlrLayershell.namespace: "quickshell:shortcuts"
 
-  component Keycap: Rectangle {
-    id: keycap
-
-    required property string modelData
-
-    implicitWidth: Math.max(implicitHeight, label.implicitWidth + 14)
-    implicitHeight: 24
-    radius: Theme.smallRadius
-    color: Theme.button
-
-    Text {
-      id: label
-
-      anchors.centerIn: parent
-      text: keycap.modelData
-      color: Theme.fg
-      font: Theme.caption
-    }
-  }
-
   Card {
     id: box
 
@@ -164,7 +144,11 @@ Overlay {
                         Repeater {
                           model: chord.modelData
 
-                          Keycap {}
+                          Keycap {
+                            required property string modelData
+
+                            text: modelData
+                          }
                         }
                       }
                     }

@@ -63,27 +63,6 @@ Overlay {
 
   WlrLayershell.namespace: "quickshell:power"
 
-  component Keycap: Rectangle {
-    id: keycap
-
-    property alias text: label.text
-
-    implicitWidth: Math.max(implicitHeight, label.implicitWidth + 10)
-    implicitHeight: 22
-    radius: Theme.smallRadius
-    color: "transparent"
-    border.width: 1
-    border.color: Theme.border
-
-    Text {
-      id: label
-
-      anchors.centerIn: parent
-      color: Theme.fgDim
-      font: Theme.captionHeading
-    }
-  }
-
   // Solid, over the see-through backdrop.
   component Surface: Rectangle {
     id: surface

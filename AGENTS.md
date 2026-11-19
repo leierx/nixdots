@@ -276,7 +276,8 @@ Notes on specific features:
     closes the panel it is in), `Button` (libadwaita's button, `flat` or
     not, with an optional glyph before its text and an expander arrow after,
     and any mouse button it accepts passed to `clicked`; `ExpandButton` and `CloseButton` are
-    its round flat 24 px forms), `Glyph` (a Material Symbols path at a size),
+    its round flat 24 px forms), `Keycap` (a key as the shortcuts window and
+    the power menu draw it, filled), `Glyph` (a Material Symbols path at a size),
     `WheelSteps` (wheel events as whole notches, a touchpad's small steps
     added up, for everything the wheel steps through), and `Panels`, the one
     open panel by name, with
