@@ -694,7 +694,8 @@ Notes on specific features:
       nor its age: the icon and text say who, and a popup is always now. The
       image and the text are centred on each other, so a summary alone sits
       level with the image. A click on one with more to show (a cut-off title or body)
-      expands it, and only its arrow collapses it; a click otherwise runs the
+      expands it and a second click collapses it, as in the center, so a
+      long one's click never runs its action; a click otherwise runs the
       default action, or the only action when there is one and no default,
       or puts the popup away when there is neither; an action or a link puts it
       away too (a resident notification stays open, as GNOME's banners do);
