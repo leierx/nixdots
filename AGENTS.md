@@ -315,7 +315,9 @@ Notes on specific features:
         picks, toggles), an arrow where it does nothing or only dismisses,
         and a closed hand while dragging (`SwipeArea`'s cards, the volume
         slider, the center's list). A disabled `MouseArea` still sets its
-        cursor, so one that can be disabled names both.
+        cursor, so one that can be disabled names both. The tray is the
+        exception: few of its icons do anything on a left click, so they keep
+        the arrow.
     - Gotchas, each found the hard way:
       - A `PopupWindow` lands off by its monitor's x times
         `QT_SCALE_FACTOR` minus 1 (512 px at x 2560), right only on the monitor at 0: anything
@@ -364,8 +366,8 @@ Notes on specific features:
         nothing has read yet does not exist, and `qs ipc` answers a missing
         target with "Target not found." and exit status 0.
       - Holding a value at the moment a state flips depends on which binding
-        updates first; derive it from what stays put instead (a popup's
-        collapsed height from its text's line counts).
+        updates first; derive it from what stays put instead (what a popup's
+        text loses on collapsing, from its line counts).
       - Switching `Layout.alignment` snaps; to ease something across a
         layout, animate a `Layout.topMargin` bound to a property with a
         `Behavior` (the center's text when a card expands).
@@ -389,7 +391,8 @@ Notes on specific features:
     - Design standards, so a new widget looks and behaves like its siblings:
       - Reach for the shared piece before drawing one. A bar item is a
         `BarButton` (a text pill, or a circle round an icon), never its own
-        `Rectangle` and `MouseArea`; any other button a `Button` (`flat` on
+        `Rectangle` and `MouseArea` (the tray, a module rather than buttons,
+        aside); any other button a `Button` (`flat` on
         a surface, `glyph` for its icon, `checked` while what it opens is
         open); the round 24 px ones `ExpandButton` and `CloseButton`; a key a
         `Keycap`; a Material Symbols icon a `Glyph` and an app's a
@@ -632,7 +635,7 @@ Notes on specific features:
       its date: shaded on hover and while the center it opens is open).
       Right: the privacy indicator, the volume, the battery, Caffeine's cup,
       the bell and, always last, the tray. Every one of them but the
-      workspaces and the battery is a `BarButton`, the bar's one shape: a
+      workspaces, the battery and the tray is a `BarButton`, the bar's one shape: a
       flat 26 px pill, or a circle round an icon alone, its glyphs and icons
       18 px and its lettering 10 pt. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
@@ -658,7 +661,10 @@ Notes on specific features:
         bar's whole height and the gaps beside it; pressing one dips it once (an animation played through, not held while pressed) and focuses it by
         id wherever it is, and the wheel over them steps one a notch in the
         order the bar shows them, stopping at the ends (`WheelSteps`).
-      - The tray is its items' icons, hiding passive ones;
+      - The tray is a module rather than buttons: its items' icons, hiding
+        passive ones, on one pill in the button shade (`Theme.button`), each
+        with an arrow pointer and no hover, since most do nothing on a left
+        click;
         left click activates (or opens the menu of a menu-only item), middle is the secondary action, right opens
         the menu: `TrayMenu`, libadwaita's popover menu drawn from
         `QsMenuOpener` with its corner at the pointer (leftwards where it would
@@ -701,11 +707,13 @@ Notes on specific features:
         clipped to the fill), green, yellow from 25 %, red from 10 %, with a
         bolt while charging. `qs ipc -c shell call bar fakeBattery 15 false`
         shows a made-up one anywhere, `realBattery` drops it.
-      - The bell shows only while there are notifications not yet looked at in
-        the center (`Notifs.unchecked`: those that arrived, or came again,
-        while it was closed), in `Theme.warning` (the battery's low yellow) with their count in red, struck through under Do Not Disturb
-        (Material Symbols' notifications_off); a click opens the center, which
-        checks them all, so it goes at once. A reload of the shell hands every
+      - The bell shows while there are notifications not yet looked at in the
+        center (`Notifs.unchecked`: those that arrived, or came again, while it
+        was closed), in `Theme.bell` (the palette's `yellow_2`) with their
+        count in red, and for as long as Do Not Disturb is on, struck through
+        (Material Symbols' notifications_off) in `Theme.dnd` (`purple_1`),
+        the count on it still; a click opens the center, which checks them
+        all, so a plain bell goes at once. A reload of the shell hands every
         notification over unchecked.
       - Caffeine's cup (`Cup`, Material Symbols' coffee, in `Theme.coffee`, the palette's
         `brown_2`) shows while it is on, so it is not left on by mistake; a click
@@ -777,9 +785,11 @@ Notes on specific features:
       timeout 0) has none, and a critical one has a red outline. It names
       neither the app
       nor its age: the icon and text say who, and a popup is always now. The
-      image and the text are centred on each other, so a summary alone sits
-      level with the image; expanded, the image keeps the place it had
-      collapsed (worked out from the text's lines) while the text grows below. The image is the picture, the app's icon a badge on
+      image is at the top, by the title, and text shorter than it is centred
+      on it. Expanding and collapsing ease the card's height (200 ms
+      `OutCubic`), its content clipped; collapsing keeps the whole text until
+      the card has eased down to the height it will have (what the text loses
+      worked out from its line counts), then elides it. The image is the picture, the app's icon a badge on
       it unless the picture is that icon, or without one the app's icon (its
       initial when it has none) on a plate (`NotificationIcon`, shared with
       the center). A click on one with more to show (a cut-off title or body)
@@ -846,9 +856,15 @@ Notes on specific features:
       newest three, each with its own age. The flat arrow, in a column every
       card keeps so the ages line up, shows only when expanding shows more
       (buttons, progress, or a cut-off title or body) and overhangs the first
-      line rather than setting its height. Expanded, each gets an inset card
-      with its image, whole body and actions, and a lone one's title wraps in
-      full; the icon keeps its collapsed place while the text eases between
+      line rather than setting its height. Expanded, the card keeps 16 px off its
+      top and bottom, and in a group each notification gets an inset card
+      (`Theme.padding` inside) laid out as a popup is: its image at the top,
+      the title to two lines and the body to four, with an arrow of its own
+      that opens it in full, and a click on a cut-off one opens it rather than
+      running its action; a lone one's title and body show whole. Opening and
+      collapsing ease as a popup's do, each holding the whole text until its
+      card has eased down, and only then laid out anew, so nothing bounces;
+      the icon keeps its collapsed place while the text eases between
       centred and the top, as the height does, so neither jumps. A lone notification with a picture shows it in the icon's place,
       the app's icon a badge on it unless the picture is that icon (an app
       icon sent without an image is Quickshell's `image` too), as popups do

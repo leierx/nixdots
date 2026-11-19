@@ -27,6 +27,9 @@ Singleton {
   readonly property color recording: Colors.red_2
   // Caffeine's cup.
   readonly property color coffee: Colors.brown_2
+  // The bell's, for notifications waiting, and Do Not Disturb's.
+  readonly property color bell: Colors.yellow_2
+  readonly property color dnd: Colors.purple_1
   readonly property color nixosLight: "#7ebae4"
   readonly property color nixosDark: "#5277c3"
 

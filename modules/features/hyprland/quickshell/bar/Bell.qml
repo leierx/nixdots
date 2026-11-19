@@ -2,7 +2,7 @@ import QtQuick
 import qs.common
 import qs.notifications
 
-// Notifications not yet looked at in the center, struck through under Do Not Disturb.
+// Notifications not yet looked at in the center, and Do Not Disturb while it is on, struck through.
 BarButton {
   id: root
 
@@ -12,13 +12,14 @@ BarButton {
   readonly property int count: Notifs.unchecked
 
   glyph: Notifs.dnd ? root.off : root.bell
-  foreground: Theme.warning
-  visible: count > 0
+  foreground: Notifs.dnd ? Theme.dnd : Theme.bell
+  visible: count > 0 || Notifs.dnd
   onClicked: Panels.open("center")
 
   Rectangle {
     x: parent.width / 2
     y: -1
+    visible: root.count > 0
     width: Math.max(16, number.implicitWidth + 7)
     height: 16
     radius: height / 2

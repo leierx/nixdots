@@ -22,17 +22,20 @@ Item {
   readonly property NotifEntry newest: shown[0] ?? null
   readonly property bool single: shown.length === 1
   readonly property bool critical: shown.some(e => e.critical)
-  readonly property bool expandable: !single || newest.buttons.length > 0 || newest.progress !== undefined || title.truncated || (root.first?.truncated ?? false)
+  readonly property bool expandable: expanded || unfolded || !single || newest.buttons.length > 0 || newest.progress !== undefined || title.truncated || (root.first?.truncated ?? false)
   readonly property int iconSize: 32
   readonly property int padding: 8
   readonly property int rows: 3
   // Three lines tall however few it holds, so the stack is even.
   readonly property real threeLines: heading.height + (rows - 1) * body.height
-  // The text centred while collapsed and at the top expanded, easing between them; the icon stays put.
   // Its text wraps only once the list gives it a width, a frame or two in; eased, that slid it as the center opened.
   property bool settled: false
-
-  property real textOffset: expanded ? 0 : Math.max(0, (threeLines - column.implicitHeight) / 2)
+  // Laid out expanded, until collapsing has eased the card down, so collapsing animates as expanding does.
+  property bool unfolded: false
+  // Expanded, the cards inside keep off its top and bottom edges as they keep off its sides.
+  readonly property real inset: expanded ? 8 : 0
+  // The text centred while collapsed and at the top expanded, easing between them; the icon stays put.
+  property real textOffset: expanded ? inset : Math.max(0, (threeLines - column.implicitHeight) / 2)
 
   Behavior on textOffset {
     enabled: root.settled
@@ -47,6 +50,13 @@ Item {
     interval: 250
     running: true
     onTriggered: root.settled = true
+  }
+
+  Timer {
+    id: fold
+
+    interval: 200
+    onTriggered: root.unfolded = false
   }
 
   // itemAt() is not reactive, so the first row is looked up again as rows come and go.
@@ -65,6 +75,11 @@ Item {
 
   onSingleChanged: {
     if (single) expanded = false;
+  }
+  onExpandedChanged: {
+    fold.stop();
+    if (expanded) unfolded = true;
+    else fold.start();
   }
 
   FontMetrics {
@@ -109,7 +124,7 @@ Item {
     readonly property real content: Math.max(row.implicitHeight, root.threeLines)
 
     width: root.width
-    height: content + root.padding * 2
+    height: root.expanded || !root.unfolded ? content + root.padding * 2 + root.inset : root.threeLines + root.padding * 2
     radius: Theme.cardRadius
     color: {
       const hovered = !root.expanded && hover.hovered;
@@ -185,7 +200,7 @@ Item {
         Layout.fillWidth: true
         Layout.alignment: Qt.AlignTop
         Layout.topMargin: root.textOffset
-        spacing: root.expanded ? 6 : 0
+        spacing: root.unfolded ? 6 : 0
 
         Behavior on spacing {
           enabled: root.settled
@@ -209,8 +224,8 @@ Item {
             text: root.newest?.notification.summary || "Notification"
             textFormat: Text.PlainText
             color: Theme.fg
-            wrapMode: root.expanded ? Text.Wrap : Text.NoWrap
-            maximumLineCount: root.expanded ? 6 : 1
+            wrapMode: root.unfolded ? Text.Wrap : Text.NoWrap
+            maximumLineCount: root.unfolded ? 6 : 1
             elide: Text.ElideRight
             font: Theme.heading
           }
@@ -230,7 +245,7 @@ Item {
           onItemAdded: Qt.callLater(root.findFirst)
           onItemRemoved: Qt.callLater(root.findFirst)
           model: ScriptModel {
-            values: root.expanded ? root.shown : root.shown.slice(0, root.rows)
+            values: root.unfolded ? root.shown : root.shown.slice(0, root.rows)
           }
 
           NotificationItem {
@@ -239,10 +254,10 @@ Item {
 
             Layout.fillWidth: true
             entry: modelData
-            expanded: root.expanded
+            expanded: root.unfolded
             single: root.single
             lines: root.rows - 1
-            closable: !root.expanded && index === 0 && hover.hovered
+            closable: !root.unfolded && index === 0 && hover.hovered
             settled: root.settled
             onClosed: root.slideAway(false)
           }

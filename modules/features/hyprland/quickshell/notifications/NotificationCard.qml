@@ -11,19 +11,32 @@ Item {
   required property NotifEntry entry
 
   property bool expanded: false
-  readonly property bool expandable: expanded || summary.truncated || body.truncated
+  // Shown whole until a collapse has eased the card down, so collapsing animates as expanding does.
+  property bool full: false
+  readonly property bool expandable: expanded || full || summary.truncated || body.truncated
   readonly property int summaryLines: 2
   readonly property int bodyLines: 4
-  // The text's height collapsed, worked out from its lines when expanded, so the icon keeps the place it had.
-  readonly property real collapsedHeight: {
-    if (!expanded) return texts.implicitHeight;
-    const clamp = (text, lines) => text.lineCount > lines ? text.implicitHeight * lines / text.lineCount : text.implicitHeight;
-    const head = summaryRow.visible ? Math.max(clamp(summary, summaryLines), line.height) : 0;
-    const rest = body.visible ? clamp(body, bodyLines) : 0;
-    return head + rest + (summaryRow.visible && body.visible ? texts.spacing : 0);
+  // What the text loses on collapsing, worked out from its lines while it is still whole.
+  readonly property real excess: {
+    if (expanded || !full) return 0;
+    const cut = (text, lines) => text.lineCount > lines ? text.implicitHeight * (1 - lines / text.lineCount) : 0;
+    return cut(summary, summaryLines) + cut(body, bodyLines);
+  }
+
+  onExpandedChanged: {
+    fold.stop();
+    if (expanded) full = true;
+    else fold.start();
   }
 
   implicitHeight: card.height
+
+  Timer {
+    id: fold
+
+    interval: 200
+    onTriggered: root.full = false
+  }
 
   SwipeArea {
     id: swipe
@@ -62,9 +75,16 @@ Item {
     id: card
 
     width: root.width
-    height: content.implicitHeight + 2 * Theme.padding
+    height: content.implicitHeight + 2 * Theme.padding - root.excess
     border.color: root.entry.critical ? Theme.destructive : Theme.outline
     opacity: 1 - x / width
+
+    Behavior on height {
+      NumberAnimation {
+        duration: 200
+        easing.type: Easing.OutCubic
+      }
+    }
 
     ClippingRectangle {
       anchors.fill: parent
@@ -80,106 +100,111 @@ Item {
       }
     }
 
-    ColumnLayout {
-      id: content
+    // The card eases to its new height, so what does not fit yet is cut off.
+    Item {
+      anchors.fill: parent
+      clip: true
 
-      anchors {
-        top: parent.top
-        left: parent.left
-        right: parent.right
-        margins: Theme.padding
-      }
-      spacing: 8
+      ColumnLayout {
+        id: content
 
-      RowLayout {
-        Layout.fillWidth: true
-        spacing: 12
-
-        NotificationIcon {
-          id: icon
-
-          Layout.alignment: Qt.AlignTop
-          Layout.topMargin: Math.max(0, (root.collapsedHeight - height) / 2)
-          entry: root.entry
-          radius: Theme.buttonRadius
+        anchors {
+          top: parent.top
+          left: parent.left
+          right: parent.right
+          margins: Theme.padding
         }
+        spacing: 8
 
-        ColumnLayout {
-          id: texts
-
+        RowLayout {
           Layout.fillWidth: true
-          Layout.alignment: Qt.AlignTop
-          Layout.topMargin: Math.max(0, (icon.height - implicitHeight) / 2)
-          spacing: 2
+          spacing: 12
 
-          RowLayout {
-            id: summaryRow
+          NotificationIcon {
+            id: icon
+
+            Layout.alignment: Qt.AlignTop
+            entry: root.entry
+            radius: Theme.buttonRadius
+          }
+
+          ColumnLayout {
+            id: texts
 
             Layout.fillWidth: true
-            visible: summary.text !== "" || root.expandable
-            spacing: 6
+            Layout.alignment: Qt.AlignTop
+            Layout.topMargin: Math.max(0, (icon.height - implicitHeight) / 2)
+            spacing: 2
 
-            Text {
-              id: summary
+            RowLayout {
+              id: summaryRow
 
               Layout.fillWidth: true
-              Layout.alignment: Qt.AlignTop
-              text: root.entry.notification.summary
-              textFormat: Text.PlainText
-              color: Theme.fg
-              wrapMode: Text.Wrap
-              maximumLineCount: root.expanded ? 6 : root.summaryLines
-              elide: Text.ElideRight
-              font: Theme.heading
-            }
+              visible: summary.text !== "" || root.expandable
+              spacing: 6
 
-            // Overhanging the line, so the arrow costs it no height.
-            Item {
-              Layout.alignment: Qt.AlignTop
-              visible: root.expandable
-              implicitWidth: 24
-              implicitHeight: line.height
+              Text {
+                id: summary
 
-              ExpandButton {
-                anchors.centerIn: parent
-                open: root.expanded
-                onClicked: root.expanded = !root.expanded
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignTop
+                text: root.entry.notification.summary
+                textFormat: Text.PlainText
+                color: Theme.fg
+                wrapMode: Text.Wrap
+                maximumLineCount: root.full ? 6 : root.summaryLines
+                elide: Text.ElideRight
+                font: Theme.heading
+              }
+
+              // Overhanging the line, so the arrow costs it no height.
+              Item {
+                Layout.alignment: Qt.AlignTop
+                visible: root.expandable
+                implicitWidth: 24
+                implicitHeight: line.height
+
+                ExpandButton {
+                  anchors.centerIn: parent
+                  open: root.expanded
+                  onClicked: root.expanded = !root.expanded
+                }
               }
             }
-          }
 
-          // Expanded, still short enough that a popup always fits on the screen.
-          NotificationText {
-            id: body
+            // Expanded, still short enough that a popup always fits on the screen.
+            NotificationText {
+              id: body
 
-            Layout.fillWidth: true
-            visible: text !== ""
-            text: root.entry.body
-            maximumLineCount: root.expanded ? 15 : root.bodyLines
-            onLinkOpened: root.entry.popup = false
+              Layout.fillWidth: true
+              visible: text !== ""
+              text: root.entry.body
+              maximumLineCount: root.full ? 15 : root.bodyLines
+              onLinkOpened: root.entry.popup = false
+            }
           }
         }
-      }
-
-      Rectangle {
-        Layout.fillWidth: true
-        visible: root.entry.progress !== undefined
-        implicitHeight: 8
-        radius: height / 2
-        color: Theme.trough
 
         Rectangle {
-          width: parent.width * Math.max(0, Math.min(100, root.entry.progress ?? 0)) / 100
-          height: parent.height
-          radius: parent.radius
-          color: Theme.accentBg
-        }
-      }
+          Layout.fillWidth: true
+          visible: root.entry.progress !== undefined
+          implicitHeight: 8
+          radius: height / 2
+          color: Theme.trough
 
-      NotificationActions {
-        Layout.fillWidth: true
-        actions: root.entry.buttons
-        onInvoked: action => root.entry.invoke(action)
+          Rectangle {
+            width: parent.width * Math.max(0, Math.min(100, root.entry.progress ?? 0)) / 100
+            height: parent.height
+            radius: parent.radius
+            color: Theme.accentBg
+          }
+        }
+
+        NotificationActions {
+          Layout.fillWidth: true
+          actions: root.entry.buttons
+          onInvoked: action => root.entry.invoke(action)
+        }
       }
     }
   }
