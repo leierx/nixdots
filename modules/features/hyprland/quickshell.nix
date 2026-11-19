@@ -375,5 +375,15 @@ in
           ${qtdeclarative}/bin/qmltestrunner -input tests/tst_markup.qml
         touch "$out"
       '';
+      # The saved history, which a damaged file must never break.
+      checks.notification-history = pkgs.runCommand "notification-history" { } ''
+        mkdir -p quickshell/notifications tests
+        cp ${./quickshell/notifications/history.js} quickshell/notifications/history.js
+        cp ${./tests/tst_history.qml} tests/tst_history.qml
+        XDG_CACHE_HOME=$TMPDIR QT_QPA_PLATFORM=offscreen QT_PLUGIN_PATH=${unstable.qt6.qtbase}/lib/qt-6/plugins \
+          QML_IMPORT_PATH=${qtdeclarative}/lib/qt-6/qml \
+          ${qtdeclarative}/bin/qmltestrunner -input tests/tst_history.qml
+        touch "$out"
+      '';
     };
 }

@@ -119,9 +119,14 @@ Singleton {
     return icon && !Quickshell.hasThemeIcon(icon[1]) ? "" : source;
   }
 
+  // A picture only the server holds goes when the notification does; a theme icon or a file outlives it.
+  function inMemory(source) {
+    return source.startsWith("image://") && !source.startsWith("image://icon/");
+  }
+
   function iconSource(icon) {
     if (!icon) return "";
-    if (icon.startsWith("file://")) return icon;
+    if (icon.startsWith("file://") || icon.startsWith("image://")) return icon;
     if (icon.startsWith("/")) return `file://${icon}`;
     return Quickshell.iconPath(icon, true);
   }
@@ -151,11 +156,79 @@ Singleton {
   function watch(entry) {
     const notification = entry.notification;
     notification.closed.connect(() => {
+      if (notification.past) notification.destroy(1000);
       if (entry.notification !== notification) return;
       root.entries = root.entries.filter(e => e !== entry);
       // Once the views have slid it away.
       entry.destroy(1000);
     });
+  }
+
+  // The history as saved: no transient ones, and pictures only the server held by their saved copies.
+  function record(entry) {
+    const notification = entry.notification;
+    const lasting = (role, source) => entry.kept[role] ?? (root.inMemory(source ?? "") ? "" : source ?? "");
+    return {
+      uid: entry.uid,
+      time: entry.time.getTime(),
+      checked: entry.checked,
+      appName: notification.appName ?? "",
+      appIcon: lasting("appIcon", notification.appIcon),
+      desktopEntry: notification.desktopEntry ?? "",
+      summary: notification.summary ?? "",
+      body: notification.body ?? "",
+      image: lasting("image", notification.image),
+      urgency: notification.urgency
+    };
+  }
+
+  function remember() {
+    saving.restart();
+  }
+
+  onEntriesChanged: remember()
+  onUncheckedChanged: remember()
+
+  Timer {
+    id: saving
+
+    interval: 500
+    onTriggered: History.save(root.entries.filter(entry => !entry.notification.transient).map(entry => root.record(entry)))
+  }
+
+  function key(notification) {
+    return `${notification.appName}\n${notification.summary}\n${notification.body}`;
+  }
+
+  // A reload hands the live notifications over too; one already read back from disk becomes the live one.
+  Connections {
+    target: History
+
+    function onRestored(records) {
+      const live = new Set(root.entries.map(entry => root.key(entry.notification)));
+      const restored = records.filter(record => !live.has(root.key(record))).map(record => {
+        const notification = pastComponent.createObject(root, {
+          appName: record.appName,
+          appIcon: record.appIcon,
+          desktopEntry: record.desktopEntry,
+          summary: record.summary,
+          body: record.body,
+          image: record.image,
+          urgency: record.urgency
+        });
+        const entry = entryComponent.createObject(root, {
+          notification,
+          screen: "",
+          uid: record.uid,
+          time: new Date(record.time),
+          checked: record.checked
+        });
+        root.watch(entry);
+        return entry;
+      });
+      root.entries = [...root.entries, ...restored].sort((a, b) => b.time - a.time);
+      root.trimHistory();
+    }
   }
 
   Connections {
@@ -194,6 +267,12 @@ Singleton {
     NotifEntry {}
   }
 
+  Component {
+    id: pastComponent
+
+    PastNotification {}
+  }
+
   NotificationServer {
     actionsSupported: true
     bodyHyperlinksSupported: true
@@ -204,7 +283,9 @@ Singleton {
 
     onNotification: notification => {
       const tag = root.tag(notification);
-      const same = tag ? root.entries.find(entry => root.tag(entry.notification) === tag) ?? null : null;
+      const same = (tag ? root.entries.find(entry => root.tag(entry.notification) === tag) : null)
+        ?? (notification.lastGeneration ? root.entries.find(entry => entry.restored && root.key(entry.notification) === root.key(notification)) : null)
+        ?? null;
       // A reload hands every notification over again; they have been seen.
       const popup = !notification.lastGeneration && root.wantsPopup(notification.urgency === NotificationUrgency.Critical);
       if (notification.transient && !popup) {

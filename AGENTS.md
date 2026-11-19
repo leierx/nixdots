@@ -846,8 +846,22 @@ Notes on specific features:
       and `sound-name` (looked up in the freedesktop sound theme) are
       honoured, so the server advertises `sound`. Scripts use
       `qs ipc -c shell call notifications
-      <toggleDnd|setDnd|dnd|count|clear|hidePopups>`. History lives in memory;
-      a restart of the service empties it, by design.
+      <toggleDnd|setDnd|dnd|count|clear|hidePopups>`.
+      The history outlives a restart of the service (`History`): Quickshell's
+      state dir holds `notification-history.json`, written atomically half a
+      second after a change, at most 100 notifications and none past 7 days
+      (`history.js`, tested by `checks.<system>.notification-history`),
+      transient ones never. Read back as the shell starts, each is a
+      `PastNotification` with what the views show and nothing left to invoke,
+      not popped up and as checked as it was. A damaged file or record is
+      dropped with one warning. Pictures only the server held (an
+      `image://` other than a theme icon) are saved as they first show, from
+      the item drawing them (`grabToImage`, the size drawn), as
+      `<uid>-image.png` and `<uid>-appIcon.png` in the cache dir
+      `notifications/`, and those of notifications no longer saved are
+      deleted; one never shown is not kept. A reload hands live
+      notifications over too, and one already read back by app, summary and
+      body becomes the live one.
     - `center/` is the notification center (`qs ipc -c shell call panels
       toggle center`), GNOME's layout, dropping down from the middle of the bar with
       a short fade and slide: notifications on the left (40em, wider than
@@ -1094,6 +1108,9 @@ nix fmt                  # formatter = nixfmt-tree
 - `checks.<system>.notification-markup` (Linux) — `qmltestrunner` over
   `tests/tst_markup.qml`: what the notification body filter
   (`notifications/markup.js`) keeps, drops and escapes.
+- `checks.<system>.notification-history` (Linux) — `qmltestrunner` over
+  `tests/tst_history.qml`: the saved history read back, damaged files and
+  records dropped, and its limits.
 
 `nix flake check` skips `aarch64-darwin` unless `--all-systems`.
 
