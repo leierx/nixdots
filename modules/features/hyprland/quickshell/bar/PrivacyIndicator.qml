@@ -52,14 +52,14 @@ Item {
           running: root.visible
 
           NumberAnimation {
-            to: 0.35
-            duration: 900
+            to: 0.45
+            duration: 2000
             easing.type: Easing.InOutSine
           }
 
           NumberAnimation {
             to: 1
-            duration: 900
+            duration: 2000
             easing.type: Easing.InOutSine
           }
         }

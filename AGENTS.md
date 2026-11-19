@@ -309,6 +309,39 @@ Notes on specific features:
         others (to catch the wheel, say) or beside a parent's `HoverHandler`
         needs `cursorShape: undefined`. Qt's `qt.quick.hover.cursor` logging
         names the item that won.
+    - Gotchas, each found the hard way:
+      - A `PopupWindow` lands off by its monitor's x times
+        `QT_SCALE_FACTOR` minus 1 (512 px at x 2560), right only on the monitor at 0: anything
+        floating is a layer of its own on the screen (`PanelWindow`, or an
+        `Overlay`), placed in that screen's coordinates.
+      - Qt's JavaScript lacks some of ES2019 and later, `Array.flatMap` among
+        them: `map` and spread instead.
+      - PipeWire's link state reads `Unlinked` and a node's `properties`
+        `{}` until a `PwObjectTracker` holds them.
+      - Quickshell types only the plain media classes: `Audio/Source/Virtual`,
+        `Stream/Input/Video` and the like are untyped (0), and an untyped
+        node has no `audio`, so no volume or mute; tell them by
+        `properties["media.class"]`.
+      - `font: Theme.x` and `font.strikeout` on one item is "Property has
+        already been assigned a value": a whole `Qt.font({ ... })` instead.
+      - An IPC function named `show` is taken by `qs ipc`'s own subcommand.
+      - `systemctl is-active` exits non-zero for every state but active, so
+        it is a `Process` reading stdout, not a `Command`.
+      - A Hyprland bind dispatching `hl.dsp.global` runs again on release,
+        anything else in it too: a global gets a bind of its own.
+      - Hyprland reports no lock-key changes, and its `input.keyboard.key`
+        Lua event comes before the keyboard's new state.
+      - Hyprland's `screencast` event comes for any capture (grim, the
+        shell's own window previews, xdph's frames) and goes 500 ms after the
+        last frame, so it flaps with a still screen: it cannot tell a screen
+        is shared.
+      - A script killed by the shell leaves its pipeline's other processes
+        running until their next write: a long-running reader is a process
+        substitution the script kills on exit.
+      - qmllint is wrong about `Edges.Bottom` assigned to an `Edges` flags
+        property and about `PanelWindow`'s `margins` group; the first takes a
+        `// qmllint disable incompatible-type` pair, the second sizing the
+        window instead.
     - `Theme` is libadwaita's dark style 1:1, on the darker palette: its named colours
       (`palettes.adwaita_darker`, `view_bg_color` surfaces), hover/selection/
       border as the foreground at libadwaita's alphas over any surface, its
@@ -593,7 +626,7 @@ Notes on specific features:
       - Keep Awake's cup (`Cup`, Material Symbols' coffee) shows while it is
         on, so it is not left on by mistake; a click opens the center.
       - The privacy indicator (`PrivacyIndicator`) shows only while something
-        records: a button's grey pill holding a red recording light, breathing,
+        records: a button's grey pill holding a red recording light, breathing slowly (4 s),
         and the bar's white symbols for each kind recording (mic, videocam,
         screen_share). Hovering it for 250 ms opens `PrivacyTooltip`, a card
         under it (a click-through layer of its own on the bar's screen, since a
@@ -1087,6 +1120,13 @@ What Hyprland does that tests run into:
   placeholder screen".
 - In jq a pipe binds loosest: `(.popups | map(.screen)) == [...]`, not
   `.popups | map(.screen) == [...]`.
+- `qst shot` of the whole layout renders at the highest monitor scale, so
+  pixel offsets differ from layout ones; shoot one monitor (`qst shot NAME
+  DP-1`) to crop.
+- The brightness keys run the host's brightnessctl, which reaches the real
+  backlight from the test session too: drive the shell's
+  `quickshell:osd-brightness` global and `qst backlight` instead. The volume
+  keys' wpctl reaches the session's own PipeWire, so those may be pressed.
 
 ## Sharp edges
 
