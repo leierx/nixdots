@@ -52,7 +52,7 @@ Singleton {
     entry.time = new Date();
     if (popup && !wasShown) entry.screen = Screens.focused;
     entry.popup = popup;
-    if (entry.timer.running) entry.timer.restart();
+    entry.restartTimeout();
     root.trimPopups(entry);
     root.trimHistory();
     if (entry.popup && !wasShown) root.playSound(entry.notification);

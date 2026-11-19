@@ -684,8 +684,13 @@ Notes on specific features:
       for good, and while none is on it waits with its timeout held), below the bar, sliding in and out (the
       window stays mapped with an empty input region, so the last one does
       too); the app's timeout or 8 s, critical never, hovering holds it.
-      Each card has an accent line down its left edge (red when critical), so
-      it stands out over a terminal as dark as it. It names neither the app
+      A bar along each card's bottom edge (the accent blue) drains over its
+      timeout, so it stands out over a terminal as dark as it. The bar is
+      driven by the entry's own timer: frozen while the timer is held (hover,
+      no room, no monitor), full again each time it starts or an update
+      restarts it (`timeoutRestarted`); one that never expires (critical, or
+      timeout 0) has none, and a critical one has a red outline. It names
+      neither the app
       nor its age: the icon and text say who, and a popup is always now. The
       image and the text are centred on each other, so a summary alone sits
       level with the image. A click on one with more to show (a cut-off title or body)

@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import Quickshell.Widgets
 import qs.common
 
 Item {
@@ -11,6 +12,7 @@ Item {
 
   property bool expanded: false
   readonly property bool expandable: expanded || summary.truncated || body.truncated
+  property real remaining: 1
 
   implicitHeight: card.height
 
@@ -39,6 +41,26 @@ Item {
   // A card gone under the pointer, its monitor unplugged say, never reports the pointer leaving.
   Component.onDestruction: if (root.entry) root.entry.hovered = false
 
+  // Follows the timeout's own timer: frozen while it is held, from full each time it starts again.
+  NumberAnimation {
+    id: countdown
+
+    target: root
+    property: "remaining"
+    from: 1
+    to: 0
+    duration: root.entry.timeout
+    running: root.entry.timer.running
+  }
+
+  Connections {
+    target: root.entry
+
+    function onTimeoutRestarted() {
+      countdown.restart();
+    }
+  }
+
   FontMetrics {
     id: line
 
@@ -53,16 +75,18 @@ Item {
     border.color: root.entry.critical ? Theme.destructive : Theme.outline
     opacity: 1 - x / width
 
-    // Over a dark terminal the card alone blends in.
-    Rectangle {
-      id: stripe
+    ClippingRectangle {
+      anchors.fill: parent
+      radius: card.radius
+      color: "transparent"
+      visible: root.entry.timeout > 0
 
-      x: 8
-      y: Theme.padding
-      width: 3
-      height: parent.height - 2 * Theme.padding
-      radius: width / 2
-      color: root.entry.critical ? Theme.destructive : Theme.accentBg
+      Rectangle {
+        anchors.bottom: parent.bottom
+        width: parent.width * root.remaining
+        height: 3
+        color: Theme.accentBg
+      }
     }
 
     ColumnLayout {
@@ -70,7 +94,7 @@ Item {
 
       anchors {
         top: parent.top
-        left: stripe.right
+        left: parent.left
         right: parent.right
         margins: Theme.padding
       }

@@ -23,10 +23,18 @@ QtObject {
   readonly property var buttons: Array.from(notification.actions).filter(a => a.identifier !== "default")
   readonly property var progress: notification.hints.value
 
+  signal timeoutRestarted()
+
   readonly property int timeout: {
     if (critical) return 0;
     const requested = notification.expireTimeout;
     return requested < 0 ? Notifs.defaultTimeout : requested;
+  }
+
+  function restartTimeout(): void {
+    if (!timer.running) return;
+    timer.restart();
+    timeoutRestarted();
   }
 
   function reshow(): void {
