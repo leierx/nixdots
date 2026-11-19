@@ -91,9 +91,11 @@ Item {
     width: root.width
     height: content + root.padding * 2
     radius: Theme.cardRadius
-    color: !root.expanded && hover.hovered ? Theme.cardHover : Theme.card
-    border.width: root.critical ? 1 : 0
-    border.color: Theme.destructive
+    color: {
+      const hovered = !root.expanded && hover.hovered;
+      if (root.critical) return hovered ? Theme.criticalCardHover : Theme.criticalCard;
+      return hovered ? Theme.cardHover : Theme.card;
+    }
     clip: true
 
     Behavior on height {

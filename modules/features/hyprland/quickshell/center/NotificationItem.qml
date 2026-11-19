@@ -48,9 +48,11 @@ Item {
     width: root.width
     height: content.implicitHeight + (root.boxed ? 16 : 0)
     radius: Theme.buttonRadius
-    color: !root.boxed ? "transparent" : hover.hovered ? Theme.cardHover : Theme.card
-    border.width: root.boxed && root.entry.critical ? 1 : 0
-    border.color: Theme.destructive
+    color: {
+      if (!root.boxed) return "transparent";
+      if (root.entry.critical) return hover.hovered ? Theme.criticalCardHover : Theme.criticalCard;
+      return hover.hovered ? Theme.cardHover : Theme.card;
+    }
     clip: true
 
     Behavior on height {

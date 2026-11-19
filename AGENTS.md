@@ -766,7 +766,7 @@ Notes on specific features:
       action, or dismisses it without one; in an expanded group of several a
       notification's click runs its own, or dismisses it. Right click or a
       swipe dismisses the group, or once expanded, one notification. Critical
-      ones have a red outline. The list grows with its
+      ones are tinted red (`Theme.criticalCard`) rather than outlined. The list grows with its
       notifications up to the screen's height, then scrolls. Mouse only, and unlike the launcher
       it is smooth: the list drags and flicks with Qt's overshoot, a wheel
       notch glides 120 px (Qt's own moves the 15 px Wayland reports), and
