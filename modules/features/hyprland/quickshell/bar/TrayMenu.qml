@@ -308,6 +308,8 @@ PanelWindow {
                 MouseArea {
                   anchors.fill: parent
                   enabled: entry.modelData?.enabled ?? false
+                  // Disabled, it would still set a hand.
+                  cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                   onClicked: {
                     if (!entry.modelData) return;
                     if (entry.modelData.hasChildren) {

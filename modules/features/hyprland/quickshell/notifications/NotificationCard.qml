@@ -32,6 +32,8 @@ Item {
     anchors.fill: parent
     target: card
     rightOnly: true
+    // A hand where the click expands or opens, as in the center; an arrow where it only puts the popup away.
+    restCursor: root.expandable || root.entry.defaultAction || root.entry.buttons.length === 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
     onSwiped: left => {
       if (!left) swipe.slideAway(false, root.entry.dismissal());
     }

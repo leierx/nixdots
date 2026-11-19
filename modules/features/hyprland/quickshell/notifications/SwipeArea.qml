@@ -16,6 +16,8 @@ MouseArea {
   property real velocity: 0
   property real lastX: 0
   property real lastTime: 0
+  // The cursor while not dragging; a hand where the click opens something.
+  property var restCursor: Qt.ArrowCursor
   property var finished: null
 
   signal swiped(bool left)
@@ -40,6 +42,7 @@ MouseArea {
 
   acceptedButtons: Qt.LeftButton | Qt.RightButton
   preventStealing: dragging
+  cursorShape: dragging ? Qt.ClosedHandCursor : restCursor
 
   onPressed: mouse => {
     start = Qt.point(mouse.x, mouse.y);

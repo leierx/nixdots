@@ -310,6 +310,11 @@ Notes on specific features:
         others (to catch the wheel, say) or beside a parent's `HoverHandler`
         needs `cursorShape: undefined`. Qt's `qt.quick.hover.cursor` logging
         names the item that won.
+      - The pointer is a hand where a click does something (opens, expands,
+        picks, toggles), an arrow where it does nothing or only dismisses,
+        and a closed hand while dragging (`SwipeArea`'s cards, the volume
+        slider, the center's list). A disabled `MouseArea` still sets its
+        cursor, so one that can be disabled names both.
     - Gotchas, each found the hard way:
       - A `PopupWindow` lands off by its monitor's x times
         `QT_SCALE_FACTOR` minus 1 (512 px at x 2560), right only on the monitor at 0: anything

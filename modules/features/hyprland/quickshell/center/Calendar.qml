@@ -10,6 +10,7 @@ ColumnLayout {
   readonly property var locale: Qt.locale()
   readonly property date today: Time.now
   property date month: new Date(today.getFullYear(), today.getMonth(), 1)
+  readonly property bool away: month.getFullYear() !== today.getFullYear() || month.getMonth() !== today.getMonth()
 
   readonly property var weeks: {
     const lead = (month.getDay() - locale.firstDayOfWeek + 7) % 7;
@@ -72,7 +73,9 @@ ColumnLayout {
 
       MouseArea {
         anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
+        enabled: root.away
+        // Disabled, it would still set a hand.
+        cursorShape: root.away ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: root.month = new Date(root.today.getFullYear(), root.today.getMonth(), 1)
       }
     }

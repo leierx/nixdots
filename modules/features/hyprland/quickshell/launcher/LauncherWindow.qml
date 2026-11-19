@@ -243,6 +243,7 @@ Overlay {
 
     MouseArea {
       anchors.fill: parent
+      cursorShape: Qt.PointingHandCursor
       onClicked: row.list.activate(row.index)
     }
 

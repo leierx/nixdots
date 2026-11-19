@@ -65,7 +65,7 @@ Overlay {
       id: drag
 
       anchors.fill: parent
-      cursorShape: Qt.PointingHandCursor
+      cursorShape: pressed ? Qt.ClosedHandCursor : Qt.PointingHandCursor
       onPressed: mouse => Volume.setVolume(mouse.x / width)
       onPositionChanged: mouse => {
         if (pressed) Volume.setVolume(mouse.x / width);
@@ -199,7 +199,7 @@ Overlay {
 
               anchors.fill: parent
               hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
+              cursorShape: row.modelData.current ? Qt.ArrowCursor : Qt.PointingHandCursor
               onClicked: Volume.choose(row.modelData.index)
             }
           }
