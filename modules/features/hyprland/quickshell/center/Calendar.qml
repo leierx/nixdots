@@ -38,12 +38,20 @@ ColumnLayout {
   }
 
   component Arrow: Button {
+    id: arrow
+
+    property real turn: 0
+
     implicitWidth: root.cell
     implicitHeight: root.cell
     radius: width / 2
     padding: 0
     flat: true
-    font: Theme.title4
+
+    ExpanderArrow {
+      anchors.centerIn: parent
+      rotation: arrow.turn
+    }
   }
 
   // qmllint disable Quick.layout-positioning
@@ -85,7 +93,7 @@ ColumnLayout {
     Layout.fillWidth: true
 
     Arrow {
-      text: "‹"
+      turn: 90
       onClicked: root.shift(-1)
     }
 
@@ -98,7 +106,7 @@ ColumnLayout {
     }
 
     Arrow {
-      text: "›"
+      turn: -90
       onClicked: root.shift(1)
     }
   }

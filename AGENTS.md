@@ -419,7 +419,8 @@ Notes on specific features:
         a surface, `glyph` for its icon, `checked` while what it opens is
         open); the round 24 px `CloseButton`; what expands a bare
         `ExpanderArrow`, a sign rather than a button, since a click on the card
-        toggles it; a key a
+        toggles it, and every other chevron is that arrow too, turned (a
+        submenu's, the calendar's months, the tray's overflow); a key a
         `Keycap`; a Material Symbols icon a `Glyph` and an app's a
         Quickshell `IconImage`; a notification's `NotificationIcon`; anything
         floating a `Card` in an `Overlay`.
@@ -714,8 +715,10 @@ Notes on specific features:
         The right side never reaches the clock: `BarWindow` gives the tray
         the room the bar leaves (half its width less the clock's, `Theme.gap`
         and the status buttons), and past it the first four items keep their
-        places with a flat `BarButton` closing the pill (Material Symbols'
-        apps and how many are left, shown only while some are), fewer than
+        places, then a thin rule (`Theme.border`) and a flat round `BarButton`
+        closing the pill with Adwaita's arrow pointing down, the way the
+        popover opens, and not turning (the button's pressed shade says it is
+        open), shown only while some are left, fewer than
         four only where even that would not fit. First come, first served:
         `TrayOrder` keeps the items in the order they came, which every bar
         shares, since Quickshell sorts its model by category and id; one
@@ -927,7 +930,7 @@ Notes on specific features:
       a short fade and slide: notifications on the left (40em, wider than
       GNOME's 29em, which read long and narrow), Do Not Disturb and Caffeine
       switches, Collapse all and Clear (which also closes it) below, and `Calendar.qml` on
-      the right (locale's first weekday, ISO week numbers, arrows or wheel for
+      the right (locale's first weekday, ISO week numbers, Adwaita's arrows turned sideways or the wheel for
       months (`WheelSteps`, as every wheel), the date returns to today) with the weather under it, left out
       where the screen is too short for both. Opening it puts the popups away. Notifications are grouped
       per app the way end-4's dots do (`NotificationGroup`,

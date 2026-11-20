@@ -26,15 +26,12 @@ Item {
   // In the order they came, so the first keep their places on the bar.
   readonly property var items: TrayOrder.items.filter(item => item.status !== Status.Passive)
   readonly property bool crowded: items.length * 26 + 8 > room
-  // The button at its widest, counting every item.
-  readonly property real reserve: 2 * more.padding + more.glyphSize + 6 + Math.ceil(count.advanceWidth)
+  // The rule and the button.
+  readonly property real reserve: rule.width + more.implicitWidth
   // Four beside the button, fewer only where even that would reach the clock.
   readonly property int kept: crowded ? Math.max(0, Math.min(4, Math.floor((room - 8 - reserve) / 26))) : items.length
   readonly property var shown: items.slice(0, kept)
   readonly property var hidden: items.slice(kept)
-  // Material Symbols' apps
-  readonly property string apps: "M183.5-183.5Q160-207 160-240t23.5-56.5Q207-320 240-320t56.5 23.5Q320-273 320-240t-23.5 56.5Q273-160 240-160t-56.5-23.5Zm240 0Q400-207 400-240t23.5-56.5Q447-320 480-320t56.5 23.5Q560-273 560-240t-23.5 56.5Q513-160 480-160t-56.5-23.5Zm240 0Q640-207 640-240t23.5-56.5Q687-320 720-320t56.5 23.5Q800-273 800-240t-23.5 56.5Q753-160 720-160t-56.5-23.5Zm-480-240Q160-447 160-480t23.5-56.5Q207-560 240-560t56.5 23.5Q320-513 320-480t-23.5 56.5Q273-400 240-400t-56.5-23.5Zm240 0Q400-447 400-480t23.5-56.5Q447-560 480-560t56.5 23.5Q560-513 560-480t-23.5 56.5Q513-400 480-400t-56.5-23.5Zm240 0Q640-447 640-480t23.5-56.5Q687-560 720-560t56.5 23.5Q800-513 800-480t-23.5 56.5Q753-400 720-400t-56.5-23.5Zm-480-240Q160-687 160-720t23.5-56.5Q207-800 240-800t56.5 23.5Q320-753 320-720t-23.5 56.5Q273-640 240-640t-56.5-23.5Zm240 0Q400-687 400-720t23.5-56.5Q447-800 480-800t56.5 23.5Q560-753 560-720t-23.5 56.5Q513-640 480-640t-56.5-23.5Zm240 0Q640-687 640-720t23.5-56.5Q687-800 720-800t56.5 23.5Q800-753 800-720t-23.5 56.5Q753-640 720-640t-56.5-23.5Z"
-
   visible: items.length > 0
   implicitWidth: row.implicitWidth + 8
   implicitHeight: 26
@@ -118,13 +115,27 @@ Item {
       TrayIcon {}
     }
 
+    Item {
+      id: rule
+
+      visible: more.visible
+      width: 9
+      height: 26
+
+      Rectangle {
+        anchors.centerIn: parent
+        width: 1
+        height: 14
+        color: Theme.border
+      }
+    }
+
     // Closes the pill, so the tray stays one shape.
     BarButton {
       id: more
 
       visible: root.hidden.length > 0
-      glyph: root.apps
-      text: `${root.hidden.length}`
+      expander: true
       checked: Panels.active === root.overflowPanel
       onClicked: {
         root.menuItem = null;
@@ -132,13 +143,6 @@ Item {
         Panels.toggle(root.overflowPanel);
       }
     }
-  }
-
-  TextMetrics {
-    id: count
-
-    font: more.font
-    text: `${root.items.length}`
   }
 
   LazyLoader {
