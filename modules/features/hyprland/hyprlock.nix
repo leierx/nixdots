@@ -77,7 +77,7 @@ in
             font_color = "rgb(${hex adw.window_fg_color})";
             font_family = "Adwaita Sans";
             # hyprlang treats an unescaped # as a comment; ## is a literal #
-            placeholder_text = "<i><span foreground=\"##${hex adw.window_fg_color}8c\">Enter Pass</span></i>";
+            placeholder_text = "<i><span foreground=\"##${hex adw.window_fg_color}8c\">Password</span></i>";
             fail_text = "<i><span foreground=\"##${hex adw.error_color}\">$FAIL</span> <b>($ATTEMPTS)</b></i>";
             hide_input = false;
             position = "0, -100";
