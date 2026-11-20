@@ -4,6 +4,8 @@ host=${QS_TEST_HOST:-$(uname -n)}
 src=$repo/modules/features/hyprland/quickshell
 tests=$repo/modules/features/hyprland/tests
 self=$(readlink -f "$0")
+# What outlives a session: each job's last time, so the longest start first, and the last run's failures.
+hist=${XDG_STATE_HOME:-$HOME/.local/state}/qs-test
 
 usage() {
   cat << EOF
@@ -24,7 +26,11 @@ usage: qs-test COMMAND
   case NAME             a test's next case: check the last one left no problems, print it and reset
   expect [--may] REGEX  this case must (or may) log a warning matching REGEX
   check                 whether the case so far left problems
-  run [FILE...]         copy the checkout's QML in, run tests (tests/scenarios/*.sh) in the session, qst on PATH
+  run [-j N] [--fail-fast] [--failed] [--changed] [FILE[:CASE-REGEX]...]
+                        the checkout's QML into N sessions side by side (by cores and memory; 1: this one),
+                        and every case of tests/scenarios/*.sh, or those given, longest first; qst on PATH
+  jobs [FILE[:REGEX]...]  the jobs a run would take, in its order
+  timings               the last run's slowest cases and where the time went
   key COMBO...          press keys in turn (ctrl+n, super+d, shift+Tab, Escape)
   type TEXT             type TEXT into the focused surface
   pointer X Y           put the pointer at X Y in layout coordinates (hover)
@@ -81,23 +87,70 @@ die() {
   exit 1
 }
 
+# Milliseconds in REPLY, without a fork; the locale may write a comma in it.
+ms() {
+  local t=${EPOCHREALTIME//[!0-9]/}
+  REPLY=$((t / 1000))
+}
+
+# One line of $T/timings.tsv: file, case, what, milliseconds, and anything else.
+timing() {
+  [ -d "$T" ] || return 0
+  local name=-
+  [ -s "$T/case" ] && read -r name < "$T/case"
+  printf '%s\t%s\t%s\t%s\t%s\n' "${QST_FILE:--}" "$name" "$1" "$2" "${3:-}" >> "$T/timings.tsv"
+}
+
+# A part of reset run beside others, timed on its own.
+alongside() {
+  local began
+  ms
+  began=$REPLY
+  "$1"
+  ms
+  timing "reset~$1" $((REPLY - began))
+}
+
+phase_at=0
+phase() {
+  ms
+  timing "reset:$1" $((REPLY - phase_at))
+  phase_at=$REPLY
+}
+
 running() { [ -s "$T/hyprland.pid" ] && kill -0 "$(cat "$T/hyprland.pid")" 2> /dev/null; }
 need_up() { running || die "no session in $T; run qs-test up"; }
 
 enter() {
-  XDG_RUNTIME_DIR=$(cat "$T/runtime")
-  WAYLAND_DISPLAY=$(cat "$T/display")
-  HYPRLAND_INSTANCE_SIGNATURE=$(cat "$T/signature")
-  DBUS_SESSION_BUS_ADDRESS=$(cat "$T/bus")
+  # Builtins only: it runs on every call, every snapshot among them.
+  read -r XDG_RUNTIME_DIR < "$T/runtime"
+  read -r WAYLAND_DISPLAY < "$T/display"
+  read -r HYPRLAND_INSTANCE_SIGNATURE < "$T/signature"
+  read -r DBUS_SESSION_BUS_ADDRESS < "$T/bus"
   XDG_CONFIG_HOME=$T/cfg
   XDG_CURRENT_DESKTOP=Hyprland
-  PATH=$T/bin:$PATH
+  # Ahead of all else every time, as each qst puts its own tools first, or the real nmcli and brightnessctl win over the fakes.
+  PATH=$T/bin:${PATH//"$T/bin:"/}
   DBUS_SYSTEM_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/system_bus_socket
   # Qt finds the time zone's files only through it on NixOS; the user's systemd session sets it, a shell may not.
   TZDIR=${TZDIR:-/etc/zoneinfo}
-  HC=$(cat "$T/build")/hyprland/bin/hyprctl
+  read -r HC < "$T/build"
+  HC=$HC/hyprland/bin/hyprctl
   export XDG_RUNTIME_DIR WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE DBUS_SESSION_BUS_ADDRESS DBUS_SYSTEM_BUS_ADDRESS TZDIR XDG_CONFIG_HOME XDG_CURRENT_DESKTOP PATH
   unset DISPLAY SWAYSOCK
+}
+
+shell_id() { printf '%s' "$T/shell/shell.qml" | md5sum | cut -d' ' -f1; }
+
+# The nixpkgs list another shell already fetched, so a new session's skips the 400 MB download unless the channel moved.
+seed_cache() {
+  local cache newest
+  cache=$HOME/.cache/quickshell/by-shell/$(shell_id)
+  [ -e "$cache/nixpkgs.tsv" ] && return
+  newest=$(find "$HOME/.cache/quickshell/by-shell" -name nixpkgs.tsv -printf '%T@ %p\n' 2> /dev/null | sort -rn | awk 'NR == 1 { sub(/^[^ ]* /, ""); print }')
+  [ -n "$newest" ] || return 0
+  mkdir -p "$cache"
+  cp "$newest" "$cache/nixpkgs.tsv"
 }
 
 # By config path, since setsid may fork and leave no pid to remember.
@@ -133,6 +186,11 @@ case_check() {
   local found mark name pid peak
   [ -s "$T/case" ] || return 0
   name=$(cat "$T/case")
+  if [ -s "$T/case-start" ]; then
+    ms
+    timing case $((REPLY - $(cat "$T/case-start")))
+    rm -f "$T/case-start"
+  fi
   mark=$(cat "$T/case-mark" 2> /dev/null || echo 1)
   found=$(problems "$mark")
   # Peak, as every case starts a qs of its own: a flood or a list built over and over shows here first.
@@ -166,6 +224,9 @@ ipc_targets() {
 }
 
 start_qs() {
+  local tailer
+  # Emptied first, so the last qs's "Configuration Loaded" is never read as this one's.
+  : > "$T/qs.log"
   (
     enter
     # Qt names the item behind every cursor change, which `cursor` reads back.
@@ -173,21 +234,29 @@ start_qs() {
   )
   echo 1 > "$T/case-mark"
   rm -f "$T/countdowns.json"
-  for _ in $(seq 100); do
-    grep -qE 'Configuration Loaded|Failed to load' "$T/qs.log" && break
-    sleep 0.1
-  done
+  # As the line is written, rather than polling for it.
+  exec 3< <(exec tail -n +1 -s 0.05 -F "$T/qs.log" 2> /dev/null)
+  tailer=$!
+  timeout 10 grep -m1 -qaE 'Configuration Loaded|Failed to load' <&3 || true
+  kill "$tailer" 2> /dev/null || true
+  exec 3<&-
   grep -q 'Configuration Loaded' "$T/qs.log" || { problems; die "the shell did not load, see qs-test log"; }
   ipc_targets
   problems
 }
 
+# The whole process group setsid made it, as systemd takes the service's cgroup: the watchers it runs (camera-users,
+# backlight-watch) wait on inotify with nobody reading them, and each would scan /proc for every case after.
 stop_qs() {
-  local pid
-  for pid in $(testqs); do kill "$pid"; done
-  for _ in $(seq 50); do
-    [ -z "$(testqs)" ] && return
-    sleep 0.1
+  local pids pid left
+  pids=$(testqs)
+  [ -n "$pids" ] || return 0
+  for pid in $pids; do kill -- "-$pid" 2> /dev/null || kill "$pid" 2> /dev/null || true; done
+  for _ in $(seq 250); do
+    left=0
+    for pid in $pids; do kill -0 -- "-$pid" 2> /dev/null && left=1; done
+    [ $left = 1 ] || return 0
+    sleep 0.02
   done
 }
 
@@ -300,19 +369,15 @@ shift
 secrets=false
 for arg in "\$@"; do [ "\$arg" = passwd-file ] && secrets=true; done
 dbus-send --system --print-reply --dest=org.freedesktop.NetworkManager /org/freedesktop/NetworkManager org.freedesktop.DBus.Mock.Up "string:\$name" "boolean:\$secrets" > /dev/null || exit 10
-# As nmcli waits: until the profile is up, or it has gone down again.
-seen=0
+# As nmcli waits: until the profile is up, or it has gone down again; Up made it activating, so gone from the list is down, however soon.
 for _ in \$(seq 150); do
   state=\$("\$real" -t -f NAME,UUID,STATE connection show --active | awk -F: -v name="\$name" '\$1 == name || \$2 == name { print \$3 }')
   case "\$state" in
     activated) echo "Connection successfully activated"; exit 0 ;;
-    activating) seen=1 ;;
     "")
-      if [ \$seen = 1 ]; then
-        why=\$(dbus-send --system --print-reply=literal --dest=org.freedesktop.NetworkManager /org/freedesktop/NetworkManager org.freedesktop.DBus.Mock.Dump | jq -r --arg name "\$name" '.profiles[] | select(.id == \$name or .uuid == \$name) | .behaviour')
-        if [ "\$why" = secrets ]; then echo "Error: Connection activation failed: Secrets were required, but not provided." >&2; else echo "Error: Connection activation failed: (qs-test) the profile went down." >&2; fi
-        exit 4
-      fi
+      why=\$(dbus-send --system --print-reply=literal --dest=org.freedesktop.NetworkManager /org/freedesktop/NetworkManager org.freedesktop.DBus.Mock.Dump | jq -r --arg name "\$name" '.profiles[] | select(.id == \$name or .uuid == \$name) | .behaviour')
+      if [ "\$why" = secrets ]; then echo "Error: Connection activation failed: Secrets were required, but not provided." >&2; else echo "Error: Connection activation failed: (qs-test) the profile went down." >&2; fi
+      exit 4
       ;;
   esac
   sleep 0.1
@@ -347,7 +412,7 @@ EOF2
     [ -f "$HOME/.cache/cliphist/db" ] && cp "$HOME/.cache/cliphist/db" "$T/clip.db"
     printf '#!/bin/sh\nexec %s -db-path "%s/clip.db" "$@"\n' "$cliphist" "$T" > "$T/bin/cliphist"
   fi
-  chmod +x "$T/bin/"*
+  find "$T/bin" -maxdepth 1 -type f -exec chmod +x {} +
 
   for entry in "$config"/*; do
     case $(basename "$entry") in hypr | hyprmoncfg) ;; *) ln -sfn "$entry" "$T/cfg/" ;; esac
@@ -367,19 +432,20 @@ pw_start() {
     export XDG_CONFIG_HOME=$pw/cfg XDG_STATE_HOME=$pw/state DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent
     setsid pipewire -c "$tests/pipewire.conf" > "$T/pipewire.log" 2>&1 < /dev/null &
     echo $! > "$T/pipewire.pid"
-    for _ in $(seq 50); do
-      [ -S "$XDG_RUNTIME_DIR/pipewire-0" ] && break
-      sleep 0.1
+    for _ in $(seq 250); do
+      # The socket is there as it is bound, before it listens; WirePlumber connecting then gives up for good.
+      [ -S "$XDG_RUNTIME_DIR/pipewire-0" ] && timeout 1 pw-cli info 0 > /dev/null 2>&1 && break
+      sleep 0.02
     done
     setsid wireplumber > "$T/wireplumber.log" 2>&1 < /dev/null &
     echo $! > "$T/wireplumber.pid"
   )
   (
     enter
-    for _ in $(seq 100); do
+    for _ in $(seq 500); do
       # wpctl can hang on a server still coming up.
       timeout 2 wpctl inspect @DEFAULT_AUDIO_SINK@ > /dev/null 2>&1 && timeout 2 wpctl inspect @DEFAULT_AUDIO_SOURCE@ > /dev/null 2>&1 && break
-      sleep 0.1
+      sleep 0.02
     done
     timeout 5 wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.64
   ) || die "PipeWire did not start, see $T/pipewire.log and $T/wireplumber.log"
@@ -391,9 +457,9 @@ pw_stop() {
     [ -s "$T/$name.pid" ] || continue
     pid=$(cat "$T/$name.pid")
     kill "$pid" 2> /dev/null || true
-    for _ in $(seq 50); do
+    for _ in $(seq 250); do
       kill -0 "$pid" 2> /dev/null || break
-      sleep 0.1
+      sleep 0.02
     done
     rm -f "$T/$name.pid"
   done
@@ -436,9 +502,9 @@ mock_start() {
   mock_stop "$name"
   setsid qs-dbusmock --system --template "$template" -p "$params" > "$T/$name.log" 2>&1 < /dev/null &
   echo $! > "$T/$name.pid"
-  for _ in $(seq 100); do
+  for _ in $(seq 250); do
     owned "$bus" && return
-    sleep 0.05
+    sleep 0.02
   done
   die "the fake $name did not start, see $T/$name.log"
 }
@@ -448,9 +514,9 @@ mock_stop() {
   [ -s "$T/$1.pid" ] || return 0
   pid=$(cat "$T/$1.pid")
   kill "$pid" 2> /dev/null || true
-  for _ in $(seq 50); do
+  for _ in $(seq 125); do
     kill -0 "$pid" 2> /dev/null || break
-    sleep 0.05
+    sleep 0.02
   done
   rm -f "$T/$1.pid"
 }
@@ -488,15 +554,26 @@ network_start() {
 # Fresh fakes for a case: NetworkManager as network_default, a battery at 76 % so the bar shows all it can,
 # and BlueZ with an adapter and nothing paired; QS_TEST_NETWORK or QS_TEST_BLUETOOTH set to none leaves that one out.
 services_reset() {
-  mock_stop network
-  [ "${QS_TEST_NETWORK:-default}" = none ] || network_start
-  mock_start power org.freedesktop.UPower "$tests/upower.py"
-  battery 76 discharging 9600
-  mock_stop bluetooth
-  if [ "${QS_TEST_BLUETOOTH:-default}" != none ]; then
-    mock_start bluetooth org.bluez "$tests/bluez.py"
-    bluez AddAdapter string:hci0 string:qs-test > /dev/null
-  fi
+  local fakes=() fake
+  {
+    mock_stop network
+    [ "${QS_TEST_NETWORK:-default}" = none ] || network_start
+  } &
+  fakes+=($!)
+  {
+    mock_start power org.freedesktop.UPower "$tests/upower.py"
+    battery 76 discharging 9600
+  } &
+  fakes+=($!)
+  {
+    mock_stop bluetooth
+    if [ "${QS_TEST_BLUETOOTH:-default}" != none ]; then
+      mock_start bluetooth org.bluez "$tests/bluez.py"
+      bluez AddAdapter string:hci0 string:qs-test > /dev/null
+    fi
+  } &
+  fakes+=($!)
+  for fake in "${fakes[@]}"; do wait "$fake" || die "a fake service did not come back"; done
 }
 
 bluez() {
@@ -592,9 +669,9 @@ player() {
       [ -n "$name" ] || die "player add NAME [IDENTITY] [STATUS] [ART]"
       QS_MPRIS_NAME=$name setsid qs-dbusmock --session --template "$tests/mpris.py" -p "$(jq -cn --arg identity "${3:-$name}" --arg status "${4:-Playing}" --arg art "${5:+file://$(realpath "$5")}" '{ identity: $identity, status: $status, art: $art }')" > "$T/players/$name.log" 2>&1 < /dev/null &
       echo $! > "$T/players/$name.pid"
-      for _ in $(seq 100); do
+      for _ in $(seq 250); do
         dbus-send --session --print-reply --dest=org.freedesktop.DBus / org.freedesktop.DBus.NameHasOwner "string:org.mpris.MediaPlayer2.$name" 2> /dev/null | grep -q 'boolean true' && return
-        sleep 0.05
+        sleep 0.02
       done
       die "the fake player $name did not start, see $T/players/$name.log"
       ;;
@@ -636,7 +713,8 @@ backlight() {
   while :; do
     printf 'UDEV  [%s] %-8s /devices/qs-test/backlight/%s (backlight)\n' "$(date +%s.%N)" "$event" "$1" >> "$T/udev"
     for _ in 1 2 3 4 5; do
-      snapshot | jq -e "$filter" > /dev/null && return
+      snapshot "$filter"
+      [ "$snap_held" = true ] && return
       sleep 0.1
     done
     tries=$((tries + 1))
@@ -810,13 +888,14 @@ up() {
     return
   fi
   local build runtime
-  build=$(build)
+  build=${QS_TEST_BUILD:-$(build)}
   mkdir -p "$T/shots" "$T/labwc"
   rm -rf "$T/shell" "$T/cfg" "$T/display" "$T/signature"
   echo "$build" > "$T/build"
   cp -rL "$build/shell" "$T/shell"
   chmod -R u+w "$T/shell"
   install_probe
+  seed_cache
   fakes "$build"
   hypr_config "$build"
   # Hyprland's sockets go in here, and their paths must stay under 108 bytes.
@@ -871,7 +950,11 @@ EOF
 }
 
 down() {
-  local bus="" runtime="" pid id
+  local bus="" runtime="" pid id worker
+  for worker in "$T"/w[0-9]*/; do
+    [ -d "$worker" ] && QS_TEST_DIR=${worker%/} "$self" down > /dev/null &
+  done
+  wait
   [ -s "$T/runtime" ] && runtime=$(cat "$T/runtime")
   [ -s "$T/bus" ] && bus=$(cat "$T/bus")
   [ -s "$T/runtime" ] && [ -s "$T/display" ] && stop_qs
@@ -880,15 +963,13 @@ down() {
   for pid in /proc/[0-9]*; do
     pid=${pid#/proc/}
     [ "$pid" = $$ ] && continue
-    tr '\0' '\n' 2> /dev/null < "/proc/$pid/environ" |
-      grep -qxF -e "DBUS_SESSION_BUS_ADDRESS=${bus:-none}" -e "XDG_RUNTIME_DIR=${runtime:-none}" &&
+    # No pipe: grep -q leaving early would kill tr, and pipefail would read the match as none.
+    grep -qzxF -e "DBUS_SESSION_BUS_ADDRESS=${bus:-none}" -e "XDG_RUNTIME_DIR=${runtime:-none}" "/proc/$pid/environ" 2> /dev/null &&
       kill "$pid" 2> /dev/null
   done
   # Quickshell keys its dirs by config path, so these are the test shell's own.
-  id=$(grep -o 'Shell ID: "[0-9a-f]*' "$T/qs.log" 2> /dev/null | head -1 | cut -d'"' -f2 || true)
-  if [ -n "$id" ]; then
-    rm -rf "$HOME/.local/state/quickshell/by-shell/$id" "$HOME/.cache/quickshell/by-shell/$id"
-  fi
+  id=$(shell_id)
+  rm -rf "$HOME/.local/state/quickshell/by-shell/$id" "$HOME/.cache/quickshell/by-shell/$id"
   [ -n "$runtime" ] && rm -rf "$runtime"
   rm -rf "$T"
   echo down
@@ -914,46 +995,65 @@ pointer() {
 alive() { [ -n "$(testqs)" ]; }
 
 # The probe's view of the shell, plus Hyprland's layers ("DP-1 quickshell:bar") and monitors.
+# Into snap_json; with FILTER, whether it holds as jq -e reads it into snap_held, and the census problems and broken invariants into snap_violations.
+# One jq for all of it, since a snapshot is taken every poll.
 snapshot() {
-  local probe layers monitors json started answered
+  local probe out popups began started answered
+  ms
+  began=$REPLY
   enter
-  alive || die "qs is not running: it crashed or failed to load, see qs-test log"
-  started=$(date +%s%N)
-  probe=$(timeout 5 qs ipc -p "$T/shell" call probe state) || die "the probe did not answer, see qs-test log"
-  answered=$((($(date +%s%N) - started) / 1000000))
-  layers=$("$HC" layers -j | jq -c '[to_entries[] | .key as $m | .value.levels[][] | "\($m) \(.namespace)"]')
-  monitors=$("$HC" monitors all -j | jq -c 'map({ name, id, disabled, x, y, width, height, scale, focused })')
-  json=$(jq -c --argjson layers "$layers" --argjson hypr "$monitors" --argjson answered "$answered" '. + { layers: $layers, hypr: $hypr, answered: $answered }' <<< "$probe")
+  ms
+  started=$REPLY
+  probe=$(timeout 5 qs ipc -p "$T/shell" call probe state) || {
+    alive || die "qs is not running: it crashed or failed to load, see qs-test log"
+    die "the probe did not answer, see qs-test log"
+  }
+  ms
+  answered=$((REPLY - started))
   [ -s "$T/countdowns.json" ] || echo '[]' > "$T/countdowns.json"
-  json=$(jq -c --slurpfile before "$T/countdowns.json" -f "$tests/invariants.jq" <<< "$json")
-  jq -c '.popups' <<< "$json" > "$T/countdowns.json"
-  echo "$json"
+  [ -n "${invariants:-}" ] || invariants=$(< "$tests/invariants.jq")
+  out=$(jq -rc --argjson answered "$answered" --slurpfile before "$T/countdowns.json" --slurpfile hyprland <("$HC" --batch 'j/layers; j/monitors all') "
+    . + {
+      layers: [\$hyprland[0] | to_entries[] | .key as \$m | .value.levels[][] | \"\\(\$m) \\(.namespace)\"],
+      hypr: (\$hyprland[1] | map({ name, id, disabled, x, y, width, height, scale, focused })),
+      answered: \$answered
+    }
+    | ($invariants)
+    | ., .popups, (try ([${1:-true}] | length > 0 and (last | . != null and . != false)) catch false), (.problems + .invariants)[]" <<< "$probe")
+  { IFS= read -r snap_json && IFS= read -r popups && IFS= read -r snap_held && mapfile -t snap_violations; } <<< "$out"
+  echo "$popups" > "$T/countdowns.json"
+  ms
+  timing snapshot $((REPLY - began)) "$answered"
 }
 
-state() { snapshot | jq -c "${1:-.}"; }
+state() {
+  snapshot
+  jq -c "${1:-.}" <<< "$snap_json"
+}
 
 declare -A since=()
 
 # A census problem or broken invariant that lasts 500 ms fails, as transitions pass through some for a frame or two; a countdown going back fails at once.
 violations() {
-  local json=$1 now v
+  local now v
   local -A seen=()
-  now=$(($(date +%s%N) / 1000000))
+  ms
+  now=$REPLY
   # A violation worded anew each time never lasts by its words, so the time spent waiting for one to clear is capped.
   [ -n "${pending_since:-}" ] || pending_since=$now
-  while IFS= read -r v; do
+  for v in "${snap_violations[@]}"; do
     [ -n "$v" ] || continue
-    [ "${v:0:1}" = "!" ] && violated "${v:1}" "$json"
+    [ "${v:0:1}" = "!" ] && violated "${v:1}" "$snap_json"
     seen[$v]=${since[$v]:-$now}
-    [ $((now - seen[$v])) -ge 500 ] && violated "$v" "$json"
-  done < <(jq -r '(.problems + .invariants)[]' <<< "$json")
+    [ $((now - seen[$v])) -ge 500 ] && violated "$v" "$snap_json"
+  done
   since=()
   for v in "${!seen[@]}"; do since[$v]=${seen[$v]}; done
   if [ ${#since[@]} -eq 0 ]; then
     pending_since=""
     return 0
   fi
-  [ $((now - pending_since)) -lt 1500 ] || violated "$(printf '%s; ' "${!since[@]}")" "$json"
+  [ $((now - pending_since)) -lt 1500 ] || violated "$(printf '%s; ' "${!since[@]}")" "$snap_json"
   return 1
 }
 
@@ -965,17 +1065,25 @@ violated() {
 
 # Until FILTER holds, as jq -e reads it, or fails after SECONDS.
 wait_for() {
-  local filter=$1 deadline json held=0 clear
-  deadline=$(($(date +%s%N) / 1000000 + ${2:-5} * 1000))
+  local filter=$1 deadline held=0 clear began snaps=0
+  ms
+  began=$REPLY
+  deadline=$((began + ${2:-5} * 1000))
   while :; do
-    json=$(snapshot)
+    snapshot "$filter"
+    snaps=$((snaps + 1))
     clear=1
-    violations "$json" || clear=0
-    [ $held = 1 ] || ! jq -e "$filter" <<< "$json" > /dev/null 2>&1 || held=1
-    [ $held = 1 ] && [ $clear = 1 ] && return
-    if [ $held = 0 ] && [ "$(($(date +%s%N) / 1000000))" -ge "$deadline" ]; then
+    violations || clear=0
+    [ $held = 1 ] || [ "$snap_held" != true ] || held=1
+    if [ $held = 1 ] && [ $clear = 1 ]; then
+      ms
+      timing "${wait_kind:-wait}" $((REPLY - began)) $snaps
+      return
+    fi
+    ms
+    if [ $held = 0 ] && [ "$REPLY" -ge "$deadline" ]; then
       echo "qs-test: timed out after ${2:-5} s waiting for: $filter" >&2
-      jq -c "del(.workspaces)" <<< "$json" >&2
+      jq -c "del(.workspaces)" <<< "$snap_json" >&2
       exit 1
     fi
     sleep 0.1
@@ -984,19 +1092,24 @@ wait_for() {
 
 # FILTER holds throughout SECONDS (1): what should stay as it is.
 stays() {
-  local filter=$1 deadline json clear=1
-  deadline=$(($(date +%s%N) / 1000000 + $(awk -v s="${2:-1}" 'BEGIN { print int(s * 1000) }')))
-  while [ "$(($(date +%s%N) / 1000000))" -lt "$deadline" ] || [ $clear = 0 ]; do
-    json=$(snapshot)
+  local filter=$1 deadline clear=1 began snaps=0
+  ms
+  began=$REPLY
+  deadline=$((began + $(awk -v s="${2:-1}" 'BEGIN { print int(s * 1000) }')))
+  while ms && [ "$REPLY" -lt "$deadline" ] || [ $clear = 0 ]; do
+    snapshot "$filter"
+    snaps=$((snaps + 1))
     clear=1
-    violations "$json" || clear=0
-    if ! jq -e "$filter" <<< "$json" > /dev/null 2>&1; then
+    violations || clear=0
+    if [ "$snap_held" != true ]; then
       echo "qs-test: no longer holds: $filter" >&2
-      jq -c "del(.workspaces)" <<< "$json" >&2
+      jq -c "del(.workspaces)" <<< "$snap_json" >&2
       exit 1
     fi
     sleep 0.1
   done
+  ms
+  timing stays $((REPLY - began)) "$snaps ${2:-1}"
 }
 
 # Every tray item a test started.
@@ -1010,53 +1123,356 @@ trays_reset() {
 
 # A fresh start for a test: QS_TEST_MONITORS again, the focus on the first, and a new qs with no state.
 reset() {
-  local id pid
+  local pid
+  ms
+  phase_at=$REPLY
   enter
   trays_reset
   players_reset
   for pid in $("$HC" clients -j | jq -r '.[].pid'); do kill "$pid" 2> /dev/null || true; done
+  phase clients
   stop_qs
-  pw_reset
-  services_reset
-  camera_reset
+  phase stop_qs
+  # Side by side, as none reaches the others; with the shell gone, none of it reaches a state file either.
+  local parts=() part
+  alongside pw_reset > "$T/reset.pw_reset.log" 2>&1 &
+  parts+=($!)
+  alongside services_reset > "$T/reset.services_reset.log" 2>&1 &
+  parts+=($!)
+  alongside camera_reset
   rm -rf "$T/units" "$T/backlight"
   mkdir -p "$T/backlight"
-  monitors_reset
+  alongside monitors_reset
   "$HC" dispatch "hl.dsp.focus({ monitor = \"$("$HC" monitors -j | jq -r 'min_by(.id).name')\" })" > /dev/null
-  id=$(grep -o 'Shell ID: "[0-9a-f]*' "$T/qs.log" 2> /dev/null | head -1 | cut -d'"' -f2 || true)
-  [ -n "$id" ] && rm -rf "$HOME/.local/state/quickshell/by-shell/$id"
+  for part in "${parts[@]}"; do
+    wait "$part" || { cat "$T"/reset.*.log >&2; die "the reset failed"; }
+  done
+  phase pipewire+services+monitors
+  rm -rf "$HOME/.local/state/quickshell/by-shell/$(shell_id)"
   : > "$T/actions.log"
   restore_tools
   start_qs > /dev/null
   problems
-  wait_for "(.screens | length) == ($("$HC" monitors -j | jq length)) and (.layers | map(select(endswith(\" quickshell:bar\"))) | length) == (.screens | length)" 10
+  phase start_qs
+  wait_kind=reset:bar wait_for "(.screens | length) == ($("$HC" monitors -j | jq length)) and (.layers | map(select(endswith(\" quickshell:bar\"))) | length) == (.screens | length)" 10
 }
 
-# Each test file runs in the session, calling qst; one that fails stops at its first failure.
-run_tests() {
-  local file name failed=0
-  mkdir -p "$T/tests"
+
+# A scenario file as jobs, a line each: the file, the last line before its first case, a job's first and last line, whether it runs alone, its cases' names.
+# A job is a top-level `qst case` up to the next, or a top-level loop that runs cases, and runs after the file's lines before its first case.
+split_cases() {
+  awk '
+    { line[NR] = $0 }
+    function starts(l) { return l ~ /^([A-Za-z_][A-Za-z0-9_]*=[^ ]* )*qst case / }
+    END {
+      n = 0
+      for (i = 1; i <= NR; i++) {
+        l = line[i]
+        if (l == "" || l ~ /^[ \t#]/) continue
+        if (starts(l)) { start[++n] = i; continue }
+        # A compound over several lines: its body indented, its end back at the left edge.
+        if (l ~ /^(for|while|until|if|case|select)[ (]|^[A-Za-z_][A-Za-z0-9_]*\(\) *\{$|^\{$/ && line[i + 1] ~ /^[ \t]/) {
+          inner = 0
+          for (j = i + 1; j <= NR && line[j] !~ /^(done|fi|esac|\})/; j++) if (line[j] ~ /qst case /) inner = 1
+          if (inner && l !~ /\(\) *\{$/) start[++n] = i
+          i = j
+        }
+      }
+      for (k = 1; k <= n; k++) {
+        last = k < n ? start[k + 1] - 1 : NR
+        names = ""
+        alone = 0
+        for (i = start[k]; i <= last; i++)
+          if (match(line[i], /qst case "[^"]*"/)) names = names (names == "" ? "" : " | ") substr(line[i], RSTART + 10, RLENGTH - 11)
+        for (i = start[k]; i <= last; i++) if (line[i] ~ /# alone: /) alone = 1
+        printf "%s\t%d\t%d\t%d\t%d\t%s\n", FILENAME, start[1] - 1, start[k], last, alone, names
+      }
+    }' "$1"
+}
+
+# FILE or FILE:CASE-REGEX, FILE a scenario's name (chaos), file name or path, as jobs.
+select_jobs() {
+  local arg file pattern
+  for arg in "$@"; do
+    file=${arg%%:*}
+    pattern=""
+    [ "$arg" = "$file" ] || pattern=${arg#*:}
+    [ -f "$file" ] || file=$tests/scenarios/${file%.sh}.sh
+    [ -f "$file" ] || die "no scenario $arg"
+    # Jobs are cut from a copy by line, so an edit made while they run reaches none of them.
+    mkdir -p "$T/scenarios"
+    [ -f "$T/scenarios/$(basename "$file")" ] || cp "$file" "$T/scenarios/"
+    split_cases "$T/scenarios/$(basename "$file")" | awk -F'\t' -v pattern="$pattern" 'pattern == "" || $6 ~ pattern'
+  done
+}
+
+# With $1 the last run's failures first; then jobs that run alone, then longest first by the last time each took, those never timed before the rest.
+# A job runs alone where it says so (`# alone: why`), or where the shell last took a second to answer the probe in it,
+# halfway to the 2 s it may: what other sessions take from the machine shows there first.
+order_jobs() {
+  awk -F'\t' -v OFS='\t' -v times="$hist/jobs.tsv" -v failures="$hist/failed" -v first="$1" '
+    BEGIN {
+      while ((getline l < times) > 0) { split(l, f, "\t"); took[f[1] "\t" f[2]] = f[3]; peak[f[1] "\t" f[2]] = f[4] }
+      while ((getline l < failures) > 0) failed[l] = 1
+    }
+    {
+      if (peak[key()] >= 1000) $5 = 1
+      print (first && (key() in failed)) ? 1 : 0, $5, (key() in took) ? took[key()] : 1e9, $0
+    }
+    function key(  name, names) {
+      name = $1
+      sub(/.*\//, "", name)
+      sub(/\.sh$/, "", name)
+      split($6, names, " [|] ")
+      return name "\t" names[1]
+    }' | sort -t $'\t' -s -k1,1nr -k2,2nr -k3,3nr | cut -f4-
+}
+
+# What a change in the checkout could break, by the components each scenario exercises; anything not listed here runs them all.
+changed_scenarios() {
+  local path dir all=0 picked=()
+  while IFS= read -r path; do
+    case $path in
+      *.md) ;;
+      modules/features/hyprland/tests/scenarios/*.sh) picked+=("$(basename "$path" .sh)") ;;
+      modules/features/hyprland/tests/networkmanager.py | modules/features/hyprland/tests/upower.py) picked+=(controls chaos) ;;
+      modules/features/hyprland/tests/bluez.py | modules/features/hyprland/tests/mpris.py) picked+=(controls chaos cursors design) ;;
+      modules/features/hyprland/tests/tray.qml | modules/features/hyprland/tests/trays.qml) picked+=(cursors design hotplug chaos) ;;
+      modules/features/hyprland/scripts/camera-users.c) picked+=(privacy design) ;;
+      modules/features/hyprland/scripts/backlight-watch.sh) picked+=(osd controls design) ;;
+      modules/features/hyprland/quickshell/*/*)
+        dir=${path#modules/features/hyprland/quickshell/}
+        case ${dir%%/*} in
+          bar) picked+=(hotplug workspaces cursors design controls chaos interactions idle notifications) ;;
+          center) picked+=(notifications history motion cursors design hotplug chaos interactions idle failures) ;;
+          controls) picked+=(controls cursors design chaos osd privacy interactions notifications) ;;
+          idle) picked+=(idle chaos) ;;
+          launcher) picked+=(launcher hotplug cursors design failures interactions chaos binds) ;;
+          notifications) picked+=(notifications history cursors design chaos hotplug motion interactions controls failures) ;;
+          osd) picked+=(osd motion design) ;;
+          power) picked+=(interactions hotplug cursors design binds controls) ;;
+          shortcuts) picked+=(hotplug cursors design binds failures) ;;
+          weather) picked+=(failures design cursors notifications history motion) ;;
+          *) all=1 ;;
+        esac
+        ;;
+      *) all=1 ;;
+    esac
+  done < <(git -C "$repo" diff --name-only HEAD && git -C "$repo" ls-files --others --exclude-standard)
+  if [ $all = 1 ]; then
+    echo "$tests"/scenarios/*.sh
+  else
+    printf '%s\n' "${picked[@]}" | sort -u
+  fi
+}
+
+# Sessions side by side: a core or two each while busy, and a qs that may peak at a GiB.
+default_jobs() {
+  local cores memory
+  cores=$(nproc)
+  memory=$(awk '/MemAvailable/ { print int($2 / 1024) }' /proc/meminfo)
+  awk -v cores="$cores" -v memory="$memory" 'BEGIN { n = int(cores / 2); m = int((memory - 4096) / 1536); if (m < n) n = m; print n < 1 ? 1 : n }'
+}
+
+# A session for `run`, up if it is not, with the checkout's QML in it.
+prepare() {
+  local build
+  if running; then
+    read -r build < "$T/build"
+    fakes "$build"
+  else
+    up
+  fi
   ln -sfn "$self" "$T/bin/qst"
-  export QS_TEST_DIR=$T QS_TEST_REPO=$repo QS_TEST_HOST=$host
-  [ $# -gt 0 ] || set -- "$tests"/scenarios/*.sh
-  lint_scenarios "$@"
+  mkdir -p "$T/tests"
+  : > "$T/timings.tsv"
+  rm -f "$T/case"
   stop_qs
   sync_source
-  start_qs > /dev/null
-  for file in "$@"; do
-    name=$(basename "$file" .sh)
-    rm -f "$T/case"
-    if (enter && bash -euo pipefail "$file" && "$self" check) > "$T/tests/$name.log" 2>&1; then
-      echo "ok   $name ($(grep -c '^== ' "$T/tests/$name.log") cases)"
-    else
-      failed=1
-      echo "FAIL $name, in: $(grep '^== ' "$T/tests/$name.log" | tail -1 | cut -c4-)"
-      grep -v '^== ' "$T/tests/$name.log" | tail -15 | sed 's/^/     /'
+  start_qs
+}
+
+# One job in this session: its file's lines before the first case, then its own.
+run_job() {
+  local file=$1 prelude=$2 first=$3 last=$4 key=$5 name script status=0
+  name=$(basename "$file" .sh)
+  script=$T/tests/$name.$first.sh
+  awk -v prelude="$prelude" -v first="$first" -v last="$last" 'NR <= prelude || (NR >= first && NR <= last)' "$file" > "$script"
+  export QS_TEST_DIR=$T QS_TEST_REPO=$repo QS_TEST_HOST=$host
+  rm -f "$T/case"
+  touch "$T/timings.tsv"
+  local lines peak
+  lines=$(wc -l < "$T/timings.tsv")
+  ms
+  local began=$REPLY
+  (enter && QST_FILE=$name bash -euo pipefail "$script" && QST_FILE=$name "$self" check) || status=$?
+  rm -f "$T/case"
+  peak=$(tail -n +$((lines + 1)) "$T/timings.tsv" | awk -F'\t' '$3 == "snapshot" && $5 > peak { peak = $5 } END { print peak + 0 }')
+  ms
+  QST_FILE=$name timing job $((REPLY - began)) "$key"$'\t'"$peak"
+  restore_tools
+  return $status
+}
+
+# Jobs spread over N sessions, each a QS_TEST_DIR of its own ($T itself when N is 1, else $T/w1 …); a line as each finishes.
+run_tests() {
+  local workers=() selected=() files=() n="" fail_fast=0 failed_first=0 changed=0 arg w k
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -j) n=$2; shift ;;
+      -j*) n=${1#-j} ;;
+      --fail-fast) fail_fast=1 ;;
+      --failed) failed_first=1 ;;
+      --changed) changed=1 ;;
+      -*) die "run [-j N] [--fail-fast] [--failed] [--changed] [FILE[:CASE-REGEX]...]" ;;
+      *) selected+=("$1") ;;
+    esac
+    shift
+  done
+  if [ $changed = 1 ]; then
+    while IFS= read -r arg; do [ -n "$arg" ] && selected+=("$arg"); done < <(changed_scenarios | tr ' ' '\n')
+    [ ${#selected[@]} -gt 0 ] || { echo "nothing changed that a scenario exercises"; return 0; }
+  fi
+  [ ${#selected[@]} -gt 0 ] || selected=("$tests"/scenarios/*.sh)
+  mkdir -p "$T" "$hist"
+  local queue=()
+  rm -rf "$T/scenarios"
+  mapfile -t queue < <(select_jobs "${selected[@]}" | order_jobs $failed_first)
+  [ ${#queue[@]} -gt 0 ] || die "no case matches ${selected[*]}"
+  mapfile -t files < <(printf '%s\n' "${queue[@]}" | cut -f1 | sort -u)
+  lint_scenarios "${files[@]}"
+  n=${n:-$(default_jobs)}
+  [ "$n" -le ${#queue[@]} ] || n=${#queue[@]}
+  if [ "$n" -le 1 ]; then
+    workers=("$T")
+  else
+    for k in $(seq "$n"); do workers+=("$T/w$k"); done
+  fi
+
+  ms
+  local run_began=$REPLY pids=() status=0
+  # One build for every session that has to come up.
+  for w in "${workers[@]}"; do
+    if ! QS_TEST_DIR=$w "$self" status | grep -q '^up'; then
+      QS_TEST_BUILD=$(build)
+      export QS_TEST_BUILD
+      break
     fi
   done
-  rm -f "$T/case"
-  restore_tools
+  for w in "${workers[@]}"; do
+    mkdir -p "$w"
+    QS_TEST_DIR=$w "$self" prepare > "$w.prepare.log" 2>&1 &
+    pids+=($!)
+  done
+  for k in "${!pids[@]}"; do
+    wait "${pids[$k]}" || { tail -15 "${workers[$k]}.prepare.log" >&2; die "session ${workers[$k]} did not come up"; }
+  done
+  echo "${#queue[@]} jobs on ${#workers[@]} sessions"
+
+  local -A job_of=() worker_of=() began_of=() stopped=()
+  [ "${#workers[@]}" = 1 ] || : > "$T/timings.tsv"
+  local idle=("${workers[@]}") next=0 stop=0 failed=0 done_pid file prelude first last names log took key load alone solo=""
+  : > "$T/failed"
+  while :; do
+    while [ $stop = 0 ] && [ -z "$solo" ] && [ ${#idle[@]} -gt 0 ] && [ $next -lt ${#queue[@]} ]; do
+      IFS=$'\t' read -r file prelude first last alone names <<< "${queue[$next]}"
+      # Once nothing else runs, and nothing starts beside it, so what it times is the machine's as a lone session had it.
+      if [ "$alone" = 1 ]; then
+        [ ${#job_of[@]} = 0 ] || break
+        solo=pending
+      fi
+      w=${idle[0]}
+      idle=("${idle[@]:1}")
+      mkdir -p "$w/tests"
+      # A session of its own, so --fail-fast can stop the whole job.
+      QS_TEST_DIR=$w setsid "$self" job "$file" "$prelude" "$first" "$last" "${names%% | *}" > "$w/tests/$(basename "$file" .sh).$first.log" 2>&1 < /dev/null &
+      job_of[$!]=$next
+      worker_of[$!]=$w
+      ms
+      began_of[$!]=$REPLY
+      [ "$solo" != pending ] || solo=$!
+      next=$((next + 1))
+    done
+    [ ${#job_of[@]} -gt 0 ] || break
+    status=0
+    wait -n -p done_pid "${!job_of[@]}" || status=$?
+    read -r load _ < /proc/loadavg
+    timing load "${load/./}"
+    ms
+    took=$(awk -v ms=$((REPLY - began_of[$done_pid])) 'BEGIN { printf "%.1f", ms / 1000 }')
+    IFS=$'\t' read -r file prelude first last alone names <<< "${queue[${job_of[$done_pid]}]}"
+    [ "$solo" != "$done_pid" ] || solo=""
+    w=${worker_of[$done_pid]}
+    file=$(basename "$file" .sh)
+    log=$w/tests/$file.$first.log
+    if [ -n "${stopped[$done_pid]:-}" ]; then
+      echo "stop $file: ${names%% | *} ($took s)"
+    elif [ $status = 0 ]; then
+      echo "ok   $file: ${names%% | *}$([ "$names" = "${names%% | *}" ] || echo " and $(grep -c '^== ' "$log" | awk '{ print $1 - 1 }') more") ($took s)"
+    else
+      failed=1
+      printf '%s\t%s\n' "$file" "${names%% | *}" >> "$T/failed"
+      echo "FAIL $file, in: $(grep '^== ' "$log" | tail -1 | cut -c4-) ($took s, $log)"
+      grep -v '^== ' "$log" | tail -15 | sed 's/^/     /'
+      if [ $fail_fast = 1 ] && [ $stop = 0 ]; then
+        stop=1
+        for key in "${!job_of[@]}"; do
+          [ "$key" = "$done_pid" ] && continue
+          stopped[$key]=1
+          kill -- -"$key" 2> /dev/null || true
+        done
+      fi
+    fi
+    idle+=("$w")
+    unset "job_of[$done_pid]" "worker_of[$done_pid]" "began_of[$done_pid]" "stopped[$done_pid]"
+  done
+  [ $stop = 0 ] || echo "stopped at the first failure, $((${#queue[@]} - next)) jobs not started"
+
+  if [ "${#workers[@]}" -gt 1 ]; then cat "${workers[@]/%//timings.tsv}" >> "$T/timings.tsv"; fi
+  ms
+  timing run $((REPLY - run_began))
+  remember_run
+  report "$T/timings.tsv"
   return $failed
+}
+
+# Each job's time for the next run's order, and the failures: this run's, and the last one's that did not run again.
+remember_run() {
+  awk -F'\t' -v OFS='\t' '$3 == "job" { print $1, $5, $4, $6 }' "$T/timings.tsv" > "$T/times.new"
+  awk -F'\t' -v OFS='\t' 'FNR == NR { run[$1 "\t" $2] = 1; print; next } !(($1 "\t" $2) in run)' "$T/times.new" "$hist/jobs.tsv" 2> /dev/null > "$hist/jobs.tsv.new" || true
+  mv "$hist/jobs.tsv.new" "$hist/jobs.tsv"
+  { cat "$T/failed"; awk -F'\t' 'FNR == NR { run[$1 "\t" $2] = 1; next } !(($1 "\t" $2) in run)' "$T/times.new" "$hist/failed" 2> /dev/null || true; } > "$hist/failed.new"
+  mv "$hist/failed.new" "$hist/failed"
+  rm -f "$T/times.new"
+}
+
+# The slowest cases, and where the time went: resets, waits, stays and the cases' own work.
+report() {
+  [ -s "$1" ] || return 0
+  echo "slowest cases:"
+  awk -F'\t' '$3 == "case" { printf "%8.1f s  %s: %s\n", $4 / 1000, $1, $2 }' "$1" | sort -rn | awk 'NR <= 15'
+  awk -F'\t' -v cores="$(nproc)" '
+    $3 == "case" { cases++; total += $4; files[$1] += $4 }
+    $3 == "run" { run = $4 }
+    $3 ~ /^reset:/ { reset += $4; phases[substr($3, 7)] += $4 }
+    $3 ~ /^reset~/ { beside[substr($3, 7)] += $4 }
+    $3 == "wait" { wait += $4 }
+    $3 == "stays" { stays += $4 }
+    $3 == "snapshot" { snaps++; snapping += $4; if ($5 > answered) answered = $5 }
+    $3 == "load" && $4 > load { load = $4 }
+    function share(x) { return total ? sprintf("%.0f %%", 100 * x / total) : "-" }
+    END {
+      line = "files:"
+      for (f in files) line = line sprintf(" %s %.0f s,", f, files[f] / 1000)
+      print substr(line, 1, length(line) - 1)
+      printf "phases of reset:"
+      for (p in phases) printf " %s %.1f s", p, phases[p] / 1000
+      if (length(beside)) printf ", of which side by side:"
+      for (p in beside) printf " %s %.1f s", p, beside[p] / 1000
+      printf "\n%d cases, %.0f s (the run %.0f s): reset %s, waits %s, stays %s, the cases themselves %s\n", cases, total / 1000, run / 1000, share(reset), share(wait), share(stays), share(total - reset - wait - stays)
+      if (snaps) printf "%d snapshots, %.0f ms each, %s of the time\n", snaps, snapping / snaps, share(snapping)
+      if (snaps) printf "the probe answered within %d ms (2000 allowed)%s\n", answered, load ? sprintf("; load average up to %.1f on %d cores", load / 100, cores) : ""
+    }' "$1"
 }
 
 # Assert with wait and stays: a sleep only guesses how long something takes, unless its line says why it is one.
@@ -1185,7 +1601,16 @@ case $cmd in
   wait) need_up; wait_for "$@" ;;
   stays) need_up; stays "$@" ;;
   reset) need_up; reset ;;
-  case) need_up; case_check; echo "== $*"; echo "$*" > "$T/case"; : > "$T/expected"; reset ;;
+  case)
+    need_up
+    case_check
+    echo "== $*"
+    echo "$*" > "$T/case"
+    ms
+    echo "$REPLY" > "$T/case-start"
+    : > "$T/expected"
+    reset
+    ;;
   check) need_up; case_check ;;
   expect)
     need_up
@@ -1218,7 +1643,11 @@ case $cmd in
   cursors) need_up; cursor_sweep "$@" ;;
   areas) need_up; areas | awk -F "\t" -v pattern="${1:-.}" '$3 ~ pattern' ;;
   fail) need_up; [ $# -eq 2 ] || die "fail TOOL exit|crash|missing|garbage|off"; fail_tool "$1" "$2" ;;
-  run) need_up; run_tests "$@" ;;
+  run) run_tests "$@" ;;
+  job) need_up; run_job "$@" ;;
+  prepare) prepare ;;
+  timings) report "$T/timings.tsv" ;;
+  jobs) [ $# -gt 0 ] || set -- "$tests"/scenarios/*.sh; select_jobs "$@" | order_jobs 0 | awk -F"\t" '{ sub(/.*\//, "", $1); printf "%s:%d-%d (prelude 1-%d)%s  %s\n", $1, $3, $4, $2, $5 ? ", alone" : "", $6 }' ;;
   key) need_up; input key "$@" ;;
   type) need_up; input type "$*" ;;
   pointer) need_up; pointer "$1" "$2" ;;

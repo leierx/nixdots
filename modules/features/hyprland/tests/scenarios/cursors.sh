@@ -1,6 +1,28 @@
 export QS_TEST_MONITORS="DP-1:1920x1080:1"
 
 # `qst cursors WINDOW` hovers every mouse area there that asks for a hand and fails where something else wins.
+
+# The control centre with a headset and a player in, and MENU open if given.
+controls() {
+  qst bluetooth add 11:22:33:44:55:01 "WH-1000XM4" audio-headset ok paired connected 70
+  qst player add spotify Spotify
+  qst ipc panels open controls:DP-1 > /dev/null
+  qst wait '.panel == "controls:DP-1" and .controls.media != null'
+  if [ -n "${1:-}" ]; then
+    qst ipc controls menu "$1" > /dev/null
+    qst wait ".controls.menu == \"$1\""
+  fi
+  # Until its areas hold still: the centre grows open, and a menu eases open and fills as it scans.
+  local before="" now
+  for _ in $(seq 50); do
+    now=$(qst areas ControlsPanel)
+    [ "$now" = "$before" ] && return
+    before=$now
+    qst stays true 0.1
+  done
+  echo "the control centre never held still" >&2
+  exit 1
+}
 qst case "a hand over everything clickable, on the bar, popups and in every panel"
 notify-send -a Chat "one" "a body"
 notify-send -a Chat "two" "another body"
@@ -13,17 +35,34 @@ for panel in apps:LauncherWindow clipboard:LauncherWindow monitors:LauncherWindo
   qst cursors "${panel#*:}"
 done
 
-qst case "a hand over everything clickable in the control centre, with each of its menus open"
-qst bluetooth add 11:22:33:44:55:01 "WH-1000XM4" audio-headset ok paired connected 70
-qst player add spotify Spotify
-qst ipc panels open controls:DP-1 > /dev/null
-qst wait '.panel == "controls:DP-1" and .controls.media != null'
+qst case "a hand over everything clickable in the control centre"
+controls
 qst cursors ControlsPanel
-for menu in wifi vpn bluetooth output input night; do
-  qst ipc controls menu "$menu" > /dev/null
-  qst wait ".controls.menu == \"$menu\""
-  qst cursors ControlsPanel
-done
+
+# A case per menu, each a sweep of its own, so they run side by side.
+qst case "a hand over everything clickable in the control centre's Wi-Fi menu"
+controls wifi
+qst cursors ControlsPanel
+
+qst case "a hand over everything clickable in the control centre's VPN menu"
+controls vpn
+qst cursors ControlsPanel
+
+qst case "a hand over everything clickable in the control centre's Bluetooth menu"
+controls bluetooth
+qst cursors ControlsPanel
+
+qst case "a hand over everything clickable in the control centre's output menu"
+controls output
+qst cursors ControlsPanel
+
+qst case "a hand over everything clickable in the control centre's input menu"
+controls input
+qst cursors ControlsPanel
+
+qst case "a hand over everything clickable in the control centre's night light menu"
+controls night
+qst cursors ControlsPanel
 
 qst case "a hand over a tray menu's rows"
 qst tray

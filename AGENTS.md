@@ -1364,7 +1364,13 @@ qst state '.popups | map(.screen)'    # through jq
 qst wait '.panel == ""'        # until it holds (5 s; `qst wait FILTER 10`), else fail printing the state
 qst stays '.panel == "apps"' 2 # fail if it stops holding within 2 s (1)
 qst reset                      # QS_TEST_MONITORS again with ids from 0, no windows, a fresh qs without state
-qst run                        # sync, then every tests/scenarios/*.sh; `qst run FILE` for one
+qst run                        # every case, on sessions side by side (-j N; by default half the cores, fewer if memory is short), longest first
+qst run chaos 'controls:VPN'   # a file, or its cases whose names match a regex
+qst run --changed --fail-fast  # only the scenarios the checkout's changes reach, stopping at the first failure
+qst run --failed               # the last run's failures first, then the rest
+qst run -j 1 osd               # in this session alone
+qst jobs [FILE[:REGEX]...]     # the jobs a run would take, in its order
+qst timings                    # the last run's slowest cases and where the time went ($QS_TEST_DIR/timings.tsv)
 qst key super+Return           # real windows, for workspaces and the window switcher
 qst flood 3000 --urgency 2     # notifications by the thousand over D-Bus (--apps N, --summary/--body LENGTH, --rate N)
 qst tray                       # a tray item (a yellow star) with nested submenus (tests/tray.qml); `qst tray log` shows what it was told
@@ -1474,6 +1480,11 @@ what `qst backlight` appends.
   JavaScript; the probe walks their items, and labels them `File/Type`.
 - One `qst` at a time per `QS_TEST_DIR`: two runs in one session restart
   each other's qs and PipeWire, and leave a stale one holding its socket.
+  `run -j N` (N > 1) uses sessions of its own, `$QS_TEST_DIR/w1` … `wN`, built
+  once and brought up side by side, kept up for the next run and taken down
+  by `down`; each has its own runtime dir, buses, PipeWire, fakes, cliphist
+  copy and Quickshell state and cache dirs (keyed by its config path), its
+  nixpkgs list copied from the newest any shell has fetched.
 - A `fail`ed tool stays failing until `fail TOOL off`, a reset or the end
   of `run`; `off` only undoes what `fail` did.
 - qs logs Qt's `qt.quick.hover.cursor` category in the session, which names
@@ -1481,6 +1492,13 @@ what `qst backlight` appends.
 - Never `pgrep -f <pattern> | xargs kill`: the pattern is in the calling
   shell's own command line. `qst down` finds the session's processes by its
   runtime dir and D-Bus address in their environment.
+- Killing qs alone leaves the watchers it runs (`camera-users`,
+  `backlight-watch`) waiting on inotify for good, where systemd takes the
+  whole cgroup: `stop_qs` kills the process group `setsid` gave it.
+- Each `qst` is a `writeShellApplication`, which puts its own tools (the
+  real `nmcli` among them) ahead on PATH: `enter` moves the session's
+  `bin/` back in front every time, or the shell gets the real tools over the
+  fakes.
 - Quickshell keys its state and cache dirs by config path, so the test
   shell's are its own; `qst down` deletes only those.
 
@@ -1538,8 +1556,27 @@ registered.
 `tests/scenarios/*.sh` are regression tests, run by `qst run` in the session
 (`notify-send` and `hyprctl` reach the test's, `qst` is on PATH) under
 `set -euo pipefail`. Each `qst case "what should happen"` prints the case and
-resets; the file sets `QS_TEST_MONITORS` for its cases, and stops at its first
-failure with the case named and the state that failed. Assert with `wait`
+resets; the file sets `QS_TEST_MONITORS` for its cases, and a job stops at its
+first failure with the case named and the state that failed. A job is a
+top-level `qst case` up to the next (or a top-level loop of them, kept
+whole), run after the file's lines before its first case: helpers go there,
+and no case may use what an earlier one set. `run` hands jobs to whichever
+session is free, longest first by the last time each took
+(`~/.local/state/qs-test/jobs.tsv`, with the last failures in `failed`),
+prints a line as each ends (a failure's last 15 lines and the path of its log,
+`tests/FILE.LINE.log` in its session) and then the 15 slowest cases with
+where the time went: reset (and its phases), waits, stays, the cases' own
+work and snapshots, from `timings.tsv`. `--changed` maps the files `git`
+sees changed to the scenarios that exercise them (`changed_scenarios` in
+`qs-test.sh`, the one map), and runs everything for a file it does not
+know. Reset brings PipeWire, the fakes and the monitors back side by side
+once qs has gone. A case that times something against the machine (frame
+by frame under `motion`, a launch against the clock, keys racing a panel
+opening, or a shell that needs over a second to answer the probe even
+alone) says `# alone: why` on a line inside it: its job runs with no other
+beside it, all of them before the rest, so it sees the machine a lone
+session saw; so does a job whose probe answer reached a second in the last
+run. Assert with `wait`
 and `stays`, never `sleep`: `run` refuses a scenario that sleeps unless the
 line says why after `# sleep: `. `hotplug.sh` covers unplugging, disabling and
 replugging under every panel, a tray menu and popups, every monitor going,

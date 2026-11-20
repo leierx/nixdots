@@ -5,6 +5,7 @@ shown() { echo "(.layers | map(select(endswith(\" quickshell:idle\"))) | length)
 dims() { jq -e "any(.moved[]; .label | startswith(\"Idle/\")) and all(.moved[] | select(.label | startswith(\"Idle/\")); .property == \"opacity\" and $1)" > /dev/null; }
 
 qst case "the dim darkens every screen steadily to its depth and stays there"
+# alone: a frame dropped on a loaded machine reads as a jump
 qst motion start
 qst ipc idle fade 1 0.4
 qst wait "$(shown 2)"
@@ -37,6 +38,7 @@ qst ipc idle locked
 qst wait "$(shown 0)"
 
 qst case "a hold mid-dim stops it where it is"
+# alone: it reads the dim frame by frame and where a 4 s fade is after 1 s
 qst ipc idle fade 4 0.4
 qst wait "$(shown 2)"
 qst stays true 1

@@ -2,6 +2,28 @@ export QS_TEST_MONITORS="DP-1:1920x1080:1 DP-2:2560x1440:1.25"
 
 # What a hostile or broken client can throw at the shell. Every wait also holds the shell to answering within 2 s.
 
+# The tray's chevron, the last area on a bar that asks for a hand; DP-1's bar ends at 1920.
+tray_button() {
+  qst areas 'BarWindow' | awk -F'\t' -v screen="$1" '(screen == "DP-1") == ($1 < 1920) && $6 == "true" { x = $1; y = $2 } END { print x, y }'
+}
+
+# The open menu's rows, top to bottom: full width, so centred on the card, where the levels' and pills' areas are not.
+menu_rows() {
+  qst areas 'ControlsPanel' | awk -F'\t' '$2 > 60 && $2 < 1000 { print $1, $2 }' | sort -n -k2 | awk '{ n[$1]++; at[$1] = at[$1] " " $2 } END { for (x in n) if (n[x] > best) { best = n[x]; bx = x } print bx at[bx] }'
+}
+
+# The control centre's areas by name (pill:wifi, row:Pixel_7128), as "x y", on the screen given or DP-1.
+named() {
+  qst areas 'ControlsPanel' | awk -F'\t' -v name="$1" -v screen="${2:-DP-1}" '(screen == "DP-1") == ($1 < 1920) && index($3, ":" name) && substr($3, index($3, ":" name) + length(name) + 1, 1) ~ /^( |$)/ { print $1, $2; exit }'
+}
+
+press_named() {
+  local x y
+  read -r x y < <(named "$@")
+  [ -n "$x" ] || { echo "no area named $1" >&2; exit 1; }
+  qst click left "$x" "$y"
+}
+
 qst case "a flood of critical notifications keeps five popups, plays almost nothing, and one card counts what it turned away"
 qst flood 3000 --urgency 2
 qst wait '(.popups | length) == 5'
@@ -11,6 +33,7 @@ qst wait 'any(.history[]; .app == "Notifications" and (.summary | test("notifica
 qst stays '.notifications <= 105' 1
 
 qst case "a flood from thousands of apps keeps the history bounded and the center quick to open"
+# alone: the flood is timed against the 2 s the probe may take, which other sessions on the machine eat into
 qst flood 3000 --apps 3000
 # Slower than the door turns away, so the history fills past what it keeps.
 qst flood 150 --apps 150 --app Slow --rate 25
@@ -57,6 +80,7 @@ qst wait '(.screens | length) == 2 and all(.screens[]; .monitor != null)' 10
 qst wait '(.layers | map(select(endswith(" quickshell:bar"))) | length) == 2'
 
 qst case "a workspace crowded past what Hyprland can tile still previews in the window switcher"
+# alone: the shell takes over a second to answer the probe here even with the machine to itself
 for n in $(seq 40); do qst spawn foot -a "crowd$n" sleep 600; done
 qst wait '(.windows | length) == 40' 30
 qst key super+Tab
@@ -80,16 +104,6 @@ qst wait '.status[0].glyphs[0] == "Microphone"'
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
 qst stays '(.privacy.mic | length) == 40 and .panel == "controls:DP-1"' 1
-
-# The tray's chevron, the last area on a bar that asks for a hand; DP-1's bar ends at 1920.
-tray_button() {
-  qst areas 'BarWindow' | awk -F'\t' -v screen="$1" '(screen == "DP-1") == ($1 < 1920) && $6 == "true" { x = $1; y = $2 } END { print x, y }'
-}
-
-# The open menu's rows, top to bottom: full width, so centred on the card, where the levels' and pills' areas are not.
-menu_rows() {
-  qst areas 'ControlsPanel' | awk -F'\t' '$2 > 60 && $2 < 1000 { print $1, $2 }' | sort -n -k2 | awk '{ n[$1]++; at[$1] = at[$1] " " $2 } END { for (x in n) if (n[x] > best) { best = n[x]; bx = x } print bx at[bx] }'
-}
 
 qst case "thirty tray items all wait behind the chevron, which keeps the bar off the clock"
 qst tray add crowd 30
@@ -281,25 +295,15 @@ qst ipc notifications clear
 wait
 
 qst case "a run of copied screenshots is one card"
+picture=$QS_TEST_REPO/modules/features/hyprland/tests/tray-icon.svg
 for n in $(seq 30); do
   notify-send -a Screenshot -n accessories-screenshot -i "file://$picture" -h string:x-canonical-private-synchronous:screenshot "Screenshot copied to clipboard" "$n"
 done
 qst wait '(.history | length) == 1 and (.popups | length) == 1'
 qst stays '(.history | length) == 1' 1
 
-# The control centre's areas by name (pill:wifi, row:Pixel_7128), as "x y", on the screen given or DP-1.
-named() {
-  qst areas 'ControlsPanel' | awk -F'\t' -v name="$1" -v screen="${2:-DP-1}" '(screen == "DP-1") == ($1 < 1920) && index($3, ":" name) && substr($3, index($3, ":" name) + length(name) + 1, 1) ~ /^( |$)/ { print $1, $2; exit }'
-}
-
-press_named() {
-  local x y
-  read -r x y < <(named "$@")
-  [ -n "$x" ] || { echo "no area named $1" >&2; exit 1; }
-  qst click left "$x" "$y"
-}
-
 qst case "three hundred networks and hostile names: the list scrolls inside its menu and the filter finds one"
+# alone: the shell takes over a second to answer the probe here even with the machine to itself
 qst network wifi many 300 "Altibox "
 qst network wifi json "$(jq -cn '[["Right‮to left", 90, "wpa2", "x"], ["two\nlines", 88, "open", ""], ["zero​width​", 86, "wpa2", "x"], [("A network a kilobyte long " * 40), 84, "wpa2", "x"], ["<b>bold</b> & co", 82, "open", ""]]')"
 qst ipc panels open controls:DP-1 > /dev/null

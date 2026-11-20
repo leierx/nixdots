@@ -238,6 +238,7 @@ qst stays '.osd == null' 1
 qst actions | grep -q 'brightnessctl --quiet --device intel_backlight set' || { qst actions; echo "brightnessctl was not run"; exit 1; }
 
 qst case "the player that played last gets the card; stopped, it goes"
+# alone: removing a playing player races Quickshell polling its position, and a loaded machine widens the race
 qst player add spotify Spotify Playing
 qst player add firefox Firefox Paused
 open
