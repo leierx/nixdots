@@ -82,9 +82,9 @@ qst stays '(.popups | length) == 0' 1
 
 qst case "a flood plays a sound at most every 300 ms, and an app saying the same again is one card"
 start=$(date +%s%N)
+for _ in $(seq 20); do notify-send -a Echo "same" "same body"; done
 for n in $(seq 40); do notify-send -a Burst "burst $n" & done
 wait
-for _ in $(seq 20); do notify-send -a Echo "same" "same body"; done
 qst wait '(.history | map(select(.app == "Echo")) | length) == 1 and (.history | map(select(.app == "Burst")) | length) >= 3'
 took=$((($(date +%s%N) - start) / 1000000))
 sounds=$(qst actions | grep -c '^pw-play' || true)

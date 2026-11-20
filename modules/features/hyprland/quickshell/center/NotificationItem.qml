@@ -151,7 +151,7 @@ Item {
         Text {
           visible: !root.single
           Layout.maximumWidth: content.width * 0.6
-          text: root.entry.notification.summary
+          text: root.entry.summary
           textFormat: Text.PlainText
           color: Theme.fg
           elide: Text.ElideRight
@@ -210,7 +210,7 @@ Item {
               id: summary
 
               Layout.fillWidth: true
-              text: root.entry.notification.summary
+              text: root.entry.summary
               textFormat: Text.PlainText
               color: Theme.fg
               wrapMode: Text.Wrap

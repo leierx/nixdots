@@ -11,9 +11,11 @@ Item {
   property real radius: size / 2
 
   readonly property string appIcon: entry?.appIcon ?? ""
-  readonly property bool picture: image !== ""
+  // One that fails to load (an app naming a file that is no picture) gives way to what comes after it.
+  readonly property bool picture: image !== "" && pictureView.status !== Image.Error
+  readonly property bool icon: appIcon !== "" && iconView.status !== Image.Error
   // An app icon sent without an image is Quickshell's image too, which a badge would only repeat.
-  readonly property bool badged: picture && appIcon !== "" && appIcon !== image
+  readonly property bool badged: picture && icon && appIcon !== image
 
   implicitWidth: size
   implicitHeight: size
@@ -26,21 +28,25 @@ Item {
   }
 
   IconImage {
+    id: iconView
+
     anchors.centerIn: parent
-    visible: !root.picture && root.appIcon !== ""
-    source: root.picture ? "" : root.appIcon
+    visible: !root.picture && root.icon
+    source: root.appIcon
     implicitSize: Math.round(root.size * 0.7)
   }
 
   Text {
     anchors.centerIn: parent
-    visible: !root.picture && root.appIcon === ""
+    visible: !root.picture && !root.icon
     text: (root.entry?.notification.appName || "?")[0].toUpperCase()
     color: Theme.fg
     font: Theme.heading
   }
 
   NotificationImage {
+    id: pictureView
+
     anchors.fill: parent
     visible: root.picture
     source: root.image

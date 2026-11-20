@@ -221,7 +221,7 @@ Item {
             id: title
 
             Layout.fillWidth: true
-            text: root.newest?.notification.summary || "Notification"
+            text: root.newest?.summary || "Notification"
             textFormat: Text.PlainText
             color: Theme.fg
             wrapMode: root.unfolded ? Text.Wrap : Text.NoWrap

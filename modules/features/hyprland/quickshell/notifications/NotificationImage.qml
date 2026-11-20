@@ -5,6 +5,7 @@ ClippingRectangle {
   id: root
 
   property alias source: image.source
+  readonly property alias status: image.status
   property int size: 40
 
   implicitWidth: size

@@ -24,9 +24,20 @@ Singleton {
   readonly property int perApp: 3
   // An app saying the same again within it updates the card it has, as a stack tag does.
   readonly property int repeatWindow: 2000
-  // A burst of popups is one sound: no more than one per this, a critical one aside.
+  // A burst of popups is one sound: no more than one per this, critical ones counted apart.
   readonly property int soundGap: 300
   property real soundAt: 0
+  property real criticalSoundAt: 0
+  // As many as the saved history keeps; past it the oldest go, so a flood from many apps costs no more than one from a few.
+  readonly property int maxEntries: 100
+  // Past this many a second, critical ones counted apart, the rest are turned away at the door, where they cost next to nothing.
+  readonly property int floodLimit: 30
+  // Text past these is never read, and laying out a megabyte of it held the shell for seconds.
+  readonly property int maxSummary: 500
+  readonly property int maxBody: 5000
+  readonly property int maxApp: 100
+  // Plain, since it changes with every notification: the second counted, what it let in, and what it turned away by app.
+  property var flood: ({ second: 0, normal: 0, critical: 0, total: 0, dropped: {} })
 
   // Like GNOME: over a fullscreen window only critical notifications pop up, and going fullscreen puts the others away.
   readonly property bool fullscreen: ToplevelManager.activeToplevel?.fullscreen ?? false
@@ -39,7 +50,49 @@ Singleton {
   }
 
   function appKey(entry) {
-    return entry.notification.desktopEntry || entry.notification.appName;
+    return root.clip(entry.notification.desktopEntry || entry.notification.appName, root.maxApp);
+  }
+
+  function clip(text, length) {
+    return text && text.length > length ? `${text.slice(0, length)}…` : text ?? "";
+  }
+
+  function admit(notification) {
+    const flood = root.flood;
+    const second = Math.floor(Date.now() / 1000);
+    if (second !== flood.second) {
+      flood.second = second;
+      flood.normal = 0;
+      flood.critical = 0;
+    }
+    const kind = notification.urgency === NotificationUrgency.Critical ? "critical" : "normal";
+    if (flood[kind] < root.floodLimit) {
+      flood[kind]++;
+      return true;
+    }
+    const app = root.clip(notification.appName, root.maxApp) || "An app";
+    const apps = Object.keys(flood.dropped);
+    const key = app in flood.dropped || apps.length < 20 ? app : "others";
+    flood.dropped[key] = (flood.dropped[key] ?? 0) + 1;
+    flood.total++;
+    floodOver.restart();
+    return false;
+  }
+
+  // Once a flood has stopped, one card says what it turned away.
+  Timer {
+    id: floodOver
+
+    interval: 2000
+    onTriggered: {
+      const counts = Object.entries(root.flood.dropped).sort((a, b) => b[1] - a[1]);
+      const named = counts.filter(([app]) => app !== "others").slice(0, 3).map(([app]) => app);
+      const from = counts.length > named.length ? `${named.join(", ")} and others` : named.length > 1 ? `${named.slice(0, -1).join(", ")} and ${named[named.length - 1]}` : named[0];
+      const total = root.flood.total;
+      root.flood.total = 0;
+      root.flood.dropped = {};
+      Quickshell.execDetached(["notify-send", "-a", "Notifications", "-i", "dialog-warning", `${total.toLocaleString(Qt.locale(), "f", 0)} notifications dropped`, `${from} sent more than ${root.floodLimit} a second.`]);
+    }
   }
 
   // Volume and brightness scripts send one of these so a new value replaces the last.
@@ -77,10 +130,12 @@ Singleton {
   // One still popped up is kept until its popup goes.
   function trimHistory() {
     const counts = {};
+    let kept = 0;
     for (const entry of root.entries.slice()) {
       const key = root.appKey(entry);
       counts[key] = (counts[key] ?? 0) + 1;
-      if (counts[key] > root.perApp && !entry.popup) entry.notification.expire();
+      if (!entry.popup && (counts[key] > root.perApp || kept >= root.maxEntries)) entry.notification.expire();
+      else kept++;
     }
   }
 
@@ -115,7 +170,7 @@ Singleton {
   }
 
   function appIcon(notification) {
-    return iconSource(notification.appIcon) || (notification.appName ? iconSource(DesktopEntries.heuristicLookup(notification.appName)?.icon) : "");
+    return iconSource(notification.appIcon) || (notification.appName ? iconSource(DesktopEntries.heuristicLookup(root.clip(notification.appName, root.maxApp))?.icon) : "");
   }
 
   // A theme icon the theme lacks would draw nothing where the app's icon or initial should be.
@@ -144,11 +199,14 @@ Singleton {
   // Low urgency is silent, whatever the app asks; a sound-name is looked up in the freedesktop theme, ours if it is not there.
   function playSound(notification) {
     const hints = notification.hints;
-    if (hints["suppress-sound"] || notification.urgency === NotificationUrgency.Low) return;
+    // A flood under way, one turned away in the last two seconds, is silent.
+    if (hints["suppress-sound"] || notification.urgency === NotificationUrgency.Low || floodOver.running) return;
     const now = Date.now();
-    if (notification.urgency !== NotificationUrgency.Critical && now - root.soundAt < root.soundGap) return;
-    root.soundAt = now;
-    const ours = Quickshell.shellPath(`notifications/sounds/${notification.urgency === NotificationUrgency.Critical ? "critical.ogg" : "notification.oga"}`);
+    const critical = notification.urgency === NotificationUrgency.Critical;
+    if (now - (critical ? root.criticalSoundAt : root.soundAt) < root.soundGap) return;
+    if (critical) root.criticalSoundAt = now;
+    else root.soundAt = now;
+    const ours = Quickshell.shellPath(`notifications/sounds/${critical ? "critical.ogg" : "notification.oga"}`);
     const file = hints["sound-file"]?.replace(/^file:\/\//, "");
     const name = hints["sound-name"] ?? "";
     if (file) {
@@ -180,11 +238,11 @@ Singleton {
       uid: entry.uid,
       time: entry.time.getTime(),
       checked: entry.checked,
-      appName: notification.appName ?? "",
+      appName: root.clip(notification.appName, root.maxApp),
       appIcon: lasting("appIcon", notification.appIcon),
-      desktopEntry: notification.desktopEntry ?? "",
-      summary: notification.summary ?? "",
-      body: notification.body ?? "",
+      desktopEntry: root.clip(notification.desktopEntry, root.maxApp),
+      summary: root.clip(notification.summary, root.maxSummary),
+      body: root.clip(notification.body, root.maxBody),
       image: lasting("image", notification.image),
       urgency: notification.urgency
     };
@@ -205,7 +263,7 @@ Singleton {
   }
 
   function key(notification) {
-    return `${notification.appName}\n${notification.summary}\n${notification.body}`;
+    return `${root.clip(notification.appName, root.maxApp)}\n${root.clip(notification.summary, root.maxSummary)}\n${root.clip(notification.body, root.maxBody)}`;
   }
 
   // A reload hands the live notifications over too; one already read back from disk becomes the live one.
@@ -213,7 +271,7 @@ Singleton {
     target: History
 
     function onRestored(records) {
-      const live = new Set(root.entries.map(entry => root.key(entry.notification)));
+      const live = new Set(root.entries.map(entry => entry.key));
       const restored = records.filter(record => !live.has(root.key(record))).map(record => {
         const notification = pastComponent.createObject(root, {
           appName: record.appName,
@@ -291,10 +349,17 @@ Singleton {
 
     onNotification: notification => {
       const tag = root.tag(notification);
+      const key = root.key(notification);
+      const now = Date.now();
       const same = (tag ? root.entries.find(entry => root.tag(entry.notification) === tag) : null)
-        ?? (notification.lastGeneration ? root.entries.find(entry => entry.restored && root.key(entry.notification) === root.key(notification)) : null)
-        ?? root.entries.find(entry => !entry.restored && root.key(entry.notification) === root.key(notification) && Date.now() - entry.time.getTime() < root.repeatWindow)
+        ?? (notification.lastGeneration ? root.entries.find(entry => entry.restored && entry.key === key) : null)
+        ?? root.entries.find(entry => !entry.restored && now - entry.time.getTime() < root.repeatWindow && entry.key === key)
         ?? null;
+      // An update in place grows nothing, so only what would add a card counts.
+      if (!same && !notification.lastGeneration && !root.admit(notification)) {
+        notification.expire();
+        return;
+      }
       // A reload hands every notification over again; they have been seen.
       const popup = !notification.lastGeneration && root.wantsPopup(notification.urgency === NotificationUrgency.Critical);
       if (notification.transient && !popup) {

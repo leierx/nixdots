@@ -148,7 +148,7 @@ Item {
 
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignTop
-                text: root.entry.notification.summary
+                text: root.entry.summary
                 textFormat: Text.PlainText
                 color: Theme.fg
                 wrapMode: Text.Wrap

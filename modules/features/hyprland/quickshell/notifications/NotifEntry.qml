@@ -33,7 +33,9 @@ QtObject {
   readonly property bool critical: notification.urgency === NotificationUrgency.Critical
   readonly property string appIcon: Notifs.appIcon(notification)
   readonly property string image: Notifs.picture(notification.image)
-  readonly property string body: Notifs.cleanBody(notification.body)
+  readonly property string key: Notifs.key(notification)
+  readonly property string summary: Notifs.clip(notification.summary, Notifs.maxSummary)
+  readonly property string body: Notifs.cleanBody(Notifs.clip(notification.body, Notifs.maxBody))
   readonly property NotificationAction defaultAction: Array.from(notification.actions).find(a => a.identifier === "default") ?? null
   readonly property var buttons: Array.from(notification.actions).filter(a => a.identifier !== "default")
   readonly property var progress: notification.hints.value
