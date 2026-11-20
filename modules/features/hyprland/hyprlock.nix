@@ -28,9 +28,10 @@ in
       programs.hyprlock = {
         enable = true;
         settings = {
+          # the black the idle fade ends in, so the lock follows it without a flash
           background = {
             monitor = "";
-            path = "${./assets/lockscreen-background.jpg}";
+            color = "rgb(${hex adw.dark_5})";
           };
 
           general.hide_cursor = true;
