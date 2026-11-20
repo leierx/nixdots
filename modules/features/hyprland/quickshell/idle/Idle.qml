@@ -6,31 +6,55 @@ import Quickshell.Io
 import Quickshell.Wayland
 import qs.common
 
-// The screens going dark before hyprlock: hypridle starts it and, on any input, cancels it, so its timers stay the only ones.
+// The screens dimming before hyprlock: hypridle starts it and, on any input, cancels it, so its timers stay the only ones.
 Scope {
   id: root
 
   property real level: 0
+  // hyprlock's screenshot takes in the dim, so it stays put from the lock command asking until the session is locked.
+  property bool held: false
+  property bool locked: false
 
   NumberAnimation {
     id: dimming
 
     target: root
     property: "level"
-    to: 1
     easing.type: Easing.InQuad
   }
 
   IpcHandler {
     target: "idle"
 
-    function fade(seconds: int): void {
-      if (dimming.running || root.level > 0) return;
+    function fade(seconds: int, depth: real): void {
+      if (root.held || root.locked || dimming.running || root.level > 0) return;
+      dimming.to = Math.max(0, Math.min(1, depth));
       dimming.duration = seconds * 1000;
       dimming.start();
     }
 
     function cancel(): void {
+      if (root.held) return;
+      dimming.stop();
+      root.level = 0;
+    }
+
+    function hold(): real {
+      dimming.stop();
+      root.held = true;
+      return root.level;
+    }
+
+    function locked(): void {
+      root.held = false;
+      root.locked = true;
+      dimming.stop();
+      root.level = 0;
+    }
+
+    function unlocked(): void {
+      root.held = false;
+      root.locked = false;
       dimming.stop();
       root.level = 0;
     }

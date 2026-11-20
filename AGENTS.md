@@ -403,7 +403,7 @@ Notes on specific features:
       border as the foreground at libadwaita's alphas over any surface, its
       type scale as `font` values (`Theme.body`, `heading`, `caption`,
       `title4`, …; Adwaita Sans at GTK's 11pt) and its radii (button 9, card
-      12, window 15), plus the shadows', the power menu's and the idle fade's black. Every
+      12, window 15), plus the shadows', the power menu's and the idle dim's black. Every
       colour the shell draws is one of these. A button is the foreground at
       10 % at rest (none when flat), 15 % under the pointer and 25 % pressed or
       open, and every hover or press fades over `Theme.fade` (150 ms). Panel widths follow GNOME Shell's, in em of the body
@@ -983,18 +983,36 @@ Notes on specific features:
   - hyprlock talks to fprintd itself (`auth:fingerprint`, on when
     `services.fprintd` is), so the NixOS half turns `fprintAuth` off for
     hyprlock's PAM service.
+  - hyprlock's background is each screen's own screenshot, blurred (3
+    passes of 8) at brightness 0.6, with `contrast = 1` so brightness stays a
+    plain multiply; `dark_5` only without screencopy. The clock is Adwaita
+    Sans Bold at 64 pt over the date at 24 (centres 185 and 100), the field
+    at −100 and the fingerprint prompt at −170. Its `fadeIn` (600 ms) crossfades from the
+    screenshot to the blurred background, so the lock takes over from the
+    screen as it was without an edge; `fadeOut` is off, since it would fade
+    back to that screenshot and then cut to the desktop.
   - Every lock (idle, sleep, the power menu's Lock) goes through
-    `loginctl lock-session`, so hypridle's `lock_cmd`, which never starts a
-    second hyprlock, is the only thing that runs it.
-  - An idle lock comes after the screens fade to black (`idle/`, the
-    `quickshell:idle` layer on every screen, on the overlay layer and taking
-    no input): hypridle's listener 10 s before its lock runs `qs ipc -c shell
-    call idle fade 10`, and the same listener's resume `cancel`, so any input
-    during the fade brings the screens back. An unlock with no key or mouse to resume the
-    listener (a fingerprint) cancels it through hypridle's `on_unlock_cmd`. hypridle stays the one clock and
-    the one watcher of input, and without a shell the lock simply comes. hyprlock
-    is that same black (the palette's `dark_5`, no picture), so the lock
-    follows the fade without a flash. Sleep and the power menu lock at once.
+    `loginctl lock-session`, so hypridle's `lock_cmd` is the only thing that
+    runs hyprlock: `lock` (in `hypridle.nix`), which never starts a second
+    one. It asks the shell how dark the idle dim is (`idle hold`, which also
+    keeps it still and deaf to `cancel`, since hyprlock's screenshot takes it
+    in) and, under a dim, starts hyprlock on a copy of its config in
+    `$XDG_RUNTIME_DIR` whose brightness is 0.6 ÷ (1 − darkness), so every lock
+    ends on the same picture, dimmed first or not, a lock mid-dim too. Once it
+    has the lock, hypridle's `on_lock_cmd` (`idle locked`) drops the dim under
+    it and keeps any from starting, so an unlock shows the plain desktop;
+    `on_unlock_cmd` and `lock` once hyprlock exits (`idle unlocked`) clear it
+    all, a hold that never got the lock too.
+  - An idle lock comes after the screens dim (`idle/`, the
+    `quickshell:idle` layer on every screen, black on the overlay layer and taking
+    no input) to the lock's own brightness (to 40 % black for 0.6, worked
+    out from hyprlock's settings), so the lock's fade-in only blurs:
+    hypridle's listener 10 s before its lock runs `qs ipc -c shell call idle
+    fade 10 0.4`, and the same listener's resume `cancel`, so any input
+    during the dim brings the screens back. An unlock with no key or mouse to resume the
+    listener (a fingerprint) clears it through hypridle's `on_unlock_cmd`. hypridle stays the one clock and
+    the one watcher of input, and without a shell the lock simply comes, at
+    0.6. Sleep and the power menu lock at once.
   - Caffeine (the center's switch, `Caffeine`, `qs ipc -c shell call
     caffeine toggle|set|active`) is the `caffeine.service` user unit,
     `systemd-inhibit --what=idle` part of the session target: hypridle honours
@@ -1406,8 +1424,11 @@ own and closes it; `launcher.sh` types as the launcher opens on a fresh
 shell and times the open, and clicks a window on another monitor
 with it open, then the bare desktop there; `failures.sh` makes the shell's tools fail (`qst
 fail`); `motion.sh` expands and collapses a center group and fades the OSD
-under `qst motion`. `idle.sh` runs the idle fade on two monitors under
-`qst motion`, clicks the bar through it and cancels it. `history.sh` restarts the shell over a history
+under `qst motion`. `idle.sh` runs the idle dim on two monitors under
+`qst motion` to its depth, clicks the bar through it and cancels it, and
+plays the lock command's part: a hold mid-dim and at its end, a cancel it
+keeps out, nothing dimming while locked, and an unlock clearing a hold
+that never got the lock. `history.sh` restarts the shell over a history
 with a picture only the server held (sent by `gdbus`), clears it and finds
 the saved pictures gone, starts on a damaged file and keeps transient ones
 out; the probe's `historyFile` and `historyImages` are where it looks.
