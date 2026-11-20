@@ -54,6 +54,7 @@ import-tree.nix           dir -> module that imports every .nix beneath it
 flake.lock                pinned inputs
 README.md                 brief user-facing doc
 AGENTS.md                 this file
+TODO.md                   upstream candidates and leads to chase, with handovers
 
 modules/flake/            the substrate (see below)
 modules/features/         one flat file per feature (+ hyprland/, moonshine/, neovim/, pi-agent/, tmux/)
