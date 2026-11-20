@@ -220,7 +220,8 @@ Scope {
     const problems = [];
     const moved = [];
     const all = Array.from(probe.tracks.values()).filter(track => track.frames.length === probe.samples && probe.samples > 2);
-    const props = [["x", 1, 1], ["y", 2, 1], ["width", 3, 1], ["height", 4, 1], ["opacity", 5, 0.02]];
+    // Each frame's step counts above a hair, so a slow fade moves; going back and forth takes a few px (or 0.06) each way.
+    const props = [["x", 1, 0.1, 3], ["y", 2, 0.1, 3], ["width", 3, 0.1, 3], ["height", 4, 0.1, 3], ["opacity", 5, 0.001, 0.06]];
     const steps = (track, index, least) => {
       const out = [];
       for (let i = 1; i < track.frames.length; i++) {
@@ -233,16 +234,16 @@ Scope {
     for (const track of probe.tracks.values()) {
       for (const [name, index, least] of props) {
         const moves = steps(track, index, least);
-        if (moves.length > 0) moved.push({ label: track.label, property: name, from: track.frames[0][index], to: track.frames[track.frames.length - 1][index], start: moves[0].time, end: moves[moves.length - 1].time });
+        if (moves.length > 0 && Math.abs(track.frames[track.frames.length - 1][index] - track.frames[0][index]) > least) moved.push({ label: track.label, property: name, from: track.frames[0][index], to: track.frames[track.frames.length - 1][index], start: moves[0].time, end: moves[moves.length - 1].time });
       }
     }
     for (const track of all) {
-      for (const [name, index, least] of props) {
+      for (const [name, index, least, significant] of props) {
         const moves = steps(track, index, least);
         if (moves.length >= 3) easing.add(track.window);
         const forth = moves.filter(move => move.delta > 0).reduce((sum, move) => sum + move.delta, 0);
         const back = -moves.filter(move => move.delta < 0).reduce((sum, move) => sum + move.delta, 0);
-        if (forth > 3 * least && back > 3 * least) problems.push(`${track.label}: its ${name} goes back and forth (+${forth.toFixed(1)}, -${back.toFixed(1)})`);
+        if (forth > significant && back > significant) problems.push(`${track.label}: its ${name} goes back and forth (+${forth.toFixed(1)}, -${back.toFixed(1)})`);
       }
     }
     for (const track of all) {
