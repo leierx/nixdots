@@ -361,6 +361,8 @@ in
     in
     lib.optionalAttrs (lib.hasSuffix "-linux" system) {
       packages.qs-test = qsTest;
+      # writeShellApplication shellchecks it, which only building it runs.
+      checks.qs-test = qsTest;
       checks.qmllint = pkgs.runCommand "qmllint" { } ''
         ${lib.concatMapStrings (shell: "${lib.getExe qsLint} ${shell}\n") (lib.unique shells)}
         touch "$out"

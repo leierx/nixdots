@@ -1109,6 +1109,8 @@ nix fmt                  # formatter = nixfmt-tree
 - `checks.<system>.notification-markup` (Linux) — `qmltestrunner` over
   `tests/tst_markup.qml`: what the notification body filter
   (`notifications/markup.js`) keeps, drops and escapes.
+- `checks.<system>.qs-test` (Linux) — builds the qs-test package, so
+  `writeShellApplication`'s shellcheck runs over `scripts/qs-test.sh`.
 - `checks.<system>.notification-history` (Linux) — `qmltestrunner` over
   `tests/tst_history.qml`: the saved history read back, damaged files and
   records dropped, and its limits.

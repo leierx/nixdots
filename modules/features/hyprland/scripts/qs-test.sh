@@ -206,10 +206,10 @@ install_probe() {
   sed -i -e 's/^import Quickshell$/&\nimport qs.probe/' -e '$ s/^}$/\n  Probe {}\n}/' "$T/shell/shell.qml"
   grep -q 'Probe {}' "$T/shell/shell.qml" || die "could not add the probe to shell.qml"
   local file name
-  for file in $(grep -rlE '(PanelWindow|PopupWindow|FloatingWindow|^Overlay) \{$' "$T/shell" --include='*.qml'); do
+  while IFS= read -r file; do
     name=${file#"$T/shell/"}
     sed -i -E -e "s#^((\\s*)(component \\w+: )?(PanelWindow|PopupWindow|FloatingWindow|Overlay) \\{)\$#\\1\\n\\2  ProbeWindow {\\n\\2    file: \"${name%.qml}\"\\n\\2  }\\n#" -e '0,/^import /s/^import /import qs.probe\nimport /' "$file"
-  done
+  done < <(grep -rlE '(PanelWindow|PopupWindow|FloatingWindow|^Overlay) \{$' "$T/shell" --include='*.qml')
 }
 
 # Nothing in the session may reach the real machine: these log what would have run instead.
