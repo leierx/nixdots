@@ -282,7 +282,7 @@ Notes on specific features:
     not, with an optional glyph before its text and an expander arrow after,
     and any mouse button it accepts passed to `clicked`; `CloseButton` is
     its round flat 24 px form), `Keycap` (a key as the shortcuts window and
-    the power menu draw it, filled), `Glyph` (a Material Symbols path at a size), `BatteryGlyph` (GNOME's battery cell, filled to the charge),
+    the power menu draw it, filled), `Glyph` (a Material Symbols path at a size), `BatteryGlyph` (GNOME's battery cell, filled to the charge), `ListRow` (a row of a panel's list), `TextField` (libadwaita's entry),
     `WheelSteps` (wheel events as whole notches, a touchpad's small steps
     added up, for everything the wheel steps through), `Detached` (what
     must outlive the shell: apps, links, `nixpkgs-run` and the clipboard's
@@ -450,8 +450,16 @@ Notes on specific features:
         toggles it, and every other chevron is that arrow too, turned (a
         submenu's, the calendar's months, the tray's overflow); a key a
         `Keycap`; a Material Symbols icon a `Glyph` and an app's a
-        Quickshell `IconImage`; a notification's `NotificationIcon`; anything
-        floating a `Card` in an `Overlay`.
+        Quickshell `IconImage`; a notification's `NotificationIcon`; a row
+        of a list in a panel a `ListRow` (36 px, its 20 px symbol in a
+        column of its own so every name lines up, what it says on the right);
+        a text field a `TextField` (libadwaita's entry, 36 px, an eye for a
+        password); anything floating a `Card` in an `Overlay`. The control
+        centre and the notification center are one design: panels at
+        `windowRadius`, cards on them `Theme.card` at `cardRadius` padded
+        `Theme.padding`, 20 px symbols and titles at `title4` throughout, a
+        section named in `heading` dimmed, and both grow out of what opened
+        them.
       - Shapes: a pill or a circle is `radius: height / 2`, never half its
         size typed out. Rounded rectangles take `Theme`'s radius for their
         role: `smallRadius` (6) for list and menu rows, keycaps and
@@ -460,8 +468,8 @@ Notes on specific features:
         cards on a panel; `windowRadius` (15, `Card`'s default) for panels,
         windows and notification popups.
       - Sizes: bar items are 26 px with 18 px glyphs and 10 pt lettering
-        (`BarButton`'s); buttons 34 px (`Button`'s); rows in a popover list
-        32 px with `Theme.border` rules (the tray menu's); count badges 8 to
+        (`BarButton`'s); buttons 34 px (`Button`'s); rows in a panel's list 36 px (`ListRow`),
+        in the tray's popover menu 32 px, with `Theme.border` rules; count badges 8 to
         10 pt bold on a pill. Panels and popovers pad `Theme.padding` (12),
         menus 6, and keep `Theme.gap` (10) from the screen's edges; a popover under the bar
         sits the bar window's own height (`Window.height`) plus `Theme.gap`
@@ -918,10 +926,11 @@ Notes on specific features:
       notifications over too, and one already read back by app, summary and
       body becomes the live one.
     - `center/` is the notification center (`qs ipc -c shell call panels
-      toggle center`), GNOME's layout, dropping down from the middle of the bar with
-      a short fade and slide: notifications on the left (40em, wider than
+      toggle center`), GNOME's layout, growing out of the clock as the control centre
+      grows out of its button (the same scale and fade): notifications on the left (40em, wider than
       GNOME's 29em, which read long and narrow), Collapse all and Clear (which also closes it) below, and `Calendar.qml` on
-      the right (locale's first weekday, ISO week numbers, Adwaita's arrows turned sideways or the wheel for
+      the right (the date as a `title4` title, locale's first weekday, ISO week numbers in dim
+      lettering, Adwaita's arrows turned sideways or the wheel for
       months (`WheelSteps`, as every wheel), the date returns to today) with the weather under it, left out
       where the screen is too short for both. Opening it puts the popups away. Notifications are grouped
       per app the way end-4's dots do (`NotificationGroup`,
@@ -996,30 +1005,36 @@ Notes on specific features:
       a slider that turns it on as it moves) and Do Not Disturb; without
       NetworkManager one dim "Network · Not available" in the first three's
       place, which comes back with it. While something records, GNOME's "In
-      use": a pill per kind (its symbol orange, `Theme.inUse`, in a chip of
-      its own) naming the apps from their desktop entries, a click raising
+      use": a pill per kind (the quick toggles' pill, its symbol orange,
+      `Theme.inUse`) naming the apps from their desktop entries, a click raising
       the first one's window (a wlr-foreign-toplevel whose app id is the
       app's name or its desktop entry's id or `StartupWMClass`), an arrow
       pointer where none has one. Last, the player worth a card (`Media`:
       MPRIS, the one that started playing last, else one paused; none while
       all stop), washed in its album art (the art blurred and darkened behind
       it with `MultiEffect`, masked to the card): the art, set down a little
-      while paused, the title (a click raises the app), artist, progress, and
-      previous, a big white play/pause and next, dimmed where the player
-      cannot. A menu opens right under the row that holds its pill (or
+      while paused, the title (a click raises the app), artist, the progress as
+      the levels' slider (dragged, clicked or wheeled 5 s a notch, it seeks
+      where the player can; read afresh as the card opens, so it never fills
+      in from nothing) over the time and the length, and previous, a big
+      white play/pause and next, dimmed where the player cannot. A menu opens right under the row that holds its pill (or
       under the levels for sound), one at a time, each in a slot of its own
       that eases open and shut over 200 ms `OutCubic` (so switching menus
       closes one as the next opens; rows coming, going and moving in a list
       ease too), kept by name in `Controls`
       so it outlives the lists changing around it, and takes what the screen
       leaves after everything else, with room for at least four rows besides
-      a password row, the card scrolling past that. Each is a title, past 20
-      entries a filter (and their count), the list (32 px rows, names plain
+      a password row, the card scrolling past that. Each is GNOME's header
+      (its symbol in a chip, blue while on, and its title), past 20 entries a
+      filter (a `TextField`, and their count), the list (`ListRow`s: the
+      symbol, the name bold where it is the one in use, then on the right
+      its state in words only while under way or wrong, a lock, a charge, the
+      link, a tick or a switch; a password row a `TextField` under it; names plain
       text on one line, elided, stripped of control characters, direction
       overrides and invisible marks by `names.js`), and what leads on:
       Network Settings… (nm-connection-editor, also for hidden networks),
       Bluetooth Settings… (`bluetui`
-      in wezterm). One click, one action, no buttons on hover:
+      in wezterm), rows of their own under a rule with a cog. One click, one action, no buttons on hover:
       - Wi-Fi (`Net`, Quickshell.Networking for the first Wi-Fi card,
         scanning only while its menu is open): connected first, then saved
         ones, then the rest by signal; a click disconnects the connected one,
@@ -1137,8 +1152,9 @@ Notes on specific features:
     saved" with the path (`~` for home), untagged, so each file keeps its own
     card, with Open (also a click on the card) and Show in Folder
     (`xdg-open` on the file or its folder), waited on in the background.
-    Escape in slurp sends nothing; a failure sends a critical "Screenshot
-    failed" with why.
+    Both are transient and silent (`suppress-sound`), so they leave nothing
+    in the history, and a copy goes after 3 s. Escape in slurp sends
+    nothing; a failure sends a critical "Screenshot failed" with why.
   - Binds reference configured packages (`config.programs.wezterm.package`,
     `config.programs.quickshell.package`, …) rather than `pkgs.*`.
   - The HM half reads `osConfig` (compositor package, xkb layout, fprintd,
@@ -1411,7 +1427,7 @@ and nothing paired unless `QS_TEST_BLUETOOTH=none`. `nmcli` in the session is
 the real one but for `connection up`: libnm will not register its secret agent
 with a NetworkManager not run by root, so a wrapper asks the fake and waits as
 nmcli does, saying "Secrets were required" for a profile set to want them.
-MPRIS players (`tests/mpris.py`) sit on the session bus, one mock each, named
+MPRIS players (`tests/mpris.py`, seeking with `SetPosition`, a cover with `player add`'s ART) sit on the session bus, one mock each, named
 by `QS_MPRIS_NAME` as it starts, since Quickshell reads a player the moment its
 name appears. hyprsunset runs in the session as it does in the user's.
 

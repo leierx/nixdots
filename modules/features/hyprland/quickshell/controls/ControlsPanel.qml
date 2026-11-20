@@ -64,6 +64,13 @@ Overlay {
     if (!root.open) root.hidden();
   }
 
+  // A track's time as m:ss, or h:mm:ss past an hour.
+  function clock(seconds: real): string {
+    const s = Math.max(0, Math.floor(seconds));
+    const pad = n => String(n).padStart(2, "0");
+    return s >= 3600 ? `${Math.floor(s / 3600)}:${pad(Math.floor(s % 3600 / 60))}:${pad(s % 60)}` : `${Math.floor(s / 60)}:${pad(s % 60)}`;
+  }
+
   function batteryState(): string {
     if (Power.charging) return Power.remaining > 0 ? `Full in ${Power.duration(Power.remaining)}` : "Charging";
     if (Power.plugged) return "Plugged in";
@@ -92,8 +99,8 @@ Overlay {
         const ssid = network.name;
         const asking = ssid === Net.asking;
         const failure = Net.failures[ssid] ?? "";
-        const state = network.state === ConnectionState.Connecting ? "Connecting…" : network.state === ConnectionState.Disconnecting ? "Disconnecting…" : network.connected ? "Connected" : Net.enterprise(network) && !network.known ? "Enterprise" : network.known ? "Saved" : "";
-        return { key: ssid, glyph: Net.signalGlyph(network.signalStrength), title: Net.name(network) || "Hidden network", lock: Net.secured(network), current: network.connected, tick: false, note: failure || (asking ? Net.askError : "") || state, bad: failure !== "" || asking && Net.askError !== "", asking, action: network.connected && Net.portal ? "Sign in" : "", target: network };
+        const state = network.state === ConnectionState.Connecting ? "Connecting…" : network.state === ConnectionState.Disconnecting ? "Disconnecting…" : network.connected ? "" : Net.enterprise(network) && !network.known ? "Enterprise" : network.known ? "Saved" : "";
+        return { key: ssid, glyph: Net.signalGlyph(network.signalStrength), title: Net.name(network) || "Hidden network", lock: Net.secured(network), current: network.connected, note: failure || (asking ? Net.askError : "") || state, bad: failure !== "" || asking && Net.askError !== "", asking, action: network.connected && Net.portal ? "Sign in" : "", target: network };
       });
       // Gone while its password is typed: kept, saying so, with what was typed.
       if (Net.asking !== "" && !list.some(row => row.asking)) list.unshift({ key: Net.asking, glyph: Symbols.wifi0, title: Names.clean(Net.asking), lock: true, note: "Out of range", bad: true, asking: true, target: null });
@@ -262,7 +269,7 @@ Overlay {
       anchors.verticalCenter: parent.verticalCenter
       radius: height / 2
       padding: 0
-      flat: !level.mutes
+      flat: true
       enabled: level.mutes && level.enabled
       checked: level.muted
       glyph: level.glyph
@@ -320,7 +327,7 @@ Overlay {
     property color dimInk: toggle.on ? Theme.accentFg : Theme.fgDim
     property color rule: toggle.on ? Theme.accentFg : Theme.border
 
-    height: 52
+    height: 48
     radius: height / 2
     opacity: toggle.unavailable ? 0.5 : 1
     color: toggle.on ? Theme.accentBg : Theme.button
@@ -567,13 +574,16 @@ Overlay {
     }
   }
 
-  // An open menu: its title, a filter once the list is long, the list, and what it leads on to.
+  // An open menu, GNOME's: a header (its symbol in a chip, blue while on, and its title), a filter once the list is long, the list, and what it leads on to.
   component Menu: Rectangle {
     id: menuBox
 
     required property string key
     // The most it may take; the list scrolls within.
     property real limit: 1e6
+    readonly property int rowHeight: 36
+    // A row asking for a password: its own row and the field under it.
+    readonly property int askingHeight: 2 * rowHeight + 12
     // Wi-Fi's rows are built at most every 150 ms: three hundred networks each changing strength in a scan would otherwise rebuild them three hundred times.
     // Night light's menu is its strength rather than a list.
     readonly property bool tint: key === "night"
@@ -583,6 +593,9 @@ Overlay {
     readonly property bool filtering: all.length > 20
     readonly property var shown: filter.text === "" ? all : all.filter(row => row.asking || row.title.toLowerCase().includes(filter.text.toLowerCase()))
     readonly property string title: ({ wifi: "Wi-Fi", vpn: "VPN", bluetooth: "Bluetooth", output: "Sound Output", input: "Sound Input", night: "Night Light" })[key] ?? key
+    readonly property var toggle: Controls.toggles.find(toggle => toggle.key === key) ?? null
+    readonly property string glyph: toggle?.glyph ?? (key === "input" ? Microphone.glyph : Volume.glyph)
+    readonly property bool on: toggle?.on ?? true
     readonly property var footer: key === "wifi" || key === "vpn" ? ["Network Settings…"] : key === "bluetooth" ? ["Bluetooth Settings…"] : []
     // Said in place of a list with nothing in it.
     readonly property string empty: {
@@ -592,7 +605,7 @@ Overlay {
       if (key === "input") return "No inputs";
       return "";
     }
-    readonly property real chrome: heading.height + (filterBox.visible ? filterBox.height + 6 : 0) + (foot.visible ? foot.height + 7 : 0) + 2 * 6 + 6
+    readonly property real chrome: heading.height + (filter.visible ? filter.height + 6 : 0) + (foot.visible ? foot.height + 13 : 0) + 2 * 6
 
     onChangesChanged: {
       if (settle.running) {
@@ -616,8 +629,8 @@ Overlay {
       Qt.callLater(root.reveal, item);
     }
 
-    implicitHeight: chrome + (tint ? 32 : Math.max(list.contentHeight, 32))
-    height: Math.min(implicitHeight, Math.max(chrome + 4 * 32 + (all.some(row => row.asking) ? 76 : 32), limit))
+    implicitHeight: chrome + (tint ? rowHeight : Math.max(list.contentHeight, rowHeight))
+    height: Math.min(implicitHeight, Math.max(chrome + 4 * rowHeight + (all.some(row => row.asking) ? askingHeight : rowHeight), limit))
     radius: Theme.cardRadius
     color: Theme.card
 
@@ -640,14 +653,39 @@ Overlay {
       y: 6
       width: parent.width - 12
 
-      Row {
+      Item {
         id: heading
 
-        height: 40
-        spacing: 10
-        leftPadding: 6
+        width: parent.width
+        height: 48
+
+        Rectangle {
+          id: chip
+
+          x: 4
+          anchors.verticalCenter: parent.verticalCenter
+          width: 36
+          height: 36
+          radius: height / 2
+          color: menuBox.on ? Theme.accentBg : Theme.button
+
+          Behavior on color {
+            ColorAnimation {
+              duration: Theme.fade
+            }
+          }
+
+          Glyph {
+            anchors.centerIn: parent
+            path: menuBox.glyph
+            size: 20
+            color: menuBox.on ? Theme.accentFg : Theme.fg
+          }
+        }
 
         Text {
+          anchors.left: chip.right
+          anchors.leftMargin: 12
           anchors.verticalCenter: parent.verticalCenter
           text: menuBox.title
           color: Theme.fg
@@ -655,6 +693,8 @@ Overlay {
         }
 
         Text {
+          anchors.right: parent.right
+          anchors.rightMargin: 10
           anchors.verticalCenter: parent.verticalCenter
           visible: menuBox.filtering || menuBox.tint
           text: menuBox.tint ? `${NightLight.temperature} K` : `${menuBox.all.length}`
@@ -663,42 +703,17 @@ Overlay {
         }
       }
 
-      Rectangle {
-        id: filterBox
+      TextField {
+        id: filter
 
         visible: menuBox.filtering
         width: parent.width
-        height: visible ? 32 : 0
-        radius: Theme.smallRadius
-        color: Theme.button
-        border.width: filter.activeFocus ? 2 : 0
-        border.color: Theme.accentBg
-
-        TextInput {
-          id: filter
-
-          anchors.fill: parent
-          anchors.leftMargin: 10
-          anchors.rightMargin: 10
-          verticalAlignment: TextInput.AlignVCenter
-          color: Theme.fg
-          font: Theme.body
-          clip: true
-        }
-
-        Text {
-          anchors.fill: filter
-          verticalAlignment: Text.AlignVCenter
-          visible: filter.text === ""
-          text: "Filter"
-          color: Theme.fgDim
-          font: Theme.body
-        }
+        placeholder: "Filter"
       }
 
       Item {
         width: 1
-        height: filterBox.visible ? 6 : 0
+        height: filter.visible ? 6 : 0
       }
 
       Item {
@@ -706,8 +721,8 @@ Overlay {
         height: menuBox.height - menuBox.chrome
 
         Text {
-          x: 10
-          height: 32
+          x: 40
+          height: menuBox.rowHeight
           verticalAlignment: Text.AlignVCenter
           visible: menuBox.shown.length === 0 && !menuBox.tint
           text: menuBox.all.length === 0 ? menuBox.empty : "Nothing matches"
@@ -719,7 +734,7 @@ Overlay {
           objectName: "slider:night"
           x: 10
           width: parent.width - 20
-          height: 32
+          height: menuBox.rowHeight
           visible: menuBox.tint
           value: NightLight.strength
           dim: !NightLight.on
@@ -777,88 +792,50 @@ Overlay {
             required property var modelData
             readonly property bool asking: modelData.asking ?? false
             readonly property string askAgain: asking ? (modelData.note ?? "") : ""
+            readonly property bool sound: menuBox.key === "output" || menuBox.key === "input"
 
             width: ListView.view.width
-            height: asking ? 76 : 32
+            height: asking ? menuBox.askingHeight : menuBox.rowHeight
             radius: Theme.smallRadius
-            color: rowArea.containsMouse || asking ? Theme.hover : "transparent"
-
-            Behavior on color {
-              ColorAnimation {
-                duration: Theme.fade
-              }
-            }
+            color: asking ? Theme.hover : "transparent"
             onHeightChanged: if (asking) Qt.callLater(menuBox.reveal, row)
-            onAskingChanged: if (asking) password.forceActiveFocus()
+            onAskingChanged: if (asking) password.input.forceActiveFocus()
             // Asked again after a wrong one, the field takes the keyboard back for the next try.
-            onAskAgainChanged: if (asking) password.forceActiveFocus()
-            Component.onCompleted: if (asking) password.forceActiveFocus()
+            onAskAgainChanged: if (asking) password.input.forceActiveFocus()
+            Component.onCompleted: if (asking) password.input.forceActiveFocus()
 
-            MouseArea {
-              id: rowArea
-
-              objectName: `row:${row.modelData.title}`
+            ListRow {
               width: parent.width
-              height: 32
-              hoverEnabled: true
-              cursorShape: (menuBox.key === "output" || menuBox.key === "input") && row.modelData.current ? Qt.ArrowCursor : Qt.PointingHandCursor
+              areaName: `row:${row.modelData.title}`
+              glyph: row.modelData.glyph
+              title: row.modelData.title
+              strong: row.modelData.current === true
+              acts: !(row.sound && row.modelData.current)
               onClicked: root.choose(menuBox.key, row.modelData)
-            }
-
-            Glyph {
-              id: lead
-
-              x: 8
-              y: 7
-              visible: row.modelData.glyph !== ""
-              path: row.modelData.glyph
-              size: 18
-              color: Theme.fg
-            }
-
-            Text {
-              id: name
-
-              x: lead.visible ? 34 : 10
-              y: 16 - height / 2
-              width: Math.min(implicitWidth, parent.width - x - trailing.width - (lock.visible ? 40 : 20))
-              text: row.modelData.title
-              textFormat: Text.PlainText
-              maximumLineCount: 1
-              elide: Text.ElideRight
-              color: Theme.fg
-              font: row.modelData.current ? Theme.heading : Theme.body
-            }
-
-            Glyph {
-              id: lock
-
-              anchors.left: name.right
-              anchors.leftMargin: 6
-              y: 9
-              visible: row.modelData.lock ?? false
-              path: Symbols.lock
-              size: 14
-              color: Theme.fgDim
-            }
-
-            Row {
-              id: trailing
-
-              anchors.right: parent.right
-              anchors.rightMargin: 8
-              y: 16 - height / 2
-              spacing: 8
 
               Text {
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.min(implicitWidth, row.width * (row.modelData.bad ? 0.62 : 0.5))
+                width: Math.min(implicitWidth, row.width * (row.modelData.bad ? 0.55 : 0.4))
                 visible: (row.modelData.note ?? "") !== "" && !signIn.visible
                 text: row.modelData.note ?? ""
                 textFormat: Text.PlainText
                 elide: Text.ElideRight
                 color: row.modelData.bad ? Theme.destructive : Theme.fgDim
                 font: Theme.caption
+              }
+
+              // Something else than the row's own click: the captive portal's sign-in.
+              Button {
+                id: signIn
+
+                objectName: "sign-in"
+                anchors.verticalCenter: parent.verticalCenter
+                implicitHeight: 28
+                padding: 12
+                visible: (row.modelData.action ?? "") !== ""
+                text: row.modelData.action ?? ""
+                font: Theme.caption
+                onClicked: Net.signIn()
               }
 
               Text {
@@ -878,9 +855,17 @@ Overlay {
 
               Glyph {
                 anchors.verticalCenter: parent.verticalCenter
+                visible: row.modelData.lock ?? false
+                path: Symbols.lock
+                size: 16
+                color: Theme.fgDim
+              }
+
+              Glyph {
+                anchors.verticalCenter: parent.verticalCenter
                 visible: (row.modelData.link ?? "") !== ""
                 path: row.modelData.link === "connected" ? Symbols.bluetoothConnected : Symbols.bluetooth
-                size: 18
+                size: 20
                 color: row.modelData.link === "connected" ? Theme.accentBg : Theme.fgFaint
               }
 
@@ -888,7 +873,7 @@ Overlay {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: row.modelData.current === true && row.modelData.toggle === undefined && row.modelData.tick !== false
                 path: root.check
-                size: 18
+                size: 20
                 color: Theme.accentBg
               }
 
@@ -899,89 +884,28 @@ Overlay {
                 scale: 0.85
                 onClicked: root.choose(menuBox.key, row.modelData)
               }
-
-              // Something else than the row's own click: the captive portal's sign-in.
-              Button {
-                id: signIn
-
-                objectName: "sign-in"
-                anchors.verticalCenter: parent.verticalCenter
-                implicitHeight: 26
-                padding: 10
-                visible: (row.modelData.action ?? "") !== ""
-                text: row.modelData.action ?? ""
-                font: Theme.caption
-                onClicked: Net.signIn()
-              }
             }
 
             Row {
               visible: row.asking
               x: 10
-              y: 36
+              y: menuBox.rowHeight + 4
               width: parent.width - 20
               spacing: 8
 
-              Rectangle {
+              TextField {
+                id: password
+
                 width: parent.width - connect.width - parent.spacing
-                height: 32
-                radius: Theme.smallRadius
-                color: Theme.bg
-                border.width: 2
-                border.color: Theme.accentBg
-
-                TextInput {
-                  id: password
-
-                  anchors.left: parent.left
-                  anchors.leftMargin: 10
-                  anchors.right: eye.left
-                  anchors.rightMargin: 6
-                  anchors.verticalCenter: parent.verticalCenter
-                  echoMode: eye.shown ? TextInput.Normal : TextInput.Password
-                  color: Theme.fg
-                  font: Theme.body
-                  clip: true
-                  onAccepted: if (connect.enabled) connect.clicked(Qt.LeftButton)
-                }
-
-                Text {
-                  anchors.fill: password
-                  verticalAlignment: Text.AlignVCenter
-                  visible: password.text === ""
-                  text: "Password"
-                  color: Theme.fgDim
-                  font: Theme.body
-                }
-
-                Item {
-                  id: eye
-
-                  property bool shown: false
-
-                  anchors.right: parent.right
-                  width: 32
-                  height: parent.height
-
-                  Glyph {
-                    anchors.centerIn: parent
-                    path: eye.shown ? Symbols.visibilityOff : Symbols.visibility
-                    size: 18
-                    color: Theme.fgDim
-                  }
-
-                  MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: eye.shown = !eye.shown
-                  }
-                }
+                password: true
+                placeholder: "Password"
+                onAccepted: if (connect.enabled) connect.clicked(Qt.LeftButton)
               }
 
               Button {
                 id: connect
 
-                implicitHeight: 32
+                implicitHeight: 36
                 text: "Connect"
                 font: Theme.body
                 enabled: password.text !== "" && (menuBox.key !== "wifi" || row.modelData.target !== null)
@@ -1007,6 +931,11 @@ Overlay {
         color: Theme.border
       }
 
+      Item {
+        width: 1
+        height: foot.visible ? 6 : 0
+      }
+
       Column {
         id: foot
 
@@ -1016,39 +945,14 @@ Overlay {
         Repeater {
           model: menuBox.footer
 
-          Rectangle {
-            id: action
-
+          ListRow {
             required property string modelData
 
             width: foot.width
-            height: 32
-            radius: Theme.smallRadius
-            color: actionArea.containsMouse ? Theme.hover : "transparent"
-
-            Behavior on color {
-              ColorAnimation {
-                duration: Theme.fade
-              }
-            }
-
-            Text {
-              x: 10
-              anchors.verticalCenter: parent.verticalCenter
-              text: action.modelData
-              color: Theme.fg
-              font: Theme.body
-            }
-
-            MouseArea {
-              id: actionArea
-
-              objectName: `action:${action.modelData}`
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: menuBox.act(action.modelData)
-            }
+            areaName: `action:${modelData}`
+            glyph: Symbols.settings
+            title: modelData
+            onClicked: menuBox.act(modelData)
           }
         }
       }
@@ -1211,15 +1115,16 @@ Overlay {
     spacing: 8
 
     Text {
+      leftPadding: 4
       text: "In use"
       color: Theme.fgDim
-      font: Theme.captionHeading
+      font: Theme.heading
     }
 
     Grid {
       columns: 2
-      columnSpacing: 8
-      rowSpacing: 8
+      columnSpacing: 12
+      rowSpacing: 12
 
       Repeater {
         model: ScriptModel {
@@ -1234,8 +1139,8 @@ Overlay {
           readonly property var window: root.windowOf(modelData.apps)
           readonly property var names: modelData.apps.map(app => DesktopEntries.heuristicLookup(app)?.name ?? app)
 
-          width: (inUse.width - 8) / 2
-          height: 52
+          width: (inUse.width - 12) / 2
+          height: 48
           radius: height / 2
           color: area.containsMouse && area.enabled ? Theme.buttonHover : Theme.button
 
@@ -1245,22 +1150,14 @@ Overlay {
             }
           }
 
-          Rectangle {
+          Glyph {
             id: chip
 
-            x: 8
+            x: 14
             anchors.verticalCenter: parent.verticalCenter
-            width: 36
-            height: 36
-            radius: height / 2
-            color: Theme.inUseBg
-
-            Glyph {
-              anchors.centerIn: parent
-              path: use.modelData.glyph
-              size: 20
-              color: Theme.inUse
-            }
+            path: use.modelData.glyph
+            size: 20
+            color: Theme.inUse
           }
 
           Column {
@@ -1312,8 +1209,9 @@ Overlay {
 
     readonly property bool art: cover.status === Image.Ready
     readonly property bool playing: Media.player?.isPlaying ?? false
+    readonly property real length: (Media.player?.lengthSupported ?? false) ? Media.player.length : 0
 
-    implicitHeight: 112
+    implicitHeight: info.implicitHeight + 2 * Theme.padding
     radius: Theme.cardRadius
     color: Theme.card
 
@@ -1361,7 +1259,7 @@ Overlay {
     Rectangle {
       id: artwork
 
-      x: 14
+      x: Theme.padding
       anchors.verticalCenter: parent.verticalCenter
       width: 84
       height: 84
@@ -1399,10 +1297,12 @@ Overlay {
     }
 
     Column {
+      id: info
+
       anchors.left: artwork.right
-      anchors.leftMargin: 14
+      anchors.leftMargin: Theme.padding
       anchors.right: parent.right
-      anchors.rightMargin: 14
+      anchors.rightMargin: Theme.padding
       anchors.verticalCenter: parent.verticalCenter
       spacing: 2
 
@@ -1435,93 +1335,105 @@ Overlay {
         font: Theme.body
       }
 
-      Item {
+      // Dragged or clicked, it seeks where the player can.
+      Slider {
+        objectName: "slider:media"
         width: parent.width
-        height: 14
-
-        Rectangle {
-          anchors.verticalCenter: parent.verticalCenter
-          width: parent.width
-          height: 4
-          radius: height / 2
-          visible: (Media.player?.lengthSupported ?? false) && Media.player.length > 0
-          color: Theme.trough
-
-          Rectangle {
-            width: parent.width * Math.max(0, Math.min(1, (Media.player?.position ?? 0) / Math.max(1, Media.player?.length ?? 1)))
-            height: parent.height
-            radius: parent.radius
-            color: Theme.fg
-
-            Behavior on width {
-              NumberAnimation {
-                duration: 1000
-              }
-            }
-          }
+        visible: card.length > 0
+        enabled: Media.player?.canSeek ?? false
+        value: card.length > 0 ? (Media.player?.position ?? 0) / card.length : 0
+        onMoved: value => {
+          if (Media.player) Media.player.position = value * card.length;
+        }
+        onStepped: notches => {
+          if (Media.player) Media.player.position = Math.max(0, Math.min(card.length, Media.player.position + notches * 5));
         }
       }
 
-      Row {
-        spacing: 6
+      Item {
+        width: parent.width
+        height: 40
 
-        Button {
+        Text {
+          anchors.left: parent.left
           anchors.verticalCenter: parent.verticalCenter
-          flat: true
-          radius: height / 2
-          padding: 0
-          enabled: Media.player?.canGoPrevious ?? false
-          opacity: enabled ? 1 : 0.5
-          glyph: Symbols.previous
-          glyphSize: 22
-          onClicked: Media.player?.previous()
+          visible: card.length > 0
+          text: root.clock(Media.player?.position ?? 0)
+          color: Theme.fgStrong
+          font: Theme.caption
         }
 
-        Rectangle {
-          anchors.verticalCenter: parent.verticalCenter
-          width: 42
-          height: 42
-          radius: height / 2
-          color: Theme.fg
-          opacity: playArea.enabled ? 1 : 0.5
-          scale: playArea.pressed ? 0.92 : playArea.containsMouse ? 1.06 : 1
+        Row {
+          anchors.centerIn: parent
+          spacing: 6
 
-          Behavior on scale {
-            NumberAnimation {
-              duration: 120
-              easing.type: Easing.OutCubic
+          Button {
+            anchors.verticalCenter: parent.verticalCenter
+            flat: true
+            radius: height / 2
+            padding: 0
+            enabled: Media.player?.canGoPrevious ?? false
+            opacity: enabled ? 1 : 0.5
+            glyph: Symbols.previous
+            glyphSize: 20
+            onClicked: Media.player?.previous()
+          }
+
+          Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 40
+            height: 40
+            radius: height / 2
+            color: Theme.fg
+            opacity: playArea.enabled ? 1 : 0.5
+            scale: playArea.pressed ? 0.92 : playArea.containsMouse ? 1.06 : 1
+
+            Behavior on scale {
+              NumberAnimation {
+                duration: 120
+                easing.type: Easing.OutCubic
+              }
+            }
+
+            Glyph {
+              anchors.centerIn: parent
+              path: card.playing ? Symbols.pause : Symbols.play
+              size: 24
+              color: Theme.bg
+            }
+
+            MouseArea {
+              id: playArea
+
+              objectName: "media:play"
+              anchors.fill: parent
+              hoverEnabled: true
+              enabled: Media.player?.canTogglePlaying ?? false
+              cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+              onClicked: Media.player?.togglePlaying()
             }
           }
 
-          Glyph {
-            anchors.centerIn: parent
-            path: card.playing ? Symbols.pause : Symbols.play
-            size: 24
-            color: Theme.bg
-          }
-
-          MouseArea {
-            id: playArea
-
-            objectName: "media:play"
-            anchors.fill: parent
-            hoverEnabled: true
-            enabled: Media.player?.canTogglePlaying ?? false
-            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-            onClicked: Media.player?.togglePlaying()
+          Button {
+            anchors.verticalCenter: parent.verticalCenter
+            flat: true
+            radius: height / 2
+            padding: 0
+            enabled: Media.player?.canGoNext ?? false
+            opacity: enabled ? 1 : 0.5
+            glyph: Symbols.next
+            glyphSize: 20
+            onClicked: Media.player?.next()
           }
         }
 
-        Button {
+        Text {
+          anchors.right: parent.right
           anchors.verticalCenter: parent.verticalCenter
-          flat: true
-          radius: height / 2
-          padding: 0
-          enabled: Media.player?.canGoNext ?? false
-          opacity: enabled ? 1 : 0.5
-          glyph: Symbols.next
-          glyphSize: 22
-          onClicked: Media.player?.next()
+          visible: card.length > 0
+          text: root.clock(card.length)
+          color: Theme.fgStrong
+          font: Theme.caption
         }
       }
     }
@@ -1534,7 +1446,7 @@ Overlay {
     y: root.top + Theme.gap
     width: Math.min(Math.round(28 * Theme.em), root.width - 2 * Theme.gap)
     height: Math.min(column.implicitHeight + 2 * Theme.padding, root.available)
-    radius: Theme.cardRadius
+    radius: Theme.windowRadius
     focus: true
     opacity: root.shown
     // Grown out of its button.
@@ -1655,7 +1567,7 @@ Overlay {
               id: toggleRow
 
               Row {
-                spacing: 8
+                spacing: 12
 
                 Repeater {
                   model: ScriptModel {
@@ -1666,7 +1578,7 @@ Overlay {
                   Pill {
                     required property var modelData
 
-                    width: (column.width - 8) / 2
+                    width: (column.width - 12) / 2
                     toggle: modelData
                   }
                 }

@@ -305,3 +305,11 @@ qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70
 qst wait '.controls.bluetooth.devices[0].battery == 70'
 open bluetooth
 [ -n "$(at row:Headset)" ]
+
+qst case "the player's progress shows where the track is as the centre opens, and seeks where it is clicked"
+qst player add spotify Spotify
+open
+qst wait '.controls.media.position >= 96 and .controls.media.position < 110 and .controls.media.length == 251'
+read -r x y < <(at slider:media)
+qst click left "$x" "$y"
+qst wait '.controls.media.position > 115 and .controls.media.position < 140'

@@ -11,7 +11,7 @@ Rectangle {
   readonly property var next: Weather.hours.slice(1, 7)
   // The next day's rather than the rest of today's, which late in the evening is an hour or two.
   readonly property var day: Weather.hours.slice(0, 24).map(hour => hour.temperature)
-  readonly property int padding: 18
+  readonly property int padding: Theme.padding
 
   // MET's SVGs drawn at the size shown, so they stay sharp.
   component WeatherIcon: Image {

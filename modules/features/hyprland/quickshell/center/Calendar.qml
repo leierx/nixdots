@@ -77,7 +77,7 @@ ColumnLayout {
     Text {
       text: root.locale.toString(root.today, "d MMMM yyyy")
       color: Theme.fg
-      font: Theme.title2
+      font: Theme.title4
 
       MouseArea {
         anchors.fill: parent
@@ -141,24 +141,11 @@ ColumnLayout {
 
         required property var modelData
 
-        Item {
-          width: root.cell
-          height: root.cell
-
-          Rectangle {
-            anchors.centerIn: parent
-            width: 26
-            height: 22
-            radius: Theme.smallRadius
-            color: Theme.card
-          }
-
-          Cell {
-            // The week of the row's Monday, wherever the locale starts it.
-            text: root.isoWeek(week.modelData[(8 - root.locale.firstDayOfWeek) % 7])
-            color: Theme.fgDim
-            font: Theme.caption
-          }
+        Cell {
+          // The week of the row's Monday, wherever the locale starts it.
+          text: root.isoWeek(week.modelData[(8 - root.locale.firstDayOfWeek) % 7])
+          color: Theme.fgDim
+          font: Theme.caption
         }
 
         Repeater {

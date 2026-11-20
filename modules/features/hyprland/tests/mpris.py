@@ -86,7 +86,7 @@ def load(mock, parameters):
         ("Next", "", "", "self.mpris_go(self, 1)"),
         ("Previous", "", "", "self.mpris_go(self, -1)"),
         ("Seek", "x", "", ""),
-        ("SetPosition", "ox", "", ""),
+        ("SetPosition", "ox", "", "self.props['org.mpris.MediaPlayer2.Player']['Position'] = dbus.Int64(args[1]); self.EmitSignal('org.mpris.MediaPlayer2.Player', 'Seeked', 'x', [args[1]])"),
         ("OpenUri", "s", "", ""),
     ])
     mock.mpris_status = status

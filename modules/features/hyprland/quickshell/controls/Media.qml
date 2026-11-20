@@ -18,6 +18,8 @@ Singleton {
   // The card is open: the position moves only when asked.
   property bool watched: false
 
+  onWatchedChanged: if (watched) root.player?.positionChanged()
+
   Instantiator {
     model: root.players
 
@@ -36,6 +38,8 @@ Singleton {
     interval: 1000
     repeat: true
     running: root.watched && (root.player?.isPlaying ?? false)
+    // At once as the card opens, so it shows where the track is rather than where it was.
+    triggeredOnStart: true
     onTriggered: root.player?.positionChanged()
   }
 }
