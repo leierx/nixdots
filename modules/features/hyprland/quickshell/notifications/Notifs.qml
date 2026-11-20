@@ -113,6 +113,12 @@ Singleton {
     return iconSource(notification.appIcon) || (notification.appName ? iconSource(DesktopEntries.heuristicLookup(notification.appName)?.icon) : "");
   }
 
+  // A theme icon the theme lacks would draw nothing where the app's icon or initial should be.
+  function picture(source) {
+    const icon = /^image:\/\/icon\/(.+)$/.exec(source);
+    return icon && !Quickshell.hasThemeIcon(icon[1]) ? "" : source;
+  }
+
   function iconSource(icon) {
     if (!icon) return "";
     if (icon.startsWith("file://")) return icon;

@@ -21,7 +21,9 @@ usage: qs-test COMMAND
   wait JQ [SECONDS]     until JQ holds on the state (5 s), or fail and print it
   stays JQ [SECONDS]    fail if JQ stops holding within SECONDS (1)
   reset                 QS_TEST_MONITORS again, ids from 0, no windows, and a fresh qs without saved state
-  case NAME             a test's next case: print it and reset
+  case NAME             a test's next case: check the last one left no problems, print it and reset
+  expect [--may] REGEX  this case must (or may) log a warning matching REGEX
+  check                 whether the case so far left problems
   run [FILE...]         copy the checkout's QML in, run tests (tests/scenarios/*.sh) in the session, qst on PATH
   key COMBO...          press keys in turn (ctrl+n, super+d, shift+Tab, Escape)
   type TEXT             type TEXT into the focused surface
@@ -48,7 +50,13 @@ usage: qs-test COMMAND
 
   log                   qs's whole log
   hyprlog               Hyprland's log
-  problems              qs's warnings and errors, less the expected ones
+  problems              qs's warnings and errors, less tests/known-warnings and expected ones
+  census                what the probe finds wrong on screen now
+  areas [REGEX]         mouse areas on screen by label: x y label enabled clicks hand
+  cursor X Y [SHAPE]    the cursor there and what set it; fails if not SHAPE (hand, arrow, closed)
+  cursors [WINDOW]      fail where an area that asks for a hand shows none, in WINDOW (BarWindow, LauncherWindow, …) or all
+  motion start|stop     record every visible item each frame; stop prints what moved, failing on a jump
+  fail TOOL MODE        TOOL fails as MODE (exit, crash, missing, garbage, off) wherever the shell runs it
   actions               what the session tried to run on the machine (power, systemd-run, ...)
 
 env: QS_TEST_DIR (session dir), QS_TEST_HOST (host whose config is built, $host),
@@ -85,25 +93,68 @@ testqs() {
   )
 }
 
+# The regexes no case fails on: tests/known-warnings, and what this case expects (`expect`).
+allowed() {
+  grep -v '^#' "$tests/known-warnings" | cut -f1
+  [ -s "$T/expected" ] && cut -f2- "$T/expected"
+  return 0
+}
+
+# qs's warnings from line $1 on that nothing allows, and whether it still runs.
 problems() {
-  # Quickshell warns of a monitor removed it never tracked: FALLBACK, or one a refresh dropped in a burst; the session has no PipeWire; with no output at all, Qt moves
-  # windows to a placeholder screen for a moment, and each warns before it is gone or placed.
-  awk '/creating placeholder screen/ { held = 1; next } held && /Layershell screen does not correspond/ { next } { held = 0; print }' "$T/qs.log" |
-    grep -E 'WARN|ERROR' | grep -vE 'UPower|qt\.qpa\.services|Could not register app ID|qt\.qpa\.wayland\.textinput|removal for monitor ".*" which was not previously tracked|Failed to connect pipewire context' || true
+  local patterns
+  patterns=$(allowed | paste -sd '|')
+  # With no output at all, Qt moves windows to a placeholder screen for a moment, and each warns before it is gone or placed.
+  tail -n +"${1:-1}" "$T/qs.log" | grep -aE 'WARN|ERROR|creating placeholder screen' |
+    awk '/creating placeholder screen/ { held = 1; next } held && /Layershell screen does not correspond/ { next } { held = 0; print }' |
+    grep -vE "${patterns:-^$}" || true
   if running && [ -s "$T/display" ] && ! alive; then echo "qs is not running: it crashed or failed to load"; fi
+  [ -s "$T/ipc-missing" ] && cat "$T/ipc-missing"
+  return 0
+}
+
+# A case fails on any warning it caused, and on a `qst expect` that never came.
+case_check() {
+  local found mark name
+  [ -s "$T/case" ] || return 0
+  name=$(cat "$T/case")
+  mark=$(cat "$T/case-mark" 2> /dev/null || echo 1)
+  found=$(problems "$mark")
+  if [ -s "$T/expected" ]; then
+    while IFS=$'\t' read -r kind pattern; do
+      [ "$kind" = must ] && ! tail -n +"$mark" "$T/qs.log" | grep -qE "$pattern" && found+=$'\n'"expected a warning matching $pattern, which never came"
+    done < "$T/expected"
+  fi
+  found=$(sed '/^$/d' <<< "$found")
+  [ -z "$found" ] && return 0
+  echo "qs-test: \"$name\" left problems:" >&2
+  echo "$found" >&2
+  exit 1
+}
+
+# An IpcHandler in a singleton nothing has read yet does not exist, and qs ipc then answers "Target not found." with status 0.
+ipc_targets() {
+  local declared shown
+  declared=$(grep -rhoP '^\s*target: "\K[^"]+' "$T/shell" --include='*.qml' | sort -u)
+  shown=$(enter && timeout 5 qs ipc -p "$T/shell" show | awk '/^target / { print $2 }' | sort -u)
+  comm -23 <(echo "$declared") <(echo "$shown") | sed 's/^/IPC target /; s/$/ is declared but not registered: nothing has read its singleton/' > "$T/ipc-missing"
 }
 
 start_qs() {
   (
     enter
-    setsid qs -p "$T/shell" > "$T/qs.log" 2>&1 < /dev/null &
+    # Qt names the item behind every cursor change, which `cursor` reads back.
+    QT_LOGGING_RULES=qt.quick.hover.cursor.debug=true setsid qs -p "$T/shell" > "$T/qs.log" 2>&1 < /dev/null &
   )
+  echo 1 > "$T/case-mark"
+  rm -f "$T/countdowns.json"
   for _ in $(seq 100); do
     grep -qE 'Configuration Loaded|Failed to load' "$T/qs.log" && break
     sleep 0.1
   done
+  grep -q 'Configuration Loaded' "$T/qs.log" || { problems; die "the shell did not load, see qs-test log"; }
+  ipc_targets
   problems
-  grep -q 'Configuration Loaded' "$T/qs.log" || die "the shell did not load, see qs-test log"
   # Always a battery, so the bar shows everything it can on any host; `ipc bar realBattery` drops it. The sound server is the session's own.
   (enter && timeout 5 qs ipc -p "$T/shell" call bar fakeBattery 76 false > /dev/null) || echo "qs-test: could not fake a battery" >&2
 }
@@ -151,9 +202,14 @@ sync_source() {
 # The test's own window into the shell, in its copy only.
 install_probe() {
   mkdir -p "$T/shell/probe"
-  cp "$tests/Probe.qml" "$T/shell/probe/Probe.qml"
+  cp "$tests"/Probe*.qml "$T/shell/probe/"
   sed -i -e 's/^import Quickshell$/&\nimport qs.probe/' -e '$ s/^}$/\n  Probe {}\n}/' "$T/shell/shell.qml"
   grep -q 'Probe {}' "$T/shell/shell.qml" || die "could not add the probe to shell.qml"
+  local file name
+  for file in $(grep -rlE '(PanelWindow|PopupWindow|FloatingWindow|^Overlay) \{$' "$T/shell" --include='*.qml'); do
+    name=${file#"$T/shell/"}
+    sed -i -E -e "s#^((\\s*)(component \\w+: )?(PanelWindow|PopupWindow|FloatingWindow|Overlay) \\{)\$#\\1\\n\\2  ProbeWindow {\\n\\2    file: \"${name%.qml}\"\\n\\2  }\\n#" -e '0,/^import /s/^import /import qs.probe\nimport /' "$file"
+  done
 }
 
 # Nothing in the session may reach the real machine: these log what would have run instead.
@@ -238,10 +294,11 @@ pw_start() {
   (
     enter
     for _ in $(seq 100); do
-      wpctl inspect @DEFAULT_AUDIO_SINK@ > /dev/null 2>&1 && wpctl inspect @DEFAULT_AUDIO_SOURCE@ > /dev/null 2>&1 && break
+      # wpctl can hang on a server still coming up.
+      timeout 2 wpctl inspect @DEFAULT_AUDIO_SINK@ > /dev/null 2>&1 && timeout 2 wpctl inspect @DEFAULT_AUDIO_SOURCE@ > /dev/null 2>&1 && break
       sleep 0.1
     done
-    wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.64
+    timeout 5 wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.64
   ) || die "PipeWire did not start, see $T/pipewire.log and $T/wireplumber.log"
 }
 
@@ -551,25 +608,63 @@ alive() { [ -n "$(testqs)" ]; }
 
 # The probe's view of the shell, plus Hyprland's layers ("DP-1 quickshell:bar") and monitors.
 snapshot() {
-  local probe layers monitors
+  local probe layers monitors json
   enter
   alive || die "qs is not running: it crashed or failed to load, see qs-test log"
   probe=$(timeout 5 qs ipc -p "$T/shell" call probe state) || die "the probe did not answer, see qs-test log"
   layers=$("$HC" layers -j | jq -c '[to_entries[] | .key as $m | .value.levels[][] | "\($m) \(.namespace)"]')
   monitors=$("$HC" monitors all -j | jq -c 'map({ name, id, disabled, x, y, width, height, scale, focused })')
-  jq -c --argjson layers "$layers" --argjson hypr "$monitors" '. + { layers: $layers, hypr: $hypr }' <<< "$probe"
+  json=$(jq -c --argjson layers "$layers" --argjson hypr "$monitors" '. + { layers: $layers, hypr: $hypr }' <<< "$probe")
+  [ -s "$T/countdowns.json" ] || echo '[]' > "$T/countdowns.json"
+  json=$(jq -c --slurpfile before "$T/countdowns.json" -f "$tests/invariants.jq" <<< "$json")
+  jq -c '.popups' <<< "$json" > "$T/countdowns.json"
+  echo "$json"
 }
 
 state() { snapshot | jq -c "${1:-.}"; }
 
+declare -A since=()
+
+# A census problem or broken invariant that lasts 500 ms fails, as transitions pass through some for a frame or two; a countdown going back fails at once.
+violations() {
+  local json=$1 now v
+  local -A seen=()
+  now=$(($(date +%s%N) / 1000000))
+  # A violation worded anew each time never lasts by its words, so the time spent waiting for one to clear is capped.
+  [ -n "${pending_since:-}" ] || pending_since=$now
+  while IFS= read -r v; do
+    [ -n "$v" ] || continue
+    [ "${v:0:1}" = "!" ] && violated "${v:1}" "$json"
+    seen[$v]=${since[$v]:-$now}
+    [ $((now - seen[$v])) -ge 500 ] && violated "$v" "$json"
+  done < <(jq -r '(.problems + .invariants)[]' <<< "$json")
+  since=()
+  for v in "${!seen[@]}"; do since[$v]=${seen[$v]}; done
+  if [ ${#since[@]} -eq 0 ]; then
+    pending_since=""
+    return 0
+  fi
+  [ $((now - pending_since)) -lt 1500 ] || violated "$(printf '%s; ' "${!since[@]}")" "$json"
+  return 1
+}
+
+violated() {
+  echo "qs-test: $1" >&2
+  jq -c "del(.workspaces)" <<< "$2" >&2
+  exit 1
+}
+
 # Until FILTER holds, as jq -e reads it, or fails after SECONDS.
 wait_for() {
-  local filter=$1 deadline json
+  local filter=$1 deadline json held=0 clear
   deadline=$(($(date +%s%N) / 1000000 + ${2:-5} * 1000))
   while :; do
     json=$(snapshot)
-    jq -e "$filter" <<< "$json" > /dev/null 2>&1 && return
-    if [ "$(($(date +%s%N) / 1000000))" -ge "$deadline" ]; then
+    clear=1
+    violations "$json" || clear=0
+    [ $held = 1 ] || ! jq -e "$filter" <<< "$json" > /dev/null 2>&1 || held=1
+    [ $held = 1 ] && [ $clear = 1 ] && return
+    if [ $held = 0 ] && [ "$(($(date +%s%N) / 1000000))" -ge "$deadline" ]; then
       echo "qs-test: timed out after ${2:-5} s waiting for: $filter" >&2
       jq -c "del(.workspaces)" <<< "$json" >&2
       exit 1
@@ -580,10 +675,12 @@ wait_for() {
 
 # FILTER holds throughout SECONDS (1): what should stay as it is.
 stays() {
-  local filter=$1 deadline json
+  local filter=$1 deadline json clear=1
   deadline=$(($(date +%s%N) / 1000000 + $(awk -v s="${2:-1}" 'BEGIN { print int(s * 1000) }')))
-  while [ "$(($(date +%s%N) / 1000000))" -lt "$deadline" ]; do
+  while [ "$(($(date +%s%N) / 1000000))" -lt "$deadline" ] || [ $clear = 0 ]; do
     json=$(snapshot)
+    clear=1
+    violations "$json" || clear=0
     if ! jq -e "$filter" <<< "$json" > /dev/null 2>&1; then
       echo "qs-test: no longer holds: $filter" >&2
       jq -c "del(.workspaces)" <<< "$json" >&2
@@ -610,6 +707,7 @@ reset() {
   id=$(grep -o 'Shell ID: "[0-9a-f]*' "$T/qs.log" 2> /dev/null | head -1 | cut -d'"' -f2 || true)
   [ -n "$id" ] && rm -rf "$HOME/.local/state/quickshell/by-shell/$id"
   : > "$T/actions.log"
+  restore_tools
   start_qs > /dev/null
   problems
   wait_for "(.screens | length) == ($("$HC" monitors -j | jq length)) and (.layers | map(select(endswith(\" quickshell:bar\"))) | length) == (.screens | length)" 10
@@ -622,12 +720,14 @@ run_tests() {
   ln -sfn "$self" "$T/bin/qst"
   export QS_TEST_DIR=$T QS_TEST_REPO=$repo QS_TEST_HOST=$host
   [ $# -gt 0 ] || set -- "$tests"/scenarios/*.sh
+  lint_scenarios "$@"
   stop_qs
   sync_source
   start_qs > /dev/null
   for file in "$@"; do
     name=$(basename "$file" .sh)
-    if (enter && bash -euo pipefail "$file") > "$T/tests/$name.log" 2>&1; then
+    rm -f "$T/case"
+    if (enter && bash -euo pipefail "$file" && "$self" check) > "$T/tests/$name.log" 2>&1; then
       echo "ok   $name ($(grep -c '^== ' "$T/tests/$name.log") cases)"
     else
       failed=1
@@ -635,7 +735,107 @@ run_tests() {
       grep -v '^== ' "$T/tests/$name.log" | tail -15 | sed 's/^/     /'
     fi
   done
+  rm -f "$T/case"
+  restore_tools
   return $failed
+}
+
+# Assert with wait and stays: a sleep only guesses how long something takes, unless its line says why it is one.
+lint_scenarios() {
+  local found
+  found=$(grep -nE '(^|[;&|(]|then|do)[[:space:]]*sleep[[:space:]]' "$@" | grep -v '# sleep: ' || true)
+  [ -z "$found" ] || die "scenarios sleep where they should wait (or say why after '# sleep: '):"$'\n'"$found"
+}
+
+# TOOL fails as MODE (exit, crash, missing, garbage) wherever the shell runs it, until `fail TOOL off` or a reset.
+fail_tool() {
+  local tool=$1 mode=$2 bin=$T/bin
+  mkdir -p "$bin/.real"
+  # Only what `fail` put there goes, so the fakes the session stands in for real tools stay.
+  if [ "$mode" = off ]; then
+    if [ -e "$bin/.real/$tool" ]; then
+      mv "$bin/.real/$tool" "$bin/$tool"
+    elif [ -e "$bin/.real/$tool.none" ]; then
+      rm -f "$bin/$tool" "$bin/.real/$tool.none"
+    fi
+    return
+  fi
+  if [ ! -e "$bin/.real/$tool" ] && [ ! -e "$bin/.real/$tool.none" ]; then
+    if [ -e "$bin/$tool" ]; then mv "$bin/$tool" "$bin/.real/$tool"; else : > "$bin/.real/$tool.none"; fi
+  fi
+  case $mode in
+    exit) printf '#!/bin/sh\necho "%s $* (failing)" >> "%s/actions.log"\necho "%s: failed for qst" >&2\nexit 1\n' "$tool" "$T" "$tool" > "$bin/$tool" ;;
+    crash) printf '#!/bin/sh\necho "%s $* (crashing)" >> "%s/actions.log"\nkill -SEGV $$\n' "$tool" "$T" > "$bin/$tool" ;;
+    # QProcess finds it on PATH and then cannot start it, as with a program that is not installed.
+    missing) printf '#!/nonexistent/qst-missing\n' > "$bin/$tool" ;;
+    garbage) printf '#!/bin/sh\necho "%s $* (garbage)" >> "%s/actions.log"\necho "{\\"garbage"\n' "$tool" "$T" > "$bin/$tool" ;;
+    *) die "fail TOOL exit|crash|missing|garbage|off" ;;
+  esac
+  chmod +x "$bin/$tool"
+}
+
+restore_tools() {
+  local saved
+  for saved in "$T"/bin/.real/*; do
+    [ -e "$saved" ] || continue
+    saved=$(basename "$saved" .none)
+    fail_tool "$saved" off
+  done
+}
+
+# The cursor Qt set last, as "shape address": it logs each decision, naming the item behind it ("A -> B" lines are an item's own cursor changing).
+cursor_now() {
+  grep -a 'qt\.quick\.hover\.cursor' "$T/qs.log" | grep -aE '(^|[^n])setting cursor|unsetting cursor' | tail -1 | sed -E '
+    s/.*unsetting cursor.*/Arrow -/
+    s/.*setting cursor QCursor\(Qt::CursorShape\(Qt::([A-Za-z]+)Cursor\)\) from [A-Za-z0-9_:]+\((0x[0-9a-f]+)[^ ]* or [A-Za-z0-9_:]+\((0x[0-9a-f]+).*/\1 \2 \3/
+    s/^([A-Za-z]+) 0x0 /\1 /; s/^([A-Za-z]+) (0x[0-9a-f]+) 0x[0-9a-f]+$/\1 \2/
+    s/^PointingHand /hand /; s/^Arrow /arrow /; s/^ClosedHand /closed /; s/^OpenHand /open /; s/^IBeam /text /'
+}
+
+# Hovers X Y, nudging the pointer so Qt looks again, and prints the cursor: shape, address and what set it.
+cursor_at() {
+  local shape address what
+  pointer "$1" "$2"
+  input move 1 0
+  input move -1 0
+  sleep 0.3
+  read -r shape address <<< "$(cursor_now)"
+  what=-
+  if [ "${address:--}" != - ]; then
+    what=$(timeout 5 qs ipc -p "$T/shell" call probe describe "$address")
+    # Qt logs a new decision only for a new item; one changing its own cursor, a card being dragged, keeps it.
+    shape=$(jq -r --arg shape "$shape" ".shape // \$shape" <<< "$what")
+  fi
+  echo "$shape ${address:--} $what"
+}
+
+# The mouse areas on screen in layout coordinates, each window placed by its layer: x, y, label, enabled, takes a click, asks for a hand.
+areas() {
+  local areas layers
+  enter
+  areas=$(timeout 5 qs ipc -p "$T/shell" call probe areas)
+  layers=$("$HC" layers -j)
+  jq -r --argjson layers "$layers" '
+    (.scale | tonumber) as $scale | .areas[] as $a
+    | [$layers[$a.screen].levels[][] | select(.namespace | startswith("quickshell:"))
+       | select(((.w - $a.window[0] * $scale) | fabs) < 2 and ((.h - $a.window[1] * $scale) | fabs) < 2)][0] as $layer
+    | select($layer)
+    | [($layer.x + $a.x * $scale | floor), ($layer.y + $a.y * $scale | floor), $a.label, $a.enabled, $a.clicks, $a.hand] | @tsv' <<< "$areas"
+}
+
+# Every enabled mouse area that takes a click and asks for a hand gets one: something laid over it must not set an arrow of its own.
+cursor_sweep() {
+  local x y label enabled clicks hand shape address what bad=0
+  while IFS=$'\t' read -r x y label enabled clicks hand; do
+    [ "$enabled" = true ] && [ "$clicks" = true ] && [ "$hand" = true ] || continue
+    read -r shape address what <<< "$(cursor_at "$x" "$y")"
+    if [ "$shape" != hand ]; then
+      echo "$label asks for a hand at $x $y, but $( [ "$address" = - ] && echo "no item" || echo "$what") sets $shape" >&2
+      bad=1
+    fi
+  done < <(areas | awk -F "\t" -v window="${1:-}" 'window == "" || index($3, window "/") == 1')
+  [ $bad = 0 ] || exit 1
+  return $bad
 }
 
 shot() {
@@ -658,15 +858,47 @@ case $cmd in
   up) up ;;
   down) down ;;
   status) if running; then echo "up in $T, qs $(testqs)"; else echo down; fi ;;
-  sync) need_up; stop_qs; sync_source; start_qs ;;
-  restart) need_up; stop_qs; start_qs ;;
+  sync) need_up; case_check; stop_qs; sync_source; start_qs ;;
+  restart) need_up; case_check; stop_qs; start_qs ;;
   lint) qs-lint "$(readlink -f "$(build)/shell")" ;;
   ipc) need_up; enter; timeout 5 qs ipc -p "$T/shell" call "$@" ;;
   state) need_up; state "$@" ;;
   wait) need_up; wait_for "$@" ;;
   stays) need_up; stays "$@" ;;
   reset) need_up; reset ;;
-  case) need_up; echo "== $*"; reset ;;
+  case) need_up; case_check; echo "== $*"; echo "$*" > "$T/case"; : > "$T/expected"; reset ;;
+  check) need_up; case_check ;;
+  expect)
+    need_up
+    kind=must
+    [ "${1:-}" = --may ] && kind=may && shift
+    [ $# -eq 1 ] || die "expect [--may] REGEX"
+    printf "%s\t%s\n" "$kind" "$1" >> "$T/expected"
+    ;;
+  census) need_up; enter; timeout 5 qs ipc -p "$T/shell" call probe census | jq -r ".[]" ;;
+  motion)
+    need_up
+    enter
+    case ${1:-} in
+      start) timeout 5 qs ipc -p "$T/shell" call probe motion true > /dev/null ;;
+      stop)
+        motion=$(timeout 5 qs ipc -p "$T/shell" call probe motion false)
+        echo "$motion"
+        jq -e ".problems == []" <<< "$motion" > /dev/null || { jq -r ".problems[]" <<< "$motion" >&2; exit 1; }
+        ;;
+      *) die "motion start|stop" ;;
+    esac
+    ;;
+  cursor)
+    need_up
+    enter
+    read -r shape address what <<< "$(cursor_at "$1" "$2")"
+    echo "$shape $address $what"
+    [ -z "${3:-}" ] || [ "$shape" = "$3" ] || die "the cursor at $1 $2 is $shape, not $3"
+    ;;
+  cursors) need_up; cursor_sweep "$@" ;;
+  areas) need_up; areas | awk -F "\t" -v pattern="${1:-.}" '$3 ~ pattern' ;;
+  fail) need_up; [ $# -eq 2 ] || die "fail TOOL exit|crash|missing|garbage|off"; fail_tool "$1" "$2" ;;
   run) need_up; run_tests "$@" ;;
   key) need_up; input key "$@" ;;
   type) need_up; input type "$*" ;;
@@ -712,8 +944,8 @@ case $cmd in
     need_up
     case ${1:-} in
       start) pw_start ;;
-      stop) pw_stop ;;
-      restart) pw_stop; pw_start ;;
+      stop) printf "may\t%s\n" "Failed to connect pipewire context" "Pipewire error on object 0 with code -32" >> "$T/expected"; pw_stop ;;
+      restart) printf "may\t%s\n" "Failed to connect pipewire context" "Pipewire error on object 0 with code -32" >> "$T/expected"; pw_stop; pw_start ;;
       *) die "pipewire start|stop|restart" ;;
     esac
     ;;

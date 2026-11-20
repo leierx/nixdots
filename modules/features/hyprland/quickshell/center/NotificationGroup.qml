@@ -165,7 +165,7 @@ Item {
         Layout.topMargin: root.textOffset
         entry: root.newest
         // A group shows the app, a lone notification its picture.
-        image: root.single ? root.newest?.notification.image ?? "" : ""
+        image: root.single ? root.newest?.image ?? "" : ""
         size: root.iconSize
 
         // The app's count, where its name used to say it.

@@ -109,7 +109,7 @@ LauncherMode {
         // Quickshell captures a window only through Hyprland's toplevel export.
         IconImage {
           anchors.centerIn: parent
-          visible: !capture.hasContent
+          visible: !capture.hasContent && preview.row !== null
           source: preview.row?.icon ?? ""
           implicitSize: 96
         }

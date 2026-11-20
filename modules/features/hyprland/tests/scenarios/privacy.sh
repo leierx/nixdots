@@ -50,6 +50,8 @@ record 'application.name = Zoom' --target test-mic
 qst wait '.privacy.mic == ["Zoom"]'
 
 qst case "a screen cast through the portal shows until it ends"
+# PipeWire reports the cast's client gone as it is killed.
+qst expect --may 'Pipewire error on object 0 with code -32'
 pw-cli -m create-node adapter '{ factory.name = videotestsrc node.name = xdph-streaming-1 media.class = Video/Source }' < /dev/null > /dev/null 2>&1 &
 cast=$!
 qst wait '.privacy.screen == []'

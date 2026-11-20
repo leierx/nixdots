@@ -235,10 +235,23 @@ in
       inherit (unstable.qt6) qtdeclarative;
       inherit (helpers pkgs) cameraUsers backlightWatch;
 
+      qsDesignLint = pkgs.writeShellApplication {
+        name = "qs-design-lint";
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.findutils
+          pkgs.gawk
+          pkgs.gnugrep
+          pkgs.gnused
+        ];
+        text = builtins.readFile ./scripts/qs-design-lint.sh;
+      };
+
       qsLint = pkgs.writeShellApplication {
         name = "qs-lint";
         runtimeInputs = [
           qtdeclarative
+          qsDesignLint
           pkgs.coreutils
           pkgs.findutils
           pkgs.gawk
