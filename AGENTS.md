@@ -817,7 +817,9 @@ Notes on specific features:
       `x-dunst-stack-tag` tag as an earlier one (volume, brightness) updates it
       in place, as an update by id does, rather than sliding a new card in;
       either moves it first, pops it up again on the focused monitor, and
-      plays its sound only when it pops up anew. Past five popups the newest
+      plays its sound only when it pops up anew. So does the same app, summary and body
+      again within 2 s, so an app repeating itself is one card; and a burst
+      plays a sound at most every 300 ms, a critical one aside. Past five popups the newest
       always shows, the oldest go first, and critical or never-expiring ones
       last; one past the screen's edge waits out of sight, its timeout held,
       until there is room, and the window's input region is the cards alone,
@@ -1314,7 +1316,7 @@ line says why after `# sleep: `. `hotplug.sh` covers unplugging, disabling and
 replugging under every panel, a tray menu and popups, every monitor going,
 bursts and mode changes; `notifications.sh` the history: three per app once
 their popups go, the five-popup limit, stack tags replacing in place, and Do
-Not Disturb with transient and critical notifications, and what the bell counts; `workspaces.sh` windows opened while the shell starts; `osd.sh` what shows and what must not
+Not Disturb with transient and critical notifications, and what the bell counts, and a flood's sounds and repeats; `workspaces.sh` windows opened while the shell starts; `osd.sh` what shows and what must not
 (the shell starting, PipeWire restarting, a switch's new level, an unplugged
 default, the popup open, backlights coming and going, the media keys at a
 level's end, Caps Lock both ways, its monitor going); `privacy.sh` microphones

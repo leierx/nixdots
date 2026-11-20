@@ -22,6 +22,11 @@ Singleton {
   readonly property int maxPopups: 5
   // As GNOME keeps per app.
   readonly property int perApp: 3
+  // An app saying the same again within it updates the card it has, as a stack tag does.
+  readonly property int repeatWindow: 2000
+  // A burst of popups is one sound: no more than one per this, a critical one aside.
+  readonly property int soundGap: 300
+  property real soundAt: 0
 
   // Like GNOME: over a fullscreen window only critical notifications pop up, and going fullscreen puts the others away.
   readonly property bool fullscreen: ToplevelManager.activeToplevel?.fullscreen ?? false
@@ -140,6 +145,9 @@ Singleton {
   function playSound(notification) {
     const hints = notification.hints;
     if (hints["suppress-sound"] || notification.urgency === NotificationUrgency.Low) return;
+    const now = Date.now();
+    if (notification.urgency !== NotificationUrgency.Critical && now - root.soundAt < root.soundGap) return;
+    root.soundAt = now;
     const ours = Quickshell.shellPath(`notifications/sounds/${notification.urgency === NotificationUrgency.Critical ? "critical.ogg" : "notification.oga"}`);
     const file = hints["sound-file"]?.replace(/^file:\/\//, "");
     const name = hints["sound-name"] ?? "";
@@ -285,6 +293,7 @@ Singleton {
       const tag = root.tag(notification);
       const same = (tag ? root.entries.find(entry => root.tag(entry.notification) === tag) : null)
         ?? (notification.lastGeneration ? root.entries.find(entry => entry.restored && root.key(entry.notification) === root.key(notification)) : null)
+        ?? root.entries.find(entry => !entry.restored && root.key(entry.notification) === root.key(notification) && Date.now() - entry.time.getTime() < root.repeatWindow)
         ?? null;
       // A reload hands every notification over again; they have been seen.
       const popup = !notification.lastGeneration && root.wantsPopup(notification.urgency === NotificationUrgency.Critical);
