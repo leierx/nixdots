@@ -169,7 +169,7 @@ qst stays '.panel == "tray-overflow:DP-2"' 1
 qst monitor remove DP-2
 qst wait '.panel == ""'
 
-qst case "forty microphones, real and virtual, scroll in the volume popup with the outputs"
+qst case "forty microphones, real and virtual, scroll in the control centre's input menu with the outputs"
 for n in $(seq 30); do
   qst x pw-cli create-node adapter "{ factory.name=support.null-audio-sink node.name=mic$n node.description=\"Mic $n\" media.class=Audio/Source object.linger=true audio.position=[MONO] }" > /dev/null
 done

@@ -516,570 +516,118 @@ Notes on specific features:
       if scripts drive more than its panel, and for a keybind a `GlobalShortcut` (Quickshell.Hyprland)
       bound in `quickshell.nix` with `hl.dsp.global("quickshell:<name>")`,
       which reaches the running shell without starting a `qs ipc` process.
-    - `launcher/` is one launcher with a mode per feature, each opened by its
-      own global shortcut (`quickshell:launcher-<name>`, or `qs ipc -c shell
-      call panels toggle <name>`): SUPER+D `apps`, SUPER+V `clipboard`,
-      SUPER+P `monitors`, SUPER+Tab `windows`, SUPER+N `nixpkgs`. Nothing in one mode points to
-      the others; a second shortcut while open starts that mode afresh.
-      Keyboard driven: Up/Down, Ctrl+P/Ctrl+N, Tab and Shift+Tab move a
-      row and go round at the ends (the wheel stops there). Ctrl+U/Ctrl+D
-      jump half a page and Page Up/Page Down a page, stopping at the ends. Enter picks,
-      Shift+Delete removes, Escape closes.
-      A mode is a `LauncherMode` in `<Name>Mode.qml`, listed in
-      `Launcher.qml`, which makes its shortcut. It sets a `name`, a `title`,
-      a `glyph` (a Material Symbols Rounded path, Apache-2.0, pasted in and
-      named in a comment; drawn bare in white, so a mode never looks like
-      an app), or an `image` in its own colours instead, an optional `accent`
-      (two colours drawn round the card as Hyprland draws an active border:
-      30°, half each) and a `placeholder`; its `rows` and the `fields` searched in
-      them; an `activated` handler, a `removed` one where it is `removable`;
-      `opened` to load what it lists; `wide` for a wider card; `find`, its
-      own search for a list too long for the shared one;
-      `split`,
-      the list's share beside a preview (0.6); and
-      optionally a `preview`, a component (inline in the mode's file) shown
-      beside the matches for the `selected` row. Rows carry a unique `key`,
-      by which a `ScriptModel` keeps their delegates as a search changes, a
-      `title`, and optionally a dim `subtitle`, an `icon`, a `glyph` or a
-      monitor `layout` to lead it, a `thumbnail` (with its `size`) at its
-      end, and a `boost` that orders equal matches. `LauncherWindow` is the
-      one design for all of them: a card with the mode's glyph and the field,
-      the matches below it with ↵ on the selected row (not on a picture's),
-      what the query matched in bold, as rofi does, nothing below it while
-      nothing matches, and with a preview the card wider, split by the
-      mode's `split` under a line across; without a preview the rows start
-      right under the field. One hover for the list, not each row's, holds
-      across the gaps between rows and a pointer leaving for a moment.
-      Widths are in em and the card and its rows shrink to fit the screen,
-      so it holds at any scale. It is always centred on the screen and holds
-      still while typing: every mode opens at full height, listing all its
-      rows before anything is typed, without an animation.
-      Search matches every typed word as a substring, or in a
-      loose field (an app's name) as its letters in order (`ffx` finds
-      Firefox) for a lower score. Hyprland's `quickshell:launcher` layer
-      rule dims behind it.
-      - `apps`: apps used most come first among equal
-        matches: `AppUsage.qml` keeps one frecency number per app in the
-        state dir, log2 of the sum of 2^(launch time in weeks), so a launch
-        counts half a week later and nothing ever needs decaying. Apps start
-        in their own `systemd-run --user --scope`, so restarting the service
-        leaves them running. The mode loads the desktop entries, icon theme,
-        every app's icon and app use at startup so the first open is as
-        quick as the rest (an icon Papirus lacks costs thousands of failed
-        stats).
-      - `clipboard`, wide and without a preview: cliphist's history, newest
-        first, shown as soon as `cliphist list` returns. Text says its
-        length under it ("84 characters, 4 lines"),
-        counted once per clip into Quickshell's cache since it needs the clip
-        decoded. Pictures say their size and format,
-        and are decoded into the cache (pruned to what cliphist still lists)
-        for a thumbnail at the row's end, shrunk to fit and never enlarged;
-        one past 64 MiB or 50 megapixels gets none. One script fills the
-        cache after the rows show, prunes it and reports every thumbnail
-        and count, with a fork per new clip and a few in all; both are kept
-        between opens, so only a new clip's arrive late. It also runs at the
-        shell's start, ordered after cliphist's wipe, so pictures of a past
-        session's clips leave the disk with them.
-      - `monitors`, split half and half: `hyprmoncfg status --json`'s
-        profiles, the recommended one first, loaded at the shell's start and again on
-        every open, and replaced only when the output differs, so it opens
-        whole and a refresh changes nothing that is the same; one that fails,
-        mid-hotplug say, only logs while there is a status to show. It loads
-        again a second after the last of a burst of hotplugs, once hyprmoncfgd
-        has applied its pick, so the next open already shows it.
-        Each is drawn by `LayoutDiagram` from its file in
-        `~/.config/hyprmoncfg/profiles`, so any machine's layouts draw
-        themselves: outputs at their logical size (scale and rotation
-        applied), numbered left to right, those a profile turns off outlined
-        where the profile turning on the most outputs has them (above, below or
-        beside, shifted so an output on in both lines up, or in a row to the
-        right when that fails), each labelled with its connector (`DP-1`) while
-        plugged in, and those saved without a size left out. Past eight outputs
-        (four in a row's icon), or once one would be under 4 px, the drawing
-        becomes a count. The preview draws it as
-        large as fits
-        and lists the outputs, six lines at most, each with its connector,
-        model, size in inches (Hyprland's mm, while plugged in), mode, scale, and position (`at 2560x0`) for one not plugged in; one turned off has an
-        outlined badge.
-      - `nixpkgs`: every package of nixos-unstable not marked broken, with
-        the NixOS logo and its two blues as the accent. `nixpkgs-index`
-        (`scripts/`) keeps the list in Quickshell's cache as TSV, revision
-        first: it follows the channel's redirect to its release and only
-        when that moved fetches `packages.json.br` (curl decodes the
-        `Content-Encoding: br`) and has jq cut it down, a few seconds and
-        about 3 GB at idle priority. It runs at the shell's start and on
-        every open, and a list it brings while open is read on the close,
-        so each open searches the list it opened with; a failed fetch only
-        notifies on an open with no list. The mode keeps
-        columns rather than an object per package and scores them in one
-        loop of its own (a call into `search.js` per package costs ten times
-        the matching), keeps every query of an open with its matches, so
-        backspace is instant and a query extending one searches only its
-        matches, keeps only the best 50, and before anything is typed lists
-        only what was run before (`AppUsage`, under `nixpkgs:`, its boosts
-        worked out once an open). A mode with its own `find` searches a frame
-        after the key, so the letter shows before the matches and a burst of
-        keys is one search; Enter and the keys that move the selection run
-        the search first. Enter runs `nixpkgs-run <rev> <attr>
-        <program>` in its own scope: `nix build` of
-        `github:NixOS/nixpkgs/<rev>#<attr>` (unfree allowed), then the
-        program `nix run` would pick, as a transient `systemd-run --user`
-        service sandboxed by systemd alone: `ProtectSystem=strict`,
-        `PrivateTmp`, a writable tmpfs over `$HOME` and `$XDG_RUNTIME_DIR`
-        (`ProtectHome=tmpfs` is read-only, which apps fail on), only the
-        PipeWire and X11 sockets and GTK/fontconfig/cursor settings
-        bound back in, and the nix daemon socket and both D-Bus buses out of
-        reach, since through any of them it could have something outside
-        write for it. Wayland comes through a socket of its own made by
-        `security-context` (`scripts/security-context.c`), a
-        `wp_security_context_v1` listener, for which Hyprland hides every
-        protocol off its whitelist (virtual keyboards and pointers,
-        screencopy, toplevel export, layer shell), since with the real socket
-        a program could press SUPER+Return and type into the terminal it
-        opens. Hyprland takes connections on it only while `security-context`
-        runs, so it waits on the program (`systemd-run --wait`, or the
-        terminal). X11 apps still share Xwayland with the desktop's own. The
-        user manager implies `PrivateUsers`, so it needs no privileges;
-        scopes take no sandboxing, hence a service. A package
-        with a desktop entry for the program (not `Terminal=true`) runs
-        on its own, notifying if it stops with an error, anything else in
-        wezterm under `--pty --wait`, held open on a failure or a run under
-        5 s. While it builds, a low-urgency card that never expires shows
-        the progress from nix's `--log-format internal-json`, which
-        `scripts/nixpkgs-progress.jq` reduces: "Fetching" while evaluating,
-        then the download's MiB against the total nix expects, and
-        "Building" with builds done of expected while one runs, updated by id
-        at most twice a second. A `notify-send --wait` holds the card, so one
-        dismissed mid-build stays gone; it closes as the program starts. A
-        failed build replaces it with a critical one and nix's last lines;
-        what it builds stays in the store until GC.
-      - `windows`: every window from wlr-foreign-toplevel
-        (`ToplevelManager`), so it works on any compositor, the focused one
-        last. On Hyprland the rest come in focus order (a `refreshToplevels`
-        as it opens), each with its monitor and workspace as the bar names
-        it (`DP2-1` for one left by an unplugged DP-2), and Enter dispatches `hl.dsp.focus({ window = "address:0x…" })`;
-        elsewhere it calls `Toplevel.activate()`. The preview is the window
-        live (`ScreencopyView`, mipmapped from up to twice its shown size so
-        it shrinks smoothly) in a frame shaped by the size Hyprland reports
-        before the first frame arrives, outlined, since a dark window on the dark
-        card has no edge of its own. A window on a hidden workspace shows its
-        last frame. Quickshell can only capture it through Hyprland's toplevel
-        export; elsewhere, and for a window Hyprland has squeezed below
-        nothing, it shows the app's icon.
-    - `shortcuts/` is the keyboard shortcuts window (SUPER+?, bound as
-      SUPER+SHIFT+plus since Hyprland matches binds on the unshifted key; as GTK apps
-      use Ctrl+?), GTK's shortcuts window in groups balanced over up to three
-      columns, each row a description and its keys as keycaps. It takes the
-      column count that needs the least shrinking to fit the screen, and
-      shrinks whole only when none fits. It reads
-      `hyprctl binds -j` on every open, so it lists whatever binds carry a
-      description: numbered ones ("Focus workspace 1" … "6") fold into one
-      row, as do directions ("Focus left" … "right" become "Focus", keys
-      `H J K L` in Vim's order), a submap's binds (none now) form a group under the bind whose
-      description its name begins ("system_control", "System controls") and
-      read "Super X then L", media keys are left out, and the rest are grouped
-      by their description into General, Windows, Workspaces and Mouse. Its
-      `quickshell:shortcuts` layer rule dims behind it.
-    - `power/` is the power menu (SUPER+X, or the bar's NixOS logo), full
-      screen over a backdrop of its own (black at 88%, so no layer rule):
-      the clock and date, five solid tiles (Lock, Suspend, Log Out, Restart,
-      Power Off) with their letters as keycaps, then smaller Reload Hyprland
-      and, on UEFI machines (`/sys/firmware/efi`), Restart to Firmware above
-      the host and uptime, which only a click reaches. A tile's letter or
-      Enter picks it; Log Out, Restart, Power Off and Firmware take a second
-      press within 5 s, turning red and saying so under the tiles, and moving
-      the selection drops it. Arrows and Tab move along the tiles, Escape or
-      a click off the buttons closes. Every action is a command
-      (`loginctl lock-session`, `systemctl suspend|reboot|poweroff|reboot
-      --firmware-setup`, `hyprctl dispatch 'hl.dsp.exit()'`, `hyprctl reload
-      full-reset`), so `qst actions` shows what it would have done. Delegates
-      get copies of the action objects, so actions are told apart by title.
-    - `bar/` is the bar along the top of every monitor (`Bar.qml`, one
-      `BarWindow` per screen but `FALLBACK`), one black strip across it
-      (GNOME Shell's panel black). Left: the NixOS logo (`nixos.svg`, opening
-      the power menu, a third of a turn in 0.6 s each time the pointer
-      arrives, after which its two blues are where they were; a turn under
-      way finishes rather than starting over) and the workspaces. Centre: the
-      clock (a flat round button with a pointing hand, as GNOME's panel draws
-      its date: shaded on hover and while the center it opens is open).
-      Right: the control centre's status button and, always last, the tray's
-      chevron. Every one of them but the workspaces is a `BarButton`, the bar's one shape: a
-      flat 26 px pill, or a circle round an icon alone, its glyphs and icons
-      18 px and its lettering 10 pt. Quickshell keeps Hyprland's state by
-      events but only refreshes monitors as one comes or goes and ignores
-      renames, so `Bar.qml` refreshes monitors and workspaces on those, and
-      once more 300 ms after the last, since Quickshell drops a refresh while
-      one is under way and a hotplug comes as a burst. It also drops for good
-      a window opened on a workspace it has not loaded yet, as at login, so
-      the bar reloads the windows on every `openwindow`, and 300 ms after the
-      last; a workspace is occupied while its `toplevels` hold one.
-      - Workspaces: the monitor's own `1 … n` (monitor id × n + 1 onwards, as
-        hyprsplit numbers them) as bare numbers, white while shown, near white with
-        windows (told from the shown one by its squircle), faint without, red when urgent, in a 26 px squircle shown only while it is
-        shown (a button's shade, and bolder lettering) or under the pointer; a step darker on a
-        monitor without focus, read from `Hyprland.focusedMonitor`
-        since Quickshell binds `HyprlandMonitor.focused` only on monitors
-        added after it started. Any other workspace on it follows as an
-        outlined pill named after the monitor that owns it (`DP2-1`), white
-        while shown, and named ones by name; specials are left out.
-        `WorkspaceOwners` remembers the connector last seen with each monitor
-        id in the state dir, so a workspace left behind by an unplugged
-        monitor still carries its name (the bare id if never seen; never
-        `FALLBACK`, whose id is a real monitor's). Each one's target is the
-        bar's whole height and the gaps beside it; pressing one dips it once (an animation played through, not held while pressed) and focuses it by
-        id wherever it is, and the wheel over them steps one a notch in the
-        order the bar shows them, stopping at the ends (`WheelSteps`).
-      - The tray folds behind one chevron, as Windows' does: a flat round
-        `BarButton` with Adwaita's arrow pointing down, the way the popover
-        opens, and not turning (its pressed shade says it is open), shown
-        only while some item is not passive. It opens `TrayOverflow` under it
-        (a `Panels` panel per screen, `tray-overflow:DP-1`), a card with every
-        icon in a grid of six 36 px cells (`Theme.hover` under the pointer,
-        each with an arrow pointer, since most do nothing on a left click)
-        that scrolls past what the screen leaves room for, and closes once
-        nothing is left. First come, first served: `TrayOrder` keeps the items
-        in the order they came, which every bar shares, since Quickshell sorts
-        its model by category and id. Left click activates (or opens the menu
-        of a menu-only item), middle is the secondary action, right opens the
-        menu: `TrayMenu`, libadwaita's popover menu drawn from `QsMenuOpener`
-        with its corner at the pointer (leftwards where it would run off the
-        screen), over the overflow under the same panel, its input region only
-        its cards (`Region.regions`), stray separators dropped. Check and radio
-        items get libadwaita's check buttons, and only rows with a check button
-        or an icon make room for one, so the others start at the edge.
-        Submenus cascade as GTK's do: a card each, beside the row that
-        opens it (held highlighted), opened by a click or 150 ms of hover, so
-        passing over rows opens nothing, and closed as soon as the pointer is on
-        another row of its parent; each goes the way the last
-        one went until another its width would not fit. Arrows point right on
-        the right whichever way it opens, as GTK's do. Open submenus are kept by
-        label, so one stays open when its app rebuilds the menu with every entry
-        new, as Electron apps do whenever they update it. Like a GTK menu it takes no keyboard and no grab,
-        so the app in front keeps both; the pointer leaving the menu for 100 ms
-        (and not resting on its cell; Hyprland reports no hover on a new menu
-        until the pointer moves) closes only the menu (`TrayMenu.dismissed`),
-        another cell switches menus, the same cell closes it, and an entry, a
-        click outside or its monitor going closes both.
-      - The status button (`StatusButton`) opens the control centre (`controls/`,
-        below) on its screen, `controls:DP-1`, and shows what is worth a glance
-        as glyphs alone (Material Symbols, filled), left to right: what
-        records, in `Theme.recording` red (mic, videocam, screen_share, from
-        `Privacy`, below); the bell (notifications) in `Theme.bell`, the
-        palette's `yellow_2`, while there are notifications not yet looked at
-        in the center (`Notifs.unchecked`: those that arrived, or came again,
-        while it was closed; opening the center checks them all, and a reload
-        of the shell hands every notification over unchecked), or for as long
-        as Do Not Disturb is on, white and struck through (notifications_off),
-        with no count either way; GNOME's VPN, a padlock on a line, while a
-        VPN is up; the link in use (wired before Wi-Fi: Wi-Fi's strength in
-        four steps, struck through off, with a ? behind a captive portal and a
-        ! without internet); Bluetooth while a device is connected; the
-        microphone struck through while muted; the output's level (volume_up,
-        volume_down, volume_mute, volume_off); and last, on a laptop, the
-        battery (`BatteryGlyph`, GNOME's upright cell filled green, yellow
-        from 25 %, red from 10 %, with a bolt while charging) and its
-        percentage. With none of them, a cog. The wheel on it steps the output
-        5 % a notch (`WheelSteps`), onto the 5 % marks and up to 100 %, or to
-        wherever past it another app set it, so turning it up never turns it
-        down; a right click mutes.
-      - The battery (`Power`, in `controls/`) is UPower's display device,
-        shown only when UPower is running and it is a laptop battery, so only
-        thonkpad enables UPower. `qs ipc -c shell call bar fakeBattery 15
-        false` shows a made-up one anywhere, `realBattery` drops it.
-      - `Privacy` (in `controls/`) is who records, for the status button and
-        the control centre's "In use":
-        - Microphone: a PipeWire link into a capture stream
-          (`Stream/Input/Audio`) in state Active, from a source
-          (`Audio/Source` or `Audio/Duplex`, or by its `media.class` a virtual
-          one, which Quickshell leaves untyped), named by the stream's
-          `application.name`. A sink's monitor is no microphone; peak meters
-          (`stream.monitor`, which pipewire-pulse sets for peak detection, and
-          pavucontrol's, GNOME's and KMix's app ids) and passive filters
-          (`node.passive`) are left out. Link state only arrives for link
-          groups a `PwObjectTracker` holds, so it tracks those into capture
-          streams and out of video sources.
-        - Screen: a video source a program makes (xdph's `xdph-streaming-*`,
-          or any `Video/Source` without a `device.api`), shown for as long as
-          it exists, named by the streams linked to it. Programs that capture
-          the screen without the portal (wf-recorder) are not seen.
-        - Camera: a device video source (`device.api`) with an Active link,
-          named by its viewer, and any process holding `/dev/video*` open for
-          half a second (`camera-users`, `scripts/camera-users.c`: inotify on
-          each device node for opens and closes and on `/dev` for devices
-          coming and going and for their permissions changing, since a node
-          plugged in is root's alone until udev hands it to the seat, then a scan of `/proc/*/fd`, one JSON line per
-          change), so V4L2 apps (Chrome, Zoom) count and a browser probing
-          devices does not. PipeWire's and WirePlumber's own holds are left
-          out: their clients are named through the links. The watcher is
-          restarted after it stops, backing off to 5 minutes.
-    - `weather/` is the `Weather` singleton and `Forecast`, its card under
-      the center's calendar: MET Norway's forecast (yr.no's) for the
-      timezone's city (`/etc/localtime`'s zone, placed by the `zone.tab`
-      beside it, so Europe/Oslo is Oslo, and no lookup of the public address),
-      fetched with `curl` from the shell's start and every half hour after
-      (five minutes after a failure, and at once when the clock shows a
-      suspend skipped one),
-      coordinates at two decimals for
-      MET's cache. `hours` runs hourly from the hour under way (`now`) by the
-      clock, so an old forecast runs out rather than going stale: its
-      temperature, MET's symbol code and icon. The card, laid out like
-      Windows' weather widget, has the icon, the place over the temperature
-      in °C, the condition and the next 24 hours' high / low on the right
-      (the rest of today is an hour or two late in the evening), and the
-      next six hours below. The icons are MET's own
-      ([metno/weathericons](https://github.com/metno/weathericons), MIT),
-      which `quickshell.nix` fetches into `weather/icons/` with their
-      `legend.csv`, which names the symbols ("Partly cloudy").
-    - `notifications/` is the notification daemon (no mako) and its popups:
-      `Notifs.qml` owns `org.freedesktop.Notifications` and keeps every
-      notification as a `NotifEntry` until it is dismissed; the entry holds a
-      `RetainableLock` and outlives the close by a second, so views slide a
-      closed notification away whole. Popups stack top right on the monitor
-      focused when each arrived (one whose monitor goes moves to the focused one
-      for good, and while none is on it waits with its timeout held), below the bar, sliding in and out (the
-      window stays mapped with an empty input region, so the last one does
-      too); the app's timeout or 8 s, critical never, hovering pauses it, and those above it on its screen too, since their
-      going would move it from under the pointer; each carries on from there
-      after.
-      A bar along each card's bottom edge (the accent blue) drains over its
-      timeout, so it stands out over a terminal as dark as it. The bar is
-      the entry's own countdown (`NotifEntry.remaining`): paused while held (hover,
-      no room, no monitor) and carrying on after, full again each time it pops up or an update
-      restarts it; one that never expires (critical, or
-      timeout 0) has none, and a critical one has a red outline. It names
-      neither the app
-      nor its age: the icon and text say who, and a popup is always now. The
-      image is at the top, by the title, and text shorter than it is centred
-      on it. Expanding and collapsing ease the card's height (200 ms
-      `OutCubic`), its content clipped; collapsing keeps the whole text until
-      the card has eased down to the height it will have (what the text loses
-      worked out from its line counts), then elides it; the arrow by the title is only a sign of it. The image is the picture, the app's icon a badge on
-      it unless the picture is that icon, or without one the app's icon (its
-      initial when it has none; a picture or icon that fails to load gives way
-      to what comes after it) on a plate (`NotificationIcon`, shared with
-      the center). A click on one with more to show (a cut-off title or body)
-      expands it and a second click collapses it, as in the center, so a
-      long one's click never runs its action; a click otherwise runs the
-      default action, or the only action when there is one and no default,
-      or puts the popup away when there is neither; an action or a link puts it
-      away too (a resident notification stays open, as GNOME's banners do);
-      right click, a swipe or a fast flick towards the edge slides it away and
-      dismisses it; more than three actions fold into a "More" dropdown.
-      Popups are never grouped and have no close cross; in the center only a
-      card a click expands has one.
-      A transient notification leaves the history with its popup, and one that
-      cannot pop up (the center open, Do Not Disturb, fullscreen) is dropped as
-      expired. One with the same `x-canonical-private-synchronous` or
-      `x-dunst-stack-tag` tag as an earlier one (volume, brightness) updates it
-      in place, as an update by id does, rather than sliding a new card in;
-      either moves it first, pops it up again on the focused monitor, and
-      plays its sound only when it pops up anew. So does the same app, summary and body
-      again within 2 s, so an app repeating itself is one card; and a burst
-      plays a sound at most every 300 ms, critical ones counted apart. A
-      flood is turned away at the door: past 30 new notifications a second
-      (critical ones counted apart; an update in place by tag is none), the
-      rest are expired untracked, which costs next to nothing, the flood is
-      silent, and once it has stopped for 2 s one card from "Notifications"
-      says how many were dropped and from whom. Summaries past 500
-      characters, bodies past 5000 and app names past 100 are cut before
-      anything lays them out, since a megabyte of text held the shell for
-      seconds. Past five popups the newest
-      always shows, the oldest go first, and critical or never-expiring ones
-      last; one past the screen's edge waits out of sight, its timeout held,
-      until there is room, and the window's input region is the cards alone,
-      so the gaps between them click through. Like GNOME, each app keeps its
-      newest three notifications (one still popped up stays until its popup
-      goes), and past 100 in all the oldest go, so a flood from many apps
-      costs no more than one from a few; a reload of the shell lists the notifications it hands over
-      again without popping them up.
-      Like GNOME, while the focused window is fullscreen (Wayland's
-      foreign-toplevel state, so maximised windows don't count) only critical
-      notifications pop up, on the overlay layer above it, and going
-      fullscreen puts the others away. Ages read "now", "5m", the time today,
-      "Yesterday", the weekday within a week, then the date. Bodies drop the
-      link to the site Chromium puts first, and stray blank lines, and keep
-      only the markup the spec allows without body-images (`b`, `i`, `u`,
-      `br` and `a`, links only to http, https and mailto), since StyledText
-      would load images and obey `font` and the rest; that filter is
-      `markup.js`, tested by `checks.<system>.notification-markup`.
-      `NotificationActions`, `NotificationImage`, `NotificationText` (a body
-      whose links open, with a pointing hand over them) and `SwipeArea`
-      (which moves its card itself, and slides it away carrying on from the
-      drag) are shared with the center, and `NotificationAge` is the
-      center's. Do not disturb is saved in
-      Quickshell's state dir and lets only critical notifications pop up.
-      Sounds are elementary OS's (Unlicense) in `sounds/`, played with
-      `pw-play` (Quickshell has no QtMultimedia) when a popup shows; low
-      urgency is silent whatever it asks, and `suppress-sound`, `sound-file`
-      and `sound-name` (looked up in the freedesktop sound theme) are
-      honoured, so the server advertises `sound`. Scripts use
-      `qs ipc -c shell call notifications
-      <toggleDnd|setDnd|dnd|count|clear|hidePopups>`.
-      The history outlives a restart of the service (`History`): Quickshell's
-      state dir holds `notification-history.json`, written atomically half a
-      second after a change, at most 100 notifications and none past 7 days
-      (`history.js`, tested by `checks.<system>.notification-history`),
-      transient ones never. Read back as the shell starts, each is a
-      `PastNotification` with what the views show and nothing left to invoke,
-      not popped up and as checked as it was. A damaged file or record is
-      dropped with one warning. Pictures only the server held (an
-      `image://` other than a theme icon) are saved as they arrive, popped up
-      or not: the popups window of the first screen draws each once, left of
-      itself where nobody sees it, and grabs it (`grabToImage`, 80 px, an app
-      icon 28) into the cache dir `notifications/` as `<uid>-image.png` and
-      `<uid>-appIcon.png`; those of notifications no longer saved are deleted. A reload hands live
-      notifications over too, and one already read back by app, summary and
-      body becomes the live one.
-    - `center/` is the notification center (`qs ipc -c shell call panels
-      toggle center`), GNOME's layout, growing out of the clock as the control centre
-      grows out of its button (the same scale and fade): notifications on the left (40em, wider than
-      GNOME's 29em, which read long and narrow), Collapse all and Clear (which also closes it) below, and `Calendar.qml` on
-      the right (the date as a `title4` title, locale's first weekday, ISO week numbers in dim
-      lettering, Adwaita's arrows turned sideways or the wheel for
-      months (`WheelSteps`, as every wheel), the date returns to today) with the weather under it, left out
-      where the screen is too short for both. Opening it puts the popups away. Notifications are grouped
-      per app the way end-4's dots do (`NotificationGroup`,
-      `NotificationItem`): one card with the app's icon and its count as a
-      badge on it (no name), always three lines tall with what it holds
-      centred beside the icon, so the stack is even: a lone notification its
-      title and age over two lines of body, a group a line for each of its
-      newest three, each with its own age. The arrow, a sign rather than a
-      button, in a column every card keeps so the ages line up, shows only when expanding shows more
-      (buttons, progress, or a cut-off title or body) and overhangs the first
-      line rather than setting its height. Expanded, the card keeps 16 px off its
-      top and bottom, and in a group each notification gets an inset card
-      (`Theme.padding` inside) laid out as a popup is: its image at the top,
-      the title to two lines and the body to four, with an arrow of its own
-      as a sign, and a click on a cut-off one opens it rather than running its
-      action; a lone one's title and body show whole, right under each other. Collapse all, beside Clear
-      while any group is expanded, collapses every one. Opening and
-      collapsing ease as a popup's do, each holding the whole text until its
-      card has eased down, and only then laid out anew, so nothing bounces;
-      the text eases between centred and the top as the height does, the
-      icon level with its title throughout, so nothing jumps. A lone notification with a picture shows it in the icon's place,
-      the app's icon a badge on it unless the picture is that icon (an app
-      icon sent without an image is Quickshell's `image` too), as popups do
-      (`NotificationIcon`). Only a card a click expands has a close
-      cross, under the pointer in its first age's place
-      (`NotificationStamp`). The pointer is a hand where a click expands or
-      opens something, an arrow where it only dismisses. A click on a group with more to show expands and
-      collapses it; on a lone one with nothing more it runs the default
-      action, or dismisses it without one; in an expanded group of several a
-      notification's click runs its own, or dismisses it. Right click or a
-      swipe dismisses the group, or once expanded, one notification. Critical
-      ones are tinted red (`Theme.criticalCard`) rather than outlined. The list grows with its
-      notifications up to the screen's height, then scrolls. Mouse only, and unlike the launcher
-      it is smooth: the list drags and flicks with Qt's overshoot, a wheel
-      notch glides 120 px (Qt's own moves the 15 px Wayland reports), and
-      groups animate their height, but only once laid out (250 ms in), since text
-      wraps a frame or two after a card is made and easing that slid it as the
-      center opened. Escape or a click
-      outside closes it, and its `quickshell:center` layer rule dims behind
-      it. The popups and the center cast libadwaita's window shadow
-      (`common/Shadow.qml`, Qt's `RectangularShadow`), and their expand
-      signs use libadwaita's arrow (`common/ExpanderArrow.qml`, Adwaita's
-      `pan-down-symbolic` as a `Shape`).
-    - `controls/` is the control centre (the bar's status button, SUPER+A,
-      `qs ipc -c shell call controls toggle`, or `panels open controls:DP-1`),
-      GNOME's quick settings in a popover under the button: no wider than
-      28em or the screen, and capped to what the screen leaves under the bar,
-      past which the card scrolls with a thin indicator. It grows out of its
-      button and shrinks back into it (a fade and a scale from 0.9 about the
-      button, 240 ms `OutQuint` in and 140 ms `InCubic` out, staying loaded
-      until it has faded), since Hyprland's own animations are off; pill
-      colours, hovers and arrows fade or turn over `Theme.fade` and 200 ms,
-      and a pill flipped pops: its symbol dips and springs back while a
-      ripple spreads from the click. At the top GNOME's header: the battery
-      on a laptop (its cell, the percentage and the time left or to full),
-      then a screenshot (`freeze-region copy`, a region to the clipboard, run
-      a moment after the centre has closed so it is not in the shot), the
-      lock (`loginctl lock-session`) and the power menu, round buttons on the
-      right. Then the
-      levels, each a symbol (a mute button for sound), a slider (a 16 px knob; dragged,
-      clicked or wheeled, `WheelSteps`) and, for sound, an arrow to its
-      devices: the output and the input (`Volume`, `Microphone`; "Sound not
-      available" in their place without PipeWire), a slider per backlight
-      (`Brightness`, set with `brightnessctl --device`, which goes through
-      logind; never below 1 %).
-      Then GNOME's pills, two a row: each a symbol, its name and its state,
-      blue while on, the arrow a segment of its own where it has a menu, and
-      only those the machine has (`Controls.toggles`): Wired per Ethernet
-      device (its speed, "Cable unplugged" dimmed), Wi-Fi ("Off by switch",
-      dimmed, under the hardware switch), VPN (any profiles), Bluetooth (an
-      adapter), Night Light (hyprsunset answering; its menu is its strength,
-      a slider that turns it on as it moves) and Do Not Disturb; without
-      NetworkManager one dim "Network · Not available" in the first three's
-      place, which comes back with it. While something records, GNOME's "In
-      use": a pill per kind (the quick toggles' pill, its symbol orange,
-      `Theme.inUse`) naming the apps from their desktop entries, a click raising
-      the first one's window (a wlr-foreign-toplevel whose app id is the
-      app's name or its desktop entry's id or `StartupWMClass`), an arrow
-      pointer where none has one. Last, the player worth a card (`Media`:
-      MPRIS, the one that started playing last, else one paused; none while
-      all stop), washed in its album art (the art blurred and darkened behind
-      it with `MultiEffect`, masked to the card): the art, set down a little
-      while paused, the title (a click raises the app), artist, the progress as
-      the levels' slider (dragged, clicked or wheeled 5 s a notch, it seeks
-      where the player can; read afresh as the card opens, so it never fills
-      in from nothing) over the time and the length, and previous, a big
-      white play/pause and next, dimmed where the player cannot. A menu opens right under the row that holds its pill (or
-      under the levels for sound), one at a time, each in a slot of its own
-      that eases open and shut over 200 ms `OutCubic` (so switching menus
-      closes one as the next opens; rows coming, going and moving in a list
-      ease too), kept by name in `Controls`
-      so it outlives the lists changing around it, and takes what the screen
-      leaves after everything else, with room for at least four rows besides
-      a password row, the card scrolling past that. Each is GNOME's header
-      (its symbol in a chip, blue while on, and its title), past 20 entries a
-      filter (a `TextField`, and their count), the list (`ListRow`s: the
-      symbol, the name bold where it is the one in use, then on the right
-      its state in words only while under way or wrong, a lock, a charge, the
-      link, a tick or a switch; a password row a `TextField` under it; names plain
-      text on one line, elided, stripped of control characters, direction
-      overrides and invisible marks by `names.js`), and what leads on:
-      Network Settings… (nm-connection-editor, also for hidden networks),
-      Bluetooth Settings… (`bluetui`
-      in wezterm), rows of their own under a rule with a cog. One click, one action, no buttons on hover:
-      - Wi-Fi (`Net`, Quickshell.Networking for the first Wi-Fi card,
-        scanning only while its menu is open): connected first, then saved
-        ones, then the rest by signal; a click disconnects the connected one,
-        connects a saved or open one, and on a new secured one opens a
-        password row (an eye to show it, Enter or Connect), kept whole in
-        view in the list and the card. A wrong password asks again in red;
-        NetworkManager keeps the profile `connectWithPsk` made, so giving up
-        (a click on the row) forgets a profile the shell made that never
-        connected. A network leaving while its password is typed stays,
-        "Out of range", with the text. An enterprise one opens Network
-        Settings. Behind a captive portal the connected row carries a Sign in
-        button, as does a notification, both opening a plain http page in the
-        browser, and the shell asks NetworkManager to check again every 10 s
-        until it clears. The radio is the pill.
-      - VPNs (nmcli: `nmcli -t connection show` for the WireGuard and VPN
-        profiles, `nmcli monitor` for changes and whether NetworkManager runs
-        at all, restarted with a backoff): a switch each, a click toggling it
-        with `nmcli connection up|down uuid`, the last click on a profile
-        winning; one that answers that secrets were required gets a password
-        row, sent as `passwd-file /dev/stdin`; another failure flips back and
-        notifies. The pill takes them all down, or the first up.
-      - Bluetooth (`BluetoothDevices`, the default adapter, discovering only
-        while its menu is open): paired first, then nearby ones with a name
-        (nameless ones are only addresses); on the right a connected one's
-        charge (its percentage and `BatteryGlyph`) and the link (bluetooth_connected
-        in the toggles' blue; a paired one's plain and faint), and in words only
-        what is under way or went wrong. A
-        click on a new one pairs it, trusts it (so it comes back by itself)
-        and connects it; on a paired one connects, on a connected one
-        disconnects. Quickshell has no pairing agent, so one wanting a PIN or
-        a code confirmed says "Needs a PIN: use Bluetooth Settings" in red,
-        and a connection that fails "Couldn't connect".
-      - Sound: the outputs or inputs, the one in use first and ticked, as the
-        bar's volume had them (a virtual source through `wpctl set-default`).
-      Night light (`NightLight`) is hyprsunset, set with `hyprctl hyprsunset
-      temperature|identity`, 2500 to 5500 K, kept in the state dir
-      (`night-light.json`) and put back whenever hyprsunset reports another
-      temperature, as one started again does (its getter keeps the last value
-      through `identity`, so off is never checked). It is looked for every
-      10 s. Do Not Disturb is `Notifs.dnd`.
+    - What each component is for, and what its code does not say; the
+      behaviour itself is in the QML and its scenarios.
+      - `launcher/`: one `LauncherWindow` and a `LauncherMode` per feature,
+        each opened by its own global shortcut (`quickshell:launcher-<name>`):
+        SUPER+D `apps`, SUPER+V `clipboard`, SUPER+P `monitors`, SUPER+Tab
+        `windows`, SUPER+N `nixpkgs`. A mode sets its `rows` (each with a
+        unique `key`, which keeps delegates as a search changes), the `fields`
+        searched (`search.js`: every word as a substring, or in a loose field
+        its letters in order), a `glyph` or `image`, an optional `accent`,
+        `preview` and own `find`. The card opens at full height and centred,
+        so it holds still while typing; keys go round, the wheel stops at the
+        ends. `apps` orders equal matches by `AppUsage` (frecency as one
+        number per app, so nothing decays) and warms every icon at startup,
+        since an icon Papirus lacks costs thousands of stats. `clipboard`
+        decodes counts and thumbnails once per clip into Quickshell's cache,
+        pruned to what cliphist lists, also at startup, after cliphist's wipe.
+        `monitors` draws each hyprmoncfg profile from its file
+        (`LayoutDiagram`), the recommended one first, and reloads a second
+        after a burst of hotplugs. `windows` lists wlr-foreign-toplevels, on
+        Hyprland in focus order with each one's workspace as the bar names
+        it, and previews them live (no `ScreencopyView` of a window Hyprland
+        squeezed below nothing). `nixpkgs` searches nixos-unstable's 130 000
+        packages from `nixpkgs-index`'s TSV in columns with its own loop and
+        memo, and runs one with `nixpkgs-run`.
+      - `nixpkgs-run` builds `github:NixOS/nixpkgs/<rev>#<attr>` with a
+        progress card (`nixpkgs-progress.jq` over nix's internal-json log),
+        then runs the program in a transient `systemd-run --user` service
+        sandboxed by systemd alone: `ProtectSystem=strict`, `PrivateTmp`, a
+        writable tmpfs over `$HOME` and `$XDG_RUNTIME_DIR` (the user
+        manager's implied `PrivateUsers` keeps it off `/proc/<pid>/root`), only
+        PipeWire, X11 and the GTK, fontconfig and cursor settings bound back
+        in, and the nix daemon and both D-Bus buses out of reach. Wayland
+        comes through a socket of its own from `security-context`, so
+        Hyprland hides every protocol that could type into or capture other
+        windows; X11 apps still share Xwayland. A program with a desktop entry
+        runs on its own, anything else in wezterm, held open on a failure or a
+        run under 5 s.
+      - `shortcuts/` (SUPER+?): every Hyprland bind with a description, from
+        `hyprctl binds -j` on each open, numbered and directional binds folded
+        into one row, a submap's binds under the bind that enters it, media
+        keys left out; in up to three balanced columns, shrunk whole only when
+        none fits.
+      - `power/` (SUPER+X or the bar's logo): five tiles with their letters,
+        Reload Hyprland and, on UEFI, Restart to Firmware; ending the session
+        or the machine takes a second press within 5 s. Every action is a
+        command, so `qst actions` shows what it would have done.
+      - `bar/`: per screen, the logo and workspaces, the clock (opening the
+        center) and the status button (opening the control centre) with the
+        tray's chevron last. Workspaces are hyprsplit's `1 … n` for the
+        monitor, then any other monitor's still on it, named after that
+        monitor (`DP2-1`) by `WorkspaceOwners`, which remembers connectors by
+        id across unplugs. Quickshell refreshes monitors only as one comes and
+        drops windows opened on a workspace it has not loaded, so `Bar.qml`
+        refreshes on those events and once more 300 ms after a burst. The
+        status button shows, left to right, what records (`Privacy`), the bell
+        while notifications wait unchecked or Do Not Disturb struck through,
+        the VPN, the link in use, Bluetooth, a muted microphone, the volume
+        and a laptop's battery; the wheel steps the volume, a right click
+        mutes. The tray folds every item behind one chevron in the order they
+        came (`TrayOrder`, since Quickshell sorts by category and id);
+        `TrayMenu` is libadwaita's popover menu, cascading as GTK's does,
+        taking no keyboard and closing as the pointer leaves it.
+      - `weather/`: MET Norway's forecast for the time zone's city
+        (`/etc/localtime` placed by `zone.tab`, no lookup of the address),
+        fetched every half hour and at once when the clock shows a suspend
+        skipped one; MET's icons are fetched into `weather/icons/` by
+        `quickshell.nix`.
+      - `notifications/`: the notification daemon and its popups. `Notifs`
+        keeps every notification as a `NotifEntry` until dismissed, holding it
+        a second past its close so views slide it away whole. Popups stack on
+        the monitor focused when each arrived, five at most, held while
+        hovered (and those above it), out of sight or without a monitor; the
+        countdown bar is the entry's own. Over a fullscreen window only
+        critical ones pop up. A stack tag (`x-canonical-private-synchronous`,
+        `x-dunst-stack-tag`), an update by id or the same app, summary and
+        body within 2 s update a card in place. A flood is turned away at the
+        door past 30 a second (critical ones apart) and summed up in one card;
+        text is cut before anything lays it out, since a megabyte of it held
+        the shell for seconds; each app keeps its newest three and all 100.
+        Bodies keep only the markup the spec allows (`markup.js`). Sounds are
+        elementary OS's, played with `pw-play`, at most one each 300 ms.
+        `History` saves the list atomically to Quickshell's state dir (no
+        transient ones, 7 days at most, `history.js`) with copies of pictures
+        only the server held, drawn once off screen and grabbed into the cache
+        under a uid per entry. Scripts use `qs ipc -c shell call notifications
+        <toggleDnd|setDnd|dnd|count|clear|hidePopups>`.
+      - `center/`: the notification center under the clock: notifications
+        grouped per app (`NotificationGroup`), each card three lines tall so
+        the stack is even, the calendar (ISO weeks) and the weather beside it
+        where the screen has room. Opening it checks every notification and
+        puts the popups away. Its list glides on the wheel and flicks.
+      - `controls/`: the control centre, GNOME's quick settings under the
+        status button (SUPER+A): `Header`, `Levels` (output, input and each
+        backlight), the `Pill`s the machine has (`Controls.toggles`: wired per
+        device, Wi-Fi, VPNs, Bluetooth, night light, Do Not Disturb), a `Menu`
+        under the row that opens it, `InUse` while something records and the
+        `MediaCard` of the MPRIS player that played last. `ControlsPanel`
+        stacks them, each menu in a slot of its own so one eases shut as the
+        next opens, and scrolls past what the screen leaves under the bar. The
+        backends are singletons: `Net` (Quickshell.Networking for Wi-Fi and
+        wired, `nmcli` for VPNs and whether NetworkManager runs; a captive
+        portal gets a card that goes when the portal does), `BluetoothDevices`
+        (pairs, trusts and connects in one click; no agent, so a device
+        wanting a PIN is sent to bluetui), `Volume`, `Microphone` (a virtual
+        source is set through `wpctl`), `NightLight` (hyprsunset, kept in the
+        state dir and put back when hyprsunset restarts), `Media`, `Power`
+        (UPower's display device) and `Privacy`: a capture stream linked from
+        a microphone while audio flows (meters and passive filters left
+        out), a video source a program made (the portal's screen casts), and
+        a camera through PipeWire or held open from `/dev/video*` for half a
+        second (`camera-users`). Names from devices and networks are made safe
+        for one line by `names.js`.
   - `hyprtoolkit.nix` themes hyprtoolkit (`~/.config/hypr/hyprtoolkit.conf`),
     which hyprpolkitagent ≥ 0.2 and hyprland-guiutils' dialogs (app not
     responding, permissions) draw with, as libadwaita's dark style on the darker palette: window
@@ -1120,7 +668,7 @@ Notes on specific features:
     the one watcher of input, and without a shell the lock simply comes, at
     0.6. Sleep and the power menu lock at once.
   - The OSD (`osd/`) shows what just changed on the focused monitor, on the
-    overlay layer, for 1.5 s (fading in over 120 ms and out over 200 ms), never taking a click: by its right edge a
+    overlay layer, for 1.5 s (fading over `Theme.fade`), never taking a click: by its right edge a
     slim upright slider (level filling from the bottom, past 100 % in the
     warning colour, the number above and the symbol below) for output
     volume and mute and brightness, and at the bottom centre, 4em up as GNOME
@@ -1420,9 +968,8 @@ reads a copy of the database. The config dir is the user's, symlinked, except
 `$QS_TEST_DIR/cfg/hyprmoncfg/profiles`. qs runs at `QT_SCALE_FACTOR` 1, the
 standard, unless `QS_TEST_SCALE` says otherwise, and with `TZDIR`, which Qt
 needs on NixOS to find the time zone (the user's systemd session sets it, a
-shell may not). `bar fakeVolume` stands in a made-up sound server and `bar
-fakeOutputs 1000` one with that many outputs, some named to break things;
-`realVolume` drops it.
+shell may not). `bar fakeOutputs 1000` stands in a sound server with that
+many outputs, some named to break things; `realVolume` drops it.
 
 The session's system bus is a `dbus-daemon` of its own
 (`DBUS_SYSTEM_BUS_ADDRESS` for everything in the session), so no test reaches
@@ -1614,7 +1161,7 @@ are clicked by name: the probe adds an area's `objectName` (or its parent's)
 to its label, and the centre names its pills, menu arrows, rows and actions
 (`pill:wifi`, `menu:vpn`, `row:Pixel_7128`, `action:Network Settings…`). `design.sh` brings every panel, the bar, popups of
 every kind, a tray menu, the control centre with each of its menus (a
-headset, a player and a backlight in), the OSD and the privacy tooltip
+headset, a player and a backlight in), the OSD and an In Use pill
 on screen, on a scaled monitor too, for the census; `cursors.sh` sweeps the
 bar and every panel and checks a closed hand mid-drag; `binds.sh` presses
 every bind that dispatches a global and checks each opens a panel of its

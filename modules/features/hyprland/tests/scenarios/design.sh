@@ -27,7 +27,7 @@ for monitor in DP-1 DP-2; do
   qst wait '.panel == ""'
 done
 
-qst case "the control centre with each of its menus, a tray menu, the OSD and the privacy tooltip"
+qst case "the control centre with each of its menus, a tray menu, the OSD and an In Use pill"
 qst bluetooth add 11:22:33:44:55:01 "WH-1000XM4" audio-headset ok paired connected 70
 qst player add spotify Spotify Playing "$QS_TEST_DIR/shell/weather/icons/clearsky_day.svg"
 qst backlight intel_backlight 600 1000
