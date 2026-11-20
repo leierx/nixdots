@@ -64,13 +64,14 @@ qst wait '.panel == "windows"'
 for _ in $(seq 45); do qst key Down; done
 qst stays '.panel == "windows"' 1
 
-qst case "sixty outputs scroll in the volume popup rather than running off the screen"
+qst case "sixty outputs scroll in the control centre's output menu rather than running off the screen"
 for n in $(seq 60); do
   qst x pw-cli create-node adapter "{ factory.name=support.null-audio-sink node.name=chaos$n node.description=\"Output $n\" media.class=Audio/Sink object.linger=true audio.position=[FL FR] }" > /dev/null
 done
-qst ipc panels open volume:DP-1 > /dev/null
-qst wait '.panel == "volume:DP-1"'
-qst stays '.panel == "volume:DP-1"' 1
+qst ipc panels open controls:DP-1 > /dev/null
+qst ipc controls menu output > /dev/null
+qst wait '.panel == "controls:DP-1"'
+qst stays '.panel == "controls:DP-1"' 1
 
 qst case "forty apps recording fit under the privacy indicator"
 for n in $(seq 40); do qst spawn pw-record -P "{ application.name=Recorder$n }" /dev/null; done
@@ -86,9 +87,9 @@ tray_button() {
   qst areas 'BarWindow' | awk -F'\t' -v screen="$1" '(screen == "DP-1") == ($1 < 1920) && $6 == "true" { x = $1; y = $2 } END { print x, y }'
 }
 
-# The popup's device rows, top to bottom: full width, so centred on the card, where the level's mute and slider are not.
-volume_rows() {
-  qst areas 'VolumePopup' | awk -F'\t' '$2 > 60 && $2 < 1000 { print $1, $2 }' | sort -n -k2 | awk '{ n[$1]++; at[$1] = at[$1] " " $2 } END { for (x in n) if (n[x] > best) { best = n[x]; bx = x } print bx at[bx] }'
+# The open menu's rows, top to bottom: full width, so centred on the card, where the levels' and pills' areas are not.
+menu_rows() {
+  qst areas 'ControlsPanel' | awk -F'\t' '$2 > 60 && $2 < 1000 { print $1, $2 }' | sort -n -k2 | awk '{ n[$1]++; at[$1] = at[$1] " " $2 } END { for (x in n) if (n[x] > best) { best = n[x]; bx = x } print bx at[bx] }'
 }
 
 qst case "thirty tray items keep the bar off the clock: the first four stay, the rest wait behind its button"
@@ -104,7 +105,7 @@ qst click left "$x" "$y"
 qst wait '.panel == "tray-overflow:DP-1"'
 qst stays '.panel == "tray-overflow:DP-1"' 1
 # A narrow screen keeps fewer rather than reaching the clock.
-qst output 800x600 1
+qst output 640x480 1
 qst wait 'any(.trays[]; .screen == "DP-1" and (.shown | length) < 4 and (.shown | length) + .hidden == 30 and .width <= .room)'
 
 qst case "the first tray items keep their places as items come and go"
@@ -114,15 +115,15 @@ for name in a b c d e f; do
   n=$((n + 1))
   qst wait "(.tray | length) == $n" 10
 done
-qst tray add crowd 20
-qst wait '(.tray | length) == 26' 10
+qst tray add crowd 40
+qst wait '(.tray | length) == 46' 10
 qst wait '.trays[0].shown == ["a", "b", "c", "d"]'
 qst tray remove b
 qst wait '.trays[0].shown == ["a", "c", "d", "e"]'
 qst tray remove a
 qst wait '.trays[0].shown == ["c", "d", "e", "f"]'
 qst tray add b
-qst wait '(.tray | length) == 25' 10
+qst wait '(.tray | length) == 45' 10
 qst stays '.trays[0].shown == ["c", "d", "e", "f"]' 1
 
 qst case "tray items churning under the open overflow and a menu opened from it"
@@ -171,39 +172,41 @@ for n in $(seq 30); do
   qst x pw-cli create-node adapter "{ factory.name=support.null-audio-sink node.name=out$n node.description=\"Output $n\" media.class=Audio/Sink object.linger=true audio.position=[FL FR] }" > /dev/null
 done
 qst wait '(.microphone.inputs | length) == 43' 10
-qst ipc panels open volume:DP-1 > /dev/null
-qst wait '.panel == "volume:DP-1"'
-read -r _ ys < <(volume_rows)
+qst ipc panels open controls:DP-1 > /dev/null
+qst ipc controls menu input > /dev/null
+qst wait '.panel == "controls:DP-1"'
+read -r _ ys < <(menu_rows)
 read -ra rows <<< "$ys"
-# Both lists scroll in what the screen leaves: some rows of each are on screen.
+# The list scrolls in what the screen leaves: some of its rows are on screen.
 [ "${#rows[@]}" -gt 6 ] && [ "${#rows[@]}" -lt 40 ] || { echo "${#rows[@]} device rows on screen"; exit 1; }
 qst pointer 960 "${rows[-1]}"
 qst wheel 40
-qst stays '.panel == "volume:DP-1"' 1
+qst stays '.panel == "controls:DP-1"' 1
 
 qst case "the default input switched as fast as clicks and wpctl go, the last pick holding"
-qst ipc panels open volume:DP-1 > /dev/null
-qst wait '.panel == "volume:DP-1"'
-read -r x ys < <(volume_rows)
+qst ipc panels open controls:DP-1 > /dev/null
+qst ipc controls menu input > /dev/null
+qst wait '.panel == "controls:DP-1"'
+read -r x ys < <(menu_rows)
 read -ra rows <<< "$ys"
-# Outputs first: Speakers, Headphones, HDMI; then Microphone, Headset Microphone, Noise Cancelling (virtual, through wpctl).
-names=("Microphone" "Headset Microphone" "Noise Cancelling")
-for n in $(seq 0 29); do qst click left "$x" "${rows[$((3 + n % 3))]}"; done
-qst wait ".microphone.input == \"${names[2]}\"" 10
-qst stays ".microphone.input == \"${names[2]}\" and .panel == \"volume:DP-1\"" 1
-qst click left "$x" "${rows[4]}"
+# The one in use comes first, so each pick moves the list: the two rows under it, picked in turn, go round all three.
+for n in $(seq 0 29); do qst click left "$x" "${rows[$((1 + n % 2))]}"; done
+qst wait '.microphone.input != null' 10
+qst stays '.panel == "controls:DP-1" and (.microphone.inputs | length) == 3' 1
+qst x wpctl set-default "$(qst x pw-dump | jq '.[] | select(.info.props."node.name" == "test-headset-mic") | .id')"
 qst wait '.microphone.input == "Headset Microphone" and .microphone.adjustable'
 ids=$(qst x pw-dump | jq -r '.[] | select(.info.props."media.class" // "" | test("^Audio/Source")) | .id')
 for _ in 1 2 3 4 5; do for id in $ids; do qst x wpctl set-default "$id"; done; done
 last=$(tail -1 <<< "$ids")
 qst wait ".microphone.input == $(qst x pw-dump | jq ".[] | select(.id == $last) | .info.props.\"node.description\"")" 10
-qst stays '.panel == "volume:DP-1"' 1
+qst stays '.panel == "controls:DP-1"' 1
 
-qst case "inputs coming and going under the open popup, the default among them"
+qst case "inputs coming and going under the open input menu, the default among them"
 qst x wpctl set-default "$(qst x pw-dump | jq '.[] | select(.info.props."node.name" == "test-headset-mic") | .id')"
 qst wait '.microphone.input == "Headset Microphone"'
-qst ipc panels open volume:DP-1 > /dev/null
-qst wait '.panel == "volume:DP-1"'
+qst ipc panels open controls:DP-1 > /dev/null
+qst ipc controls menu input > /dev/null
+qst wait '.panel == "controls:DP-1"'
 for _ in 1 2 3; do
   for n in $(seq 15); do
     qst x pw-cli create-node adapter "{ factory.name=support.null-audio-sink node.name=come$n node.description=\"Coming $n\" media.class=Audio/Source object.linger=true audio.position=[MONO] }" > /dev/null
@@ -215,13 +218,13 @@ done
 # The default itself goes: WirePlumber falls back to the next, and the list loses it.
 qst x pw-cli destroy test-headset-mic > /dev/null
 qst wait '.microphone.input == "Microphone" and .microphone.inputs == ["Microphone", "Noise Cancelling"]'
-qst stays '.panel == "volume:DP-1"' 1
+qst stays '.panel == "controls:DP-1"' 1
 
-qst case "the microphone's mute and level hammered from the popup"
-qst ipc panels open volume:DP-1 > /dev/null
-qst wait '.panel == "volume:DP-1"'
-# A level row is the y with two areas, its mute and its slider; the output's first, the input's second.
-read -r mx my < <(qst areas 'VolumePopup' | awk -F'\t' '$2 > 60 { print $1, $2 }' | sort -n -k2 -k1 | awk '{ count[$2]++; if (!($2 in x)) x[$2] = $1 } END { for (y in count) if (count[y] == 2) print x[y], y }' | sort -n -k2 | sed -n 2p)
+qst case "the microphone's mute and level hammered from the control centre"
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+# A sound level is the y with three areas, its mute, its slider and its arrow; the output's first, the input's second.
+read -r mx my < <(qst areas 'ControlsPanel' | awk -F'\t' '$2 > 40 { print $1, $2 }' | sort -n -k2 -k1 | awk '{ count[$2]++; if (!($2 in x)) x[$2] = $1 } END { for (y in count) if (count[y] == 3) print x[y], y }' | sort -n -k2 | sed -n 2p)
 for _ in $(seq 20); do qst click left "$mx" "$my"; done
 qst wait '.microphone.muted | not'
 qst stays '.microphone.muted | not' 0.5
@@ -230,11 +233,12 @@ qst wheel 30
 qst wait '.microphone.percent == 0'
 qst wheel -40
 qst wait '.microphone.percent == 100 and (.microphone.muted | not)'
-qst stays '.microphone.percent == 100 and .panel == "volume:DP-1"' 1
+qst stays '.microphone.percent == 100 and .panel == "controls:DP-1"' 1
 
-qst case "PipeWire restarting under the open popup brings the inputs back"
-qst ipc panels open volume:DP-1 > /dev/null
-qst wait '.panel == "volume:DP-1"'
+qst case "PipeWire restarting under the open input menu brings the inputs back"
+qst ipc panels open controls:DP-1 > /dev/null
+qst ipc controls menu input > /dev/null
+qst wait '.panel == "controls:DP-1"'
 qst pipewire restart
 qst wait '(.microphone.inputs | length) == 3 and .microphone.input == "Microphone"' 15
 
@@ -288,3 +292,114 @@ for n in $(seq 30); do
 done
 qst wait '(.history | length) == 1 and (.popups | length) == 1'
 qst stays '(.history | length) == 1' 1
+
+# The control centre's areas by name (pill:wifi, row:Pixel_7128), as "x y", on the screen given or DP-1.
+named() {
+  qst areas 'ControlsPanel' | awk -F'\t' -v name="$1" -v screen="${2:-DP-1}" '(screen == "DP-1") == ($1 < 1920) && index($3, ":" name) && substr($3, index($3, ":" name) + length(name) + 1, 1) ~ /^( |$)/ { print $1, $2; exit }'
+}
+
+press_named() {
+  local x y
+  read -r x y < <(named "$@")
+  [ -n "$x" ] || { echo "no area named $1" >&2; exit 1; }
+  qst click left "$x" "$y"
+}
+
+qst case "three hundred networks and hostile names: the list scrolls inside its menu and the filter finds one"
+qst network wifi many 300 "Altibox "
+qst network wifi json "$(jq -cn '[["Right‮to left", 90, "wpa2", "x"], ["two\nlines", 88, "open", ""], ["zero​width​", 86, "wpa2", "x"], [("A network a kilobyte long " * 40), 84, "wpa2", "x"], ["<b>bold</b> & co", 82, "open", ""]]')"
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+press_named menu:wifi
+qst wait '(.controls.network.networks | length) == 308' 15
+rows=$(qst areas 'ControlsPanel' | grep -c ':row:' || true)
+[ "$rows" -gt 3 ] && [ "$rows" -lt 40 ] || { echo "$rows rows on screen"; exit 1; }
+read -r x y < <(qst areas 'ControlsPanel' | awk -F'\t' '$3 ~ /:row:/ { print $1, $2; exit }')
+# The filter sits over the first row.
+qst click left "$x" $((y - 38))
+qst type "Altibox 17"
+qst wait '.field == "Altibox 17"'
+rows=$(qst areas 'ControlsPanel' | grep -c ':row:Altibox 17' || true)
+[ "$rows" -ge 1 ] && [ "$rows" -le 11 ] || { echo "$rows rows match"; exit 1; }
+qst stays '.panel == "controls:DP-1" and .controls.menu == "wifi"' 1
+
+qst case "a thousand outputs: the one in use first, the rest behind a filter, and the centre still fits"
+qst ipc bar fakeOutputs 1000 > /dev/null
+qst ipc panels open controls:DP-1 > /dev/null
+qst ipc controls menu output > /dev/null
+qst wait '.panel == "controls:DP-1" and .controls.menu == "output" and .volume.output == "Output 601"'
+first=$(qst areas 'ControlsPanel' | awk -F'\t' '$3 ~ /:row:/ { print $3; exit }')
+[[ $first == *":row:Output 601"* ]] || { echo "first row: $first"; exit 1; }
+qst stays '.panel == "controls:DP-1"' 1
+qst ipc bar realVolume > /dev/null
+
+qst case "fifty VPNs and a hundred Bluetooth devices scroll in their menus"
+for n in $(seq 50); do qst network profile vpn "office-$n.vpn.example.org"; done
+for n in $(seq 100); do qst bluetooth add "$(printf '11:22:33:44:%02X:%02X' $((n / 256)) $((n % 256)))" "Device $n $([ "$n" = 7 ] && printf 'with a name long enough to run off any row %.0s' 1 2 3 4 5)" audio-headset ok; done
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1" and (.controls.vpns | length) == 51'
+press_named menu:vpn
+qst stays '.controls.menu == "vpn"' 1
+press_named menu:bluetooth
+qst wait '(.controls.bluetooth.devices | length) == 100' 10
+qst stays '.controls.menu == "bluetooth"' 1
+
+qst case "NetworkManager restarting while a password is typed keeps the row and the menu"
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+press_named menu:wifi
+qst wait '.controls.network.networks | index("Hvit_Monster")'
+press_named row:Hvit_Monster
+qst wait '.controls.network.asking == "Hvit_Monster"'
+qst type half
+qst network restart
+qst wait '.controls.network.present and (.controls.network.networks | index("Hvit_Monster"))' 15
+qst stays '.controls.network.asking == "Hvit_Monster" and .controls.menu == "wifi" and .panel == "controls:DP-1"' 1
+
+qst case "the centre's monitor unplugged under an open menu closes it, and the other bar opens one of its own"
+qst focus DP-2
+qst ipc panels open controls:DP-2 > /dev/null
+qst wait '.panel == "controls:DP-2"'
+qst ipc controls menu bluetooth > /dev/null
+qst monitor remove DP-2
+qst wait '.panel == ""'
+qst key super+a
+qst wait '.panel == "controls:DP-1"'
+
+qst case "toggles hammered faster than their services answer settle where the last click left them"
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+for _ in $(seq 25); do press_named pill:wifi; done
+qst wait '(.controls.network.wifiOn | not)' 10
+for _ in $(seq 20); do press_named pill:night; done
+qst wait '(.controls.night.on | not)'
+for _ in $(seq 15); do press_named pill:vpn; done
+# Each click reads the state before the last one is done, so only that it settles is certain.
+qst wait '.controls.vpns[0].busy == null' 15
+for _ in $(seq 21); do press_named pill:bluetooth; done
+qst wait '(.controls.bluetooth.on | not)'
+qst stays '.panel == "controls:DP-1"' 1
+
+QS_TEST_SCALE=1.2 qst case "on a 1024x600 screen at the desktop's 1.2 the centre scrolls, and a password row scrolls into view"
+qst output 1024x600 1
+qst network wifi many 40
+# At full strength it sorts first among the new ones, in view.
+qst network wifi strength Hvit_Monster 100
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+qst ipc controls menu wifi > /dev/null
+qst wait '(.controls.network.networks | length) == 43' 10
+press_named row:Hvit_Monster
+qst wait '.controls.network.asking == "Hvit_Monster"'
+qst type visible
+qst wait '.field == "visible"'
+qst stays '.panel == "controls:DP-1"' 1
+
+QS_TEST_MONITORS="DP-1:3840x2160:2" QS_TEST_SCALE=1.2 qst case "on a 4K monitor at scale 2 with the shell at 1.2 the centre and its lists fit"
+qst network wifi many 40
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+for menu in wifi output input bluetooth vpn; do
+  qst ipc controls menu "$menu" > /dev/null
+  qst stays ".controls.menu == \"$menu\" and .panel == \"controls:DP-1\"" 0.6
+done

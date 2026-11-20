@@ -1,6 +1,4 @@
 //@ pragma IconTheme Papirus-Dark
-// Qt's high-DPI scaling: the QML keeps Adwaita's sizes and draws them 1.2× and sharp.
-//@ pragma Env QT_SCALE_FACTOR=1.2
 
 import Quickshell
 import qs.common

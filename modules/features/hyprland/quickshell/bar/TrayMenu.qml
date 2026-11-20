@@ -16,7 +16,7 @@ PanelWindow {
   required property string name
   // While the pointer rests on the menu's icon: Hyprland reports none on the menu until the pointer moves.
   property bool held: false
-  // The labels of the open submenus rather than their entries: nm-applet rebuilds its whole menu, every entry new, as networks come and go.
+  // The labels of the open submenus rather than their entries: apps rebuild a menu whole, every entry new, as Electron ones do on each update.
   property var path: []
   // Cards register here, as the window's input region is theirs alone.
   property list<Item> cards: []

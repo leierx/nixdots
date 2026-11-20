@@ -75,10 +75,10 @@ qst pipewire restart
 qst wait '.volume.output == "Speakers" and .input == "Microphone"' 10
 qst stays '.osd == null' 2
 
-qst case "the volume popup's slider stands in for the OSD"
+qst case "the control centre's slider stands in for the OSD"
 settled
-qst ipc panels open volume:DP-1 > /dev/null
-qst wait '.panel == "volume:DP-1"'
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
 wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.5
 qst wait '.volume.percent == 50'
 qst stays '.osd == null'

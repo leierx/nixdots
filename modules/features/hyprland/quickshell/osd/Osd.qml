@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Services.Pipewire
 import qs.bar
+import qs.controls
 import qs.common
 
 // Changes as they are made, not states as they are found: the first value of anything, and any
@@ -122,7 +123,7 @@ Singleton {
     ready: Volume.ready
     value: [Volume.volume, Volume.muted]
     // Its popup's slider shows the level already.
-    onNoticed: if (!Panels.active.startsWith("volume:")) root.showVolume()
+    onNoticed: if (!Panels.active.startsWith("controls:")) root.showVolume()
   }
 
   Watch {
@@ -151,8 +152,9 @@ Singleton {
   Connections {
     target: Brightness
 
+    // The centre's own slider shows the level already.
     function onAdjusted(): void {
-      root.showBrightness();
+      if (!Panels.active.startsWith("controls:")) root.showBrightness();
     }
   }
 

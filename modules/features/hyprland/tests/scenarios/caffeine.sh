@@ -15,9 +15,9 @@ qst wait '.caffeine' 7
 systemctl --user stop caffeine.service
 qst wait '.caffeine == false' 7
 
-qst case "with the center open a change elsewhere shows sooner"
-qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
+qst case "with the control centre open a change elsewhere shows sooner"
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
 systemctl --user start caffeine.service
 qst wait '.caffeine' 3
 

@@ -38,11 +38,7 @@ in
       ...
     }:
     {
-      home.packages = [
-        pkgs.wl-clipboard
-      ]
-      # home-manager puts the applet's desktop entries on XDG_DATA_DIRS but not its binaries on PATH
-      ++ lib.optional config.services.network-manager-applet.enable config.services.network-manager-applet.package;
+      home.packages = [ pkgs.wl-clipboard ];
 
       # session services run under Hyprland only
       wayland.systemd.target = "hyprland-session.target";
@@ -56,17 +52,6 @@ in
         "${lib.getExe config.services.cliphist.package} wipe";
 
       services.hyprpolkitagent.enable = true;
-
-      services.network-manager-applet.enable = osConfig.networking.networkmanager.enable;
-      # its unit hardcodes graphical-session.target
-      systemd.user.services.network-manager-applet = lib.mkIf osConfig.networking.networkmanager.enable {
-        Unit.PartOf = lib.mkForce [ config.wayland.systemd.target ];
-        Unit.After = lib.mkForce [
-          config.wayland.systemd.target
-          "tray.target"
-        ];
-        Install.WantedBy = lib.mkForce [ config.wayland.systemd.target ];
-      };
 
       services.hyprpaper = {
         enable = true;

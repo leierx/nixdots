@@ -140,6 +140,16 @@ in
       };
     in
     {
+      imports = [
+        {
+          options.quickshell.scale = lib.mkOption {
+            type = lib.types.numbers.positive;
+            default = 1;
+            description = "How much larger than libadwaita's sizes the shell draws, on top of each monitor's own scale (Qt's QT_SCALE_FACTOR).";
+          };
+        }
+      ];
+
       home.packages = [
         # Theme.qml's fonts and shell.qml's icon theme
         pkgs.adwaita-fonts
@@ -155,7 +165,20 @@ in
         nixpkgsRun
         cameraUsers
         backlightWatch
+        # the control centre's brightness, set through logind
+        pkgs.brightnessctl
+      ]
+      ++ lib.optionals osConfig.networking.networkmanager.enable [
+        # the control centre's VPNs, and its Network Settings…
+        osConfig.networking.networkmanager.package
+        pkgs.networkmanagerapplet
       ];
+
+      # The control centre's night light: started without a tint, which the shell sets while it runs.
+      services.hyprsunset = {
+        enable = true;
+        extraArgs = [ "--identity" ];
+      };
 
       programs.quickshell = {
         enable = true;
@@ -174,7 +197,10 @@ in
           # a crash loop through a burst of hotplugs must not leave the session without a shell
           StartLimitIntervalSec = 0;
         };
-        Service.RestartSec = 1;
+        Service = {
+          RestartSec = 1;
+          Environment = [ "QT_SCALE_FACTOR=${builtins.toJSON config.quickshell.scale}" ];
+        };
       };
 
       # The center's Caffeine: hypridle honours logind's idle inhibitors, and a unit outlives a shell restart.
@@ -215,6 +241,8 @@ in
         (globalBind "p" "launcher-monitors" "Monitor layouts")
         (globalBind "Tab" "launcher-windows" "Window switcher")
         (globalBind "n" "launcher-nixpkgs" "Run from nixpkgs")
+        # SUPER+A, as Windows 11 opens its quick settings
+        (globalBind "a" "controls" "Control centre")
         (globalBind "x" "power" "Power menu")
         # SUPER+?, as GTK apps show theirs on Ctrl+?; Hyprland matches the unshifted key, plus on the no layout
         (globalBind "SHIFT + plus" "shortcuts" "Keyboard shortcuts")
@@ -320,6 +348,17 @@ in
           exec ${qtdeclarative}/bin/qml ${tray}/tray.qml
         '';
 
+      # fakes of NetworkManager, UPower and BlueZ on the session's own system bus (tests/*.py, or dbusmock's templates)
+      qsDbusmock = pkgs.writeShellScriptBin "qs-dbusmock" ''
+        exec ${
+          pkgs.python3.withPackages (ps: [
+            ps.python-dbusmock
+            ps.pygobject3
+            ps.dbus-python
+          ])
+        }/bin/python3 -m dbusmock "$@"
+      '';
+
       # notifications by the thousand, faster than one notify-send each
       qsFlood = pkgs.writers.writePython3Bin "qs-flood" {
         libraries = [ pkgs.python3Packages.jeepney ];
@@ -336,6 +375,8 @@ in
           qsInput
           qsTray
           qsFlood
+          qsDbusmock
+          networkmanager
           # a light window, dozens of which crowd a workspace
           foot
           cameraUsers

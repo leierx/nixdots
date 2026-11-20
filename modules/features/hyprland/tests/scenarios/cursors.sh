@@ -13,6 +13,18 @@ for panel in apps:LauncherWindow clipboard:LauncherWindow monitors:LauncherWindo
   qst cursors "${panel#*:}"
 done
 
+qst case "a hand over everything clickable in the control centre, with each of its menus open"
+qst bluetooth add 11:22:33:44:55:01 "WH-1000XM4" audio-headset ok paired connected 70
+qst player add spotify Spotify
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1" and .controls.media != null'
+qst cursors ControlsPanel
+for menu in wifi vpn bluetooth output input; do
+  qst ipc controls menu "$menu" > /dev/null
+  qst wait ".controls.menu == \"$menu\""
+  qst cursors ControlsPanel
+done
+
 qst case "a hand over a tray menu's rows"
 qst tray
 qst wait '.tray | length > 0'

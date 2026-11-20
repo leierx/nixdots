@@ -1,12 +1,14 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
 import qs.common
 
 // A thick meter with its percentage on it, the lettering dark over the fill and light past it.
 Item {
   id: root
 
+  required property ShellScreen screen
   readonly property real level: Math.max(0, Math.min(Power.percent, 100)) / 100
   readonly property color fill: Power.critical ? Theme.destructive : Power.low ? Theme.warning : Theme.success
   // Material Symbols' bolt, filled
@@ -86,5 +88,31 @@ Item {
     height: 7
     radius: 1
     color: root.level >= 0.99 ? root.fill : Theme.trough
+  }
+
+  HoverHandler {
+    id: hover
+  }
+
+  Tooltip {
+    anchorItem: root
+    screen: root.screen
+    shown: hover.hovered && root.visible
+
+    Column {
+      spacing: 2
+
+      Text {
+        text: Power.charging ? (Power.remaining > 0 ? `Full in ${Power.duration(Power.remaining)}` : "Charging") : Power.plugged ? "Plugged in" : Power.remaining > 0 ? `${Power.duration(Power.remaining)} left` : "On battery"
+        color: Theme.fg
+        font: Theme.heading
+      }
+
+      Text {
+        text: `${Power.percent} % · ${Power.charging ? "charging" : Power.plugged ? "not charging" : "on battery"}`
+        color: Theme.fgDim
+        font: Theme.caption
+      }
+    }
   }
 }

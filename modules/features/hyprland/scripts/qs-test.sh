@@ -42,6 +42,14 @@ usage: qs-test COMMAND
   focus NAME            focus a monitor
   output MODE [SCALE]   change the first monitor's mode (2560x1440 1.5)
   pipewire start|stop|restart   the session's own sound server (tests/pipewire.conf)
+  network SUB ...       the session's NetworkManager (tests/networkmanager.py): start|stop|restart, wifi add SSID [STRENGTH] [SECURITY] [PASSWORD],
+                        wifi remove|strength|clear|many COUNT [PREFIX]|json JSON, device add|remove NAME [wifi|ethernet], cable NAME on|off,
+                        profile wifi|ethernet|wireguard|vpn NAME [SSID PSK], vpn NAME ok|fail|secrets, up NAME,
+                        connectivity none|portal|limited|full, switch on|off, delay MS, dump
+  player add NAME [IDENTITY] [STATUS]   an MPRIS player (tests/mpris.py); status NAME Playing|Paused|Stopped, remove NAME, clear
+  battery PERCENT [STATE [SECONDS]]   the session's UPower battery (charging, discharging, full, pending), or remove
+  bluetooth SUB ...     the session's BlueZ (tests/bluez.py): start|stop, adapter add|remove, remove ADDRESS,
+                        add ADDRESS NAME [ICON] [ok|pin|fail] [paired] [connected] [BATTERY]
   backlight NAME VALUE [MAX]    set a fake backlight (max 100) and announce it as udev does; NAME remove unplugs it
   camera open|close NAME [DEV]  a process named NAME holding a fake camera (video0) open; add|remove DEV
   spawn CMD...          start CMD in the session, detached (output in spawn.log)
@@ -62,6 +70,7 @@ usage: qs-test COMMAND
   actions               what the session tried to run on the machine (power, systemd-run, ...)
 
 env: QS_TEST_DIR (session dir), QS_TEST_HOST (host whose config is built, $host),
+     QS_TEST_NETWORK, QS_TEST_BLUETOOTH (none: no NetworkManager, no BlueZ), QS_TEST_SCALE (the shell's QT_SCALE_FACTOR, 1),
      QS_TEST_REPO (checkout), QS_TEST_MONITORS (NAME:MODE:SCALE ..., DP-1:1920x1080:1)
 EOF
 }
@@ -82,8 +91,11 @@ enter() {
   XDG_CONFIG_HOME=$T/cfg
   XDG_CURRENT_DESKTOP=Hyprland
   PATH=$T/bin:$PATH
+  DBUS_SYSTEM_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/system_bus_socket
+  # Qt finds the time zone's files only through it on NixOS; the user's systemd session sets it, a shell may not.
+  TZDIR=${TZDIR:-/etc/zoneinfo}
   HC=$(cat "$T/build")/hyprland/bin/hyprctl
-  export XDG_RUNTIME_DIR WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE DBUS_SESSION_BUS_ADDRESS XDG_CONFIG_HOME XDG_CURRENT_DESKTOP PATH
+  export XDG_RUNTIME_DIR WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE DBUS_SESSION_BUS_ADDRESS DBUS_SYSTEM_BUS_ADDRESS TZDIR XDG_CONFIG_HOME XDG_CURRENT_DESKTOP PATH
   unset DISPLAY SWAYSOCK
 }
 
@@ -156,7 +168,7 @@ start_qs() {
   (
     enter
     # Qt names the item behind every cursor change, which `cursor` reads back.
-    QT_LOGGING_RULES=qt.quick.hover.cursor.debug=true setsid qs -p "$T/shell" > "$T/qs.log" 2>&1 < /dev/null &
+    QT_SCALE_FACTOR=${QS_TEST_SCALE:-1} QT_LOGGING_RULES=qt.quick.hover.cursor.debug=true setsid qs -p "$T/shell" > "$T/qs.log" 2>&1 < /dev/null &
   )
   echo 1 > "$T/case-mark"
   rm -f "$T/countdowns.json"
@@ -167,8 +179,6 @@ start_qs() {
   grep -q 'Configuration Loaded' "$T/qs.log" || { problems; die "the shell did not load, see qs-test log"; }
   ipc_targets
   problems
-  # Always a battery, so the bar shows everything it can on any host; `ipc bar realBattery` drops it. The sound server is the session's own.
-  (enter && timeout 5 qs ipc -p "$T/shell" call bar fakeBattery 76 false > /dev/null) || echo "qs-test: could not fake a battery" >&2
 }
 
 stop_qs() {
@@ -193,6 +203,7 @@ build() {
       \"hyprland.lua\" = home.xdg.configFile.\"hypr/hyprland.lua\".source;
       hyprsplit = home.xdg.configFile.\"hypr/hyprsplit\".source;
       hyprpaper = home.services.hyprpaper.package;
+      hyprsunset = home.services.hyprsunset.package;
       \"hyprpaper.conf\" = home.xdg.configFile.\"hypr/hyprpaper.conf\".source;
     }"
 }
@@ -271,6 +282,65 @@ EOF
   for entry in loginctl pw-play xdg-open nixpkgs-run; do
     printf '#!/bin/sh\necho "%s $*" >> "%s/actions.log"\n' "$entry" "$T" > "$T/bin/$entry"
   done
+  # libnm will not register its secret agent with a NetworkManager not run by root, so the fake brings a profile up.
+  cat > "$T/bin/nmcli" << EOF2
+#!/bin/sh
+real=$(command -v nmcli)
+case " \$* " in
+  *" connection up "* | *" con up "* | *" c up "*) ;;
+  *) exec "\$real" "\$@" ;;
+esac
+echo "nmcli \$*" >> "$T/actions.log"
+while [ \$# -gt 0 ] && [ "\$1" != up ]; do shift; done
+shift
+case "\$1" in id | uuid) shift ;; esac
+name=\$1
+shift
+secrets=false
+for arg in "\$@"; do [ "\$arg" = passwd-file ] && secrets=true; done
+dbus-send --system --print-reply --dest=org.freedesktop.NetworkManager /org/freedesktop/NetworkManager org.freedesktop.DBus.Mock.Up "string:\$name" "boolean:\$secrets" > /dev/null || exit 10
+# As nmcli waits: until the profile is up, or it has gone down again.
+seen=0
+for _ in \$(seq 150); do
+  state=\$("\$real" -t -f NAME,UUID,STATE connection show --active | awk -F: -v name="\$name" '\$1 == name || \$2 == name { print \$3 }')
+  case "\$state" in
+    activated) echo "Connection successfully activated"; exit 0 ;;
+    activating) seen=1 ;;
+    "")
+      if [ \$seen = 1 ]; then
+        why=\$(dbus-send --system --print-reply=literal --dest=org.freedesktop.NetworkManager /org/freedesktop/NetworkManager org.freedesktop.DBus.Mock.Dump | jq -r --arg name "\$name" '.profiles[] | select(.id == \$name or .uuid == \$name) | .behaviour')
+        if [ "\$why" = secrets ]; then echo "Error: Connection activation failed: Secrets were required, but not provided." >&2; else echo "Error: Connection activation failed: (qs-test) the profile went down." >&2; fi
+        exit 4
+      fi
+      ;;
+  esac
+  sleep 0.1
+done
+echo "Error: Timeout expired." >&2
+exit 3
+EOF2
+  # The real one reaches this machine's backlight: this one sets the fake ones and announces it as udev does.
+  cat > "$T/bin/brightnessctl" << EOF2
+#!/bin/sh
+echo "brightnessctl \$*" >> "$T/actions.log"
+device=""
+value=""
+while [ \$# -gt 0 ]; do
+  case "\$1" in
+    --device | -d) device=\$2; shift ;;
+    --device=*) device=\${1#--device=} ;;
+    set) value=\$2; shift ;;
+  esac
+  shift
+done
+dir="$T/backlight/\$device"
+[ -d "\$dir" ] || { echo "Device '\$device' not found." >&2; exit 1; }
+max=\$(cat "\$dir/max_brightness")
+case "\$value" in *%) level=\$((\${value%\%} * max / 100)) ;; *) level=\$value ;; esac
+echo "\$level" > "\$dir/brightness"
+echo "\$level" > "\$dir/actual_brightness"
+printf 'UDEV  [%s] change   /devices/qs-test/backlight/%s (backlight)\n' "\$(date +%s.%N)" "\$device" >> "$T/udev"
+EOF2
   cliphist=$(command -v cliphist || true)
   if [ -n "$cliphist" ]; then
     [ -f "$HOME/.cache/cliphist/db" ] && cp "$HOME/.cache/cliphist/db" "$T/clip.db"
@@ -333,6 +403,217 @@ pw_reset() {
   pw_stop
   rm -rf "$T/pw/state"
   pw_start
+}
+
+# The session's own system bus, so nothing in a test reaches this machine's NetworkManager, UPower or BlueZ.
+sysbus_start() {
+  cat > "$T/system-bus.conf" << EOF2
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <type>system</type>
+  <listen>unix:path=$XDG_RUNTIME_DIR/system_bus_socket</listen>
+  <auth>EXTERNAL</auth>
+  <!-- The system bus allows 128, which Quickshell runs into past ~128 access points; tests of the lists need more. -->
+  <limit name="max_replies_per_connection">50000</limit>
+  <policy context="default">
+    <allow user="*"/>
+    <allow own="*"/>
+    <allow send_type="method_call"/>
+    <allow send_destination="*" eavesdrop="true"/>
+    <allow eavesdrop="true"/>
+  </policy>
+</busconfig>
+EOF2
+  dbus-daemon --config-file="$T/system-bus.conf" --fork --print-pid > "$T/system-bus.pid" || die "the session's system bus did not start"
+}
+
+owned() { dbus-send --system --print-reply --dest=org.freedesktop.DBus / org.freedesktop.DBus.NameHasOwner "string:$1" 2> /dev/null | grep -q 'boolean true'; }
+
+# A service on the session's system bus from a dbusmock template, its log in $T/NAME.log.
+mock_start() {
+  local name=$1 bus=$2 template=$3 params=${4:-"{}"}
+  mock_stop "$name"
+  setsid qs-dbusmock --system --template "$template" -p "$params" > "$T/$name.log" 2>&1 < /dev/null &
+  echo $! > "$T/$name.pid"
+  for _ in $(seq 100); do
+    owned "$bus" && return
+    sleep 0.05
+  done
+  die "the fake $name did not start, see $T/$name.log"
+}
+
+mock_stop() {
+  local pid
+  [ -s "$T/$1.pid" ] || return 0
+  pid=$(cat "$T/$1.pid")
+  kill "$pid" 2> /dev/null || true
+  for _ in $(seq 50); do
+    kill -0 "$pid" 2> /dev/null || break
+    sleep 0.05
+  done
+  rm -f "$T/$1.pid"
+}
+
+nm() {
+  local method=$1
+  shift
+  dbus-send --system --print-reply=literal --dest=org.freedesktop.NetworkManager /org/freedesktop/NetworkManager "org.freedesktop.DBus.Mock.$method" "$@"
+}
+
+# What a fresh case starts with, unless QS_TEST_NETWORK says none: the desktop's wired link and wg0
+# up, and a Wi-Fi card in range of a saved network, a WPA3 one and an open one.
+network_default() {
+  jq -cn '{
+    devices: [{ iface: "enp8s0", type: "ethernet", carrier: true, speed: 1000 }, { iface: "wlp5s0", type: "wifi", carrier: true, speed: 0 }],
+    air: [
+      { ssid: "Pixel_7128", bssid: "02:00:00:00:00:01", strength: 82, security: "wpa2", password: "hunter22", iface: "" },
+      { ssid: "Hvit_Monster", bssid: "02:00:00:00:00:02", strength: 64, security: "wpa3", password: "monster", iface: "" },
+      { ssid: "Kaffebrenneriet Gjest", bssid: "02:00:00:00:00:03", strength: 30, security: "open", password: "", iface: "" }
+    ],
+    profiles: [
+      { uuid: "00000000-0000-4000-8000-000000000001", id: "enp8s0", type: "ethernet", ssid: "", psk: "", security: "open", behaviour: "ok", iface: "enp8s0", timestamp: 1 },
+      { uuid: "00000000-0000-4000-8000-000000000002", id: "Pixel_7128", type: "wifi", ssid: "Pixel_7128", psk: "hunter22", security: "wpa2", behaviour: "ok", iface: "", timestamp: 1 },
+      { uuid: "00000000-0000-4000-8000-000000000003", id: "wg0", type: "wireguard", ssid: "", psk: "", security: "open", behaviour: "ok", iface: "", timestamp: 1 }
+    ],
+    active: ["00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000003"],
+    delay: 400
+  }'
+}
+
+network_start() {
+  mock_start network org.freedesktop.NetworkManager "$tests/networkmanager.py" "$(jq -cn --arg state "${1:-$(network_default)}" '{ state: $state }')"
+}
+
+# Fresh fakes for a case: NetworkManager as network_default, a battery at 76 % so the bar shows all it can,
+# and BlueZ with an adapter and nothing paired; QS_TEST_NETWORK or QS_TEST_BLUETOOTH set to none leaves that one out.
+services_reset() {
+  mock_stop network
+  [ "${QS_TEST_NETWORK:-default}" = none ] || network_start
+  mock_start power org.freedesktop.UPower "$tests/upower.py"
+  battery 76 discharging 9600
+  mock_stop bluetooth
+  if [ "${QS_TEST_BLUETOOTH:-default}" != none ]; then
+    mock_start bluetooth org.bluez "$tests/bluez.py"
+    bluez AddAdapter string:hci0 string:qs-test > /dev/null
+  fi
+}
+
+bluez() {
+  local method=$1
+  shift
+  dbus-send --system --print-reply=literal --dest=org.bluez / "org.bluez.Mock.$method" "$@"
+}
+
+# PERCENT [STATE [SECONDS]]: charging, discharging, full or pending (plugged in, held at a threshold); or remove.
+battery() {
+  if [ "${1:-}" = remove ]; then set -- -1 discharging 0; fi
+  dbus-send --system --print-reply=literal --dest=org.freedesktop.UPower /org/freedesktop/UPower org.freedesktop.DBus.Mock.SetBattery "double:${1:-76}" "string:${2:-discharging}" "int64:${3:-0}" > /dev/null
+}
+
+bluetooth() {
+  local sub=${1:-}
+  shift || true
+  case $sub in
+    start) mock_start bluetooth org.bluez "$tests/bluez.py"; bluez AddAdapter string:hci0 string:qs-test > /dev/null ;;
+    stop) mock_stop bluetooth ;;
+    adapter)
+      case ${1:-} in
+        add) bluez AddAdapter "string:${2:-hci0}" string:qs-test > /dev/null ;;
+        remove) bluez RemoveAdapterWithDevices "string:${2:-hci0}" > /dev/null ;;
+        *) die "bluetooth adapter add|remove [NAME]" ;;
+      esac
+      ;;
+    # ADDRESS NAME [ICON] [ok|pin|fail] [paired] [connected] [BATTERY]
+    add)
+      [ $# -ge 2 ] || die "bluetooth add ADDRESS NAME [ICON] [ok|pin|fail] [paired] [connected] [BATTERY]"
+      bluez AddFullDevice string:hci0 "string:$1" "string:$2" "string:${3:-audio-headset}" "string:${4:-ok}" "boolean:$([ "${5:-}" = paired ] && echo true || echo false)" "boolean:$([ "${6:-}" = connected ] && echo true || echo false)" "int32:${7:--1}" > /dev/null
+      ;;
+    remove) bluez RemoveFullDevice string:hci0 "string:$1" > /dev/null ;;
+    *) die "bluetooth start|stop|adapter add|remove|add ADDRESS NAME ...|remove ADDRESS" ;;
+  esac
+}
+
+network() {
+  local sub=${1:-}
+  shift || true
+  case $sub in
+    start) network_start "$(cat "$T/network.state" 2> /dev/null || network_default)" ;;
+    # NetworkManager going away: the expected warnings are Quickshell's own as it loses the service.
+    stop)
+      nm Dump | sed 's/^ *//' > "$T/network.state"
+      mock_stop network
+      ;;
+    restart)
+      nm Dump | sed 's/^ *//' > "$T/network.state"
+      network_start "$(cat "$T/network.state")"
+      ;;
+    wifi)
+      case ${1:-} in
+        add) [ $# -ge 2 ] || die "network wifi add SSID [STRENGTH] [SECURITY] [PASSWORD]"; nm AddNetwork "string:$2" "byte:${3:-60}" "string:${4:-wpa2}" "string:${5:-password}" "string:" > /dev/null ;;
+        remove) nm RemoveNetwork "string:$2" > /dev/null ;;
+        strength) nm SetStrength "string:$2" "byte:$3" > /dev/null ;;
+        clear) nm ClearNetworks > /dev/null ;;
+        # COUNT networks named PREFIX1 … in one call, or a JSON list of [ssid, strength, security, password]
+        many) nm AddNetworksJson "string:$(jq -cn --argjson n "$2" --arg prefix "${3:-Network }" '[range($n) | ["\($prefix)\(. + 1)", ((. * 37) % 100), (if . % 9 == 0 then "open" else "wpa2" end), "password"]]')" > /dev/null ;;
+        json) nm AddNetworksJson "string:$2" > /dev/null ;;
+        *) die "network wifi add|remove|strength|clear|many|json" ;;
+      esac
+      ;;
+    device)
+      case ${1:-} in
+        add) nm AddDevice "string:$2" "string:${3:-wifi}" boolean:true uint32:1000 > /dev/null ;;
+        remove) nm RemoveDevice "string:$2" > /dev/null ;;
+        *) die "network device add NAME wifi|ethernet, or remove NAME" ;;
+      esac
+      ;;
+    cable) nm SetCarrier "string:$1" "boolean:$([ "${2:-on}" = on ] && echo true || echo false)" > /dev/null ;;
+    profile) [ $# -ge 2 ] || die "network profile wifi|ethernet|wireguard|vpn NAME [SSID PSK]"; nm AddProfile "string:$1" "string:$2" "string:${3:-}" "string:${4:-}" > /dev/null ;;
+    vpn) nm SetBehaviour "string:$1" "string:${2:-ok}" > /dev/null ;;
+    up) nm Up "string:$1" boolean:false > /dev/null ;;
+    connectivity)
+      local value
+      case ${1:-} in none) value=1 ;; portal) value=2 ;; limited) value=3 ;; full) value=4 ;; *) die "network connectivity none|portal|limited|full" ;; esac
+      nm SetConnectivity "uint32:$value" > /dev/null
+      ;;
+    switch) nm SetHardwareSwitch "boolean:$([ "${1:-on}" = on ] && echo true || echo false)" > /dev/null ;;
+    delay) nm SetDelay "uint32:$1" > /dev/null ;;
+    dump) nm Dump | sed 's/^ *//' | jq . ;;
+    *) die "network start|stop|restart|wifi|device|cable|profile|vpn|up|connectivity|switch|delay|dump" ;;
+  esac
+}
+
+# MPRIS players on the session bus (tests/mpris.py), each a mock of its own: add NAME [IDENTITY] [Playing|Paused|Stopped].
+player() {
+  local sub=${1:-} name=${2:-}
+  mkdir -p "$T/players"
+  case $sub in
+    add)
+      [ -n "$name" ] || die "player add NAME [IDENTITY] [STATUS]"
+      QS_MPRIS_NAME=$name setsid qs-dbusmock --session --template "$tests/mpris.py" -p "$(jq -cn --arg identity "${3:-$name}" --arg status "${4:-Playing}" '{ identity: $identity, status: $status }')" > "$T/players/$name.log" 2>&1 < /dev/null &
+      echo $! > "$T/players/$name.pid"
+      for _ in $(seq 100); do
+        dbus-send --session --print-reply --dest=org.freedesktop.DBus / org.freedesktop.DBus.NameHasOwner "string:org.mpris.MediaPlayer2.$name" 2> /dev/null | grep -q 'boolean true' && return
+        sleep 0.05
+      done
+      die "the fake player $name did not start, see $T/players/$name.log"
+      ;;
+    status) dbus-send --session --print-reply --dest="org.mpris.MediaPlayer2.$name" /org/mpris/MediaPlayer2 org.freedesktop.DBus.Mock.SetStatus "string:$3" > /dev/null ;;
+    remove)
+      [ -s "$T/players/$name.pid" ] && kill "$(cat "$T/players/$name.pid")" 2> /dev/null
+      rm -f "$T/players/$name.pid"
+      ;;
+    clear) players_reset ;;
+    *) die "player add NAME [IDENTITY] [STATUS], status NAME STATUS, remove NAME, clear" ;;
+  esac
+}
+
+players_reset() {
+  local pid
+  for pid in "$T"/players/*.pid; do
+    [ -s "$pid" ] && kill "$(cat "$pid")" 2> /dev/null
+    rm -f "$pid"
+  done
+  return 0
 }
 
 # A backlight's level, as the kernel would set it and announce it.
@@ -536,7 +817,7 @@ up() {
   cat > "$T/run.sh" << EOF
 #!/bin/sh
 echo \$DBUS_SESSION_BUS_ADDRESS > "$T/bus"
-export XDG_RUNTIME_DIR="$runtime" XDG_CONFIG_HOME="$T/cfg" PATH="$T/bin:\$PATH"
+export XDG_RUNTIME_DIR="$runtime" XDG_CONFIG_HOME="$T/cfg" PATH="$T/bin:\$PATH" DBUS_SYSTEM_BUS_ADDRESS="unix:path=$runtime/system_bus_socket"
 export LIBSEAT_BACKEND=seatd SEATD_SOCK="$runtime/no-seatd"
 unset WAYLAND_DISPLAY DISPLAY HYPRLAND_INSTANCE_SIGNATURE SWAYSOCK
 WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 labwc -C "$T/labwc" > "$T/labwc.log" 2>&1 &
@@ -561,11 +842,14 @@ EOF
 
   enter
   monitors_reset
+  sysbus_start
+  services_reset
   pw_start
   XKB_DEFAULT_LAYOUT=$("$HC" getoption input:kb_layout -j | jq -r .str) \
     XKB_DEFAULT_VARIANT=$("$HC" getoption input:kb_variant -j | jq -r .str) \
     setsid qs-input serve "$XDG_RUNTIME_DIR/input" > "$T/input.log" 2>&1 < /dev/null &
   setsid "$build/hyprpaper/bin/hyprpaper" > "$T/hyprpaper.log" 2>&1 < /dev/null &
+  setsid "$build/hyprsunset/bin/hyprsunset" --identity > "$T/hyprsunset.log" 2>&1 < /dev/null &
   for _ in $(seq 50); do
     [ -S "$XDG_RUNTIME_DIR/input" ] && break
     sleep 0.1
@@ -718,9 +1002,11 @@ reset() {
   local id pid
   enter
   trays_reset
+  players_reset
   for pid in $("$HC" clients -j | jq -r '.[].pid'); do kill "$pid" 2> /dev/null || true; done
   stop_qs
   pw_reset
+  services_reset
   camera_reset
   rm -rf "$T/units" "$T/backlight"
   mkdir -p "$T/backlight"
@@ -971,6 +1257,10 @@ case $cmd in
       *) die "pipewire start|stop|restart" ;;
     esac
     ;;
+  network) need_up; enter; network "$@" ;;
+  battery) need_up; enter; battery "$@" ;;
+  bluetooth) need_up; enter; bluetooth "$@" ;;
+  player) need_up; enter; player "$@" ;;
   backlight) need_up; [ $# -ge 2 ] || die "backlight NAME VALUE [MAX], or NAME remove"; backlight "$@" ;;
   camera) need_up; enter; camera "$@" ;;
   spawn) need_up; enter; setsid "$@" >> "$T/spawn.log" 2>&1 < /dev/null & ;;

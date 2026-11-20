@@ -180,7 +180,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 
 | Feature | Classes | Aspect(s) | What it does |
 | --- | --- | --- | --- |
-| `bluetooth.nix` | homeManager | `bluetooth` | `bluetui` when the host enables `hardware.bluetooth` (via `osConfig`) |
+| `bluetooth.nix` | homeManager | `bluetooth` | `bluetui` when the host enables `hardware.bluetooth` (via `osConfig`), the control centre's Bluetooth Settings… |
 | `boot.nix` | nixos | `boot`, `systemd-boot` | GRUB-on-EFI default (theme via `runCommand`); `systemd-boot` aspect `mkForce`s GRUB off; no host imports it |
 | `desktop-apps.nix` | homeManager | `desktop-apps` | GUI apps every workstation gets (browsers, spotify, obsidian, discord, …) |
 | `display-manager.nix` | nixos | `display-manager` | ly |
@@ -234,8 +234,9 @@ Notes on specific features:
     quickshell, cliphist (wiped
     as it starts, so each session begins empty),
     hyprmoncfgd, hypridle, hyprpolkitagent, hyprpaper (the wallpaper; a
-    config reload restarts it) and nm-applet (whose unit hardcodes
-    `graphical-session.target`, hence a `mkForce`).
+    config reload restarts it) and hyprsunset (the control centre's night
+    light, started with `--identity`, untinted). No nm-applet: the control
+    centre does its job.
   - Monitors are laid out by [hyprmoncfg](https://github.com/crmne/hyprmoncfg)
     (from `nixpkgs-unstable`, built against the pinned Hyprland so its hyprctl
     matches). Profiles are declared only: the HM option `hyprmoncfg.profiles`
@@ -261,7 +262,9 @@ Notes on specific features:
     component is its own directory owning its windows, widgets and sizes, and
     `shell.qml` only instantiates them; `common/` holds what several share:
     `Theme`, `StateFile` (a `JsonAdapter`'s file in Quickshell's state dir),
-    `Shadow`, `ExpanderArrow`, `Time` (one minute clock for the bar, the
+    `Shadow`, `ExpanderArrow`, `Switch` (libadwaita's switch), `Tooltip` (a
+    card under a bar item while the pointer rests on it, a click-through layer
+    of its own, after 250 ms), `Time` (one minute clock for the bar, the
     calendar and notification ages), `Screens` (the screens someone can see:
     Quickshell's, less the headless `FALLBACK` Hyprland stands in while no
     monitor is on, and the focused one among them, the first while Hyprland
@@ -288,7 +291,7 @@ Notes on specific features:
     kills its whole cgroup, and without `QT_SCALE_FACTOR`), and `Panels`, the one
     open panel by name, with
     the IPC target `panels` (`qs ipc -c shell call panels open|close|toggle
-    <name>`; `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`, `power`): opening any panel (a
+    <name>`; `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`, `power`, and per screen `controls:DP-1`, `tray:DP-1`, `tray-overflow:DP-1`): opening any panel (a
     launcher mode, the notification center, a tray menu) closes the others,
     nothing opens while no monitor is on (it would land on `FALLBACK`, unseen,
     holding the keyboard), and
@@ -401,6 +404,25 @@ Notes on specific features:
         value may start before they update, so it runs with the old ones (the
         OSD faded out in its fade-in's 80 ms): two
         `NumberAnimation`s started from the flag's change handler instead.
+      - Quickshell.Networking exports a type named `Network`, which shadows a
+        singleton of that name in any file importing the module: the shell's is
+        `Net`.
+      - Quickshell.Networking picks its backend once, as it is first used:
+        NetworkManager not running then leaves it without one until the shell
+        restarts. Restarting NetworkManager later is handled.
+      - Quickshell asks NetworkManager for every access point at once, and
+        the system bus allows 128 pending replies a connection: past about
+        128 networks in range the rest are missing (TODO.md). qs-test's bus
+        raises the limit.
+      - Quickshell reads an MPRIS player the moment its bus name appears; one
+        that fills in its properties after that is never read.
+      - hyprsunset's `temperature` getter keeps the last temperature through
+        `identity`, so the shell keeps whether night light is on itself.
+      - Bluetooth pairing without an agent pairs only what wants no code, and
+        a failed `pair()` shows only as `pairing` ending without `paired`.
+      - A `ScriptModel` with `objectProp` keeps a delegate whose key stays and
+        hands it the new value (`dataChanged`): lists rebuilt from bindings
+        keep their state (an open menu, a typed password) only through it.
     - `Theme` is libadwaita's dark style 1:1, on the darker palette: its named colours
       (`palettes.adwaita_darker`, `view_bg_color` surfaces), hover/selection/
       border as the foreground at libadwaita's alphas over any surface, its
@@ -411,9 +433,13 @@ Notes on specific features:
       10 % at rest (none when flat), 15 % under the pointer and 25 % pressed or
       open, and every hover or press fades over `Theme.fade` (150 ms). Panel widths follow GNOME Shell's, in em of the body
       font (`Theme.em`): 30em popups (GNOME's are 34em), its calendar
-      days. `shell.qml` sets `QT_SCALE_FACTOR=1.2` (an `Env`
-      pragma), Qt's own high-DPI scaling, so it all draws 1.2× and sharp;
-      apps and links the shell opens get the variable removed.
+      days. It is designed at scale 1 (1920x1080 the standard); Hyprland's
+      per-monitor scale takes care of a dense screen (a 4K one at 2 looks as
+      1080p), and the home-manager option `quickshell.scale` (default 1; the
+      desktop's 27" 1440p monitors take 1.2) enlarges the shell alone, as
+      `QT_SCALE_FACTOR` in the service's environment, Qt's own high-DPI
+      scaling, so it draws larger and sharp; apps and links the shell opens
+      get the variable removed.
     - Design standards, so a new widget looks and behaves like its siblings:
       - Reach for the shared piece before drawing one. A bar item is a
         `BarButton` (a text pill, or a circle round an icon), never its own
@@ -466,7 +492,8 @@ Notes on specific features:
       setups: the QML runs its tools by name from PATH (`cliphist`, `wl-copy`,
       `pw-play`, `notify-send`, `xdg-open`, `systemd-run`, `hyprmoncfg`,
       `wezterm`, `curl`, `nixpkgs-index`, `nixpkgs-run`, `hyprctl`, `systemctl`,
-      `wpctl`, `camera-users`, `backlight-watch`) rather than store paths, an exception to the rule above;
+      `wpctl`, `camera-users`, `backlight-watch`, `nmcli`, `nm-connection-editor`,
+      `brightnessctl`, `bluetui`) rather than store paths, an exception to the rule above;
       `quickshell.nix` installs the ones no other feature does. The only Nix
       in the QML is `palettes.adwaita_darker` as the `Colors` singleton (translucent
       colours turned into Qt's `#aarrggbb`) and `hyprland.workspaces` as
@@ -663,8 +690,8 @@ Notes on specific features:
       way finishes rather than starting over) and the workspaces. Centre: the
       clock (a flat round button with a pointing hand, as GNOME's panel draws
       its date: shaded on hover and while the center it opens is open).
-      Right: the privacy indicator, the volume, the battery, Caffeine's cup,
-      the bell and, always last, the tray. Every one of them but the
+      Right: the privacy indicator, the control centre's status button, the
+      battery, Caffeine's cup, the bell and, always last, the tray. Every one of them but the
       workspaces, the battery and the tray is a `BarButton`, the bar's one shape: a
       flat 26 px pill, or a circle round an icon alone, its glyphs and icons
       18 px and its lettering 10 pt. Quickshell keeps Hyprland's state by
@@ -709,7 +736,7 @@ Notes on specific features:
         one went until another its width would not fit. Arrows point right on
         the right whichever way it opens, as GTK's do. Open submenus are kept by
         label, so one stays open when its app rebuilds the menu with every entry
-        new, as nm-applet does whenever the networks change. Like a GTK menu it takes no keyboard and no grab,
+        new, as Electron apps do whenever they update it. Like a GTK menu it takes no keyboard and no grab,
         so the app in front keeps both and a click elsewhere goes through; it
         closes 100 ms after the pointer is on neither it nor its icon (Hyprland
         reports no hover on a new menu until the pointer moves).
@@ -733,39 +760,27 @@ Notes on specific features:
         menu opened from it sits over it under the same panel: the pointer
         leaving the menu closes only the menu (`TrayMenu.dismissed`), an
         entry or a click outside closes both.
-      - The volume (`Volume`) is PipeWire's default output: an icon for its
-        level (Material Symbols' volume_up, volume_down, volume_mute,
-        volume_off) and its percentage, struck through while muted. The wheel
-        on it steps 5 % a notch (`WheelSteps`), onto the 5 % marks and up to
-        100 %, or to wherever past it another app set it, so turning it up
-        never turns it down; the slider reads full past 100 %. A right click
-        mutes, and a click opens
-        `VolumePopup` under it (a `Panels` panel per screen, `volume:DP-1`),
-        libadwaita's popover in two sections, Output and Input, each a
-        caption, a mute button and a slider (dragged, clicked or wheeled, as
-        the bar's), and its devices, the one in use ticked, with one rule
-        between the sections. A click on an output makes it
-        `Pipewire.preferredDefaultAudioSink`; on an input,
-        `Pipewire.preferredDefaultAudioSource`, or for a virtual source,
-        which Quickshell refuses as a default, `wpctl set-default` (one at a
-        time: a pick while it runs waits behind it, so the last wins). A virtual source has no level or mute to
-        set, so its row stays in place, half faded and inert, and the list
-        under it never moves. `Microphone` is the input's backend (PipeWire's
-        default source, the sources real and virtual, by `media.class` for
-        the untyped). The rows are the tray menu's (32 px,
-        `Theme.smallRadius`), and both lists share what the screen leaves:
-        each gets all it wants while both fit, otherwise the shorter keeps
-        its own up to half and the other scrolls in the rest. A node's volume only
-        arrives while a `PwObjectTracker` holds it. `qs ipc -c shell call bar
-        fakeVolume 64 false` stands in for a sound server with three outputs,
-        `realVolume` drops it.
+      - The status button (`StatusButton`) opens the control centre (`controls/`,
+        below) on its screen, `controls:DP-1`, and shows what is worth a glance
+        as glyphs alone, left to right: a key while a VPN is up, the link in
+        use (wired before Wi-Fi: Wi-Fi's strength in four steps, struck
+        through off, with a ? behind a captive portal and a ! without
+        internet), Bluetooth while a device is connected, the microphone
+        struck through while muted, and the output's level (Material Symbols'
+        volume_up, volume_down, volume_mute, volume_off); with none of them, a
+        cog. The wheel on it steps the output 5 % a notch (`WheelSteps`), onto
+        the 5 % marks and up to 100 %, or to wherever past it another app set
+        it, so turning it up never turns it down; a right click mutes.
       - The battery (`Power`) is UPower's display device, shown only when
         UPower is running and it is a laptop battery, so only thonkpad
         enables UPower: a thick meter with its nub, the percentage on it,
         dark over the fill and light past it (drawn twice, the dark copy
         clipped to the fill), green, yellow from 25 %, red from 10 %, with a
-        bolt while charging. `qs ipc -c shell call bar fakeBattery 15 false`
-        shows a made-up one anywhere, `realBattery` drops it.
+        bolt while charging. Resting on it 250 ms shows a `Tooltip` with the
+        time left ("2 h 40 min left", "Full in 1 h 10 min", or "Plugged in"
+        when held at a charge threshold) over the percentage and state.
+        `qs ipc -c shell call bar fakeBattery 15 false` shows a made-up one
+        anywhere, `realBattery` drops it.
       - The bell shows while there are notifications not yet looked at in the
         center (`Notifs.unchecked`: those that arrived, or came again, while it
         was closed), in `Theme.bell` (the palette's `yellow_2`) with their
@@ -931,8 +946,7 @@ Notes on specific features:
     - `center/` is the notification center (`qs ipc -c shell call panels
       toggle center`), GNOME's layout, dropping down from the middle of the bar with
       a short fade and slide: notifications on the left (40em, wider than
-      GNOME's 29em, which read long and narrow), Do Not Disturb and Caffeine
-      switches, Collapse all and Clear (which also closes it) below, and `Calendar.qml` on
+      GNOME's 29em, which read long and narrow), Collapse all and Clear (which also closes it) below, and `Calendar.qml` on
       the right (locale's first weekday, ISO week numbers, Adwaita's arrows turned sideways or the wheel for
       months (`WheelSteps`, as every wheel), the date returns to today) with the weather under it, left out
       where the screen is too short for both. Opening it puts the popups away. Notifications are grouped
@@ -977,6 +991,76 @@ Notes on specific features:
       (`common/Shadow.qml`, Qt's `RectangularShadow`), and their expand
       signs use libadwaita's arrow (`common/ExpanderArrow.qml`, Adwaita's
       `pan-down-symbolic` as a `Shape`).
+    - `controls/` is the control centre (the bar's status button, SUPER+A,
+      `qs ipc -c shell call controls toggle`, or `panels open controls:DP-1`),
+      GNOME's quick settings in a popover under the button: no wider than
+      28em or the screen, and capped to what the screen leaves under the bar,
+      past which the card scrolls with a thin indicator. At the top the
+      levels, each a symbol (a mute button for sound), a slider (dragged,
+      clicked or wheeled, `WheelSteps`) and, for sound, an arrow to its
+      devices: the output and the input (`Volume`, `Microphone`; "Sound not
+      available" in their place without PipeWire), a slider per backlight
+      (`Brightness`, set with `brightnessctl --device`, which goes through
+      logind; never below 1 %), and night light's strength while it is on.
+      Then GNOME's pills, two a row: each a symbol, its name and its state,
+      blue while on, the arrow a segment of its own where it has a menu, and
+      only those the machine has (`Controls.toggles`): Wired per Ethernet
+      device (its speed, "Cable unplugged" dimmed), Wi-Fi ("Off by switch",
+      dimmed, under the hardware switch), VPN (any profiles), Bluetooth (an
+      adapter), Night Light (hyprsunset answering), Do Not Disturb and
+      Caffeine; without NetworkManager one dim "Network · Not available" in
+      the first three's place, which comes back with it. Last, the player
+      worth a card (`Media`: MPRIS, the one that started playing last, else
+      one paused; none while all stop): art, title (a click raises the app),
+      artist, progress, and previous, play/pause and next, dimmed where the
+      player cannot. A menu opens right under the row that holds its pill (or
+      under the levels for sound), one at a time, kept by name in `Controls`
+      so it outlives the lists changing around it, and takes what the screen
+      leaves after everything else, with room for at least four rows besides
+      a password row, the card scrolling past that. Each is a title, past 20
+      entries a filter (and their count), the list (32 px rows, names plain
+      text on one line, elided, stripped of control characters, direction
+      overrides and invisible marks by `names.js`), and what leads on:
+      Hidden Network… and Network Settings… (nm-connection-editor, the first
+      with `--create --type=802-11-wireless`), Bluetooth Settings… (`bluetui`
+      in wezterm). One click, one action, no buttons on hover:
+      - Wi-Fi (`Net`, Quickshell.Networking for the first Wi-Fi card,
+        scanning only while its menu is open): connected first, then saved
+        ones, then the rest by signal; a click disconnects the connected one,
+        connects a saved or open one, and on a new secured one opens a
+        password row (an eye to show it, Enter or Connect), kept whole in
+        view in the list and the card. A wrong password asks again in red;
+        NetworkManager keeps the profile `connectWithPsk` made, so giving up
+        (a click on the row) forgets a profile the shell made that never
+        connected. A network leaving while its password is typed stays,
+        "Out of range", with the text. An enterprise one opens Network
+        Settings. Behind a captive portal the connected row carries a Sign in
+        button, as does a notification, both opening a plain http page in the
+        browser, and the shell asks NetworkManager to check again every 10 s
+        until it clears. The radio is the pill.
+      - VPNs (nmcli: `nmcli -t connection show` for the WireGuard and VPN
+        profiles, `nmcli monitor` for changes and whether NetworkManager runs
+        at all, restarted with a backoff): a switch each, a click toggling it
+        with `nmcli connection up|down uuid`, the last click on a profile
+        winning; one that answers that secrets were required gets a password
+        row, sent as `passwd-file /dev/stdin`; another failure flips back and
+        notifies. The pill takes them all down, or the first up.
+      - Bluetooth (`BluetoothDevices`, the default adapter, discovering only
+        while its menu is open): paired first, then nearby ones with a name
+        (nameless ones are only addresses); its battery or state beside it. A
+        click on a new one pairs it, trusts it (so it comes back by itself)
+        and connects it; on a paired one connects, on a connected one
+        disconnects. Quickshell has no pairing agent, so one wanting a PIN or
+        a code confirmed says "Needs a PIN: use Bluetooth Settings" in red,
+        and a connection that fails "Couldn't connect".
+      - Sound: the outputs or inputs, the one in use first and ticked, as the
+        bar's volume had them (a virtual source through `wpctl set-default`).
+      Night light (`NightLight`) is hyprsunset, set with `hyprctl hyprsunset
+      temperature|identity`, 2500 to 5500 K, kept in the state dir
+      (`night-light.json`) and put back whenever hyprsunset reports another
+      temperature, as one started again does (its getter keeps the last value
+      through `identity`, so off is never checked). It is looked for every
+      10 s. Do Not Disturb and Caffeine are `Notifs.dnd` and `Caffeine`.
   - `hyprtoolkit.nix` themes hyprtoolkit (`~/.config/hypr/hyprtoolkit.conf`),
     which hyprpolkitagent ≥ 0.2 and hyprland-guiutils' dialogs (app not
     responding, permissions) draw with, as libadwaita's dark style on the darker palette: window
@@ -1016,13 +1100,13 @@ Notes on specific features:
     listener (a fingerprint) clears it through hypridle's `on_unlock_cmd`. hypridle stays the one clock and
     the one watcher of input, and without a shell the lock simply comes, at
     0.6. Sleep and the power menu lock at once.
-  - Caffeine (the center's switch, `Caffeine`, `qs ipc -c shell call
+  - Caffeine (the control centre's pill, `Caffeine`, `qs ipc -c shell call
     caffeine toggle|set|active`) is the `caffeine.service` user unit,
     `systemd-inhibit --what=idle` part of the session target: hypridle honours
     logind's idle inhibitors, so nothing locks or blanks while it runs, and a
     unit outlives a shell restart. Sleep is not inhibited. The shell reads
     `systemctl --user is-active` as it starts, after a toggle and every 5 s
-    (2 s while the center is open), since the bar's cup shows it always and a
+    (2 s while the control centre is open), since the bar's cup shows it always and a
     unit can stop by itself.
   - The OSD (`osd/`) shows what just changed on the focused monitor, on the
     overlay layer, for 1.5 s (fading in over 120 ms and out over 200 ms), never taking a click: by its right edge a
@@ -1038,7 +1122,7 @@ Notes on specific features:
     nothing; each `DeviceWatch` shows a default device only once it settles
     (400 ms) and differs from the last one it knew, so an unplug that leaves
     no default for a moment shows only where it lands. Nothing shows for the
-    output's level while its popup is open. Brightness is `Brightness`, every
+    output's level or a backlight's while the control centre is open. Brightness is `Brightness`, every
     backlight from `backlight-watch` (`scripts/backlight-watch.sh`: `udevadm
     monitor` on the backlight subsystem, since the kernel sends a change
     uevent for every set however it is made, a line `name brightness max;`
@@ -1151,7 +1235,9 @@ k3s API.
   microcode, firmware, RX 6700 XT graphics, fstrim, fwupd, zram, ZSA keyboard udev rules
   (keymapp), disko, hyprmoncfg profiles `default` (both monitors), `left-only` and `right-only`,
   nix-index, ssh hosts for github.com and rsync.net,
-  Hyprland startup apps pinned to monitors, host-specific app list.
+  Hyprland startup apps pinned to monitors, host-specific app list, and the
+  shell a size up (`quickshell.scale = 1.2`) for its 27" 1440p monitors at
+  scale 1.
 
 ## External consumers
 
@@ -1190,7 +1276,7 @@ nix fmt                  # formatter = nixfmt-tree
   failing on any warning. It writes the `qmldir` files Quickshell makes for
   `qs.*` imports itself, and mends Quickshell's type info in its copy
   (a `depends Quickshell` `_GlobalShortcuts` lacks, opaque stubs that hide
-  core types, `FileView.adapter`'s unqualified type, `DBusMenuHandle`'s
+  core types, `FileView.adapter`'s and `Bluetooth.defaultAdapter`'s unqualified types, `DBusMenuHandle`'s
   base), so only `uncreatable-type` (`PanelWindow`) is off. Output comes
   from `--json`, since the text output drops some files' warnings while still
   failing. Fix what it finds; where qmllint is wrong, a
@@ -1281,6 +1367,12 @@ qst x wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.3   # the session's own PipeWire
 qst pipewire restart           # or stop, start
 qst backlight intel_backlight 40 [MAX]   # set a fake backlight and announce it, until the shell has it; `NAME remove` unplugs
 qst camera open zoom [video1]  # a process named zoom holding a fake camera open; `close zoom`, `add video1`, `remove video0`
+qst network wifi add Cafe 40 open # the session's NetworkManager (tests/networkmanager.py): wifi add SSID [STRENGTH] [SECURITY] [PASSWORD], wifi remove|strength|clear,
+                               # wifi many 300 [PREFIX], wifi json JSON, device add|remove NAME [wifi|ethernet], cable NAME on|off, profile wifi|ethernet|wireguard|vpn NAME [SSID PSK],
+                               # vpn NAME ok|fail|secrets, up NAME, connectivity none|portal|limited|full, switch on|off (the radio's hardware switch), delay MS, dump, stop|start|restart
+qst battery 15 discharging 1800   # the session's UPower battery: PERCENT [charging|discharging|full|pending [SECONDS]], or remove
+qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70   # BlueZ (tests/bluez.py): ADDRESS NAME [ICON] [ok|pin|fail] [paired] [connected] [BATTERY]; remove ADDRESS, adapter add|remove, stop|start
+qst player add spotify Spotify Playing   # an MPRIS player (tests/mpris.py); status NAME Playing|Paused|Stopped, remove NAME, clear
 qst sync                       # copy edited QML in, restart qs, print its warnings; non-zero if it fails to load
 qst problems                   # warnings and errors, less tests/known-warnings and this case's `expect`s
 qst census                     # what the probe finds wrong on screen now (see below)
@@ -1295,18 +1387,41 @@ qst lint                       # the qmllint check, on the checkout
 qst down                       # kills everything the session started; deletes it and the test shell's state
 ```
 
-The session reaches nothing real: it has its own D-Bus and runtime dir;
-`systemctl`, `loginctl`, `pw-play`, `xdg-open`, `nixpkgs-run` and
-`hyprmoncfg` are fakes that log to `qst actions` (`hyprmoncfg status` replays
+The session reaches nothing real: it has its own D-Bus, system bus and runtime
+dir; `systemctl`, `loginctl`, `pw-play`, `xdg-open`, `nixpkgs-run`,
+`brightnessctl` (which sets the fake backlights, as the real one would reach
+the machine's) and `hyprmoncfg` are fakes that log to `qst actions` (`hyprmoncfg status` replays
 the live profiles); `systemd-run --scope` logs and runs the app in the test
 session, so the launcher's apps open there; `hyprctl` is the test Hyprland's,
 logging dispatches and reloads, with `hl.dsp.exit()` only logged; cliphist
 reads a copy of the database. The config dir is the user's, symlinked, except
 `hypr/` (the test's) and `hyprmoncfg/`; profiles to fake go in
-`$QS_TEST_DIR/cfg/hyprmoncfg/profiles`. Every qs it starts has a fake battery at 76 %
-(`bar fakeBattery`), so the bar shows all it can on any host; `qst ipc bar
-realBattery` drops it (`bar fakeVolume` still stands in a made-up sound
-server, `realVolume` drops it).
+`$QS_TEST_DIR/cfg/hyprmoncfg/profiles`. qs runs at `QT_SCALE_FACTOR` 1, the
+standard, unless `QS_TEST_SCALE` says otherwise, and with `TZDIR`, which Qt
+needs on NixOS to find the time zone (the user's systemd session sets it, a
+shell may not). `bar fakeVolume` stands in a made-up sound server and `bar
+fakeOutputs 1000` one with that many outputs, some named to break things;
+`realVolume` drops it.
+
+The session's system bus is a `dbus-daemon` of its own
+(`DBUS_SYSTEM_BUS_ADDRESS` for everything in the session), so no test reaches
+the machine's NetworkManager, UPower or BlueZ. Each case gets fresh fakes,
+python-dbusmock templates run by `qs-dbusmock`: NetworkManager
+(`tests/networkmanager.py`, written for what the shell and nmcli use, as
+dbusmock's own is NetworkManager 0.9's: devices, networks in the air, saved
+profiles, activation through Activating, a wrong password failing with no
+secrets as NetworkManager's does, the radio, connectivity, WireGuard and VPN
+profiles; `network stop` and `start` keep its state) with the desktop's wired
+link and wg0 up and three networks in range unless `QS_TEST_NETWORK=none`;
+UPower (`tests/upower.py`) with a laptop battery at 76 % discharging, so the
+bar shows all it can on any host; BlueZ (`tests/bluez.py`) with an adapter
+and nothing paired unless `QS_TEST_BLUETOOTH=none`. `nmcli` in the session is
+the real one but for `connection up`: libnm will not register its secret agent
+with a NetworkManager not run by root, so a wrapper asks the fake and waits as
+nmcli does, saying "Secrets were required" for a profile set to want them.
+MPRIS players (`tests/mpris.py`) sit on the session bus, one mock each, named
+by `QS_MPRIS_NAME` as it starts, since Quickshell reads a player the moment its
+name appears. hyprsunset runs in the session as it does in the user's.
 
 The session has its own sound server, a PipeWire on `tests/pipewire.conf`
 and a WirePlumber with no hardware, logind or portal (`tests/wireplumber.conf`),
@@ -1373,7 +1488,9 @@ first), `dnd` and `unchecked`, the volume (percent, muted, output), the default 
 `microphone` (percent, muted, `adjustable`, the input, every input by name),
 the `osd` showing (with its screen), `osdShown` (shows so far) and
 `osdSettling`, `brightness`, `caps`, `privacy` (`mic` names, and `screen` and
-`camera` names or null while unused), `caffeine`, `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: the ids on
+`camera` names or null while unused), `caffeine`, `controls` (the open
+menu, the pills by key with their state, and each backend: `network`, `vpns`,
+`vpnAsking`, `bluetooth`, `night`, `media`), `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: the ids on
 it, how many wait behind its button, its width and the room it has), `field`
 (the text field up, the launcher's search) and `problems`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
@@ -1428,8 +1545,21 @@ real and virtual, meters, sink monitors, PipeWire going and coming back,
 screen casts, cameras through PipeWire and held from `/dev` (a short probe,
 PipeWire's own hold, one plugged in later, one unplugged in use);
 `caffeine.sh` the unit started and stopped from the shell and elsewhere, the bar's cup turning it off, and
-a shell restart. `design.sh` brings every panel, the bar, popups of
-every kind, a tray menu, the volume popup, the OSD and the privacy tooltip
+a shell restart. `controls.sh` is the control centre: the bar's button, SUPER+A,
+Escape, the wheel and a right click; which pills a machine gets
+(NetworkManager, BlueZ, devices gone); NetworkManager stopping and starting
+under it; Wi-Fi's saved, new (a wrong password, then the right one), given
+up (its profile gone), vanishing and open networks, the radio and its
+hardware switch, a captive portal's Sign in; VPNs down and up, wanting a
+password and failing; a headset paired, trusted and connected in one click
+and a keyboard wanting a PIN; night light kept through a restart and put
+back in a hyprsunset started again; a backlight's slider with no OSD over it;
+the player that played last; an output picked; PipeWire gone and back. Areas
+are clicked by name: the probe adds an area's `objectName` (or its parent's)
+to its label, and the centre names its pills, menu arrows, rows and actions
+(`pill:wifi`, `menu:vpn`, `row:Pixel_7128`, `action:Network Settings…`). `design.sh` brings every panel, the bar, popups of
+every kind, a tray menu, the control centre with each of its menus (a
+headset, a player and a backlight in), the OSD and the privacy tooltip
 on screen, on a scaled monitor too, for the census; `cursors.sh` sweeps the
 bar and every panel and checks a closed hand mid-drag; `binds.sh` presses
 every bind that dispatches a global and checks each opens a panel of its
@@ -1451,13 +1581,19 @@ at thousands a second, where notify-send manages a hundred), megabytes of
 text, icons that are no picture, panels toggled faster than they open, a
 hotplug storm under an open panel, a workspace of 40 windows (`foot`), 60
 outputs, 40 apps recording, damaged state files, and the tray and the
-inputs: 30 tray items (the first four kept, an 800x600 screen keeping fewer),
+inputs: 30 tray items (the first four kept, a 640x480 screen keeping fewer),
 items leaving and the next moving up, 60 items churning under the open
 overflow and a menu opened from it, 200 items scrolling in it and its monitor
 going; 40 microphones real and virtual with 30 more outputs, the default
 input switched by 30 clicks and 50 `wpctl`s, inputs coming and going and the
-default one destroyed under the open popup, mute and level hammered, and
-PipeWire restarting under it. `interactions.sh`
+default one destroyed under the open input menu, mute and level hammered,
+and PipeWire restarting under it; 300 networks with hostile names (direction
+overrides, newlines, zero-width marks, a kilobyte long, markup) and the filter,
+1000 outputs with the one in use first, 50 VPNs and 100 Bluetooth devices,
+NetworkManager restarting while a password is typed, the centre's monitor
+unplugged under an open menu, every pill hammered faster than its service
+answers, a 1024x600 screen at 1.2 with a password row scrolled into view, and
+a 4K monitor at scale 2 with the shell at 1.2. `interactions.sh`
 holds fixes that had no case: a long popup's two clicks, the wheel over a
 level past 100 %, a picked clip's scope, every panel on a 1024x600 screen
 and Power Off's second press. Behaviour that broke once gets a case; check that

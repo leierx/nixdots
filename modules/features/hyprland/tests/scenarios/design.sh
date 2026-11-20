@@ -27,10 +27,17 @@ for monitor in DP-1 DP-2; do
   qst wait '.panel == ""'
 done
 
-qst case "the volume popup, a tray menu, the OSD and the privacy tooltip"
-qst ipc panels open volume:DP-1 > /dev/null
-qst wait '.panel == "volume:DP-1"'
-qst stays '.panel == "volume:DP-1"' 0.6
+qst case "the control centre with each of its menus, a tray menu, the OSD and the privacy tooltip"
+qst bluetooth add 11:22:33:44:55:01 "WH-1000XM4" audio-headset ok paired connected 70
+qst player add spotify Spotify
+qst backlight intel_backlight 600 1000
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1" and .controls.media != null'
+for menu in output input wifi vpn bluetooth; do
+  qst ipc controls menu "$menu" > /dev/null
+  qst stays ".controls.menu == \"$menu\" and .panel == \"controls:DP-1\"" 0.6
+done
+qst ipc controls menu "" > /dev/null
 qst ipc panels close > /dev/null
 qst tray
 qst wait '.tray | length > 0'

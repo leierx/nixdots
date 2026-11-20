@@ -14,9 +14,9 @@ Overlay {
   readonly property bool open: Panels.active === name
   readonly property var apps: [...new Set(Notifs.entries.map(entry => Notifs.appKey(entry)))]
   readonly property int padding: Theme.padding
-  // Beside the calendar the list keeps 24em, or the calendar steps aside, as on a small screen at a large scale.
+  // Beside the calendar the list keeps 24em, or the calendar steps aside, as on a small screen at a large scale, or one too short for it.
   readonly property real room: width - 2 * Theme.gap - 4 * padding - 1 - side.implicitWidth
-  readonly property bool besides: room >= Math.round(24 * Theme.em)
+  readonly property bool besides: room >= Math.round(24 * Theme.em) && height - 2 * Theme.gap - 2 * padding >= calendar.implicitHeight
 
   property real shown: 0
   // Groups expanded, for Collapse all; each counts itself in and out.
@@ -81,57 +81,6 @@ Overlay {
     easing.type: Easing.InCubic
   }
 
-  component Switch: Rectangle {
-    id: toggle
-
-    property bool checked: false
-
-    signal clicked()
-
-    implicitWidth: 46
-    implicitHeight: 26
-    radius: height / 2
-    color: checked ? Theme.accentBg : Theme.trough
-
-    Behavior on color {
-      ColorAnimation {
-        duration: Theme.fade
-      }
-    }
-
-    Rectangle {
-      x: toggle.checked ? toggle.width - width - 3 : 3
-      anchors.verticalCenter: parent.verticalCenter
-      width: 20
-      height: 20
-      radius: width / 2
-      color: toggle.checked || area.containsMouse ? Theme.fg : Theme.slider
-
-      Behavior on x {
-        NumberAnimation {
-          duration: 200
-          easing.type: Easing.OutCubic
-        }
-      }
-    }
-
-    MouseArea {
-      id: area
-
-      anchors.fill: parent
-      hoverEnabled: true
-      cursorShape: Qt.PointingHandCursor
-      onClicked: toggle.clicked()
-    }
-  }
-
-  // Checked often while open, so a change made elsewhere shows as it is looked at.
-  Binding {
-    target: Caffeine
-    property: "watched"
-    value: root.open
-  }
-
   Card {
     id: panel
 
@@ -162,6 +111,8 @@ Overlay {
         Layout.alignment: Qt.AlignTop
         // Wider than GNOME Shell's 29em message list, which read long and narrow beside the calendar; narrower where the screen is.
         Layout.preferredWidth: Math.min(Math.round(40 * Theme.em), root.besides ? root.room : root.width - 2 * Theme.gap - 2 * root.padding)
+        // Held, or a layout settling while groups are made squeezes them to nothing; the footer's switches used to hold it.
+        Layout.minimumWidth: Layout.preferredWidth
         spacing: root.padding
 
         Item {
@@ -295,29 +246,6 @@ Overlay {
           Layout.fillWidth: true
           Layout.leftMargin: 6
           spacing: 12
-
-          Text {
-            text: "Do Not Disturb"
-            color: Theme.fg
-            font: Theme.body
-          }
-
-          Switch {
-            checked: Notifs.dnd
-            onClicked: Notifs.dnd = !Notifs.dnd
-          }
-
-          Text {
-            Layout.leftMargin: 12
-            text: "Caffeine"
-            color: Theme.fg
-            font: Theme.body
-          }
-
-          Switch {
-            checked: Caffeine.active
-            onClicked: Caffeine.toggle()
-          }
 
           Item {
             Layout.fillWidth: true

@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.bar
+import qs.controls
 import qs.common
 
 // What just changed on the focused screen, gone in a moment; clicks go through it.

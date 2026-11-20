@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
 import qs.common
+import qs.controls
 
 PanelWindow {
   id: root
@@ -71,13 +72,14 @@ PanelWindow {
         screen: root.screen
       }
 
-      VolumeButton {
+      StatusButton {
         anchors.verticalCenter: parent.verticalCenter
         screen: root.screen
       }
 
       Battery {
         anchors.verticalCenter: parent.verticalCenter
+        screen: root.screen
       }
 
       Cup {

@@ -6,153 +6,100 @@ import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.common
 
-// Who records what, under the indicator while the pointer is on it. A layer of its own on the bar's
-// screen, as a PopupWindow lands off by the monitor's x times QT_SCALE_FACTOR - 1.
-PanelWindow {
+// Who records what, under the indicator while the pointer is on it.
+Tooltip {
   id: root
-
-  required property Item anchorItem
-  property bool shown: false
-  // The indicator's middle, in the bar's and so the screen's coordinates, taken as it opens.
-  property real anchorX: 0
-  // A pass over the bar on the way elsewhere opens nothing.
-  property bool settled: false
 
   function entry(name: string): var {
     return DesktopEntries.heuristicLookup(name);
   }
 
-  onShownChanged: {
-    if (shown) {
-      anchorX = anchorItem.mapToItem(null, anchorItem.width / 2, 0).x;
-      delay.restart();
-    }
-    else {
-      delay.stop();
-      settled = false;
-    }
-  }
-
-  anchors {
-    top: true
-    left: true
-    right: true
-  }
-  // Below the bar, over windows.
-  exclusiveZone: 0
-  visible: shown && settled && Privacy.kinds.length > 0
-  implicitHeight: card.implicitHeight + 48
-  color: "transparent"
-  // Nothing in it takes a click.
-  mask: Region {}
+  available: Privacy.kinds.length > 0
 
   WlrLayershell.namespace: "quickshell:privacy"
-  WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-  Timer {
-    id: delay
+  Column {
+    id: rows
 
-    interval: 250
-    onTriggered: root.settled = true
-  }
+    spacing: 10
 
-  Card {
-    id: card
+    Repeater {
+      model: Privacy.kinds
 
-    // Centred under the indicator, and kept on the screen.
-    x: Math.max(Theme.gap, Math.min(root.width - width - Theme.gap, root.anchorX - width / 2))
-    y: 6
-    width: implicitWidth
-    height: implicitHeight
-    implicitWidth: rows.implicitWidth + 2 * Theme.padding
-    implicitHeight: rows.implicitHeight + 2 * Theme.padding
-    radius: Theme.cardRadius
+      Row {
+        id: kind
 
-    Column {
-      id: rows
+        required property var modelData
 
-      x: Theme.padding
-      y: Theme.padding
-      spacing: 10
+        spacing: 10
 
-      Repeater {
-        model: Privacy.kinds
+        Rectangle {
+          width: 28
+          height: 28
+          radius: height / 2
+          color: Theme.button
 
-        Row {
-          id: kind
+          Glyph {
+            anchors.centerIn: parent
+            path: kind.modelData.glyph
+            size: 16
+            color: Theme.fg
+          }
+        }
 
-          required property var modelData
+        Column {
+          anchors.verticalCenter: parent.verticalCenter
+          spacing: 2
 
-          spacing: 10
-
-          Rectangle {
-            width: 28
-            height: 28
-            radius: height / 2
-            color: Theme.button
-
-            Glyph {
-              anchors.centerIn: parent
-              path: kind.modelData.glyph
-              size: 16
-              color: Theme.fg
-            }
+          Text {
+            text: kind.modelData.name
+            color: Theme.fg
+            font: Theme.heading
           }
 
-          Column {
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 2
+          Row {
+            id: names
 
-            Text {
-              text: kind.modelData.name
-              color: Theme.fg
-              font: Theme.heading
-            }
+            // A few, rather than a row running off the screen.
+            readonly property int most: 5
 
-            Row {
-              id: names
+            spacing: 8
 
-              // A few, rather than a row running off the screen.
-              readonly property int most: 5
+            Repeater {
+              model: kind.modelData.apps.length > 0 ? kind.modelData.apps.slice(0, names.most) : [""]
 
-              spacing: 8
+              Row {
+                id: app
 
-              Repeater {
-                model: kind.modelData.apps.length > 0 ? kind.modelData.apps.slice(0, names.most) : [""]
+                required property string modelData
+                readonly property var desktop: modelData ? root.entry(modelData) : null
 
-                Row {
-                  id: app
+                spacing: 4
 
-                  required property string modelData
-                  readonly property var desktop: modelData ? root.entry(modelData) : null
+                IconImage {
+                  anchors.verticalCenter: parent.verticalCenter
+                  visible: app.desktop !== null
+                  implicitSize: 16
+                  source: app.desktop ? Quickshell.iconPath(app.desktop.icon, true) : ""
+                }
 
-                  spacing: 4
-
-                  IconImage {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: app.desktop !== null
-                    implicitSize: 16
-                    source: app.desktop ? Quickshell.iconPath(app.desktop.icon, true) : ""
-                  }
-
-                  Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: Math.min(implicitWidth, Math.round(12 * Theme.em))
-                    text: app.desktop?.name ?? (app.modelData || "Through the screen sharing portal")
-                    elide: Text.ElideRight
-                    color: Theme.fgDim
-                    font: Theme.caption
-                  }
+                Text {
+                  anchors.verticalCenter: parent.verticalCenter
+                  width: Math.min(implicitWidth, Math.round(12 * Theme.em))
+                  text: app.desktop?.name ?? (app.modelData || "Through the screen sharing portal")
+                  elide: Text.ElideRight
+                  color: Theme.fgDim
+                  font: Theme.caption
                 }
               }
+            }
 
-              Text {
-                anchors.verticalCenter: parent.verticalCenter
-                visible: kind.modelData.apps.length > names.most
-                text: `and ${kind.modelData.apps.length - names.most} more`
-                color: Theme.fgDim
-                font: Theme.caption
-              }
+            Text {
+              anchors.verticalCenter: parent.verticalCenter
+              visible: kind.modelData.apps.length > names.most
+              text: `and ${kind.modelData.apps.length - names.most} more`
+              color: Theme.fgDim
+              font: Theme.caption
             }
           }
         }

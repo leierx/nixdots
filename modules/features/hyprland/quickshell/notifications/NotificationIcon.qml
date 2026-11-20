@@ -8,7 +8,8 @@ Item {
   required property NotifEntry entry
   property string image: entry?.image ?? ""
   property int size: 40
-  property real radius: size / 2
+  // A circle as drawn, which a layout may squeeze below its size.
+  property real radius: Math.min(width, height) / 2
 
   readonly property string appIcon: entry?.appIcon ?? ""
   // One that fails to load (an app naming a file that is no picture) gives way to what comes after it.

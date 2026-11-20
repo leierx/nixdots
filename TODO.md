@@ -15,6 +15,31 @@
   tracker (QQmlDelegateModel::cancel) before filing. Cosmetic as far as
   seen: the launcher still opens and lists right.
 
+- **Quickshell.Networking picks its backend once** (Quickshell 0.3.2,
+  `src/network/qml.cpp`): `Networking` tries NetworkManager as it is first
+  used and, if NetworkManager is not on the bus then, logs "Network will not
+  work" and never tries again, so a NetworkManager started after the shell
+  needs the shell restarted. Restarting NetworkManager later is handled (a
+  service watcher). The control centre shows "Network · Not available" for as
+  long. Repro: `QS_TEST_NETWORK=none qst reset`, then `qst network start`.
+  Worth an issue: retry on the service registering, as the backend already
+  watches for it.
+- **Quickshell asks for every access point at once** (0.3.2,
+  `NMWirelessDevice::registerAccessPoint`): one `GetAll` per access point,
+  all in flight together, and the system bus allows 128 pending replies per
+  connection (`max_replies_per_connection`), so past about 128 access points
+  the rest fail with `LimitsExceeded` and are never asked again: those
+  networks are missing from the list until the shell restarts. qs-test's bus
+  raises the limit so its 300-network case tests the list itself. Worth an
+  issue: queue the calls, or retry the failed ones.
+- **Quickshell's Bluetooth type info names `BluetoothAdapter` unqualified**
+  (`Bluetooth.defaultAdapter`, `BluetoothDevice.adapter`), so qmllint cannot
+  resolve it; `qs-lint` mends it, as it does `FileView.adapter`.
+- **python-dbusmock 0.37.2**: `UpdateProperties` cannot wrap a
+  `dbus.ObjectPath` ("no attribute 'conjugate'"), and the bluez5 template's
+  `StartDiscovery` raises a `KeyError` until a discovery filter is set. The
+  test templates work round both; small enough to send upstream as fixes.
+
 ## To chase
 
 - **Slow memory growth under notification floods.** Handover below.
@@ -61,3 +86,16 @@ Repro: `qst up`, then `qst flood 1000000 --urgency 2` a few times, reading
 A fix gets a chaos.sh case that floods and asserts RSS settles within a
 few MiB of where it started (the per-case `QS_TEST_PEAK` budget is too
 coarse for this).
+
+### Control centre: left open on purpose
+
+- Only the first Wi-Fi card is shown; a second (a USB stick beside the
+  built-in one) is left to Network Settings.
+- Hidden networks and 802.1X (eduroam) go through nm-connection-editor; the
+  centre asks only for a WPA password.
+- Bluetooth pairing that needs a PIN or a confirmed code goes to bluetui:
+  Quickshell has no pairing agent. Writing one (`org.bluez.Agent1` from QML)
+  would need D-Bus object export, which Quickshell lacks.
+- Night light has no schedule (sunset to sunrise from the weather's
+  coordinates was offered and not wanted yet).
+

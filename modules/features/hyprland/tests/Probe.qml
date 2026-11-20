@@ -4,6 +4,7 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.SystemTray
 import qs.bar
+import qs.controls
 import qs.center
 import qs.common
 import qs.notifications
@@ -93,7 +94,10 @@ Scope {
 
   function label(entry: var, item: var): string {
     const text = isText(item) ? ` "${String(item.text).slice(0, 24)}"` : "";
-    return `${entry.type}/${typeOf(item)}${text}`;
+    // What a test clicks by name: the control centre names its pills and rows.
+    const named = item.objectName || item.parent?.objectName || "";
+    const name = named ? `:${named}` : "";
+    return `${entry.type}/${typeOf(item)}${name}${text}`;
   }
 
   function luminance(color: color): real {
@@ -134,6 +138,16 @@ Scope {
     return box;
   }
 
+  // Wholly outside a clipping ancestor, a list's row scrolled away (or one a list is still laying out there): nobody sees it.
+  function clippedAway(item: var): bool {
+    for (let at = item.parent; at; at = at.parent) {
+      if (!at.clip) continue;
+      const box = item.mapToItem(at, 0, 0, Math.max(1, item.width), Math.max(1, item.height));
+      if (box.x + box.width <= 0 || box.y + box.height <= 0 || box.x >= at.width || box.y >= at.height) return true;
+    }
+    return false;
+  }
+
   // What should never be on screen, in whatever state the shell is in.
   function census(): var {
     const problems = [];
@@ -151,6 +165,7 @@ Scope {
       const height = entry.window.height;
       if (!("exclusionMode" in entry.window)) problems.push(`${entry.type} is not a layer surface: a popup window lands off on any monitor not at x 0`);
       for (const { item, opacity } of entry.items) {
+        if (clippedAway(item)) continue;
         const type = typeOf(item);
         const own = entry.type in ownShapes || ancestorTypes(item).some(name => name in ownShapes);
         if (isText(item) && String(item.text).trim() !== "") {
@@ -373,14 +388,24 @@ Scope {
         caps: CapsLock.on,
         privacy: { mic: Privacy.mic, screen: Privacy.screenActive ? Privacy.screen : null, camera: Privacy.cameraActive ? Privacy.camera : null },
         caffeine: Caffeine.active,
+        controls: {
+          menu: Controls.menu,
+          toggles: Controls.toggles.map(t => ({ key: t.key, subtitle: t.subtitle, on: t.on, unavailable: t.unavailable ?? false })),
+          network: { present: Net.present, running: Net.running, wifi: Net.wifi !== null, wifiOn: Net.wifiOn, scanning: Net.scanning, connected: Net.connected?.name ?? null, networks: Net.networks.map(n => n.name), known: Net.networks.filter(n => n.known).map(n => n.name), asking: Net.asking || null, askError: Net.askError || null, created: Net.created, failures: Net.failures, portal: Net.portal, limited: Net.limited, wired: Net.wired.map(d => ({ name: d.name, connected: d.connected, link: d.hasLink })) },
+          vpns: Net.vpns.map(v => ({ name: v.name, active: v.active, busy: Net.busy(v.uuid) || null })),
+          vpnAsking: Net.vpnAsking || null,
+          bluetooth: { present: BluetoothDevices.present, on: BluetoothDevices.on, scanning: BluetoothDevices.scanning, devices: BluetoothDevices.devices.map(d => ({ name: d.name, address: d.address, paired: d.paired, connected: d.connected, trusted: d.trusted, note: BluetoothDevices.note(d) || null })) },
+          night: { present: NightLight.present, on: NightLight.on, temperature: NightLight.temperature },
+          media: Media.player ? { title: Media.title, artist: Media.artist, playing: Media.player.isPlaying, identity: Media.player.identity } : null
+        },
         tray: SystemTray.items.values.filter(item => item.status !== Status.Passive).map(item => item.id),
         // Each bar's tray: the ids on the bar, and how many wait behind its button.
         trays: probe.windows().filter(entry => entry.type === "BarWindow").map(entry => {
           const tray = entry.items.find(({ item }) => "overflowPanel" in item && "kept" in item)?.item;
           return { screen: entry.screen, shown: tray ? tray.shown.map(item => item.id) : [], hidden: tray ? tray.hidden.length : 0, width: tray ? Math.round(tray.width) : 0, room: tray ? Math.round(tray.room) : 0 };
         }),
-        // The launcher's search field, or whichever text field is up.
-        field: probe.windows().map(entry => entry.items.find(({ item }) => "cursorPosition" in item && "echoMode" in item)).find(found => found)?.item.text ?? null,
+        // The text field being typed into, or else the first one up: the launcher's search.
+        field: (probe.windows().map(entry => entry.items.find(({ item }) => "cursorPosition" in item && "echoMode" in item && item.activeFocus)).find(found => found) ?? probe.windows().map(entry => entry.items.find(({ item }) => "cursorPosition" in item && "echoMode" in item)).find(found => found))?.item.text ?? null,
         problems: probe.census()
       });
     }

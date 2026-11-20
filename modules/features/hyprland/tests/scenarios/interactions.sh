@@ -32,8 +32,8 @@ qst actions | grep -q 'systemd-run.*--scope.*wl-copy' || { qst actions; echo "th
 
 qst case "every panel fits a 1024x600 screen"
 qst output 1024x600 1
-qst wait '.screens[0].width < 1024'
-for panel in apps clipboard monitors windows nixpkgs center shortcuts power volume:DP-1; do
+qst wait '.screens[0].width <= 1024'
+for panel in apps clipboard monitors windows nixpkgs center shortcuts power controls:DP-1; do
   qst ipc panels open "$panel" > /dev/null
   qst wait ".panel == \"$panel\""
   qst stays ".panel == \"$panel\"" 0.6

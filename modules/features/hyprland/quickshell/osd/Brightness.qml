@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.common
 
 // Every backlight's level from backlight-watch, which hears each change however it was made.
 Singleton {
@@ -17,6 +18,30 @@ Singleton {
   property bool known: false
 
   signal adjusted()
+
+  // The level asked for last, set once the one before it is done, so a drag never queues up.
+  property var target: null
+
+  // Through logind, so brightnessctl needs no rights of its own; never quite off, which would leave nothing to see.
+  function set(name: string, value: real): void {
+    root.target = { name, percent: Math.max(1, Math.min(100, Math.round(value * 100))) };
+    if (!setter.running) root.flush();
+  }
+
+  function flush(): void {
+    if (!root.target) return;
+    setter.command = ["brightnessctl", "--quiet", "--device", root.target.name, "set", `${root.target.percent}%`];
+    root.target = null;
+    setter.running = true;
+  }
+
+  Command {
+    id: setter
+
+    name: "Brightness"
+    onDone: root.flush()
+    onFailed: root.flush()
+  }
 
   function read(line: string): void {
     const next = {};

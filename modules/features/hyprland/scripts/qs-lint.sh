@@ -23,7 +23,7 @@ find "$work/qs" -type d | while read -r dir; do
 done
 
 # Quickshell's type info, mended: _GlobalShortcuts forgets it depends on Quickshell (GlobalShortcut's base),
-# opaque stubs in submodules hide the real types, and FileView.adapter names its type unqualified.
+# opaque stubs in submodules hide the real types, and FileView.adapter and Bluetooth.defaultAdapter name their types unqualified.
 cp -r "$quickshellQml" "$work/qml"
 chmod -R u+w "$work/qml"
 find "$work/qml/Quickshell" -mindepth 2 -name qmldir | while read -r qmldir; do
@@ -39,6 +39,7 @@ find "$work/qml/Quickshell" -mindepth 2 -name '*.qmltypes' | while read -r types
   mv "$types.new" "$types"
 done
 sed -i 's/type: "FileViewAdapter"/type: "qs::io::FileViewAdapter"/' "$work/qml/Quickshell/Io/quickshell-io.qmltypes"
+sed -i 's/type: "BluetoothAdapter"/type: "qs::bluetooth::BluetoothAdapter"/' "$work/qml/Quickshell/Bluetooth/quickshell-bluetooth.qmltypes"
 sed -i '/name: "qs::dbus::dbusmenu::DBusMenuHandle"/a\        prototype: "qs::menu::QsMenuHandle"' \
   "$work/qml/Quickshell/Services/SystemTray/quickshell-service-statusnotifier.qmltypes"
 

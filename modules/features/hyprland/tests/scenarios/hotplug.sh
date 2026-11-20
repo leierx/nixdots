@@ -132,6 +132,6 @@ qst case "a mode change keeps an open panel open"
 qst ipc panels open center
 qst wait "$(layer "DP-1 quickshell:center")"
 qst output 1280x720 1
-qst wait '.screens[0].width < 1280'
+qst wait '.screens[0].width <= 1280'
 qst stays "$(layer "DP-1 quickshell:center") and .panel == \"center\""
 no_problems
