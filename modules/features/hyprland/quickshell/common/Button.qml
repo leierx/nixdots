@@ -77,7 +77,9 @@ Rectangle {
 
     anchors.fill: parent
     hoverEnabled: true
-    cursorShape: Qt.PointingHandCursor
+    // A disabled ancestor leaves its own reading true.
+    enabled: root.enabled
+    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
     onClicked: mouse => root.clicked(mouse.button)
   }
 }

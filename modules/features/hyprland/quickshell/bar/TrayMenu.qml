@@ -24,6 +24,9 @@ PanelWindow {
   property var pending: null
   readonly property int padding: 6
 
+  // The pointer gone from it, or the app's menu gone: the bar closes the panel, the overflow only the menu.
+  signal dismissed
+
   // libadwaita's check button: an outlined box (a ring for a radio), filled with the accent once checked.
   component CheckIndicator: Rectangle {
     id: indicator
@@ -110,7 +113,7 @@ PanelWindow {
   // A new menu from the app shares no entries with the old one.
   onMenuChanged: {
     root.path = [];
-    if (root.menu === null && Panels.active === root.name) Panels.close();
+    if (root.menu === null) root.dismissed();
   }
 
   Timer {
@@ -123,7 +126,7 @@ PanelWindow {
   Timer {
     running: !inside.hovered && !root.held
     interval: 100
-    onTriggered: Panels.close()
+    onTriggered: root.dismissed()
   }
 
   // Only the cards take input, so this is hovered exactly while the pointer is on one; hover reaches ancestors, not siblings beneath.

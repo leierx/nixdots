@@ -371,6 +371,13 @@ Notes on specific features:
         line's height is a `FontMetrics`' `height`.
       - qmllint types `QsWindow.window` as a plain `QObject` ("Member
         `height` not found"); Qt's attached `Window.height` is typed.
+      - Quickshell sorts `SystemTray.items` by category and id, not by when
+        they came (`TrayOrder` keeps that).
+      - Under a disabled ancestor a `MouseArea`'s own `enabled` still reads
+        true, so a cursor bound to it shows a hand: set it explicitly
+        (`Button`'s area takes the button's).
+      - `Pipewire.preferredDefaultAudioSource` refuses a node Quickshell
+        leaves untyped, a virtual source among them: `wpctl set-default`.
       - A `ShellScreen` dangles while its monitor goes, and every binding
         still reading it logs "attempted to use dangling screen object": a
         window per screen takes its name once, in `Component.onCompleted`.
@@ -455,7 +462,7 @@ Notes on specific features:
       setups: the QML runs its tools by name from PATH (`cliphist`, `wl-copy`,
       `pw-play`, `notify-send`, `xdg-open`, `systemd-run`, `hyprmoncfg`,
       `wezterm`, `curl`, `nixpkgs-index`, `nixpkgs-run`, `hyprctl`, `systemctl`,
-      `camera-users`, `backlight-watch`) rather than store paths, an exception to the rule above;
+      `wpctl`, `camera-users`, `backlight-watch`) rather than store paths, an exception to the rule above;
       `quickshell.nix` installs the ones no other feature does. The only Nix
       in the QML is `palettes.adwaita_darker` as the `Colors` singleton (translucent
       colours turned into Qt's `#aarrggbb`) and `hyprland.workspaces` as
@@ -704,6 +711,22 @@ Notes on specific features:
         reports no hover on a new menu until the pointer moves).
         Another icon switches menus, the same icon closes it, its monitor going closes it too,
         and a click on the bar besides its buttons closes any open panel.
+        The right side never reaches the clock: `BarWindow` gives the tray
+        the room the bar leaves (half its width less the clock's, `Theme.gap`
+        and the status buttons), and past it the first four items keep their
+        places with a flat `BarButton` closing the pill (Material Symbols'
+        apps and how many are left, shown only while some are), fewer than
+        four only where even that would not fit. First come, first served:
+        `TrayOrder` keeps the items in the order they came, which every bar
+        shares, since Quickshell sorts its model by category and id; one
+        leaving moves the next up. The button opens `TrayOverflow` under it
+        (a `Panels` panel per screen, `tray-overflow:DP-1`), a card with the
+        rest in a grid of six 36 px cells (`Theme.hover` under the pointer,
+        the same clicks as on the bar) that scrolls past what the screen
+        leaves room for, and closes once nothing is left behind the button. A
+        menu opened from it sits over it under the same panel: the pointer
+        leaving the menu closes only the menu (`TrayMenu.dismissed`), an
+        entry or a click outside closes both.
       - The volume (`Volume`) is PipeWire's default output: an icon for its
         level (Material Symbols' volume_up, volume_down, volume_mute,
         volume_off) and its percentage, struck through while muted. The wheel
@@ -712,11 +735,21 @@ Notes on specific features:
         never turns it down; the slider reads full past 100 %. A right click
         mutes, and a click opens
         `VolumePopup` under it (a `Panels` panel per screen, `volume:DP-1`),
-        libadwaita's popover: a mute button, a slider (dragged, clicked or
-        wheeled), and the outputs, the one in use ticked, a click making
-        another `Pipewire.preferredDefaultAudioSink`; its rows are the tray
-        menu's (32 px, `Theme.smallRadius`, `Theme.border` rules), and scroll
-        past what the screen leaves room for. A node's volume only
+        libadwaita's popover in two sections, Output and Input, each a
+        caption, a mute button and a slider (dragged, clicked or wheeled, as
+        the bar's), and its devices, the one in use ticked, with one rule
+        between the sections. A click on an output makes it
+        `Pipewire.preferredDefaultAudioSink`; on an input,
+        `Pipewire.preferredDefaultAudioSource`, or for a virtual source,
+        which Quickshell refuses as a default, `wpctl set-default` (one at a
+        time: a pick while it runs waits behind it, so the last wins). A virtual source has no level or mute to
+        set, so its row stays in place, half faded and inert, and the list
+        under it never moves. `Microphone` is the input's backend (PipeWire's
+        default source, the sources real and virtual, by `media.class` for
+        the untyped). The rows are the tray menu's (32 px,
+        `Theme.smallRadius`), and both lists share what the screen leaves:
+        each gets all it wants while both fit, otherwise the shorter keeps
+        its own up to half and the other scrolls in the rest. A node's volume only
         arrives while a `PwObjectTracker` holds it. `qs ipc -c shell call bar
         fakeVolume 64 false` stands in for a sound server with three outputs,
         `realVolume` drops it.
@@ -1208,6 +1241,7 @@ qst run                        # sync, then every tests/scenarios/*.sh; `qst run
 qst key super+Return           # real windows, for workspaces and the window switcher
 qst flood 3000 --urgency 2     # notifications by the thousand over D-Bus (--apps N, --summary/--body LENGTH, --rate N)
 qst tray                       # a tray item (a yellow star) with nested submenus (tests/tray.qml); `qst tray log` shows what it was told
+qst tray add first 4           # four items under the app id `first` (tests/trays.qml), each with a short menu; `tray remove first`, `tray clear`
 qst x notify-send -a Discord loft01 hello   # anything else, inside the session (hyprctl talks to the test Hyprland)
 qst x wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.3   # the session's own PipeWire
 qst pipewire restart           # or stop, start
@@ -1247,6 +1281,9 @@ default, at 64 %), Headphones and HDMI / DisplayPort, test-tone microphones
 Microphone (the default) and Headset Microphone (`audiotestsrc`, real
 `Audio/Source`s), and a virtual Noise Cancelling source. `wpctl`, `pw-record`,
 `pw-cli` and `pw-dump` in the session reach it; `reset` starts it afresh.
+WirePlumber gives a node made with `pw-cli create-node` no ports, so it lists
+but never becomes the default; to take the default away, destroy a test
+microphone (`pw-cli destroy test-headset-mic`) after making it the default.
 `systemctl --user start|stop|is-active` keeps each unit's state in
 `$QS_TEST_DIR/units`, as the shell reads Caffeine back. `backlight-watch`
 and `camera-users` are the real ones, run on `$QS_TEST_DIR/backlight` and
@@ -1298,10 +1335,12 @@ screens and the Hyprland monitor each resolves to, the focused monitor,
 workspaces with the label the bar gives them and their window count, windows, and every popup with
 the screen it is on, the notification `history` (app and summary, popped up, hovered, checked, `restored` from disk and the
 pictures `kept`, newest
-first), `dnd` and `unchecked`, the volume (percent, muted, output), the default `input`,
+first), `dnd` and `unchecked`, the volume (percent, muted, output), the default `input` and the
+`microphone` (percent, muted, `adjustable`, the input, every input by name),
 the `osd` showing (with its screen), `osdShown` (shows so far) and
 `osdSettling`, `brightness`, `caps`, `privacy` (`mic` names, and `screen` and
-`camera` names or null while unused), `caffeine`, `tray` (the items' ids), `field`
+`camera` names or null while unused), `caffeine`, `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: the ids on
+it, how many wait behind its button, its width and the room it has), `field`
 (the text field up, the launcher's search) and `problems`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.
@@ -1316,7 +1355,8 @@ not Theme's (or half the size), an image shown without a source or failing
 to load, a disabled mouse area still setting a hand, a card running off its
 window, text drawn over other text (where the glyphs are, cut by clipping
 ancestors), and a window that is not a layer surface. `invariants`
-(`tests/invariants.jq`): an open panel has its layer and a layer its panel,
+(`tests/invariants.jq`): an open panel has its layer and a layer its panel (a tray menu may sit over
+the tray's overflow),
 nothing on `FALLBACK`, popups only on real screens and five at most, hovered
 only while popped up and one at a time, three per app past the popped up,
 unchecked within the count, the history within 100 and five popups, a
@@ -1373,7 +1413,14 @@ notifications and of thousands of apps (`qst flood`, `qs-flood` over D-Bus
 at thousands a second, where notify-send manages a hundred), megabytes of
 text, icons that are no picture, panels toggled faster than they open, a
 hotplug storm under an open panel, a workspace of 40 windows (`foot`), 60
-outputs, 40 apps recording and damaged state files. `interactions.sh`
+outputs, 40 apps recording, damaged state files, and the tray and the
+inputs: 30 tray items (the first four kept, an 800x600 screen keeping fewer),
+items leaving and the next moving up, 60 items churning under the open
+overflow and a menu opened from it, 200 items scrolling in it and its monitor
+going; 40 microphones real and virtual with 30 more outputs, the default
+input switched by 30 clicks and 50 `wpctl`s, inputs coming and going and the
+default one destroyed under the open popup, mute and level hammered, and
+PipeWire restarting under it. `interactions.sh`
 holds fixes that had no case: a long popup's two clicks, the wheel over a
 level past 100 %, a picked clip's scope, every panel on a 1024x600 screen
 and Power Off's second press. Behaviour that broke once gets a case; check that

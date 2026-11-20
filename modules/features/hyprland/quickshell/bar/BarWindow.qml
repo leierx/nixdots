@@ -47,6 +47,8 @@ PanelWindow {
   }
 
   Clock {
+    id: clock
+
     anchors.centerIn: parent
   }
 
@@ -58,31 +60,40 @@ PanelWindow {
     }
     spacing: 2
 
-    PrivacyIndicator {
-      anchors.verticalCenter: parent.verticalCenter
-      screen: root.screen
-    }
+    Row {
+      id: status
 
-    VolumeButton {
       anchors.verticalCenter: parent.verticalCenter
-      screen: root.screen
-    }
+      spacing: 2
 
-    Battery {
-      anchors.verticalCenter: parent.verticalCenter
-    }
+      PrivacyIndicator {
+        anchors.verticalCenter: parent.verticalCenter
+        screen: root.screen
+      }
 
-    Cup {
-      anchors.verticalCenter: parent.verticalCenter
-    }
+      VolumeButton {
+        anchors.verticalCenter: parent.verticalCenter
+        screen: root.screen
+      }
 
-    Bell {
-      anchors.verticalCenter: parent.verticalCenter
+      Battery {
+        anchors.verticalCenter: parent.verticalCenter
+      }
+
+      Cup {
+        anchors.verticalCenter: parent.verticalCenter
+      }
+
+      Bell {
+        anchors.verticalCenter: parent.verticalCenter
+      }
     }
 
     Tray {
       anchors.verticalCenter: parent.verticalCenter
       screen: root.screen
+      // What the right side has left before it would reach the clock.
+      room: (root.width - clock.width) / 2 - Theme.gap - root.inset - status.width - 2
     }
   }
 }

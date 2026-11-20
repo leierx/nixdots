@@ -147,6 +147,7 @@ in
         # run by name from the QML; hyprmoncfg and wezterm come with their own features
         pkgs.libnotify
         pkgs.pipewire
+        pkgs.wireplumber
         pkgs.wl-clipboard
         pkgs.xdg-utils
         config.services.cliphist.package
@@ -295,12 +296,13 @@ in
         meta.mainProgram = "qs-input";
       };
 
-      # a tray item whose menu can be clicked through without touching anything real
+      # tray items whose menus can be clicked through without touching anything real: one with submenus, or `qs-tray NAME COUNT`
       qsTray =
         let
           tray = pkgs.runCommand "qs-tray-qml" { } ''
             mkdir $out
             cp ${./tests/tray.qml} $out/tray.qml
+            cp ${./tests/trays.qml} $out/trays.qml
             cp ${./tests/tray-icon.svg} $out/icon.svg
           '';
         in
@@ -314,6 +316,7 @@ in
           }
           export QML_IMPORT_PATH=${qtdeclarative}/lib/qt-6/qml
           export QT_FORCE_STDERR_LOGGING=1
+          if [ $# -gt 0 ]; then exec ${qtdeclarative}/bin/qml ${tray}/trays.qml -- "$@"; fi
           exec ${qtdeclarative}/bin/qml ${tray}/tray.qml
         '';
 

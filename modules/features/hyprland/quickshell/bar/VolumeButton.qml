@@ -47,7 +47,6 @@ BarButton {
       name: root.panel
       anchorX: root.mapToItem(null, root.width / 2, 0).x
       top: root.Window.height
-      glyph: Volume.glyph
     }
   }
 }
