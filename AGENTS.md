@@ -291,7 +291,10 @@ Notes on specific features:
     launcher mode, the notification center, a tray menu) closes the others,
     nothing opens while no monitor is on (it would land on `FALLBACK`, unseen,
     holding the keyboard), and
-    `close` closes whichever is open.
+    `close` closes whichever is open. `ClickAway` is a transparent layer under the windows on
+    every screen, taking input only while a panel is open, so a click on any
+    screen's bare desktop closes it while a click on a window still reaches
+    the window (whose taking the keyboard closes an `Overlay` too).
     - Conventions for the QML:
       - Comments follow the repo rule strictly: none by default, no file
         headers, one line saying why, never what. What a component does is
@@ -1331,7 +1334,7 @@ bar and every panel and checks a closed hand mid-drag; `binds.sh` presses
 every bind that dispatches a global and checks each opens a panel of its
 own and closes it; `launcher.sh` types as the launcher opens on a fresh
 shell and times the open, and clicks a window on another monitor
-with it open; `failures.sh` makes the shell's tools fail (`qst
+with it open, then the bare desktop there; `failures.sh` makes the shell's tools fail (`qst
 fail`); `motion.sh` expands and collapses a center group and fades the OSD
 under `qst motion`. `idle.sh` runs the idle fade on two monitors under
 `qst motion`, clicks the bar through it and cancels it. `history.sh` restarts the shell over a history

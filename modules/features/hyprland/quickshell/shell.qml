@@ -3,6 +3,7 @@
 //@ pragma Env QT_SCALE_FACTOR=1.2
 
 import Quickshell
+import qs.common
 import qs.bar
 import qs.center
 import qs.idle
@@ -13,6 +14,8 @@ import qs.power
 import qs.shortcuts
 
 ShellRoot {
+  ClickAway {}
+
   Bar {}
 
   Launcher {}

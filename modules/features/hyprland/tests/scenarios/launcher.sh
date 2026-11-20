@@ -27,3 +27,12 @@ qst wait '.panel == "apps" and .field == "fire"'
 qst click left 2900 600
 qst wait '.panel == ""'
 [ "$(hyprctl activewindow -j | jq -r .monitor)" = 1 ] || { echo "the window on DP-2 did not get the keyboard"; exit 1; }
+
+qst case "a click on another monitor's bare desktop closes the launcher, as one beside its card does"
+export QS_TEST_MONITORS="DP-1:1920x1080:1 DP-2:2560x1440:1.25"
+qst reset > /dev/null
+qst focus DP-1
+qst key super+d
+qst wait '.panel == "apps"'
+qst click left 2900 600
+qst wait '.panel == ""'
