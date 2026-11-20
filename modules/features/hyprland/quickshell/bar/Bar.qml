@@ -35,7 +35,7 @@ Scope {
     }
   }
 
-  // Quickshell refreshes monitors only as one is added, and ignores renamed workspaces.
+  // Quickshell ignores renamed and moved workspaces.
   Connections {
     target: Hyprland
 
@@ -46,21 +46,7 @@ Scope {
         windowsSettled.restart();
         return;
       }
-      if (!["monitoraddedv2", "monitorremovedv2", "changeworkspaceid", "renameworkspace"].includes(event.name)) return;
-      Hyprland.refreshMonitors();
-      Hyprland.refreshWorkspaces();
-      settled.restart();
-    }
-  }
-
-  // Quickshell drops a refresh while one is under way, so a burst gets one more once it settles.
-  Timer {
-    id: settled
-
-    interval: 300
-    onTriggered: {
-      Hyprland.refreshMonitors();
-      Hyprland.refreshWorkspaces();
+      if (["changeworkspaceid", "renameworkspace"].includes(event.name)) Hyprland.refreshWorkspaces();
     }
   }
 
