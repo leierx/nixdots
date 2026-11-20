@@ -111,8 +111,6 @@ Overlay {
         Layout.alignment: Qt.AlignTop
         // Wider than GNOME Shell's 29em message list, which read long and narrow beside the calendar; narrower where the screen is.
         Layout.preferredWidth: Math.min(Math.round(40 * Theme.em), root.besides ? root.room : root.width - 2 * Theme.gap - 2 * root.padding)
-        // Held, or a layout settling while groups are made squeezes them to nothing; the footer's switches used to hold it.
-        Layout.minimumWidth: Layout.preferredWidth
         spacing: root.padding
 
         Item {
