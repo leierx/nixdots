@@ -20,7 +20,7 @@ BarButton {
       Net.vpns.some(vpn => vpn.active) ? { name: "vpn", path: Symbols.vpn, color: Theme.fg } : null,
       Net.glyph !== "" ? { name: "network", path: Net.glyph, color: Theme.fg } : null,
       BluetoothDevices.connected.length > 0 ? { name: "bluetooth", path: Symbols.bluetoothConnected, color: Theme.fg } : null,
-      Microphone.present && Microphone.muted ? { name: "microphone", path: Microphone.off, color: Theme.fg } : null,
+      Microphone.present && Microphone.muted ? { name: "microphone", path: Symbols.micOff, color: Theme.fg } : null,
       Volume.present ? { name: "volume", path: Volume.glyph, color: Volume.muted ? Theme.fgDim : Theme.fg } : null
     ].filter(glyph => glyph !== null);
     // With nothing to show it still opens the centre.
@@ -73,7 +73,7 @@ BarButton {
         anchors.verticalCenter: parent.verticalCenter
         text: Power.percent
         color: Theme.fg
-        font: Qt.font({ family: Theme.body.family, pointSize: 10, weight: Font.DemiBold })
+        font: Theme.barStrong
       }
     }
   }

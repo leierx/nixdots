@@ -12,6 +12,8 @@ Scope {
   property string image: ""
   property var accent: []
   property string placeholder: "Search…"
+  // Said in place of the list while it has nothing and nothing is typed.
+  property string nothing: ""
   property var rows: []
   property bool removable: false
   property bool wide: false

@@ -37,21 +37,11 @@ ColumnLayout {
     return 1 + Math.round(((thursday - firstThursday) / 86400000 - 3 + (firstThursday.getUTCDay() + 6) % 7) / 7);
   }
 
-  component Arrow: Button {
-    id: arrow
-
-    property real turn: 0
-
+  component Arrow: IconButton {
     implicitWidth: root.cell
     implicitHeight: root.cell
-    radius: width / 2
-    padding: 0
     flat: true
-
-    ExpanderArrow {
-      anchors.centerIn: parent
-      rotation: arrow.turn
-    }
+    expander: true
   }
 
   // qmllint disable Quick.layout-positioning
@@ -93,7 +83,7 @@ ColumnLayout {
     Layout.fillWidth: true
 
     Arrow {
-      turn: 90
+      pointing: "left"
       onClicked: root.shift(-1)
     }
 
@@ -106,7 +96,7 @@ ColumnLayout {
     }
 
     Arrow {
-      turn: -90
+      pointing: "right"
       onClicked: root.shift(1)
     }
   }

@@ -8,7 +8,7 @@ Text {
 
   textFormat: Text.StyledText
   color: Theme.fg
-  linkColor: Theme.accent
+  linkColor: Theme.accentBg
   wrapMode: Text.Wrap
   elide: Text.ElideRight
   font: Theme.body

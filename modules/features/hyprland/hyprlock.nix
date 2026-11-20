@@ -69,7 +69,7 @@ in
             (
               label
               // {
-                text = "cmd[update:1000] ${pkgs.coreutils}/bin/date +'%A, %B %d'";
+                text = "cmd[update:1000] ${pkgs.coreutils}/bin/date +'%A %-d %B'";
                 font_size = 24;
                 position = "0, 100";
               }

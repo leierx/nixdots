@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls.Basic as QQC
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Networking
@@ -16,8 +17,6 @@ Overlay {
   required property real anchorX
   // The bar's height, which the popover drops below.
   required property real top
-  // Material Symbols' check
-  readonly property string check: "m382-354 339-339q12-12 28-12t28 12q12 12 12 28.5T777-636L410-268q-12 12-28 12t-28-12L182-440q-12-12-11.5-28.5T183-497q12-12 28.5-12t28.5 12l142 143Z"
   // The most the card may take: what the screen leaves under the bar.
   readonly property real available: height - top - 2 * Theme.gap
   readonly property bool open: Panels.active === name
@@ -163,7 +162,7 @@ Overlay {
     target: root
     property: "shown"
     to: 1
-    duration: 240
+    duration: Theme.open
     easing.type: Easing.OutQuint
   }
 
@@ -173,78 +172,8 @@ Overlay {
     target: root
     property: "shown"
     to: 0
-    duration: 140
+    duration: Theme.close
     easing.type: Easing.InCubic
-  }
-
-  component Slider: Item {
-    id: slider
-
-    property real value: 0
-    property bool dim: false
-
-    signal moved(real value)
-    signal stepped(int notches)
-
-    implicitHeight: 26
-
-    Rectangle {
-      anchors.verticalCenter: parent.verticalCenter
-      width: parent.width
-      height: 6
-      radius: height / 2
-      color: Theme.trough
-
-      Rectangle {
-        width: parent.width * Math.max(0, Math.min(1, slider.value))
-        height: parent.height
-        radius: parent.radius
-        color: slider.dim ? Theme.fgDim : Theme.accentBg
-
-        Behavior on color {
-          ColorAnimation {
-            duration: Theme.fade
-          }
-        }
-      }
-    }
-
-    Rectangle {
-      x: Math.max(0, Math.min(1, slider.value)) * (slider.width - width)
-      anchors.verticalCenter: parent.verticalCenter
-      width: 16
-      height: 16
-      radius: height / 2
-      color: Theme.slider
-      scale: drag.pressed ? 1.1 : 1
-
-      Behavior on scale {
-        NumberAnimation {
-          duration: 100
-        }
-      }
-    }
-
-    MouseArea {
-      id: drag
-
-      anchors.fill: parent
-      // Set from the slider, which reads its own; a disabled ancestor leaves it reading true.
-      enabled: slider.enabled
-      cursorShape: !enabled ? Qt.ArrowCursor : pressed ? Qt.ClosedHandCursor : Qt.PointingHandCursor
-      onPressed: mouse => slider.moved(Math.max(0, Math.min(1, mouse.x / width)))
-      onPositionChanged: mouse => {
-        if (pressed) slider.moved(Math.max(0, Math.min(1, mouse.x / width)));
-      }
-      onWheel: event => {
-        const steps = notches.steps(event);
-        if (steps !== 0) slider.stepped(steps);
-      }
-    }
-
-    WheelSteps {
-      id: notches
-    }
   }
 
   // A level: its symbol (a mute button where it mutes), the slider, and the arrow to its devices.
@@ -263,17 +192,14 @@ Overlay {
 
     spacing: 8
 
-    Button {
+    IconButton {
       id: lead
 
       anchors.verticalCenter: parent.verticalCenter
-      radius: height / 2
-      padding: 0
       flat: true
       enabled: level.mutes && level.enabled
       checked: level.muted
       glyph: level.glyph
-      glyphSize: 20
       onClicked: level.muteClicked()
     }
 
@@ -287,33 +213,17 @@ Overlay {
       onStepped: notches => level.stepped(notches)
     }
 
-    Button {
+    IconButton {
       id: arrow
 
       anchors.verticalCenter: parent.verticalCenter
       opacity: level.opens !== "" ? 1 : 0
       enabled: level.opens !== ""
-      radius: height / 2
-      padding: 0
       flat: true
+      expander: true
       checked: level.opens !== "" && root.menu === level.opens
+      pointing: checked ? "down" : "right"
       onClicked: Controls.show(level.opens)
-
-      Item {
-        anchors.centerIn: parent
-        width: 16
-        height: 16
-        rotation: arrow.checked ? 0 : -90
-
-        Behavior on rotation {
-          NumberAnimation {
-            duration: 200
-            easing.type: Easing.OutCubic
-          }
-        }
-
-        ExpanderArrow {}
-      }
     }
   }
 
@@ -374,7 +284,7 @@ Overlay {
       }
     }
 
-    // A flip's feedback: a ripple spreading from the click, and the symbol dipping and springing back.
+    // A flip's feedback: a ripple spreading from the click, and the symbol's Pop.
     function pop(x: real): void {
       ripple.from = Math.max(0, Math.min(pill.width - pill.height, x - pill.height / 2));
       popping.restart();
@@ -399,7 +309,7 @@ Overlay {
         property: "x"
         from: ripple.from
         to: 0
-        duration: 450
+        duration: Theme.settle
         easing.type: Easing.OutCubic
       }
 
@@ -408,7 +318,7 @@ Overlay {
         property: "width"
         from: pill.height
         to: pill.width
-        duration: 450
+        duration: Theme.settle
         easing.type: Easing.OutCubic
       }
 
@@ -417,34 +327,12 @@ Overlay {
         property: "opacity"
         from: 0.25
         to: 0
-        duration: 450
+        duration: Theme.settle
         easing.type: Easing.OutCubic
       }
 
-      SequentialAnimation {
-        NumberAnimation {
-          target: symbol
-          property: "scale"
-          to: 0.78
-          duration: 100
-          easing.type: Easing.OutQuad
-        }
-
-        NumberAnimation {
-          target: symbol
-          property: "scale"
-          to: 1.15
-          duration: 120
-          easing.type: Easing.OutQuad
-        }
-
-        NumberAnimation {
-          target: symbol
-          property: "scale"
-          to: 1
-          duration: 160
-          easing.type: Easing.OutBack
-        }
+      Pop {
+        target: symbol
       }
     }
 
@@ -545,21 +433,10 @@ Overlay {
         }
       }
 
-      Item {
+      ExpanderArrow {
         anchors.centerIn: parent
         anchors.horizontalCenterOffset: -2
-        width: 16
-        height: 16
-        rotation: pill.open ? 0 : -90
-
-        Behavior on rotation {
-          NumberAnimation {
-            duration: 200
-            easing.type: Easing.OutCubic
-          }
-        }
-
-        ExpanderArrow {}
+        pointing: pill.open ? "down" : "right"
       }
 
       MouseArea {
@@ -764,7 +641,7 @@ Overlay {
               property: "opacity"
               from: 0
               to: 1
-              duration: 200
+              duration: Theme.move
               easing.type: Easing.OutCubic
             }
           }
@@ -773,7 +650,7 @@ Overlay {
             NumberAnimation {
               property: "opacity"
               to: 0
-              duration: 200
+              duration: Theme.move
               easing.type: Easing.OutCubic
             }
           }
@@ -781,7 +658,7 @@ Overlay {
           displaced: Transition {
             NumberAnimation {
               property: "y"
-              duration: 200
+              duration: Theme.move
               easing.type: Easing.OutCubic
             }
           }
@@ -872,7 +749,7 @@ Overlay {
               Glyph {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: row.modelData.current === true && row.modelData.toggle === undefined && row.modelData.tick !== false
-                path: root.check
+                path: Symbols.check
                 size: 20
                 color: Theme.accentBg
               }
@@ -974,7 +851,7 @@ Overlay {
 
         Glyph {
           anchors.centerIn: parent
-          path: Volume.off
+          path: Symbols.volumeOff
           size: 20
           color: Theme.fg
         }
@@ -1079,30 +956,21 @@ Overlay {
       anchors.verticalCenter: parent.verticalCenter
       spacing: 8
 
-      Button {
+      IconButton {
         objectName: "header:screenshot"
-        radius: height / 2
-        padding: 0
         glyph: Symbols.screenshot
-        glyphSize: 20
         onClicked: Controls.screenshot()
       }
 
-      Button {
+      IconButton {
         objectName: "header:lock"
-        radius: height / 2
-        padding: 0
         glyph: Symbols.lock
-        glyphSize: 20
         onClicked: Controls.lock()
       }
 
-      Button {
+      IconButton {
         objectName: "header:power"
-        radius: height / 2
-        padding: 0
         glyph: Symbols.power
-        glyphSize: 20
         onClicked: Controls.powerMenu()
       }
     }
@@ -1116,7 +984,7 @@ Overlay {
 
     Text {
       leftPadding: 4
-      text: "In use"
+      text: "In Use"
       color: Theme.fgDim
       font: Theme.heading
     }
@@ -1250,7 +1118,7 @@ Overlay {
 
       Behavior on opacity {
         NumberAnimation {
-          duration: 400
+          duration: Theme.settle
           easing.type: Easing.OutCubic
         }
       }
@@ -1271,7 +1139,7 @@ Overlay {
 
       Behavior on scale {
         NumberAnimation {
-          duration: 300
+          duration: Theme.settle
           easing.type: Easing.OutCubic
         }
       }
@@ -1367,15 +1235,12 @@ Overlay {
           anchors.centerIn: parent
           spacing: 6
 
-          Button {
+          IconButton {
             anchors.verticalCenter: parent.verticalCenter
             flat: true
-            radius: height / 2
-            padding: 0
             enabled: Media.player?.canGoPrevious ?? false
             opacity: enabled ? 1 : 0.5
             glyph: Symbols.previous
-            glyphSize: 20
             onClicked: Media.player?.previous()
           }
 
@@ -1390,7 +1255,7 @@ Overlay {
 
             Behavior on scale {
               NumberAnimation {
-                duration: 120
+                duration: Theme.tap
                 easing.type: Easing.OutCubic
               }
             }
@@ -1414,15 +1279,12 @@ Overlay {
             }
           }
 
-          Button {
+          IconButton {
             anchors.verticalCenter: parent.verticalCenter
             flat: true
-            radius: height / 2
-            padding: 0
             enabled: Media.player?.canGoNext ?? false
             opacity: enabled ? 1 : 0.5
             glyph: Symbols.next
-            glyphSize: 20
             onClicked: Media.player?.next()
           }
         }
@@ -1457,21 +1319,17 @@ Overlay {
       yScale: 0.9 + 0.1 * root.shown
     }
 
-    Rectangle {
-      anchors.right: parent.right
-      anchors.rightMargin: 3
-      y: Theme.padding + scroller.visibleArea.yPosition * scroller.height
-      z: 1
-      width: 4
-      height: scroller.visibleArea.heightRatio * scroller.height
-      radius: width / 2
-      color: Theme.fgDim
-      visible: scroller.interactive
-    }
-
     Flickable {
       id: scroller
 
+      // In the card's padding rather than over the rows.
+      QQC.ScrollIndicator.vertical: ScrollBar {
+        parent: box
+        x: box.width - width - 3
+        y: Theme.padding
+        height: scroller.height
+        held: true
+      }
       anchors.fill: parent
       anchors.margins: Theme.padding
       contentHeight: column.implicitHeight
@@ -1510,7 +1368,7 @@ Overlay {
 
             Behavior on opened {
               NumberAnimation {
-                duration: 200
+                duration: Theme.move
                 easing.type: Easing.OutCubic
               }
             }

@@ -22,7 +22,12 @@ Item {
   }
 
   // In the age's place, so the cross costs the line no room.
-  CloseButton {
+  IconButton {
+    implicitWidth: 24
+    implicitHeight: 24
+    flat: true
+    glyph: Symbols.close
+    glyphSize: 16
     anchors {
       right: parent.right
       rightMargin: -4

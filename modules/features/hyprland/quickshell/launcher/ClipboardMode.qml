@@ -16,9 +16,9 @@ LauncherMode {
 
   name: "clipboard"
   title: "Clipboard"
-  // Material Symbols' assignment
-  glyph: "M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h168q13-36 43.5-58t68.5-22q38 0 68.5 22t43.5 58h168q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm120-80h200q17 0 28.5-11.5T560-320q0-17-11.5-28.5T520-360H320q-17 0-28.5 11.5T280-320q0 17 11.5 28.5T320-280Zm0-160h320q17 0 28.5-11.5T680-480q0-17-11.5-28.5T640-520H320q-17 0-28.5 11.5T280-480q0 17 11.5 28.5T320-440Zm0-160h320q17 0 28.5-11.5T680-640q0-17-11.5-28.5T640-680H320q-17 0-28.5 11.5T280-640q0 17 11.5 28.5T320-600Zm160-190q13 0 21.5-8.5T510-820q0-13-8.5-21.5T480-850q-13 0-21.5 8.5T450-820q0 13 8.5 21.5T480-790ZM200-200v-560 560Z"
+  glyph: Symbols.assignmentOutline
   placeholder: "Search clipboard…"
+  nothing: "Nothing copied yet"
   wide: true
   removable: true
   rows: root.entries.map(entry => {
@@ -28,17 +28,15 @@ LauncherMode {
     return Object.assign(image ? {
       title: "Image",
       subtitle: `${image[3]}×${image[4]} ${image[2].toUpperCase()}, ${image[1]}`,
-      // Material Symbols' image
-      glyph: "M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0 0v-560 560Zm80-80h400q12 0 18-11t-2-21L586-459q-6-8-16-8t-16 8L450-320l-74-99q-6-8-16-8t-16 8l-80 107q-8 10-2 21t18 11Z",
+      glyph: Symbols.imageOutline,
       thumbnail: root.pictures[entry.id] ? `file://${root.cache}/${entry.id}` : "",
       size: { width: Number(image[3]), height: Number(image[4]) },
     } : {
       title: entry.text,
       subtitle: stats ? `${root.plural(stats[1], "character")}, ${root.plural(stats[0], "line")}` : "",
-      // Material Symbols' link and notes
       glyph: /^https?:\/\/\S+$/.test(entry.text)
-        ? "M280-280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h120q17 0 28.5 11.5T440-640q0 17-11.5 28.5T400-600H280q-50 0-85 35t-35 85q0 50 35 85t85 35h120q17 0 28.5 11.5T440-320q0 17-11.5 28.5T400-280H280Zm80-160q-17 0-28.5-11.5T320-480q0-17 11.5-28.5T360-520h240q17 0 28.5 11.5T640-480q0 17-11.5 28.5T600-440H360Zm200 160q-17 0-28.5-11.5T520-320q0-17 11.5-28.5T560-360h120q50 0 85-35t35-85q0-50-35-85t-85-35H560q-17 0-28.5-11.5T520-640q0-17 11.5-28.5T560-680h120q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H560Z"
-        : "M160-240q-17 0-28.5-11.5T120-280q0-17 11.5-28.5T160-320h400q17 0 28.5 11.5T600-280q0 17-11.5 28.5T560-240H160Zm0-200q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h640q17 0 28.5 11.5T840-480q0 17-11.5 28.5T800-440H160Zm0-200q-17 0-28.5-11.5T120-680q0-17 11.5-28.5T160-720h640q17 0 28.5 11.5T840-680q0 17-11.5 28.5T800-640H160Z",
+        ? Symbols.linkOutline
+        : Symbols.notesOutline,
     }, { key: entry.id, id: entry.id, line: entry.line });
   })
   fields: row => [[1.0, row.title], [1.0, row.subtitle]]

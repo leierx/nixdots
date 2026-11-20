@@ -291,7 +291,7 @@ PanelWindow {
                   x: parent.width - width - 8
                   anchors.verticalCenter: parent.verticalCenter
                   visible: entry.modelData?.hasChildren ?? false
-                  rotation: -90
+                  pointing: "right"
                 }
 
                 HoverHandler {

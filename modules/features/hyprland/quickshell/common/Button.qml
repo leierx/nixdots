@@ -13,8 +13,9 @@ Rectangle {
   property bool flat: false
   // Held down, as a flat button is while what it opens is open.
   property bool checked: false
+  // An ExpanderArrow after the text, pointing as it says.
   property bool expander: false
-  property bool open: false
+  property string pointing: "down"
   property real padding: 17
 
   readonly property bool hovered: area.containsMouse
@@ -68,7 +69,7 @@ Rectangle {
 
       anchors.verticalCenter: parent.verticalCenter
       visible: root.expander
-      open: root.open
+      pointing: root.pointing
     }
   }
 

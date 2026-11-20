@@ -17,8 +17,6 @@ Singleton {
   readonly property color panel: Colors.dark_5
   readonly property color accentBg: Colors.accent_bg_color
   readonly property color accentFg: Colors.accent_fg_color
-  // For text and lines on bg, where accentBg is too dark.
-  readonly property color accent: Colors.accent_color
   readonly property color destructiveBg: Colors.destructive_bg_color
   readonly property color destructive: Colors.destructive_color
   readonly property color warning: Colors.warning_color
@@ -40,7 +38,7 @@ Singleton {
   readonly property color criticalCard: Qt.rgba(Colors.destructive_bg_color.r, Colors.destructive_bg_color.g, Colors.destructive_bg_color.b, 0.16)
   readonly property color criticalCardHover: Qt.rgba(Colors.destructive_bg_color.r, Colors.destructive_bg_color.g, Colors.destructive_bg_color.b, 0.24)
   readonly property color hover: overlay(0.07)
-  readonly property color selected: overlay(0.10)
+  readonly property color selected: overlay(0.15)
   readonly property color button: overlay(0.10)
   readonly property color buttonHover: overlay(0.15)
   readonly property color buttonChecked: overlay(0.25)
@@ -59,6 +57,13 @@ Singleton {
   readonly property font captionHeading: Qt.font({ family: "Adwaita Sans", pointSize: 9, weight: Font.Bold })
   readonly property font title4: Qt.font({ family: "Adwaita Sans", pointSize: 13, weight: Font.Bold })
   readonly property font title2: Qt.font({ family: "Adwaita Sans", pointSize: 15, weight: Font.ExtraBold })
+  // The bar's lettering, a size below the body's, for its 26 px items.
+  readonly property font bar: Qt.font({ family: "Adwaita Sans", pointSize: 10, weight: Font.Medium })
+  readonly property font barStrong: Qt.font({ family: "Adwaita Sans", pointSize: 10, weight: Font.Bold })
+  // One a piece: the launcher's search, the weather's temperature and the power menu's clock.
+  readonly property font search: Qt.font({ family: "Adwaita Sans", pointSize: 19 })
+  readonly property font temperature: Qt.font({ family: "Adwaita Sans", pointSize: 38, weight: Font.Light })
+  readonly property font display: Qt.font({ family: "Adwaita Sans", pointSize: 64, weight: Font.Bold })
 
   readonly property int smallRadius: 6
   readonly property int buttonRadius: 9
@@ -71,8 +76,13 @@ Singleton {
   readonly property int gap: 10
   // Inside cards, as libadwaita pads its boxed rows.
   readonly property int padding: 12
-  // How long a hover or press takes to change a colour.
+  // Durations by kind of motion; each one's easing is in AGENTS.md's design standards.
   readonly property int fade: 150
+  readonly property int move: 200
+  readonly property int open: 240
+  readonly property int close: 140
+  readonly property int tap: 100
+  readonly property int settle: 400
 
   // The foreground over whatever lies below, as libadwaita mixes currentColor.
   function overlay(alpha: real): color {

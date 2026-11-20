@@ -60,9 +60,7 @@ Rectangle {
           Text {
             text: Math.round(root.now?.temperature ?? 0)
             color: Theme.fg
-            font.family: Theme.body.family
-            font.pointSize: 38
-            font.weight: Font.Light
+            font: Theme.temperature
           }
 
           Text {

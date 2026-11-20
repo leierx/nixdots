@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls.Basic as QQC
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
@@ -14,9 +15,6 @@ Overlay {
   readonly property bool open: Panels.active === name
   readonly property var apps: [...new Set(Notifs.entries.map(entry => Notifs.appKey(entry)))]
   readonly property int padding: Theme.padding
-  // Material Symbols' notifications and notifications_off, filled
-  readonly property string bell: "M200-200q-17 0-28.5-11.5T160-240q0-17 11.5-28.5T200-280h40v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h40q17 0 28.5 11.5T800-240q0 17-11.5 28.5T760-200H200ZM480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z"
-  readonly property string bellOff: "M646-200H200q-17 0-28.5-11.5T160-240q0-17 11.5-28.5T200-280h40v-280q0-33 8.5-65t25.5-61l126 126H288L84-764q-11-11-11-28t11-28q11-11 28-11t28 11l680 680q11 11 11.5 27.5T820-84q-11 11-28 11t-28-11L646-200Zm74-251q0 12-7 22t-18 15q-11 5-23 2.5T652-422L367-707q-7-7-10-15t-3-17q0-11 5.5-21.5T375-776q11-5 22-9t23-7v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 85t50 147v109ZM480-80q-30 0-53.5-16.5T403-141q0-8 6.5-13.5T424-160h112q8 0 14.5 5.5T557-141q0 28-23.5 44.5T480-80Z"
   // Beside the calendar the list keeps 24em, or the calendar steps aside, as on a small screen at a large scale, or one too short for it.
   readonly property real room: width - 2 * Theme.gap - 4 * padding - 1 - side.implicitWidth
   readonly property bool besides: room >= Math.round(24 * Theme.em) && height - 2 * Theme.gap - 2 * padding >= calendar.implicitHeight
@@ -70,7 +68,7 @@ Overlay {
     target: root
     property: "shown"
     to: 1
-    duration: 240
+    duration: Theme.open
     easing.type: Easing.OutQuint
   }
 
@@ -80,7 +78,7 @@ Overlay {
     target: root
     property: "shown"
     to: 0
-    duration: 140
+    duration: Theme.close
     easing.type: Easing.InCubic
   }
 
@@ -133,6 +131,9 @@ Overlay {
             clip: true
             flickableDirection: Flickable.VerticalFlick
             maximumFlickVelocity: 3500
+            QQC.ScrollIndicator.vertical: ScrollBar {
+              held: scroll.running
+            }
             // Every group stays created, so one expanded keeps its state.
             cacheBuffer: 100000
             model: ScriptModel {
@@ -163,14 +164,14 @@ Overlay {
                 property: "opacity"
                 from: 0
                 to: 1
-                duration: 200
+                duration: Theme.move
               }
 
               NumberAnimation {
                 property: "scale"
                 from: 0.95
                 to: 1
-                duration: 200
+                duration: Theme.move
                 easing.type: Easing.OutCubic
               }
             }
@@ -179,14 +180,14 @@ Overlay {
               NumberAnimation {
                 property: "opacity"
                 to: 0
-                duration: 150
+                duration: Theme.fade
               }
             }
 
             displaced: Transition {
               NumberAnimation {
                 property: "y"
-                duration: 200
+                duration: Theme.move
                 easing.type: Easing.OutCubic
               }
             }
@@ -215,25 +216,8 @@ Overlay {
 
             target: list
             property: "contentY"
-            duration: 200
+            duration: Theme.move
             easing.type: Easing.OutCubic
-          }
-
-          Rectangle {
-            anchors.right: parent.right
-            y: list.visibleArea.yPosition * list.height
-            width: 4
-            height: list.visibleArea.heightRatio * list.height
-            radius: width / 2
-            color: Theme.fgDim
-            visible: list.contentHeight > list.height
-            opacity: list.moving || scroll.running ? 1 : 0
-
-            Behavior on opacity {
-              NumberAnimation {
-                duration: 400
-              }
-            }
           }
 
           Column {
@@ -243,7 +227,7 @@ Overlay {
 
             Glyph {
               anchors.horizontalCenter: parent.horizontalCenter
-              path: Notifs.dnd ? root.bellOff : root.bell
+              path: Notifs.dnd ? Symbols.dnd : Symbols.bell
               size: 48
               color: Theme.fgDim
             }
@@ -269,7 +253,7 @@ Overlay {
           }
 
           Button {
-            text: "Collapse all"
+            text: "Collapse All"
             font: Theme.body
             opacity: root.expandedGroups > 0 ? 1 : 0
             enabled: opacity === 1

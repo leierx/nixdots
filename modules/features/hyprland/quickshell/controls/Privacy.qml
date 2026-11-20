@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pipewire
+import qs.common
 
 // Who is recording: a microphone through PipeWire, the screen through the portal's PipeWire
 // streams, and a camera through PipeWire or straight from /dev (camera-users).
@@ -40,15 +41,11 @@ Singleton {
   readonly property var camera: unique([...cameraViewers.filter(node => node.ready).map(appName), ...(held ? cameraHolders.map(holder => holder.name) : [])])
   readonly property bool cameraActive: cameraViewers.length > 0 || held && cameraHolders.length > 0
   readonly property bool micActive: mic.length > 0
-  // Material Symbols' mic, videocam and screen_share, filled
-  readonly property string micGlyph: "M480-400q-50 0-85-35t-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35Zm-40 240v-83q-92-13-157.5-78T203-479q-2-17 9-29t28-12q17 0 28.5 11.5T284-480q14 70 69.5 115T480-320q72 0 127-45.5T676-480q4-17 15.5-28.5T720-520q17 0 28 12t9 29q-14 91-79 157t-158 79v83q0 17-11.5 28.5T480-120q-17 0-28.5-11.5T440-160Z"
-  readonly property string cameraGlyph: "M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h480q33 0 56.5 23.5T720-720v180l126-126q10-10 22-5t12 19v344q0 14-12 19t-22-5L720-420v180q0 33-23.5 56.5T640-160H160Z"
-  readonly property string screenGlyph: "M440-520h80v56q0 7 6 9.5t11-2.5l89-89q6-6 6-14t-6-14l-89-89q-5-5-11-2.5t-6 9.5v56h-80q-50 0-85 35t-35 85v40q0 17 11.5 28.5T360-400q17 0 28.5-11.5T400-440v-40q0-17 11.5-28.5T440-520ZM80-120q-17 0-28.5-11.5T40-160q0-17 11.5-28.5T80-200h800q17 0 28.5 11.5T920-160q0 17-11.5 28.5T880-120H80Zm80-120q-33 0-56.5-23.5T80-320v-440q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v440q0 33-23.5 56.5T800-240H160Z"
   // What records, in the order the bar shows it.
   readonly property var kinds: [
-    { name: "Microphone", on: micActive, glyph: micGlyph, apps: mic },
-    { name: "Camera", on: cameraActive, glyph: cameraGlyph, apps: camera },
-    { name: "Screen", on: screenActive, glyph: screenGlyph, apps: screen }
+    { name: "Microphone", on: micActive, glyph: Symbols.mic, apps: mic },
+    { name: "Camera", on: cameraActive, glyph: Symbols.camera, apps: camera },
+    { name: "Screen", on: screenActive, glyph: Symbols.screenShare, apps: screen }
   ].filter(kind => kind.on)
 
   function unique(values: var): var {

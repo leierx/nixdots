@@ -58,10 +58,6 @@
             dim_around = true;
           }
           {
-            match.namespace = "^quickshell:center$";
-            dim_around = true;
-          }
-          {
             match.namespace = "^quickshell:shortcuts$";
             dim_around = true;
           }

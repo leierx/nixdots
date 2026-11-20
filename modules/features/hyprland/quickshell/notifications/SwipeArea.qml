@@ -1,4 +1,5 @@
 import QtQuick
+import qs.common
 
 MouseArea {
   id: root
@@ -94,7 +95,7 @@ MouseArea {
 
     target: root.target
     property: "x"
-    duration: 220
+    duration: Theme.move
     easing.type: Easing.OutCubic
     onFinished: root.finish()
   }
@@ -105,7 +106,7 @@ MouseArea {
     target: root.target
     property: "x"
     to: 0
-    duration: 200
+    duration: Theme.move
     easing.type: Easing.OutCubic
   }
 }

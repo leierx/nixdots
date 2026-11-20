@@ -44,7 +44,7 @@ ColumnLayout {
       visible: root.overflow
       text: "More"
       expander: true
-      open: root.moreOpen
+      pointing: root.moreOpen ? "up" : "down"
       onClicked: root.moreOpen = !root.moreOpen
     }
   }

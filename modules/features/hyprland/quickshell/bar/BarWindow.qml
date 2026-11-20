@@ -3,7 +3,6 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
 import qs.common
-import qs.controls
 
 PanelWindow {
   id: root

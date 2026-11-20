@@ -76,7 +76,7 @@ Item {
       return "transparent";
     }
     border.width: mine ? 0 : 1
-    border.color: Theme.border
+    border.color: Theme.fgDim
 
     Behavior on color {
       ColorAnimation {
@@ -84,25 +84,10 @@ Item {
       }
     }
 
-    // Played through on the press rather than held while pressed: after a switch the release may not arrive until the pointer moves.
-    SequentialAnimation {
+    Pop {
       id: tap
 
-      NumberAnimation {
-        target: button
-        property: "scale"
-        to: 0.86
-        duration: 70
-        easing.type: Easing.OutQuad
-      }
-
-      NumberAnimation {
-        target: button
-        property: "scale"
-        to: 1
-        duration: 160
-        easing.type: Easing.OutBack
-      }
+      target: button
     }
 
     Text {
@@ -118,7 +103,7 @@ Item {
         if (button.occupied) return root.focused ? Theme.fgStrong : Theme.fgDim;
         return Theme.fgFaint;
       }
-      font: Qt.font({ family: Theme.body.family, pointSize: button.mine ? 10 : 8, weight: button.shown && button.mine ? Font.ExtraBold : Font.Bold })
+      font: button.mine ? Theme.barStrong : Theme.captionHeading
     }
 
     // As tall as the bar and across the gaps either side.

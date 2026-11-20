@@ -81,7 +81,7 @@ Item {
 
     Behavior on height {
       NumberAnimation {
-        duration: 200
+        duration: Theme.move
         easing.type: Easing.OutCubic
       }
     }
@@ -166,7 +166,7 @@ Item {
 
                 ExpanderArrow {
                   anchors.centerIn: parent
-                  open: root.expanded
+                  pointing: root.expanded ? "up" : "down"
                 }
               }
             }

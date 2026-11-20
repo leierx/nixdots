@@ -41,7 +41,7 @@ Item {
     enabled: root.settled
 
     NumberAnimation {
-      duration: 200
+      duration: Theme.move
       easing.type: Easing.OutCubic
     }
   }
@@ -137,7 +137,7 @@ Item {
       enabled: root.settled
 
       NumberAnimation {
-        duration: 200
+        duration: Theme.move
         easing.type: Easing.OutCubic
       }
     }
@@ -189,7 +189,7 @@ Item {
             anchors.centerIn: parent
             text: root.shown.length
             color: Theme.bg
-            font: Qt.font({ family: Theme.body.family, pointSize: 10, weight: Font.Bold })
+            font: Theme.barStrong
           }
         }
       }
@@ -206,7 +206,7 @@ Item {
           enabled: root.settled
 
           NumberAnimation {
-            duration: 200
+            duration: Theme.move
             easing.type: Easing.OutCubic
           }
         }
@@ -275,7 +275,7 @@ Item {
           anchors.horizontalCenter: parent.horizontalCenter
           y: heading.height / 2 - height / 2
           visible: root.expandable
-          open: root.expanded
+          pointing: root.expanded ? "up" : "down"
         }
       }
     }

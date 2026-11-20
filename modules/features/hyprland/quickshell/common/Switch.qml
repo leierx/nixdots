@@ -29,7 +29,7 @@ Rectangle {
 
     Behavior on x {
       NumberAnimation {
-        duration: 200
+        duration: Theme.move
         easing.type: Easing.OutCubic
       }
     }

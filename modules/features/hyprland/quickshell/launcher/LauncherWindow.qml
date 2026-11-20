@@ -51,8 +51,7 @@ Overlay {
     color: Theme.fg
     selectionColor: Theme.accentBg
     selectedTextColor: Theme.accentFg
-    font.family: Theme.body.family
-    font.pointSize: 19
+    font: Theme.search
     // The default cursor blinks; this one stays lit.
     cursorDelegate: Rectangle {
       width: 1
@@ -185,6 +184,18 @@ Overlay {
       onTriggered: list.hovered = -1
     }
 
+    Text {
+      x: 54
+      width: list.width - x
+      height: list.rowHeight
+      verticalAlignment: Text.AlignVCenter
+      visible: list.count === 0
+      text: list.query.trim() !== "" ? "No matches" : list.mode.nothing
+      elide: Text.ElideRight
+      color: Theme.fgDim
+      font: Theme.body
+    }
+
     WheelSteps {
       id: notches
     }
@@ -238,7 +249,7 @@ Overlay {
 
     width: ListView.view.width
     height: row.list.rowHeight
-    radius: Theme.cardRadius
+    radius: Theme.smallRadius
     color: row.current ? Theme.selected : row.index === row.list.hovered ? Theme.hover : "transparent"
 
     MouseArea {
@@ -317,10 +328,9 @@ Overlay {
         entry: row.modelData
       }
 
-      // Material Symbols' keyboard_return; a picture already ends its row.
       Glyph {
         visible: row.current && !row.modelData.thumbnail
-        path: "m272-440 116 116q11 11 11 28t-11 28q-11 11-28 11t-28-11L148-452q-6-6-8.5-13t-2.5-15q0-8 2.5-15t8.5-13l184-184q11-11 28-11t28 11q11 11 11 28t-11 28L272-520h488v-120q0-17 11.5-28.5T800-680q17 0 28.5 11.5T840-640v120q0 33-23.5 56.5T760-440H272Z"
+        path: Symbols.keyboardReturn
         size: 18
         color: Theme.fgDim
       }
@@ -376,6 +386,8 @@ Overlay {
         top: field.bottom
         left: parent.left
         right: parent.right
+        leftMargin: Theme.padding
+        rightMargin: Theme.padding
       }
       height: root.previewing ? 1 : 0
       color: Theme.border
@@ -412,6 +424,8 @@ Overlay {
       Rectangle {
         visible: root.previewing
         Layout.fillHeight: true
+        Layout.topMargin: Theme.padding
+        Layout.bottomMargin: Theme.padding
         implicitWidth: 1
         color: Theme.border
       }

@@ -64,7 +64,7 @@ Item {
     property: "eased"
     from: 0
     to: 1
-    duration: root.settled ? 200 : 0
+    duration: root.settled ? Theme.move : 0
     easing.type: Easing.OutCubic
   }
 
@@ -233,7 +233,7 @@ Item {
 
               ExpanderArrow {
                 anchors.centerIn: parent
-                open: root.open
+                pointing: root.open ? "up" : "down"
               }
             }
           }

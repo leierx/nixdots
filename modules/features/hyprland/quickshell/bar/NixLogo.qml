@@ -21,7 +21,7 @@ BarButton {
       running: false
       from: 0
       to: 120
-      duration: 600
+      duration: Theme.settle
       easing.type: Easing.InOutCubic
     }
   }

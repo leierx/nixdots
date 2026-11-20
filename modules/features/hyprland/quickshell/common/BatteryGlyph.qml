@@ -10,8 +10,6 @@ Item {
   property color color: Theme.fg
   readonly property color fill: charging || level > 0.25 ? Theme.success : level > 0.1 ? Theme.warning : Theme.destructive
   readonly property real line: Math.max(1.5, size / 11)
-  // Material Symbols' bolt, filled
-  readonly property string bolt: "M360-360H236q-24 0-35.5-21.5T203-423l299-430q10-14 26-19.5t33 .5q17 6 25 21t6 32l-32 259h155q26 0 36.5 23t-6.5 43L416-100q-11 13-27 17t-31-3q-15-7-23.5-21.5T328-139l32-221Z"
 
   implicitWidth: Math.round(size * 0.56)
   implicitHeight: size
@@ -47,7 +45,7 @@ Item {
 
       Behavior on height {
         NumberAnimation {
-          duration: 400
+          duration: Theme.settle
           easing.type: Easing.OutCubic
         }
       }
@@ -56,7 +54,7 @@ Item {
     Glyph {
       anchors.centerIn: parent
       visible: root.charging
-      path: root.bolt
+      path: Symbols.bolt
       size: Math.round(root.size * 0.62)
       color: Theme.panel
     }

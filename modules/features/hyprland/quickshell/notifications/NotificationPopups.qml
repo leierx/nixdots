@@ -112,7 +112,7 @@ Variants {
         NumberAnimation {
           property: "x"
           from: list.width
-          duration: 200
+          duration: Theme.move
           easing.type: Easing.OutCubic
         }
       }
@@ -121,21 +121,21 @@ Variants {
         NumberAnimation {
           property: "x"
           to: list.width
-          duration: 200
+          duration: Theme.move
           easing.type: Easing.InCubic
         }
 
         NumberAnimation {
           property: "opacity"
           to: 0
-          duration: 200
+          duration: Theme.move
         }
       }
 
       displaced: Transition {
         NumberAnimation {
           property: "y"
-          duration: 200
+          duration: Theme.move
           easing.type: Easing.OutCubic
         }
       }
