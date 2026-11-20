@@ -373,6 +373,9 @@ Notes on specific features:
         `height` not found"); Qt's attached `Window.height` is typed.
       - Quickshell sorts `SystemTray.items` by category and id, not by when
         they came (`TrayOrder` keeps that).
+      - A picture sent as a bare path (`notify-send -i /file`) reaches
+        Quickshell as a theme icon, `image://icon//file`; `Notifs.picture`
+        reads it as the file.
       - Under a disabled ancestor a `MouseArea`'s own `enabled` still reads
         true, so a cursor bound to it shows a hand: set it explicitly
         (`Button`'s area takes the button's).
@@ -1050,7 +1053,17 @@ Notes on specific features:
     a bind that dispatches a global again on release. `Osd.settling` says it is still
     taking in, for tests.
   - The screenshot binds call one `writeShellApplication` (`scripts/freeze-region.sh`,
-    `copy|save`) that carries its own runtime inputs.
+    `copy|save`) that carries its own runtime inputs, and end with a
+    notification from "Screenshot": the shot as its picture (a `file://` URI) and
+    Papirus' `accessories-screenshot` as the badge (`-n`). A copy says
+    "Screenshot copied to clipboard", its picture kept in
+    `$XDG_RUNTIME_DIR/screenshots` until the next copy, under the stack tag
+    `screenshot`, so a run of copies is one card. A save says "Screenshot
+    saved" with the path (`~` for home), untagged, so each file keeps its own
+    card, with Open (also a click on the card) and Show in Folder
+    (`xdg-open` on the file or its folder), waited on in the background.
+    Escape in slurp sends nothing; a failure sends a critical "Screenshot
+    failed" with why.
   - Binds reference configured packages (`config.programs.wezterm.package`,
     `config.programs.quickshell.package`, …) rather than `pkgs.*`.
   - The HM half reads `osConfig` (compositor package, xkb layout, fprintd,
@@ -1354,7 +1367,7 @@ what `qst backlight` appends.
 the session's copy of the shell (never the built one): the open panel, the
 screens and the Hyprland monitor each resolves to, the focused monitor,
 workspaces with the label the bar gives them and their window count, windows, and every popup with
-the screen it is on, the notification `history` (app and summary, popped up, hovered, checked, `restored` from disk and the
+the screen it is on, the notification `history` (app and summary, popped up, hovered, checked, `restored` from disk, its picture and the
 pictures `kept`, newest
 first), `dnd` and `unchecked`, the volume (percent, muted, output), the default `input` and the
 `microphone` (percent, muted, `adjustable`, the input, every input by name),
@@ -1407,7 +1420,7 @@ line says why after `# sleep: `. `hotplug.sh` covers unplugging, disabling and
 replugging under every panel, a tray menu and popups, every monitor going,
 bursts and mode changes; `notifications.sh` the history: three per app once
 their popups go, the five-popup limit, stack tags replacing in place, and Do
-Not Disturb with transient and critical notifications, and what the bell counts, and a flood's sounds and repeats; `workspaces.sh` windows opened while the shell starts; `osd.sh` what shows and what must not
+Not Disturb with transient and critical notifications, and what the bell counts, and a flood's sounds and repeats, and a picture sent as a bare path; `workspaces.sh` windows opened while the shell starts; `osd.sh` what shows and what must not
 (the shell starting, PipeWire restarting, a switch's new level, an unplugged
 default, the popup open, backlights coming and going, the media keys at a
 level's end, Caps Lock both ways, its monitor going); `privacy.sh` microphones

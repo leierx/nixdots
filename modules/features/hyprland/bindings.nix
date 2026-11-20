@@ -46,6 +46,8 @@ root: {
           grim
           wl-clipboard
           coreutils
+          libnotify
+          xdg-utils
         ];
         text = ''
           screenshot_dir=${lib.escapeShellArg "${config.xdg.userDirs.pictures}/screenshots"}

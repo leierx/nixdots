@@ -250,3 +250,41 @@ qst ipc panels open apps > /dev/null
 qst wait '.panel == "apps"'
 qst key Return
 qst wait '.panel == ""'
+
+qst case "the idle dim's calls in any order, hundreds at once, still end where the last left them"
+idle_layers() { echo "(.layers | map(select(endswith(\" quickshell:idle\"))) | length) == $1"; }
+calls=("fade 1 0.4" "fade 3 0.4" cancel hold locked unlocked)
+for burst in $(seq 6); do
+  for n in $(seq 30); do
+    # shellcheck disable=SC2086
+    qst ipc idle ${calls[RANDOM % ${#calls[@]}]} > /dev/null &
+  done
+  wait
+done
+qst ipc idle unlocked
+qst wait "$(idle_layers 0)"
+qst ipc idle fade 1 0.4
+qst wait "$(idle_layers 2)"
+qst ipc idle locked
+qst wait "$(idle_layers 0)"
+
+qst case "a burst of saved screenshots keeps three cards and no notify-send waiting for the rest"
+picture=$QS_TEST_REPO/modules/features/hyprland/tests/tray-icon.svg
+for n in $(seq 20); do
+  notify-send -a Screenshot -n accessories-screenshot -i "file://$picture" -A default=Open -A open=Open -A "folder=Show in Folder" "Screenshot saved" "~/Pictures/screenshots/$n.png" > /dev/null &
+done
+qst wait '(.history | length) >= 5' 10
+qst ipc notifications hidePopups
+qst wait '(.history | length) == 3 and (.popups | length) == 0' 10
+# Each closed card ends its notify-send; only the three kept still wait for an action.
+for _ in $(seq 50); do [ "$(jobs -pr | wc -l)" -le 3 ] && break; qst stays true 0.1; done
+[ "$(jobs -pr | wc -l)" -le 3 ]
+qst ipc notifications clear
+wait
+
+qst case "a run of copied screenshots is one card"
+for n in $(seq 30); do
+  notify-send -a Screenshot -n accessories-screenshot -i "file://$picture" -h string:x-canonical-private-synchronous:screenshot "Screenshot copied to clipboard" "$n"
+done
+qst wait '(.history | length) == 1 and (.popups | length) == 1'
+qst stays '(.history | length) == 1' 1

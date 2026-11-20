@@ -89,3 +89,8 @@ qst wait '(.history | map(select(.app == "Echo")) | length) == 1 and (.history |
 took=$((($(date +%s%N) - start) / 1000000))
 sounds=$(qst actions | grep -c '^pw-play' || true)
 [ "$sounds" -le $((took / 300 + 1)) ] || { echo "$sounds sounds in $took ms"; exit 1; }
+
+qst case "a picture sent as a bare path, as notify-send -i /file sends it, draws as that file"
+picture=$QS_TEST_REPO/modules/features/hyprland/tests/tray-icon.svg
+notify-send -a Screenshot -n accessories-screenshot -i "$picture" "Screenshot saved"
+qst wait "(.popups | length) == 1 and .history[0].image == \"file://$picture\""

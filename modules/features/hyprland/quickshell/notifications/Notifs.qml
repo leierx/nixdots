@@ -173,9 +173,10 @@ Singleton {
     return iconSource(notification.appIcon) || (notification.appName ? iconSource(DesktopEntries.heuristicLookup(root.clip(notification.appName, root.maxApp))?.icon) : "");
   }
 
-  // A theme icon the theme lacks would draw nothing where the app's icon or initial should be.
+  // A theme icon the theme lacks would draw nothing where the app's icon or initial should be; a bare path (notify-send -i /file) comes as one.
   function picture(source) {
     const icon = /^image:\/\/icon\/(.+)$/.exec(source);
+    if (icon && icon[1].startsWith("/")) return `file://${icon[1]}`;
     return icon && !Quickshell.hasThemeIcon(icon[1]) ? "" : source;
   }
 
