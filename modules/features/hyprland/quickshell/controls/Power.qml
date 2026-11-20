@@ -6,18 +6,14 @@ import Quickshell.Services.UPower
 
 // UPower's display device combines the laptop batteries and leaves out mice and UPSes.
 Singleton {
-  property var fake: null
-
   readonly property UPowerDevice device: UPower.displayDevice
   // Until UPower has answered, its values are zeros.
-  readonly property bool present: fake !== null || (device.ready && device.isLaptopBattery && device.isPresent)
-  readonly property int percent: fake?.percent ?? Math.round(device.percentage * 100)
-  readonly property bool plugged: fake?.plugged ?? !UPower.onBattery
-  readonly property bool charging: fake ? fake.plugged && fake.percent < 100 : device.state === UPowerDeviceState.Charging
+  readonly property bool present: device.ready && device.isLaptopBattery && device.isPresent
+  readonly property int percent: Math.round(device.percentage * 100)
+  readonly property bool plugged: !UPower.onBattery
+  readonly property bool charging: device.state === UPowerDeviceState.Charging
   // Seconds until empty on battery, or until full while charging; 0 while UPower is still estimating.
-  readonly property real remaining: fake ? (fake.plugged ? 4200 : 9600) : charging ? device.timeToFull : plugged ? 0 : device.timeToEmpty
-  readonly property bool low: !plugged && percent <= 25
-  readonly property bool critical: !plugged && percent <= 10
+  readonly property real remaining: charging ? device.timeToFull : plugged ? 0 : device.timeToEmpty
 
   function duration(seconds: real): string {
     const minutes = Math.round(seconds / 60);

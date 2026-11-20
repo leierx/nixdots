@@ -12,14 +12,6 @@ Scope {
   IpcHandler {
     target: "bar"
 
-    function fakeBattery(percent: int, plugged: bool): void {
-      Power.fake = { percent, plugged };
-    }
-
-    function fakeVolume(percent: int, muted: bool): void {
-      Volume.fake = { volume: percent / 100, muted, current: 0, devices: ["Speakers", "Headphones", "HDMI / DisplayPort"] };
-    }
-
     // COUNT outputs, the one in use well down the list and some with hostile names, as no real sound server would have.
     function fakeOutputs(count: int): void {
       const names = Array.from({ length: count }, (_, i) => i === 3 ? "A sink with a name a kilobyte long ".repeat(30) : i === 5 ? "Right\u202eto left\nand two lines\u200b" : `Output ${i + 1}`);
@@ -28,10 +20,6 @@ Scope {
 
     function realVolume(): void {
       Volume.fake = null;
-    }
-
-    function realBattery(): void {
-      Power.fake = null;
     }
   }
 
