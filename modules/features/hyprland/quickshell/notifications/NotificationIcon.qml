@@ -6,7 +6,7 @@ Item {
   id: root
 
   required property NotifEntry entry
-  property string image: entry?.notification.image ?? ""
+  property string image: entry?.image ?? ""
   property int size: 40
   property real radius: size / 2
 

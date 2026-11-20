@@ -42,8 +42,7 @@ qst stays "$(layer "DP-1 quickshell:launcher") and .panel == \"apps\""
 
 qst case "a tray menu closes with its monitor"
 qst tray
-qst wait '.layers | length > 0'
-sleep 1
+qst wait '.tray | length > 0'
 # The tray's icon on DP-2's bar, 2560 / 1.25 wide: last on the bar, 31 px in from its edge.
 qst click right $((1920 + 2048 - 31)) 20
 qst wait "$(layer "DP-2 quickshell:menu") and .panel == \"tray:DP-2\""

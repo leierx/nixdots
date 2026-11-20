@@ -1078,6 +1078,12 @@ nix fmt                  # formatter = nixfmt-tree
   from `--json`, since the text output drops some files' warnings while still
   failing. Fix what it finds; where qmllint is wrong, a
   `// qmllint disable <category>` … `enable` pair around the lines.
+  It then runs `qs-design-lint` (`scripts/qs-design-lint.sh`), the design
+  standards as far as the source shows them: a colour that is not Theme's
+  (a literal, `Qt.rgba`, a `Qt.tint` of anything but Theme), a radius typed
+  out, a `ColorAnimation` over anything but `Theme.fade`, one inline
+  component name in two files or shadowing one in `common/`, and `flatMap`.
+  What a file does on purpose is listed in the script with why.
 - `checks.<system>.notification-markup` (Linux) — `qmltestrunner` over
   `tests/tst_markup.qml`: what the notification body filter
   (`notifications/markup.js`) keeps, drops and escapes.
@@ -1152,7 +1158,14 @@ qst pipewire restart           # or stop, start
 qst backlight intel_backlight 40 [MAX]   # set a fake backlight and announce it, until the shell has it; `NAME remove` unplugs
 qst camera open zoom [video1]  # a process named zoom holding a fake camera open; `close zoom`, `add video1`, `remove video0`
 qst sync                       # copy edited QML in, restart qs, print its warnings; non-zero if it fails to load
-qst problems                   # warnings and errors, less the expected ones
+qst problems                   # warnings and errors, less tests/known-warnings and this case's `expect`s
+qst census                     # what the probe finds wrong on screen now (see below)
+qst areas [REGEX]              # mouse areas and hovered items on screen by label (WINDOW/Type), in layout coordinates: x, y, label, enabled, clicks, hand
+qst cursor 960 21 [hand]       # the cursor Qt sets there, and the item behind it when that changed; fails if not the one given
+qst cursors [WINDOW]           # every enabled area there that takes a click and asks for a hand gets one (BarWindow, LauncherWindow, …)
+qst motion start               # record every visible item each frame; `motion stop` prints what moved, failing on a jump
+qst fail cliphist exit         # the shell's cliphist fails (or crash, missing, garbage) until `fail cliphist off` or a reset
+qst expect [--may] 'hyprmoncfg'   # this case must (or may) log a warning matching it
 qst actions                    # what the session tried to run on the machine
 qst lint                       # the qmllint check, on the checkout
 qst down                       # kills everything the session started; deletes it and the test shell's state
@@ -1201,8 +1214,20 @@ what `qst backlight` appends.
   slow `qst drag` and shoot while it runs.
 - Shots sometimes carry thin grey lines at fixed places across the
   layout: capture artifacts of the headless outputs, not the shell.
-- Animation: background `qst x grim -s 0.25 <file>` shots about 35 ms apart, then
+- Animation: `qst motion start` and `stop` around what moves. Frames for
+  the eye: background `qst x grim -s 0.25 <file>` shots about 35 ms apart, then
   `md5sum` to see which frames settled.
+- Every window in the copy gets a `ProbeWindow` (`tests/ProbeWindow.qml`)
+  naming the file it is declared in (`BarWindow`, `LauncherWindow`, an
+  `Overlay`'s own file over `common/Overlay`) as it is copied in, since
+  Quickshell lists no windows and its scopes' children cannot be read from
+  JavaScript; the probe walks their items, and labels them `File/Type`.
+- One `qst` at a time per `QS_TEST_DIR`: two runs in one session restart
+  each other's qs and PipeWire, and leave a stale one holding its socket.
+- A `fail`ed tool stays failing until `fail TOOL off`, a reset or the end
+  of `run`; `off` only undoes what `fail` did.
+- qs logs Qt's `qt.quick.hover.cursor` category in the session, which names
+  the item behind each cursor change; `cursor` and `cursors` read it.
 - Never `pgrep -f <pattern> | xargs kill`: the pattern is in the calling
   shell's own command line. `qst down` finds the session's processes by its
   runtime dir and D-Bus address in their environment.
@@ -1219,18 +1244,42 @@ the screen it is on, the notification `history` (app and summary, newest
 first), `dnd` and `unchecked`, the volume (percent, muted, output), the default `input`,
 the `osd` showing (with its screen), `osdShown` (shows so far) and
 `osdSettling`, `brightness`, `caps`, `privacy` (`mic` names, and `screen` and
-`camera` names or null while unused) and `caffeine`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
+`camera` names or null while unused), `caffeine`, `tray` (the items' ids), `field`
+(the text field up, the launcher's search) and `problems`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.
 `wait`, `stays` and `state` fail with "qs is not running" once qs has
 crashed, and `problems` says so too.
+
+Every snapshot also checks the shell as a whole, so each scenario checks it
+at every step. `problems` is the probe's census of every window: text with no
+room left (it vanished) or under 8 pt, text below 3:1 against what is behind
+it (Theme's faint colour and fading text aside), colours and radii that are
+not Theme's (or half the size), an image shown without a source or failing
+to load, a disabled mouse area still setting a hand, a card running off its
+window, and a window that is not a layer surface. `invariants`
+(`tests/invariants.jq`): an open panel has its layer and a layer its panel,
+nothing on `FALLBACK`, popups only on real screens and five at most, hovered
+only while popped up and one at a time, three per app past the popped up,
+unchecked within the count, and a countdown never going back up without
+popping up again. `wait` and `stays` fail on one that lasts 500 ms, since a
+transition passes through some for a frame or two, and on the countdown at once.
+What a type draws to its own scale is in the probe's `ownShapes`.
+
+A case fails on any warning qs logs during it, less `tests/known-warnings`
+(a regex, a tab and why: the session's environment, and Qt's ShaderEffect
+warning on a scale change, quickshell#1530, until a fix lands) and what the case itself
+`expect`s, which must then come; `pipewire stop` and `restart` expect
+PipeWire's own. qs-test also fails a start where an `IpcHandler` target
+in the source is not registered.
 
 `tests/scenarios/*.sh` are regression tests, run by `qst run` in the session
 (`notify-send` and `hyprctl` reach the test's, `qst` is on PATH) under
 `set -euo pipefail`. Each `qst case "what should happen"` prints the case and
 resets; the file sets `QS_TEST_MONITORS` for its cases, and stops at its first
 failure with the case named and the state that failed. Assert with `wait`
-and `stays`, never `sleep`. `hotplug.sh` covers unplugging, disabling and
+and `stays`, never `sleep`: `run` refuses a scenario that sleeps unless the
+line says why after `# sleep: `. `hotplug.sh` covers unplugging, disabling and
 replugging under every panel, a tray menu and popups, every monitor going,
 bursts and mode changes; `notifications.sh` the history: three per app once
 their popups go, the five-popup limit, stack tags replacing in place, and Do
@@ -1242,7 +1291,15 @@ real and virtual, meters, sink monitors, PipeWire going and coming back,
 screen casts, cameras through PipeWire and held from `/dev` (a short probe,
 PipeWire's own hold, one plugged in later, one unplugged in use);
 `caffeine.sh` the unit started and stopped from the shell and elsewhere, the bar's cup turning it off, and
-a shell restart. Behaviour that broke once gets a case; check that
+a shell restart. `design.sh` brings every panel, the bar, popups of
+every kind, a tray menu, the volume popup, the OSD and the privacy tooltip
+on screen, on a scaled monitor too, for the census; `cursors.sh` sweeps the
+bar and every panel and checks a closed hand mid-drag; `binds.sh` presses
+every bind that dispatches a global and checks each opens a panel of its
+own and closes it; `launcher.sh` types as the launcher opens on a fresh
+shell and times the open; `failures.sh` makes the shell's tools fail (`qst
+fail`); `motion.sh` expands and collapses a center group and fades the OSD
+under `qst motion`. Behaviour that broke once gets a case; check that
 the case fails without the fix (a `git worktree` of `HEAD` with the new
 `tests/` copied in, run with `QS_TEST_REPO` pointing at it).
 

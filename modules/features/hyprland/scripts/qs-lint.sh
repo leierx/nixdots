@@ -58,4 +58,7 @@ jq -r --arg work "$work/" '
   | .warnings[] | select(.type != "info")
   | "\($file):\(.line // 0):\(.column // 0): \(.message) [\(.id // .type)]"
 ' "$work/lint.json"
+
+# The design standards in AGENTS.md, as far as the source shows them.
+qs-design-lint "$work/qs" || status=1
 exit "$status"

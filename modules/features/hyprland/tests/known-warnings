@@ -1,0 +1,7 @@
+# Warnings no case fails on: an extended regex, a tab, and why. A case expecting one of its own says so with `qst expect`.
+UPower	the session's qs reaches the real system bus, where a desktop has no UPower
+qt\.qpa\.services	Qt's portal lookups on the session's own D-Bus, which has no portal
+Could not register app ID	the session's own D-Bus has no portal to register with
+qt\.qpa\.wayland\.textinput	labwc offers no text-input protocol to the nested Hyprland
+removal for monitor ".*" which was not previously tracked	Quickshell, for FALLBACK or a monitor a refresh dropped in a burst
+ShaderEffect: 'source' does not have a matching property	Qt polishes a ShaderEffect before componentComplete when a window changes scale (quickshell#1530); delete this line once Qt or Quickshell fixes it

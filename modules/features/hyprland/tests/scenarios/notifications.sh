@@ -69,3 +69,13 @@ qst wait '(.popups | map(.summary)) == ["top", "middle"]' 4
 qst stays '(.popups | map(.summary)) == ["top", "middle"]' 2
 qst pointer 900 600
 qst wait '(.popups | length) == 0' 4
+
+qst case "a popup put away under the pointer is no longer held"
+notify-send -t 0 -a Chat "under the pointer"
+qst wait '(.popups | length) == 1'
+read -r x y _ < <(qst areas 'NotificationPopups/SwipeArea' | head -1)
+qst pointer "$x" "$y"
+qst pointer $((x + 2)) $((y + 2))
+qst wait '.popups[0].hovered'
+qst ipc notifications hidePopups
+qst stays '(.popups | length) == 0' 1

@@ -44,7 +44,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: 8
         height: 8
-        radius: 4
+        radius: height / 2
         color: Theme.recording
 
         SequentialAnimation on opacity {
