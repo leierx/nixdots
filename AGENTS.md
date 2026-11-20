@@ -1328,7 +1328,8 @@ every bind that dispatches a global and checks each opens a panel of its
 own and closes it; `launcher.sh` types as the launcher opens on a fresh
 shell and times the open; `failures.sh` makes the shell's tools fail (`qst
 fail`); `motion.sh` expands and collapses a center group and fades the OSD
-under `qst motion`. `history.sh` restarts the shell over a history
+under `qst motion`. `idle.sh` runs the idle fade on two monitors under
+`qst motion`, clicks the bar through it and cancels it. `history.sh` restarts the shell over a history
 with a picture only the server held (sent by `gdbus`), clears it and finds
 the saved pictures gone, starts on a damaged file and keeps transient ones
 out; the probe's `historyFile` and `historyImages` are where it looks. Behaviour that broke once gets a case; check that
