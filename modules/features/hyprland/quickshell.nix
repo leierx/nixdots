@@ -317,6 +317,12 @@ in
           exec ${qtdeclarative}/bin/qml ${tray}/tray.qml
         '';
 
+      # notifications by the thousand, faster than one notify-send each
+      qsFlood = pkgs.writers.writePython3Bin "qs-flood" {
+        libraries = [ pkgs.python3Packages.jeepney ];
+        flakeIgnore = [ "E501" ];
+      } (builtins.readFile ./scripts/qs-flood.py);
+
       qsTest = pkgs.writeShellApplication {
         name = "qs-test";
         runtimeInputs = with pkgs; [
@@ -326,6 +332,9 @@ in
           qsLint
           qsInput
           qsTray
+          qsFlood
+          # a light window, dozens of which crowd a workspace
+          foot
           cameraUsers
           backlightWatch
           pipewire

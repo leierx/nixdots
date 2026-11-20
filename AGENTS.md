@@ -370,6 +370,13 @@ Notes on specific features:
         line's height is a `FontMetrics`' `height`.
       - qmllint types `QsWindow.window` as a plain `QObject` ("Member
         `height` not found"); Qt's attached `Window.height` is typed.
+      - A `ShellScreen` dangles while its monitor goes, and every binding
+        still reading it logs "attempted to use dangling screen object": a
+        window per screen takes its name once, in `Component.onCompleted`.
+      - Past a couple of dozen windows on a workspace Hyprland tiles some to
+        negative sizes, and capturing one makes Wayland kill the shell
+        (`wl_shm_pool` "Invalid stride"): no `ScreencopyView` of a window
+        Hyprland reports smaller than nothing.
       - A `Singleton` is created on first use, so an `IpcHandler` in one
         nothing has read yet does not exist, and `qs ipc` answers a missing
         target with "Target not found." and exit status 0.
@@ -606,7 +613,8 @@ Notes on specific features:
         before the first frame arrives, outlined, since a dark window on the dark
         card has no edge of its own. A window on a hidden workspace shows its
         last frame. Quickshell can only capture it through Hyprland's toplevel
-        export; elsewhere it shows the app's icon.
+        export; elsewhere, and for a window Hyprland has squeezed below
+        nothing, it shows the app's icon.
     - `shortcuts/` is the keyboard shortcuts window (SUPER+?, bound as
       SUPER+SHIFT+plus since Hyprland matches binds on the unshifted key; as GTK apps
       use Ctrl+?), GTK's shortcuts window in groups balanced over up to three
@@ -706,7 +714,8 @@ Notes on specific features:
         libadwaita's popover: a mute button, a slider (dragged, clicked or
         wheeled), and the outputs, the one in use ticked, a click making
         another `Pipewire.preferredDefaultAudioSink`; its rows are the tray
-        menu's (32 px, `Theme.smallRadius`, `Theme.border` rules). A node's volume only
+        menu's (32 px, `Theme.smallRadius`, `Theme.border` rules), and scroll
+        past what the screen leaves room for. A node's volume only
         arrives while a `PwObjectTracker` holds it. `qs ipc -c shell call bar
         fakeVolume 64 false` stands in for a sound server with three outputs,
         `realVolume` drops it.
@@ -734,7 +743,8 @@ Notes on specific features:
         screen_share). Hovering it for 250 ms opens `PrivacyTooltip`, a card
         under it (a click-through layer of its own on the bar's screen, since a
         `PopupWindow` there lands off by the monitor's x times
-        `QT_SCALE_FACTOR` - 1, 512 px on a monitor at x 2560) listing each kind with the apps, named and
+        `QT_SCALE_FACTOR` - 1, 512 px on a monitor at x 2560) listing each kind with the apps (five, then
+        "and 12 more", each name elided), named and
         iconed from their desktop entries (`DesktopEntries.heuristicLookup`, so
         a `firefox` process reads as Firefox). `Privacy` is the backend:
         - Microphone: a PipeWire link into a capture stream
@@ -803,7 +813,8 @@ Notes on specific features:
       the card has eased down to the height it will have (what the text loses
       worked out from its line counts), then elides it; the arrow by the title is only a sign of it. The image is the picture, the app's icon a badge on
       it unless the picture is that icon, or without one the app's icon (its
-      initial when it has none) on a plate (`NotificationIcon`, shared with
+      initial when it has none; a picture or icon that fails to load gives way
+      to what comes after it) on a plate (`NotificationIcon`, shared with
       the center). A click on one with more to show (a cut-off title or body)
       expands it and a second click collapses it, as in the center, so a
       long one's click never runs its action; a click otherwise runs the
@@ -822,13 +833,22 @@ Notes on specific features:
       either moves it first, pops it up again on the focused monitor, and
       plays its sound only when it pops up anew. So does the same app, summary and body
       again within 2 s, so an app repeating itself is one card; and a burst
-      plays a sound at most every 300 ms, a critical one aside. Past five popups the newest
+      plays a sound at most every 300 ms, critical ones counted apart. A
+      flood is turned away at the door: past 30 new notifications a second
+      (critical ones counted apart; an update in place by tag is none), the
+      rest are expired untracked, which costs next to nothing, the flood is
+      silent, and once it has stopped for 2 s one card from "Notifications"
+      says how many were dropped and from whom. Summaries past 500
+      characters, bodies past 5000 and app names past 100 are cut before
+      anything lays them out, since a megabyte of text held the shell for
+      seconds. Past five popups the newest
       always shows, the oldest go first, and critical or never-expiring ones
       last; one past the screen's edge waits out of sight, its timeout held,
       until there is room, and the window's input region is the cards alone,
       so the gaps between them click through. Like GNOME, each app keeps its
       newest three notifications (one still popped up stays until its popup
-      goes), and a reload of the shell lists the notifications it hands over
+      goes), and past 100 in all the oldest go, so a flood from many apps
+      costs no more than one from a few; a reload of the shell lists the notifications it hands over
       again without popping them up.
       Like GNOME, while the focused window is fullscreen (Wayland's
       foreign-toplevel state, so maximised windows don't count) only critical
@@ -1185,6 +1205,7 @@ qst stays '.panel == "apps"' 2 # fail if it stops holding within 2 s (1)
 qst reset                      # QS_TEST_MONITORS again with ids from 0, no windows, a fresh qs without state
 qst run                        # sync, then every tests/scenarios/*.sh; `qst run FILE` for one
 qst key super+Return           # real windows, for workspaces and the window switcher
+qst flood 3000 --urgency 2     # notifications by the thousand over D-Bus (--apps N, --summary/--body LENGTH, --rate N)
 qst tray                       # a tray item (a yellow star) with nested submenus (tests/tray.qml); `qst tray log` shows what it was told
 qst x notify-send -a Discord loft01 hello   # anything else, inside the session (hyprctl talks to the test Hyprland)
 qst x wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.3   # the session's own PipeWire
@@ -1292,12 +1313,15 @@ room left (it vanished) or under 8 pt, text below 3:1 against what is behind
 it (Theme's faint colour and fading text aside), colours and radii that are
 not Theme's (or half the size), an image shown without a source or failing
 to load, a disabled mouse area still setting a hand, a card running off its
-window, and a window that is not a layer surface. `invariants`
+window, text drawn over other text (where the glyphs are, cut by clipping
+ancestors), and a window that is not a layer surface. `invariants`
 (`tests/invariants.jq`): an open panel has its layer and a layer its panel,
 nothing on `FALLBACK`, popups only on real screens and five at most, hovered
 only while popped up and one at a time, three per app past the popped up,
-unchecked within the count, and a countdown never going back up without
-popping up again. `wait` and `stays` fail on one that lasts 500 ms, since a
+unchecked within the count, the history within 100 and five popups, a
+probe answered within 2 s (a shell held up by a flood or a list rebuilt over
+and over is a frozen desktop; this one fails at once), and a countdown never
+going back up without popping up again. `wait` and `stays` fail on one that lasts 500 ms, since a
 transition passes through some for a frame or two, and on the countdown at once.
 What a type draws to its own scale is in the probe's `ownShapes`.
 
@@ -1306,8 +1330,10 @@ A case fails on any warning qs logs during it, less `tests/known-warnings`
 warning on a scale change, quickshell#1530, until a fix lands) and what the case itself
 `expect`s, which must then come (once, though a restart in the case
 starts a new log); `pipewire stop` and `restart` expect
-PipeWire's own. qs-test also fails a start where an `IpcHandler` target
-in the source is not registered.
+PipeWire's own. It also fails where qs peaked past `QS_TEST_PEAK` MiB
+(1024; read from `VmHWM`, as every case starts a qs of its own). qs-test
+also fails a start where an `IpcHandler` target in the source is not
+registered.
 
 `tests/scenarios/*.sh` are regression tests, run by `qst run` in the session
 (`notify-send` and `hyprctl` reach the test's, `qst` is on PATH) under
@@ -1340,7 +1366,16 @@ under `qst motion`. `idle.sh` runs the idle fade on two monitors under
 `qst motion`, clicks the bar through it and cancels it. `history.sh` restarts the shell over a history
 with a picture only the server held (sent by `gdbus`), clears it and finds
 the saved pictures gone, starts on a damaged file and keeps transient ones
-out; the probe's `historyFile` and `historyImages` are where it looks. Behaviour that broke once gets a case; check that
+out; the probe's `historyFile` and `historyImages` are where it looks.
+`chaos.sh` is what a hostile or broken client throws: floods of critical
+notifications and of thousands of apps (`qst flood`, `qs-flood` over D-Bus
+at thousands a second, where notify-send manages a hundred), megabytes of
+text, icons that are no picture, panels toggled faster than they open, a
+hotplug storm under an open panel, a workspace of 40 windows (`foot`), 60
+outputs, 40 apps recording and damaged state files. `interactions.sh`
+holds fixes that had no case: a long popup's two clicks, the wheel over a
+level past 100 %, a picked clip's scope, every panel on a 1024x600 screen
+and Power Off's second press. Behaviour that broke once gets a case; check that
 the case fails without the fix (a `git worktree` of `HEAD` with the new
 `tests/` copied in, run with `QS_TEST_REPO` pointing at it).
 

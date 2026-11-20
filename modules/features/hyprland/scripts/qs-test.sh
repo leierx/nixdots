@@ -46,6 +46,7 @@ usage: qs-test COMMAND
   camera open|close NAME [DEV]  a process named NAME holding a fake camera (video0) open; add|remove DEV
   spawn CMD...          start CMD in the session, detached (output in spawn.log)
   tray [log]            add a test tray item with submenus (tests/tray.qml), or show what it was told
+  flood COUNT [OPTIONS] COUNT notifications as fast as the bus takes them (qs-flood --help)
   x CMD...              run CMD in the session (notify-send, hyprctl, ...)
 
   log                   qs's whole log
@@ -115,11 +116,16 @@ problems() {
 
 # A case fails on any warning it caused, and on a `qst expect` that never came.
 case_check() {
-  local found mark name
+  local found mark name pid peak
   [ -s "$T/case" ] || return 0
   name=$(cat "$T/case")
   mark=$(cat "$T/case-mark" 2> /dev/null || echo 1)
   found=$(problems "$mark")
+  # Peak, as every case starts a qs of its own: a flood or a list built over and over shows here first.
+  for pid in $(testqs); do
+    peak=$(awk '/VmHWM/ { print int($2 / 1024) }' "/proc/$pid/status" 2> /dev/null || echo 0)
+    [ "${peak:-0}" -le "${QS_TEST_PEAK:-1024}" ] || found+=$'\n'"qs peaked at $peak MiB, past the ${QS_TEST_PEAK:-1024} MiB a case may take"
+  done
   if [ -s "$T/expected" ]; then
     # One that came stays allowed, but need not come again in the log a restart starts.
     while IFS=$'\t' read -r kind pattern; do
@@ -613,13 +619,15 @@ alive() { [ -n "$(testqs)" ]; }
 
 # The probe's view of the shell, plus Hyprland's layers ("DP-1 quickshell:bar") and monitors.
 snapshot() {
-  local probe layers monitors json
+  local probe layers monitors json started answered
   enter
   alive || die "qs is not running: it crashed or failed to load, see qs-test log"
+  started=$(date +%s%N)
   probe=$(timeout 5 qs ipc -p "$T/shell" call probe state) || die "the probe did not answer, see qs-test log"
+  answered=$((($(date +%s%N) - started) / 1000000))
   layers=$("$HC" layers -j | jq -c '[to_entries[] | .key as $m | .value.levels[][] | "\($m) \(.namespace)"]')
   monitors=$("$HC" monitors all -j | jq -c 'map({ name, id, disabled, x, y, width, height, scale, focused })')
-  json=$(jq -c --argjson layers "$layers" --argjson hypr "$monitors" '. + { layers: $layers, hypr: $hypr }' <<< "$probe")
+  json=$(jq -c --argjson layers "$layers" --argjson hypr "$monitors" --argjson answered "$answered" '. + { layers: $layers, hypr: $hypr, answered: $answered }' <<< "$probe")
   [ -s "$T/countdowns.json" ] || echo '[]' > "$T/countdowns.json"
   json=$(jq -c --slurpfile before "$T/countdowns.json" -f "$tests/invariants.jq" <<< "$json")
   jq -c '.popups' <<< "$json" > "$T/countdowns.json"
@@ -957,6 +965,7 @@ case $cmd in
   backlight) need_up; [ $# -ge 2 ] || die "backlight NAME VALUE [MAX], or NAME remove"; backlight "$@" ;;
   camera) need_up; enter; camera "$@" ;;
   spawn) need_up; enter; setsid "$@" >> "$T/spawn.log" 2>&1 < /dev/null & ;;
+  flood) need_up; enter; qs-flood "$@" ;;
   tray)
     need_up
     if [ "${1:-}" = log ]; then

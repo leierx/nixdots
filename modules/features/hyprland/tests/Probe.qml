@@ -114,10 +114,39 @@ Scope {
     return color;
   }
 
+  // Where an item's glyphs are drawn in its window, cut to what its clipping ancestors show.
+  function inked(item: var): var {
+    const align = item.effectiveHorizontalAlignment;
+    const x = align === Text.AlignRight ? item.width - item.paintedWidth : align === Text.AlignHCenter ? (item.width - item.paintedWidth) / 2 : 0;
+    const y = item.verticalAlignment === Text.AlignBottom ? item.height - item.paintedHeight : item.verticalAlignment === Text.AlignVCenter ? (item.height - item.paintedHeight) / 2 : 0;
+    // A line's box holds its ascent and leading above the glyphs, which a large one lays over the line above.
+    const room = item.paintedHeight * 0.2;
+    // Both corners mapped, as a window drawn scaled down (the shortcuts window on a small screen) scales its items too.
+    const from = item.mapToItem(null, x, y + room);
+    const to = item.mapToItem(null, x + item.paintedWidth, y + item.paintedHeight - room);
+    let box = { left: from.x, top: from.y, right: to.x, bottom: to.y };
+    for (let clip = item.parent; clip; clip = clip.parent) {
+      if (!clip.clip) continue;
+      const near = clip.mapToItem(null, 0, 0);
+      const far = clip.mapToItem(null, clip.width, clip.height);
+      box = { left: Math.max(box.left, near.x), top: Math.max(box.top, near.y), right: Math.min(box.right, far.x), bottom: Math.min(box.bottom, far.y) };
+    }
+    return box;
+  }
+
   // What should never be on screen, in whatever state the shell is in.
   function census(): var {
     const problems = [];
     for (const entry of windows()) {
+      // Text drawn over other text: a crowded bar running into its clock, a label under a badge.
+      const texts = entry.items.filter(({ item, opacity }) => isText(item) && String(item.text).trim() !== "" && opacity > 0.99 && !(entry.type in ownShapes || ancestorTypes(item).some(name => name in ownShapes))).map(({ item }) => ({ item, box: inked(item) }));
+      for (let i = 0; i < texts.length; i++) {
+        for (let j = i + 1; j < texts.length; j++) {
+          const a = texts[i].box;
+          const b = texts[j].box;
+          if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 3 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 3) problems.push(`${label(entry, texts[i].item)} and ${label(entry, texts[j].item)} are drawn over each other`);
+        }
+      }
       const width = entry.window.width;
       const height = entry.window.height;
       if (!("exclusionMode" in entry.window)) problems.push(`${entry.type} is not a layer surface: a popup window lands off on any monitor not at x 0`);
@@ -321,7 +350,7 @@ Scope {
         })),
         popups: Notifs.popups.map(e => ({
           id: e.notification?.id ?? null,
-          summary: e.notification?.summary ?? null,
+          summary: e.summary ?? null,
           screen: e.screen,
           hovered: e.hovered,
           waiting: e.waiting,
@@ -329,7 +358,7 @@ Scope {
           remaining: e.remaining ?? null
         })),
         notifications: Notifs.entries.length,
-        history: Notifs.entries.map(e => ({ app: Notifs.appKey(e), summary: e.notification?.summary ?? null, popup: e.popup, hovered: e.hovered, checked: e.checked, restored: e.restored ?? false, kept: Object.keys(e.kept ?? {}) })),
+        history: Notifs.entries.map(e => ({ app: Notifs.appKey(e), summary: e.summary ?? null, popup: e.popup, hovered: e.hovered, checked: e.checked, restored: e.restored ?? false, kept: Object.keys(e.kept ?? {}) })),
         historyFile: Quickshell.statePath("notification-history.json"),
         historyImages: History.images,
         dnd: Notifs.dnd,

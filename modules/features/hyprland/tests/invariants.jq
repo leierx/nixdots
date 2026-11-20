@@ -17,10 +17,13 @@ def wanted:
     ($shown[] | select(IN("launcher", "center", "shortcuts", "power", "volume", "menu")) | select(. != $want) | "a quickshell:\(.) layer is up while the open panel is \"\($s.panel)\""),
     ($s.layers[] | select(startswith("FALLBACK quickshell:")) | "\(.) is on Hyprland's FALLBACK, where nobody sees it"),
     (if ($real | length) > 0 then $s.popups[] | select(.screen as $screen | $real | index($screen) | not) | "popup \"\(.summary)\" is on \(.screen), which is not a screen" else empty end),
+    # A shell held up this long by anything (a flood, a megabyte of text, a list built over and over) is a frozen desktop.
+    (if ($s.answered // 0) > 2000 then "!the shell took \($s.answered) ms to answer the probe" else empty end),
     (if ($s.popups | length) > 5 then "\($s.popups | length) popups are up, past the five allowed" else empty end),
     ($s.history[] | select(.hovered and (.popup | not)) | "\"\(.summary)\" is held as hovered with no popup to hover"),
     (if ([$s.history[] | select(.hovered)] | length) > 1 then "more than one popup is hovered" else empty end),
     ($s.history | group_by(.app)[] | .[3:][] | select(.popup | not) | "\(.app) keeps \"\(.summary)\" past its newest three"),
+    (if $s.notifications > 105 then "the history holds \($s.notifications), past the 100 kept and five popups" else empty end),
     (if $s.unchecked > $s.notifications then "\($s.unchecked) unchecked of \($s.notifications) notifications" else empty end),
     # A countdown only refills when its popup pops up again, which moves its time.
     ($s.popups[] as $now | $before[0][] | select(.id == $now.id and .shown == $now.shown and $now.remaining != null and $now.remaining > .remaining + 0.02)
