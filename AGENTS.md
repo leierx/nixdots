@@ -270,8 +270,9 @@ Notes on specific features:
     crashes included, becomes a notification that closes
     the panel open as it started, or only a log line while `quiet`, a load nobody waits
     on), `Overlay` (the full-screen layer a panel lives in, closing it on a
-    click anywhere but its `card`, and leaving `Panels` when Hyprland closes
-    it with its monitor), `Card` (the surface of panels and
+    click anywhere but its `card` or once a window elsewhere takes the
+    keyboard, which it holds exclusively only until it has it, then on
+    demand, and leaving `Panels` when Hyprland closes it with its monitor), `Card` (the surface of panels and
     popups: libadwaita's window background, outline and shadow; Escape
     closes the panel it is in), `Button` (libadwaita's button, `flat` or
     not, with an optional glyph before its text and an expander arrow after,
@@ -1327,7 +1328,8 @@ on screen, on a scaled monitor too, for the census; `cursors.sh` sweeps the
 bar and every panel and checks a closed hand mid-drag; `binds.sh` presses
 every bind that dispatches a global and checks each opens a panel of its
 own and closes it; `launcher.sh` types as the launcher opens on a fresh
-shell and times the open; `failures.sh` makes the shell's tools fail (`qst
+shell and times the open, and clicks a window on another monitor
+with it open; `failures.sh` makes the shell's tools fail (`qst
 fail`); `motion.sh` expands and collapses a center group and fades the OSD
 under `qst motion`. `idle.sh` runs the idle fade on two monitors under
 `qst motion`, clicks the bar through it and cancels it. `history.sh` restarts the shell over a history

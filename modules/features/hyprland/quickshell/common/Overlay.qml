@@ -20,11 +20,23 @@ PanelWindow {
   // Cover the bar rather than being pushed aside by it.
   exclusionMode: ExclusionMode.Ignore
 
+  // Exclusive only until it has the keyboard: held, it kept the keyboard from a window clicked on another monitor.
+  property bool focused: false
+  readonly property int keyboard: focused ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive
+
   WlrLayershell.layer: WlrLayer.Overlay
-  WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+  WlrLayershell.keyboardFocus: keyboard
 
   // Hyprland closes it with its monitor; still open in Panels, the next toggle would only close it.
   onClosed: if (Panels.active === root.name) Panels.close()
+
+  // The keyboard gone to a window elsewhere is a click outside it.
+  Item {
+    Window.onActiveChanged: {
+      if (Window.active) root.focused = true;
+      else if (root.focused && Panels.active === root.name) Panels.close();
+    }
+  }
 
   MouseArea {
     anchors.fill: parent

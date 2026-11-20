@@ -44,7 +44,7 @@ Overlay {
   mask: open ? null : nothing
 
   WlrLayershell.namespace: "quickshell:center"
-  WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+  WlrLayershell.keyboardFocus: open ? root.keyboard : WlrKeyboardFocus.None
 
   Region {
     id: nothing
