@@ -121,9 +121,14 @@ case_check() {
   mark=$(cat "$T/case-mark" 2> /dev/null || echo 1)
   found=$(problems "$mark")
   if [ -s "$T/expected" ]; then
+    # One that came stays allowed, but need not come again in the log a restart starts.
     while IFS=$'\t' read -r kind pattern; do
-      [ "$kind" = must ] && ! tail -n +"$mark" "$T/qs.log" | grep -qE "$pattern" && found+=$'\n'"expected a warning matching $pattern, which never came"
-    done < "$T/expected"
+      if [ "$kind" = must ] && ! tail -n +"$mark" "$T/qs.log" | grep -qE "$pattern"; then
+        found+=$'\n'"expected a warning matching $pattern, which never came"
+      fi
+      printf 'may\t%s\n' "$pattern"
+    done < "$T/expected" > "$T/expected.new"
+    mv "$T/expected.new" "$T/expected"
   fi
   found=$(sed '/^$/d' <<< "$found")
   [ -z "$found" ] && return 0

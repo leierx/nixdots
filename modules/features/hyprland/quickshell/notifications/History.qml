@@ -37,7 +37,7 @@ Singleton {
     printErrors: false
     onLoaded: {
       const saved = Saved.parse(file.text(), Date.now());
-      if (saved.problem) console.warn(`${file.path} ${saved.problem}; starting afresh`);
+      if (saved.problem) console.warn(`${file.path}: ${saved.problem}; starting afresh`);
       root.finish(saved.records);
     }
     onLoadFailed: error => {

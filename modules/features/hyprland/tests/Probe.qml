@@ -328,7 +328,9 @@ Scope {
           remaining: e.remaining ?? null
         })),
         notifications: Notifs.entries.length,
-        history: Notifs.entries.map(e => ({ app: Notifs.appKey(e), summary: e.notification?.summary ?? null, popup: e.popup, hovered: e.hovered })),
+        history: Notifs.entries.map(e => ({ app: Notifs.appKey(e), summary: e.notification?.summary ?? null, popup: e.popup, hovered: e.hovered, checked: e.checked, restored: e.restored ?? false, kept: Object.keys(e.kept ?? {}) })),
+        historyFile: Quickshell.statePath("notification-history.json"),
+        historyImages: History.images,
         dnd: Notifs.dnd,
         unchecked: Notifs.unchecked,
         volume: { percent: Volume.percent, muted: Volume.muted, output: Volume.devices.find(d => d.current)?.name ?? null },

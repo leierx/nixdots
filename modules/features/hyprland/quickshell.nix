@@ -320,6 +320,8 @@ in
       qsTest = pkgs.writeShellApplication {
         name = "qs-test";
         runtimeInputs = with pkgs; [
+          # gdbus, which sends a notification a picture held only in memory
+          glib
           quickshell
           qsLint
           qsInput

@@ -1267,7 +1267,8 @@ what `qst backlight` appends.
 the session's copy of the shell (never the built one): the open panel, the
 screens and the Hyprland monitor each resolves to, the focused monitor,
 workspaces with the label the bar gives them and their window count, windows, and every popup with
-the screen it is on, the notification `history` (app and summary, newest
+the screen it is on, the notification `history` (app and summary, popped up, hovered, checked, `restored` from disk and the
+pictures `kept`, newest
 first), `dnd` and `unchecked`, the volume (percent, muted, output), the default `input`,
 the `osd` showing (with its screen), `osdShown` (shows so far) and
 `osdSettling`, `brightness`, `caps`, `privacy` (`mic` names, and `screen` and
@@ -1296,7 +1297,8 @@ What a type draws to its own scale is in the probe's `ownShapes`.
 A case fails on any warning qs logs during it, less `tests/known-warnings`
 (a regex, a tab and why: the session's environment, and Qt's ShaderEffect
 warning on a scale change, quickshell#1530, until a fix lands) and what the case itself
-`expect`s, which must then come; `pipewire stop` and `restart` expect
+`expect`s, which must then come (once, though a restart in the case
+starts a new log); `pipewire stop` and `restart` expect
 PipeWire's own. qs-test also fails a start where an `IpcHandler` target
 in the source is not registered.
 
@@ -1326,7 +1328,10 @@ every bind that dispatches a global and checks each opens a panel of its
 own and closes it; `launcher.sh` types as the launcher opens on a fresh
 shell and times the open; `failures.sh` makes the shell's tools fail (`qst
 fail`); `motion.sh` expands and collapses a center group and fades the OSD
-under `qst motion`. Behaviour that broke once gets a case; check that
+under `qst motion`. `history.sh` restarts the shell over a history
+with a picture only the server held (sent by `gdbus`), clears it and finds
+the saved pictures gone, starts on a damaged file and keeps transient ones
+out; the probe's `historyFile` and `historyImages` are where it looks. Behaviour that broke once gets a case; check that
 the case fails without the fix (a `git worktree` of `HEAD` with the new
 `tests/` copied in, run with `QS_TEST_REPO` pointing at it).
 
