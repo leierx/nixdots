@@ -260,45 +260,25 @@ Notes on specific features:
     Quickshell comes from `pkgs.unstable` (0.3.2), since 0.3.1 fixed crashes on
     freed objects in a `ScriptModel`, which the notification lists hold. Each
     component is its own directory owning its windows, widgets and sizes, and
-    `shell.qml` only instantiates them; `common/` holds what several share:
-    `Theme`, `StateFile` (a `JsonAdapter`'s file in Quickshell's state dir),
-    `Shadow`, `ExpanderArrow`, `Switch` (libadwaita's switch), `Tooltip` (a
-    card under a bar item while the pointer rests on it, a click-through layer
-    of its own, after 250 ms), `Time` (one minute clock for the bar, the
-    calendar and notification ages), `Screens` (the screens someone can see:
-    Quickshell's, less the headless `FALLBACK` Hyprland stands in while no
-    monitor is on, and the focused one among them, the first while Hyprland
-    still reports one just gone), `WorkspaceOwners` (hyprsplit's numbering,
-    and what the bar calls a workspace, for the bar and the window switcher), `Command` (a process whose output
-    arrives as `done`, and whose failure, a program that cannot start or
-    crashes included, becomes a notification that closes
-    the panel open as it started, or only a log line while `quiet`, a load nobody waits
-    on), `Overlay` (the full-screen layer a panel lives in, closing it on a
-    click anywhere but its `card` or once a window elsewhere takes the
-    keyboard, which it holds exclusively only until it has it, then on
-    demand, and leaving `Panels` when Hyprland closes it with its monitor), `Card` (the surface of panels and
-    popups: libadwaita's window background, outline and shadow; Escape
-    closes the panel it is in), `Button` (libadwaita's button, `flat` or
-    not, with an optional glyph before its text and an expander arrow after,
-    and any mouse button it accepts passed to `clicked`; `CloseButton` is
-    its round flat 24 px form), `Keycap` (a key as the shortcuts window and
-    the power menu draw it, filled), `Glyph` (a Material Symbols path at a size), `BatteryGlyph` (GNOME's battery cell, filled to the charge), `ListRow` (a row of a panel's list), `TextField` (libadwaita's entry),
-    `WheelSteps` (wheel events as whole notches, a touchpad's small steps
-    added up, for everything the wheel steps through), `Detached` (what
-    must outlive the shell: apps, links, `nixpkgs-run` and the clipboard's
-    `wl-copy`, which stays behind to serve a picked clip, each in a
-    `systemd-run --user --scope` of its own, since the service's restart
-    kills its whole cgroup, and without `QT_SCALE_FACTOR`), and `Panels`, the one
-    open panel by name, with
-    the IPC target `panels` (`qs ipc -c shell call panels open|close|toggle
-    <name>`; `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`, `power`, and per screen `controls:DP-1`, `tray-overflow:DP-1`): opening any panel (a
-    launcher mode, the notification center, a tray menu) closes the others,
-    nothing opens while no monitor is on (it would land on `FALLBACK`, unseen,
-    holding the keyboard), and
-    `close` closes whichever is open. `ClickAway` is a transparent layer under the windows on
-    every screen, taking input only while a panel is open, so a click on any
-    screen's bare desktop closes it while a click on a window still reaches
-    the window (whose taking the keyboard closes an `Overlay` too).
+    `shell.qml` only instantiates them. `common/` holds what several share:
+    the widgets of the design standards below, `Theme`, `Symbols` (every
+    Material Symbols path), `Panels` (the one open panel by name: opening one
+    closes the others, and nothing opens while no monitor is on, where it would
+    land on `FALLBACK` holding the keyboard; IPC `panels open|close|toggle
+    <name>`: `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`,
+    `shortcuts`, `power`, and per screen `controls:DP-1` and
+    `tray-overflow:DP-1`), `Overlay` (the full-screen layer a panel lives in:
+    a click off its `card`, or a window elsewhere taking the keyboard, closes
+    it; it holds the keyboard exclusively only until it has it, or a window
+    clicked on another monitor never got it), `ClickAway` (a layer under the
+    windows on every screen, taking input only while a panel is open, so a
+    click on bare desktop closes it), `Screens` (the screens less Hyprland's
+    `FALLBACK`, and the focused one), `Time`, `StateFile`, `Command` (a process
+    whose failure, even to start, becomes a notification, or only a log line
+    while `quiet`), `Detached` (a `systemd-run --user --scope` per app, since a
+    restart of the service kills its whole cgroup), `WheelSteps` (wheel events
+    as whole notches) and `WorkspaceOwners` (hyprsplit's numbering, as the bar
+    names a workspace).
     - Conventions for the QML:
       - Comments follow the repo rule strictly: none by default, no file
         headers, one line saying why, never what. What a component does is
@@ -306,7 +286,8 @@ Notes on specific features:
       - Colours, fonts, radii and spacing come from `Theme`; only `Theme`
         reads `Colors`. A size that belongs to one component stays in it.
       - Shared pieces live in `common/` and are extracted at about three
-        uses; a widget used in one file is an inline `component`.
+        uses; a widget used in one file is an inline `component`, unless the
+        file does several jobs, which each get a file of their own.
       - Bindings over imperative code: handlers only react to events, and
         transient windows are created as they open (`LazyLoader`, `Variants`
         keyed by what they show) so each open starts fresh instead of
@@ -343,8 +324,6 @@ Notes on specific features:
         `Stream/Input/Video` and the like are untyped (0), and an untyped
         node has no `audio`, so no volume or mute; tell them by
         `properties["media.class"]`.
-      - `font: Theme.x` and `font.strikeout` on one item is "Property has
-        already been assigned a value": a whole `Qt.font({ ... })` instead.
       - An IPC function named `show` is taken by `qs ipc`'s own subcommand.
       - `systemctl is-active` exits non-zero for every state but active, so
         it is a `Process` reading stdout, not a `Command`.
@@ -423,78 +402,104 @@ Notes on specific features:
       - A `ScriptModel` with `objectProp` keeps a delegate whose key stays and
         hands it the new value (`dataChanged`): lists rebuilt from bindings
         keep their state (an open menu, a typed password) only through it.
-    - `Theme` is libadwaita's dark style 1:1, on the darker palette: its named colours
-      (`palettes.adwaita_darker`, `view_bg_color` surfaces), hover/selection/
-      border as the foreground at libadwaita's alphas over any surface, its
-      type scale as `font` values (`Theme.body`, `heading`, `caption`,
-      `title4`, …; Adwaita Sans at GTK's 11pt) and its radii (button 9, card
-      12, window 15), plus the shadows', the power menu's and the idle dim's black. Every
-      colour the shell draws is one of these. A button is the foreground at
-      10 % at rest (none when flat), 15 % under the pointer and 25 % pressed or
-      open, and every hover or press fades over `Theme.fade` (150 ms). Panel widths follow GNOME Shell's, in em of the body
-      font (`Theme.em`): 30em popups (GNOME's are 34em), its calendar
-      days. It is designed at scale 1 (1920x1080 the standard); Hyprland's
-      per-monitor scale takes care of a dense screen (a 4K one at 2 looks as
-      1080p), and the home-manager option `quickshell.scale` (default 1; the
-      desktop's 27" 1440p monitors take 1.2) enlarges the shell alone, as
-      `QT_SCALE_FACTOR` in the service's environment, Qt's own high-DPI
-      scaling, so it draws larger and sharp; apps and links the shell opens
-      get the variable removed.
-    - Design standards, so a new widget looks and behaves like its siblings:
-      - Reach for the shared piece before drawing one. A bar item is a
-        `BarButton` (a text pill, or a circle round an icon), never its own
-        `Rectangle` and `MouseArea`; any other button a `Button` (`flat` on
-        a surface, `glyph` for its icon, `checked` while what it opens is
-        open); the round 24 px `CloseButton`; what expands a bare
-        `ExpanderArrow`, a sign rather than a button, since a click on the card
-        toggles it, and every other chevron is that arrow too, turned (a
-        submenu's, the calendar's months, the tray's overflow); a key a
-        `Keycap`; a Material Symbols icon a `Glyph` and an app's a
-        Quickshell `IconImage`; a notification's `NotificationIcon`; a row
-        of a list in a panel a `ListRow` (36 px, its 20 px symbol in a
-        column of its own so every name lines up, what it says on the right);
-        a text field a `TextField` (libadwaita's entry, 36 px, an eye for a
-        password); anything floating a `Card` in an `Overlay`. The control
-        centre and the notification center are one design: panels at
-        `windowRadius`, cards on them `Theme.card` at `cardRadius` padded
-        `Theme.padding`, 20 px symbols and titles at `title4` throughout, a
-        section named in `heading` dimmed, and both grow out of what opened
-        them.
-      - Shapes: a pill or a circle is `radius: height / 2`, never half its
-        size typed out. Rounded rectangles take `Theme`'s radius for their
-        role: `smallRadius` (6) for list and menu rows, keycaps and
-        workspaces; `buttonRadius` (9) for buttons, inset cards and
-        pictures; `cardRadius` (12) for popovers hung off a bar item and
-        cards on a panel; `windowRadius` (15, `Card`'s default) for panels,
-        windows and notification popups.
-      - Sizes: bar items are 26 px with 18 px glyphs and 10 pt lettering
-        (`BarButton`'s); buttons 34 px (`Button`'s); rows in a panel's list 36 px (`ListRow`),
-        in the tray's popover menu 32 px, with `Theme.border` rules; count badges 8 to
-        10 pt bold on a pill. Panels and popovers pad `Theme.padding` (12),
-        menus 6, and keep `Theme.gap` (10) from the screen's edges; a popover under the bar
-        sits the bar window's own height (`Window.height`) plus `Theme.gap`
-        down, never a typed bar height.
-      - States: through `Button` where it can; otherwise the same steps
-        (`Theme.button` at rest, `buttonHover` under the pointer,
-        `buttonChecked` pressed or open). Rows hover `Theme.hover` and select
-        `Theme.selected`; cards on a panel are `Theme.card` and `cardHover`;
-        a critical one is `Theme.criticalCard` in a list and outlined in
-        `Theme.destructive` when it floats. Colour changes fade over
-        `Theme.fade`.
-      - Motion: moves, resizes and slides take 200 ms `Easing.OutCubic`
-        (popups slide out `InCubic`); the center opens over 180 ms `OutCubic`
-        and closes over 120 ms `InCubic`. Keyboard selection never animates
-        (the launcher), so the list keeps up with the keys.
-      - Input: the pointer follows the rule under the conventions above;
-        anything the wheel steps through counts notches with `WheelSteps`,
-        and only a list that scrolls smoothly (the center's) glides instead.
-      - Text: `Theme`'s fonts; a size of its own is a whole `Qt.font` from
-        `Theme.body.family`. Long text elides at a line limit rather than
-        being clipped.
-      - A new visual piece is drafted first: a few options shot in the test
-        session for the user to pick from, then built, linted (`qst lint`),
-        given probe fields and a scenario where it has behaviour, and
-        described here.
+    - `Theme` is libadwaita's dark style 1:1 on the darker palette, designed
+      at scale 1 (1920x1080): its named colours, the foreground at
+      libadwaita's alphas for hover, selection, borders and buttons, its type
+      scale, radii and shadows. Hyprland's per-monitor scale takes care of a
+      dense screen; the home-manager option `quickshell.scale` (default 1, the
+      desktop's 27" 1440p monitors 1.2) enlarges the shell alone, as
+      `QT_SCALE_FACTOR`, which apps and links the shell opens get removed.
+    - Design standards: one way to do each thing, and what departs from it is
+      listed under Exceptions with why. `qs-design-lint` (in `qst lint` and
+      the qmllint check) fails what the source shows; the probe's census what
+      only shows on screen.
+      - Pieces, all in `common/`: a bar item is a `BarButton`; a button a
+        `Button` (`flat` on a surface, `checked` while what it opens is open,
+        a `glyph` before its text, `expander` for a chevron after it); a round
+        icon-only one an `IconButton` (34 px with a 20 px glyph, or 24 px with
+        16 px in a row); every chevron an `ExpanderArrow`, turned by its
+        `pointing` (`down`, `up`, `left`, `right`) and never by hand: down to
+        up for what expands in place, right to down for what opens a menu
+        under it; a level to drag a `Slider`; a scroll bar a `ScrollBar` (Qt's
+        `ScrollIndicator`, 4 px, fading out unless `held`); a switch a
+        `Switch`; a key a `Keycap`; a text field a `TextField`; a row of a
+        panel's list a `ListRow`; a press's feedback a `Pop`; an icon a
+        `Glyph` of a `Symbols` path (an app's or tray item's an `IconImage`);
+        anything floating a `Card` in an `Overlay` or a layer of its own, and
+        only a `Card` casts the shadow.
+      - Colour: only Theme's. Surfaces `bg`, `card` (on a panel) and the
+        bar's `panel` black. Text `fg`; `fgDim` for what is secondary;
+        `fgFaint` for what is empty; `fgStrong` only where `fgDim` is too
+        faint (occupied workspaces, text on album art). The one accent is
+        `accentBg`, never a light blue: on and checked, today, sliders, ticks,
+        focus rings, progress and links. Red is `destructive` for text and
+        outlines, `destructiveBg` for fills and `criticalCard` for a critical
+        card in a list. An outline that says "off" or "someone else's" is 1 px
+        `fgDim`.
+      - States: the foreground at 0 (flat) or 10 % at rest, 7 % for a row or
+        15 % for a button under the pointer, 15 % selected and 25 % pressed or
+        open: `button`, `hover` or `buttonHover`, `selected`, `buttonChecked`;
+        cards `card` and `cardHover`. Keyboard selection is `selected`, so it
+        reads apart from hover.
+      - Shape: a pill or a circle is `radius: height / 2`; otherwise Theme's
+        radius for the role: `smallRadius` (6) every list and menu row,
+        keycaps and workspaces; `buttonRadius` (9) buttons, inset cards and
+        pictures; `cardRadius` (12) popovers off a bar item and cards on a
+        panel; `windowRadius` (15) panels and popups.
+      - Borders and dividers: what floats has a 1 px `Theme.outline` and the
+        shadow (`Card`), a critical popup's outline `destructive`; a focus ring
+        is 2 px `accentBg`. A divider is 1 px `Theme.border` inside its
+        container's padding, and only between two panes or between a list and
+        its actions; everything else is parted by spacing.
+      - Size: bar items 26 px with 18 px glyphs; buttons 34 px; a panel's list
+        rows 36 px with 20 px symbols in a column of their own, the tray menu's
+        32 px, the launcher's 50 px. Panels pad `Theme.padding` (12), menus 6,
+        and keep `Theme.gap` (10) from the screen's edges; a popover under the
+        bar sits the bar's `Window.height` plus `Theme.gap` down, centred on
+        its button and kept on the screen. Panel widths are in em of the body
+        font (`Theme.em`), after GNOME Shell's.
+      - Type: `Theme`'s fonts only: `body`; `heading` for the titles of rows
+        and cards; `caption` for ages and states under a name;
+        `captionHeading`; `title4` for panel and menu titles; `title2`; `bar`
+        and `barStrong` (the bar's lettering, numbers and badges); and one each
+        for the launcher's `search`, the weather's `temperature` and the power
+        menu's clock (`display`). Long text elides at a line limit. Words
+        follow GNOME's HIG: header capitals for titles, buttons, pills and menu
+        items ("Collapse All", "In Use"), sentence case for subtitles, states,
+        placeholders and bind descriptions. Numbers take a space before % and
+        units ("76 %", "2 h 40 min"), degrees none ("5°"); a track's time is
+        m:ss; a date is in the locale's order with the day unpadded ("Friday
+        20 November").
+      - Icons: every path is in `Symbols` (Material Symbols Rounded), filled
+        for status and state at 20 px and below, outlined (`…Outline`) for
+        large action tiles and launcher modes; 18 px in the bar, 20 px in
+        panels, 16 px beside text in a row.
+      - Motion: `Theme.fade` (150 ms) colours and opacity; `Theme.move` (200
+        ms, `Easing.OutCubic`) moves, resizes, slides, expansions and turns
+        (popups slide out `InCubic`); `Theme.open` (240 ms, `OutQuint`) and
+        `Theme.close` (140 ms, `InCubic`) a panel growing out of what opened
+        it and back; `Theme.tap` (100 ms) the dip of a `Pop`; `Theme.settle`
+        (400 ms, `OutCubic`) what is slow on purpose (a battery filling, album
+        art washing in, the logo's turn, a pill's ripple, a scroll bar
+        fading). Keyboard selection never animates.
+      - Hints and empty states: there are no tooltips, as every icon-only
+        button is one GNOME uses the same way. A list that can be empty says
+        so in one dim `body` line where its first row would be ("No matches",
+        "Looking for networks…"); the center's is its bell and title.
+      - Behaviour: the pointer rule under the conventions above. Escape and a
+        click away close every panel; right click dismisses a notification;
+        the tray's menu takes no keyboard, as GTK's doesn't. The wheel steps in
+        notches (`WheelSteps`), and only the center's list glides. Only the
+        centred panels (launcher, shortcuts) dim the screen behind; popovers
+        off the bar don't.
+      - Exceptions: the bar is all black; the power menu has its own
+        backdrop and 28 px tiles; a launcher mode may carry an `accent`
+        (nixpkgs' two blues); hyprlock follows its own config; `LayoutDiagram`
+        draws outputs and their labels to scale.
+      - A new visual piece is drafted first: options shot in the test session
+        for the user to pick from, then built from the pieces above, linted
+        (`qst lint`), and given probe fields and a scenario where it has
+        behaviour.
     - The shell is written like any Hyprland rice, so it works on other
       setups: the QML runs its tools by name from PATH (`cliphist`, `wl-copy`,
       `pw-play`, `notify-send`, `xdg-open`, `systemd-run`, `hyprmoncfg`,
@@ -1291,8 +1296,10 @@ nix fmt                  # formatter = nixfmt-tree
   It then runs `qs-design-lint` (`scripts/qs-design-lint.sh`), the design
   standards as far as the source shows them: a colour that is not Theme's
   (a literal, `Qt.rgba`, a `Qt.tint` of anything but Theme), a radius typed
-  out, a `ColorAnimation` over anything but `Theme.fade`, one inline
-  component name in two files or shadowing one in `common/`, and `flatMap`.
+  out, a duration or font that is not a Theme token, an icon path outside
+  `Symbols`, a shadow on anything but a `Card`, anything turned by hand
+  rather than an `ExpanderArrow`'s `pointing`, one inline component name
+  in two files or shadowing one in `common/`, and `flatMap`.
   What a file does on purpose is listed in the script with why.
 - `checks.<system>.notification-markup` (Linux) — `qmltestrunner` over
   `tests/tst_markup.qml`: what the notification body filter
