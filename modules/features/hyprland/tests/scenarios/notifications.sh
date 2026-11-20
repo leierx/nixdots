@@ -93,3 +93,10 @@ qst case "a picture sent as a bare path, as notify-send -i /file sends it, draws
 picture=$QS_TEST_REPO/modules/features/hyprland/tests/tray-icon.svg
 notify-send -a Screenshot -n accessories-screenshot -i "$picture" "Screenshot saved"
 qst wait "(.popups | length) == 1 and .history[0].image == \"file://$picture\""
+
+qst case "a burst created in one millisecond names each notification's saved pictures apart"
+qst flood 30 --apps 30 &
+qst flood 30 --apps 30 --app Urgent --urgency 2 &
+wait
+qst wait '.notifications == 60'
+qst stays '(.history | map(.uid) | unique | length) == 60' 0.5

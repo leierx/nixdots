@@ -11,7 +11,7 @@ QtObject {
   required property string screen
   readonly property bool restored: notification?.past === true
   // Names its saved pictures, and it in the saved history.
-  property string uid: (Date.now() * 1000 + Math.floor(Math.random() * 1000)).toString(36)
+  property string uid: ""
   // By role ("image", "appIcon"), the saved copies of pictures only the server held.
   property var kept: ({})
   property date time: new Date()

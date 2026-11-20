@@ -28,6 +28,8 @@ Singleton {
   readonly property int soundGap: 300
   property real soundAt: 0
   property real criticalSoundAt: 0
+  // Each entry's uid takes the next, so a burst created in one millisecond names its pictures apart.
+  property int issued: 0
   // As many as the saved history keeps; past it the oldest go, so a flood from many apps costs no more than one from a few.
   readonly property int maxEntries: 100
   // Past this many a second, critical ones counted apart, the rest are turned away at the door, where they cost next to nothing.
@@ -51,6 +53,10 @@ Singleton {
 
   function appKey(entry) {
     return root.clip(entry.notification.desktopEntry || entry.notification.appName, root.maxApp);
+  }
+
+  function nextUid() {
+    return (Date.now() * 1000 + root.issued++ % 1000).toString(36);
   }
 
   function clip(text, length) {
@@ -385,7 +391,8 @@ Singleton {
       } else {
         entry = entryComponent.createObject(root, {
           notification,
-          screen: Screens.focused
+          screen: Screens.focused,
+          uid: root.nextUid()
         });
       }
       root.watch(entry);
