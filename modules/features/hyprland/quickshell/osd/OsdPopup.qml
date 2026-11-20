@@ -166,12 +166,13 @@ Scope {
     // Taken once: the screen object dangles while its monitor goes.
     property string screenName: ""
     readonly property bool here: Osd.current !== null && Osd.screen === screenName && root.hasLevel(Osd.current) === levels
-    property real fade: 0
+    property real fade: here ? 1 : 0
 
-    // Not a Behavior: one whose duration follows `here` may start before that duration updates.
-    onHereChanged: {
-      (here ? fadeOut : fadeIn).stop();
-      (here ? fadeIn : fadeOut).start();
+    Behavior on fade {
+      NumberAnimation {
+        duration: Theme.fade
+        easing.type: Easing.OutCubic
+      }
     }
 
     Component.onCompleted: screenName = modelData?.name ?? ""
@@ -185,26 +186,6 @@ Scope {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell:osd"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-
-    NumberAnimation {
-      id: fadeIn
-
-      target: window
-      property: "fade"
-      to: 1
-      duration: Theme.fade
-      easing.type: Easing.OutCubic
-    }
-
-    NumberAnimation {
-      id: fadeOut
-
-      target: window
-      property: "fade"
-      to: 0
-      duration: Theme.fade
-      easing.type: Easing.InOutQuad
-    }
   }
 
   Variants {

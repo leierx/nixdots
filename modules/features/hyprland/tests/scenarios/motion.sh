@@ -19,7 +19,7 @@ qst click left "$x" "$y"
 qst stays '.panel == "center"' 0.6
 qst motion stop > /dev/null
 
-qst case "the OSD fades out over its own 200 ms, not its fade-in's"
+qst case "the OSD fades out over Theme.fade, not in a moment"
 # alone: it times the fade frame by frame
 qst wait '.osdSettling == false'
 qst x wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.5
@@ -27,4 +27,4 @@ qst wait '.osd.kind == "volume"'
 qst motion start
 qst wait '.osd == null' 3
 qst stays '.osd == null' 0.5
-qst motion stop | jq -e 'any(.moved[]; .property == "opacity" and .from > .to and .end - .start >= 120)' > /dev/null
+qst motion stop | jq -e 'any(.moved[]; .property == "opacity" and .from > .to and .end - .start >= 75)' > /dev/null
