@@ -46,6 +46,7 @@ usage: qs-test COMMAND
   camera open|close NAME [DEV]  a process named NAME holding a fake camera (video0) open; add|remove DEV
   spawn CMD...          start CMD in the session, detached (output in spawn.log)
   tray [log]            add a test tray item with submenus (tests/tray.qml), or show what it was told
+  tray add NAME [COUNT] COUNT items under the app id NAME (tests/trays.qml); remove NAME, clear
   flood COUNT [OPTIONS] COUNT notifications as fast as the bus takes them (qs-flood --help)
   x CMD...              run CMD in the session (notify-send, hyprctl, ...)
 
@@ -703,12 +704,20 @@ stays() {
   done
 }
 
+# Every tray item a test started.
+trays_reset() {
+  local pid
+  for pid in "$T/tray.pid" "$T"/trays/*.pid; do
+    [ -s "$pid" ] && kill "$(cat "$pid")" 2> /dev/null || true
+  done
+  rm -rf "$T/tray.pid" "$T/trays"
+}
+
 # A fresh start for a test: QS_TEST_MONITORS again, the focus on the first, and a new qs with no state.
 reset() {
   local id pid
   enter
-  [ -s "$T/tray.pid" ] && kill "$(cat "$T/tray.pid")" 2> /dev/null || true
-  rm -f "$T/tray.pid"
+  trays_reset
   for pid in $("$HC" clients -j | jq -r '.[].pid'); do kill "$pid" 2> /dev/null || true; done
   stop_qs
   pw_reset
@@ -968,14 +977,29 @@ case $cmd in
   flood) need_up; enter; qs-flood "$@" ;;
   tray)
     need_up
-    if [ "${1:-}" = log ]; then
-      grep -o 'qml: .*' "$T/tray.log"
-    else
-      enter
-      [ -s "$T/tray.pid" ] && kill "$(cat "$T/tray.pid")" 2> /dev/null || true
-      qs-tray > "$T/tray.log" 2>&1 < /dev/null &
-      echo $! > "$T/tray.pid"
-    fi
+    case "${1:-}" in
+      log) grep -o 'qml: .*' "$T/tray.log" ;;
+      add)
+        [ $# -ge 2 ] || die "tray add NAME [COUNT]"
+        enter
+        mkdir -p "$T/trays"
+        qs-tray "$2" "${3:-1}" >> "$T/tray.log" 2>&1 < /dev/null &
+        echo $! > "$T/trays/$2.pid"
+        ;;
+      remove)
+        [ $# -eq 2 ] && [ -s "$T/trays/$2.pid" ] || die "tray remove NAME, one added"
+        kill "$(cat "$T/trays/$2.pid")" 2> /dev/null || true
+        rm -f "$T/trays/$2.pid"
+        ;;
+      clear) trays_reset ;;
+      "")
+        enter
+        [ -s "$T/tray.pid" ] && kill "$(cat "$T/tray.pid")" 2> /dev/null || true
+        qs-tray > "$T/tray.log" 2>&1 < /dev/null &
+        echo $! > "$T/tray.pid"
+        ;;
+      *) die "tray [log|add NAME [COUNT]|remove NAME|clear]" ;;
+    esac
     ;;
   x) need_up; enter; exec "$@" ;;
   log) cat "$T/qs.log" ;;
