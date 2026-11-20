@@ -44,10 +44,18 @@ QtObject {
     return requested < 0 ? Notifs.defaultTimeout : requested;
   }
 
-  // Saved as it shows, since the server holds it only while the notification lives.
+  function source(role: string): string {
+    return String((role === "image" ? notification.image : notification.appIcon) ?? "");
+  }
+
+  // A picture only the server holds, and only while the notification lives, not saved yet.
+  function wants(role: string): bool {
+    return !root.restored && !root.kept[role] && Notifs.inMemory(root.source(role));
+  }
+
+  // From the item drawing it, which NotificationPopups keeps out of sight for each one wanted.
   function keep(role: string, item: Item): void {
-    const source = String(role === "image" ? notification.image : notification.appIcon);
-    if (root.kept[role] || !Notifs.inMemory(source)) return;
+    if (!root.wants(role)) return;
     const path = `${History.images}/${root.uid}-${role}.png`;
     item.grabToImage(result => {
       if (result.saveToFile(path)) root.kept = Object.assign({}, root.kept, { [role]: `file://${path}` });

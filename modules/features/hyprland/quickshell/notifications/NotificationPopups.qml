@@ -35,6 +35,41 @@ Variants {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell:notifications"
 
+    // Pictures only the server holds, drawn once each left of the window, where nobody sees them, so the saved history keeps them whether they pop up or not.
+    Item {
+      // Taken once: the screen object dangles while its monitor goes.
+      property string screenName: ""
+
+      x: -width
+      width: 80
+      height: 80
+      visible: screenName !== "" && screenName === Screens.real[0]?.name
+      Component.onCompleted: screenName = window.modelData?.name ?? ""
+
+      Repeater {
+        model: ScriptModel {
+          objectProp: "key"
+          values: Notifs.entries.reduce((wanted, entry) => [...wanted, ...["image", "appIcon"].filter(role => entry.wants(role)).map(role => ({ key: `${entry.uid}-${role}`, entry, role }))], [])
+        }
+
+        Image {
+          id: copy
+
+          required property var modelData
+          readonly property int size: modelData.role === "image" ? 80 : 28
+
+          width: size
+          height: size
+          sourceSize: Qt.size(size, size)
+          source: modelData.entry.source(modelData.role)
+          fillMode: modelData.role === "image" ? Image.PreserveAspectCrop : Image.PreserveAspectFit
+          // The image provider reuses URLs for different notifications.
+          cache: false
+          onStatusChanged: if (status === Image.Ready) modelData.entry.keep(modelData.role, copy)
+        }
+      }
+    }
+
     ListView {
       id: list
 

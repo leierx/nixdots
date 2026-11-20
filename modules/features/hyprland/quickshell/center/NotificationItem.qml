@@ -188,7 +188,6 @@ Item {
           visible: !root.single && root.entry.image !== ""
           Layout.alignment: Qt.AlignTop
           source: root.single ? "" : root.entry.image
-          entry: root.entry
           radius: Theme.buttonRadius
         }
 

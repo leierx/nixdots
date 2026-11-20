@@ -855,11 +855,11 @@ Notes on specific features:
       `PastNotification` with what the views show and nothing left to invoke,
       not popped up and as checked as it was. A damaged file or record is
       dropped with one warning. Pictures only the server held (an
-      `image://` other than a theme icon) are saved as they first show, from
-      the item drawing them (`grabToImage`, the size drawn), as
-      `<uid>-image.png` and `<uid>-appIcon.png` in the cache dir
-      `notifications/`, and those of notifications no longer saved are
-      deleted; one never shown is not kept. A reload hands live
+      `image://` other than a theme icon) are saved as they arrive, popped up
+      or not: the popups window of the first screen draws each once, left of
+      itself where nobody sees it, and grabs it (`grabToImage`, 80 px, an app
+      icon 28) into the cache dir `notifications/` as `<uid>-image.png` and
+      `<uid>-appIcon.png`; those of notifications no longer saved are deleted. A reload hands live
       notifications over too, and one already read back by app, summary and
       body becomes the live one.
     - `center/` is the notification center (`qs ipc -c shell call panels
