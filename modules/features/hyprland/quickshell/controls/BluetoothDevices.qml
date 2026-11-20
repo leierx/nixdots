@@ -71,13 +71,12 @@ Singleton {
     return Symbols.devices;
   }
 
-  // The state a row says beside the name.
+  // What a row says beside the name while something is under way or went wrong; the charge and the link are drawn.
   function note(device: var): string {
     if (root.failures[device.address]) return root.failures[device.address];
     if (device.pairing) return "Pairing…";
     if (device.state === BluetoothDeviceState.Connecting) return "Connecting…";
     if (device.state === BluetoothDeviceState.Disconnecting) return "Disconnecting…";
-    if (device.connected) return device.batteryAvailable ? `${Math.round(device.battery * 100)} %` : "Connected";
     return "";
   }
 

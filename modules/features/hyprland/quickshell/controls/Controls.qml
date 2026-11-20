@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Networking
-import qs.center
 import qs.common
 import qs.notifications
 import "names.js" as Names
@@ -34,9 +33,8 @@ Singleton {
       const count = BluetoothDevices.connected.length;
       list.push({ key: "bluetooth", title: "Bluetooth", subtitle: !BluetoothDevices.on ? "Off" : count === 1 ? BluetoothDevices.name(BluetoothDevices.connected[0]) : count > 1 ? `${count} connected` : "On", glyph: BluetoothDevices.on ? Symbols.bluetooth : Symbols.bluetoothOff, on: BluetoothDevices.on, menu: true });
     }
-    if (NightLight.present) list.push({ key: "night", title: "Night Light", subtitle: NightLight.on ? `${NightLight.temperature} K` : "Off", glyph: Symbols.nightLight, on: NightLight.on, menu: false });
+    if (NightLight.present) list.push({ key: "night", title: "Night Light", subtitle: NightLight.on ? `${NightLight.temperature} K` : "Off", glyph: Symbols.nightLight, on: NightLight.on, menu: true });
     list.push({ key: "dnd", title: "Do Not Disturb", subtitle: Notifs.dnd ? "On" : "Off", glyph: Symbols.dnd, on: Notifs.dnd, menu: false });
-    list.push({ key: "caffeine", title: "Caffeine", subtitle: Caffeine.active ? "On" : "Off", glyph: Symbols.coffee, on: Caffeine.active, menu: false });
     return list;
   }
   function wiredState(device: var): string {
@@ -66,12 +64,26 @@ Singleton {
     else if (toggle.key === "bluetooth") BluetoothDevices.toggle();
     else if (toggle.key === "night") NightLight.toggle();
     else if (toggle.key === "dnd") Notifs.dnd = !Notifs.dnd;
-    else if (toggle.key === "caffeine") Caffeine.toggle();
   }
 
 
   function toggle(): void {
     Panels.toggle(`controls:${Screens.focused}`);
+  }
+
+  // The header's actions, each closing the centre first.
+  function screenshot(): void {
+    Panels.close();
+    shot.restart();
+  }
+
+  function lock(): void {
+    Panels.close();
+    locker.running = true;
+  }
+
+  function powerMenu(): void {
+    Panels.open("power");
   }
 
   function show(name: string): void {
@@ -100,15 +112,23 @@ Singleton {
   }
 
   Binding {
-    target: Caffeine
+    target: Media
     property: "watched"
     value: root.open
   }
 
-  Binding {
-    target: Media
-    property: "watched"
-    value: root.open
+  // Once the centre has faded, so the frozen screen is without it.
+  Timer {
+    id: shot
+
+    interval: 250
+    onTriggered: Detached.run(["freeze-region", "copy"], "")
+  }
+
+  Command {
+    id: locker
+
+    command: ["loginctl", "lock-session"]
   }
 
   GlobalShortcut {

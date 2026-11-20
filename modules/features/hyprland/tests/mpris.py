@@ -20,7 +20,7 @@ ROOT_IFACE = "org.mpris.MediaPlayer2"
 PLAYER_IFACE = "org.mpris.MediaPlayer2.Player"
 PATH = "/org/mpris/MediaPlayer2"
 
-player = {"tracks": [], "index": 0}
+player = {"tracks": [], "index": 0, "art": ""}
 
 
 def metadata(index):
@@ -30,6 +30,7 @@ def metadata(index):
         "mpris:length": dbus.Int64(length * 1000000),
         "xesam:title": dbus.String(title),
         "xesam:artist": dbus.Array([dbus.String(artist)], signature="s"),
+        **({"mpris:artUrl": dbus.String(player["art"])} if player["art"] else {}),
     }, signature="sv")
 
 
@@ -48,6 +49,7 @@ def status(mock, value):
 
 
 def load(mock, parameters):
+    player["art"] = parameters.get("art", "")
     player["tracks"] = [tuple(track) for track in parameters.get("tracks", [["Everything In Its Right Place", "Radiohead", 251], ["Kid A", "Radiohead", 284], ["The National Anthem", "Radiohead", 351]])]
     mock.AddProperties(ROOT_IFACE, {
         "Identity": dbus.String(parameters.get("identity", "Player")),

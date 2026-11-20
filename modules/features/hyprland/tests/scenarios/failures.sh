@@ -35,12 +35,6 @@ qst ipc panels open shortcuts > /dev/null
 notified "hyprctl binds -j"
 qst wait '.panel == ""'
 
-qst case "Caffeine says when systemctl fails, and stays off"
-qst fail systemctl exit
-qst ipc caffeine toggle
-notified "Caffeine"
-qst stays '.caffeine == false' 1
-
 qst case "the camera watcher crashing is started again, and the weather waits when curl fails"
 qst fail camera-users crash
 qst fail curl exit

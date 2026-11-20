@@ -54,7 +54,7 @@ import-tree.nix           dir -> module that imports every .nix beneath it
 flake.lock                pinned inputs
 README.md                 brief user-facing doc
 AGENTS.md                 this file
-TODO.md                   upstream candidates and leads to chase, with handovers
+TODO.md                   a plain bullet list (no headings): upstream candidates, leads to chase, what is left open
 
 modules/flake/            the substrate (see below)
 modules/features/         one flat file per feature (+ hyprland/, moonshine/, neovim/, pi-agent/, tmux/)
@@ -252,7 +252,7 @@ Notes on specific features:
   - The desktop components (the bar, the launcher's SUPER+D apps, SUPER+V
     clipboard, SUPER+P monitor layouts and SUPER+Tab windows, SUPER+X power, SUPER+? keyboard
     shortcuts, the notification
-    center from the bar's clock, the OSD, the privacy indicator) are a [Quickshell](https://quickshell.org)
+    center from the bar's clock, the OSD, the control centre) are a [Quickshell](https://quickshell.org)
     shell in `quickshell/`, wired by `quickshell.nix`: one `quickshell.service`
     session daemon (restarted when the shell changes, via `X-Restart-Triggers`,
     and a second after a crash, with no start limit, so a crash loop through a
@@ -282,7 +282,7 @@ Notes on specific features:
     not, with an optional glyph before its text and an expander arrow after,
     and any mouse button it accepts passed to `clicked`; `CloseButton` is
     its round flat 24 px form), `Keycap` (a key as the shortcuts window and
-    the power menu draw it, filled), `Glyph` (a Material Symbols path at a size),
+    the power menu draw it, filled), `Glyph` (a Material Symbols path at a size), `BatteryGlyph` (GNOME's battery cell, filled to the charge),
     `WheelSteps` (wheel events as whole notches, a touchpad's small steps
     added up, for everything the wheel steps through), `Detached` (what
     must outlive the shell: apps, links, `nixpkgs-run` and the clipboard's
@@ -291,7 +291,7 @@ Notes on specific features:
     kills its whole cgroup, and without `QT_SCALE_FACTOR`), and `Panels`, the one
     open panel by name, with
     the IPC target `panels` (`qs ipc -c shell call panels open|close|toggle
-    <name>`; `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`, `power`, and per screen `controls:DP-1`, `tray:DP-1`, `tray-overflow:DP-1`): opening any panel (a
+    <name>`; `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`, `power`, and per screen `controls:DP-1`, `tray-overflow:DP-1`): opening any panel (a
     launcher mode, the notification center, a tray menu) closes the others,
     nothing opens while no monitor is on (it would land on `FALLBACK`, unseen,
     holding the keyboard), and
@@ -443,8 +443,7 @@ Notes on specific features:
     - Design standards, so a new widget looks and behaves like its siblings:
       - Reach for the shared piece before drawing one. A bar item is a
         `BarButton` (a text pill, or a circle round an icon), never its own
-        `Rectangle` and `MouseArea` (the tray, a module rather than buttons,
-        aside); any other button a `Button` (`flat` on
+        `Rectangle` and `MouseArea`; any other button a `Button` (`flat` on
         a surface, `glyph` for its icon, `checked` while what it opens is
         open); the round 24 px `CloseButton`; what expands a bare
         `ExpanderArrow`, a sign rather than a button, since a click on the card
@@ -690,9 +689,8 @@ Notes on specific features:
       way finishes rather than starting over) and the workspaces. Centre: the
       clock (a flat round button with a pointing hand, as GNOME's panel draws
       its date: shaded on hover and while the center it opens is open).
-      Right: the privacy indicator, the control centre's status button, the
-      battery, Caffeine's cup, the bell and, always last, the tray. Every one of them but the
-      workspaces, the battery and the tray is a `BarButton`, the bar's one shape: a
+      Right: the control centre's status button and, always last, the tray's
+      chevron. Every one of them but the workspaces is a `BarButton`, the bar's one shape: a
       flat 26 px pill, or a circle round an icon alone, its glyphs and icons
       18 px and its lettering 10 pt. Quickshell keeps Hyprland's state by
       events but only refreshes monitors as one comes or goes and ignores
@@ -718,17 +716,24 @@ Notes on specific features:
         bar's whole height and the gaps beside it; pressing one dips it once (an animation played through, not held while pressed) and focuses it by
         id wherever it is, and the wheel over them steps one a notch in the
         order the bar shows them, stopping at the ends (`WheelSteps`).
-      - The tray is a module rather than buttons: its items' icons, hiding
-        passive ones, on one pill in the button shade (`Theme.button`), each
-        with an arrow pointer and no hover, since most do nothing on a left
-        click;
-        left click activates (or opens the menu of a menu-only item), middle is the secondary action, right opens
-        the menu: `TrayMenu`, libadwaita's popover menu drawn from
-        `QsMenuOpener` with its corner at the pointer (leftwards where it would
-        run off the screen), on an overlay (a `Panels` panel per screen) whose
-        input region is only its cards (`Region.regions`), stray separators
-        dropped. Check and radio items get libadwaita's check buttons, and only
-        rows with a check button or an icon make room for one, so the others start at the edge.
+      - The tray folds behind one chevron, as Windows' does: a flat round
+        `BarButton` with Adwaita's arrow pointing down, the way the popover
+        opens, and not turning (its pressed shade says it is open), shown
+        only while some item is not passive. It opens `TrayOverflow` under it
+        (a `Panels` panel per screen, `tray-overflow:DP-1`), a card with every
+        icon in a grid of six 36 px cells (`Theme.hover` under the pointer,
+        each with an arrow pointer, since most do nothing on a left click)
+        that scrolls past what the screen leaves room for, and closes once
+        nothing is left. First come, first served: `TrayOrder` keeps the items
+        in the order they came, which every bar shares, since Quickshell sorts
+        its model by category and id. Left click activates (or opens the menu
+        of a menu-only item), middle is the secondary action, right opens the
+        menu: `TrayMenu`, libadwaita's popover menu drawn from `QsMenuOpener`
+        with its corner at the pointer (leftwards where it would run off the
+        screen), over the overflow under the same panel, its input region only
+        its cards (`Region.regions`), stray separators dropped. Check and radio
+        items get libadwaita's check buttons, and only rows with a check button
+        or an icon make room for one, so the others start at the edge.
         Submenus cascade as GTK's do: a card each, beside the row that
         opens it (held highlighted), opened by a click or 150 ms of hover, so
         passing over rows opens nothing, and closed as soon as the pointer is on
@@ -737,71 +742,39 @@ Notes on specific features:
         the right whichever way it opens, as GTK's do. Open submenus are kept by
         label, so one stays open when its app rebuilds the menu with every entry
         new, as Electron apps do whenever they update it. Like a GTK menu it takes no keyboard and no grab,
-        so the app in front keeps both and a click elsewhere goes through; it
-        closes 100 ms after the pointer is on neither it nor its icon (Hyprland
-        reports no hover on a new menu until the pointer moves).
-        Another icon switches menus, the same icon closes it, its monitor going closes it too,
-        and a click on the bar besides its buttons closes any open panel.
-        The right side never reaches the clock: `BarWindow` gives the tray
-        the room the bar leaves (half its width less the clock's, `Theme.gap`
-        and the status buttons), and past it the first four items keep their
-        places, then a thin rule (`Theme.border`) and a flat round `BarButton`
-        closing the pill with Adwaita's arrow pointing down, the way the
-        popover opens, and not turning (the button's pressed shade says it is
-        open), shown only while some are left, fewer than
-        four only where even that would not fit. First come, first served:
-        `TrayOrder` keeps the items in the order they came, which every bar
-        shares, since Quickshell sorts its model by category and id; one
-        leaving moves the next up. The button opens `TrayOverflow` under it
-        (a `Panels` panel per screen, `tray-overflow:DP-1`), a card with the
-        rest in a grid of six 36 px cells (`Theme.hover` under the pointer,
-        the same clicks as on the bar) that scrolls past what the screen
-        leaves room for, and closes once nothing is left behind the button. A
-        menu opened from it sits over it under the same panel: the pointer
-        leaving the menu closes only the menu (`TrayMenu.dismissed`), an
-        entry or a click outside closes both.
+        so the app in front keeps both; the pointer leaving the menu for 100 ms
+        (and not resting on its cell; Hyprland reports no hover on a new menu
+        until the pointer moves) closes only the menu (`TrayMenu.dismissed`),
+        another cell switches menus, the same cell closes it, and an entry, a
+        click outside or its monitor going closes both.
       - The status button (`StatusButton`) opens the control centre (`controls/`,
         below) on its screen, `controls:DP-1`, and shows what is worth a glance
-        as glyphs alone, left to right: a key while a VPN is up, the link in
-        use (wired before Wi-Fi: Wi-Fi's strength in four steps, struck
-        through off, with a ? behind a captive portal and a ! without
-        internet), Bluetooth while a device is connected, the microphone
-        struck through while muted, and the output's level (Material Symbols'
-        volume_up, volume_down, volume_mute, volume_off); with none of them, a
-        cog. The wheel on it steps the output 5 % a notch (`WheelSteps`), onto
-        the 5 % marks and up to 100 %, or to wherever past it another app set
-        it, so turning it up never turns it down; a right click mutes.
-      - The battery (`Power`) is UPower's display device, shown only when
-        UPower is running and it is a laptop battery, so only thonkpad
-        enables UPower: a thick meter with its nub, the percentage on it,
-        dark over the fill and light past it (drawn twice, the dark copy
-        clipped to the fill), green, yellow from 25 %, red from 10 %, with a
-        bolt while charging. Resting on it 250 ms shows a `Tooltip` with the
-        time left ("2 h 40 min left", "Full in 1 h 10 min", or "Plugged in"
-        when held at a charge threshold) over the percentage and state.
-        `qs ipc -c shell call bar fakeBattery 15 false` shows a made-up one
-        anywhere, `realBattery` drops it.
-      - The bell shows while there are notifications not yet looked at in the
-        center (`Notifs.unchecked`: those that arrived, or came again, while it
-        was closed), in `Theme.bell` (the palette's `yellow_2`) with their
-        count in red, and for as long as Do Not Disturb is on, struck through
-        (Material Symbols' notifications_off) in `Theme.dnd` (`purple_1`),
-        without the count. Purple, a click turns Do Not Disturb off; yellow,
-        it opens the center, which checks them all, so the bell goes at once. A reload of the shell hands every
-        notification over unchecked.
-      - Caffeine's cup (`Cup`, Material Symbols' coffee, in `Theme.coffee`, the palette's
-        `brown_2`) shows while it is on, so it is not left on by mistake; a click
-        turns it off.
-      - The privacy indicator (`PrivacyIndicator`) shows only while something
-        records: a button's grey pill holding a red recording light, breathing slowly (4 s),
-        and the bar's white symbols for each kind recording (mic, videocam,
-        screen_share). Hovering it for 250 ms opens `PrivacyTooltip`, a card
-        under it (a click-through layer of its own on the bar's screen, since a
-        `PopupWindow` there lands off by the monitor's x times
-        `QT_SCALE_FACTOR` - 1, 512 px on a monitor at x 2560) listing each kind with the apps (five, then
-        "and 12 more", each name elided), named and
-        iconed from their desktop entries (`DesktopEntries.heuristicLookup`, so
-        a `firefox` process reads as Firefox). `Privacy` is the backend:
+        as glyphs alone (Material Symbols, filled), left to right: what
+        records, in `Theme.recording` red (mic, videocam, screen_share, from
+        `Privacy`, below); the bell (notifications) in `Theme.bell`, the
+        palette's `yellow_2`, while there are notifications not yet looked at
+        in the center (`Notifs.unchecked`: those that arrived, or came again,
+        while it was closed; opening the center checks them all, and a reload
+        of the shell hands every notification over unchecked), or for as long
+        as Do Not Disturb is on, white and struck through (notifications_off),
+        with no count either way; GNOME's VPN, a padlock on a line, while a
+        VPN is up; the link in use (wired before Wi-Fi: Wi-Fi's strength in
+        four steps, struck through off, with a ? behind a captive portal and a
+        ! without internet); Bluetooth while a device is connected; the
+        microphone struck through while muted; the output's level (volume_up,
+        volume_down, volume_mute, volume_off); and last, on a laptop, the
+        battery (`BatteryGlyph`, GNOME's upright cell filled green, yellow
+        from 25 %, red from 10 %, with a bolt while charging) and its
+        percentage. With none of them, a cog. The wheel on it steps the output
+        5 % a notch (`WheelSteps`), onto the 5 % marks and up to 100 %, or to
+        wherever past it another app set it, so turning it up never turns it
+        down; a right click mutes.
+      - The battery (`Power`, in `controls/`) is UPower's display device,
+        shown only when UPower is running and it is a laptop battery, so only
+        thonkpad enables UPower. `qs ipc -c shell call bar fakeBattery 15
+        false` shows a made-up one anywhere, `realBattery` drops it.
+      - `Privacy` (in `controls/`) is who records, for the status button and
+        the control centre's "In use":
         - Microphone: a PipeWire link into a capture stream
           (`Stream/Input/Audio`) in state Active, from a source
           (`Audio/Source` or `Audio/Duplex`, or by its `media.class` a virtual
@@ -820,7 +793,8 @@ Notes on specific features:
           named by its viewer, and any process holding `/dev/video*` open for
           half a second (`camera-users`, `scripts/camera-users.c`: inotify on
           each device node for opens and closes and on `/dev` for devices
-          coming and going, then a scan of `/proc/*/fd`, one JSON line per
+          coming and going and for their permissions changing, since a node
+          plugged in is root's alone until udev hands it to the seat, then a scan of `/proc/*/fd`, one JSON line per
           change), so V4L2 apps (Chrome, Zoom) count and a browser probing
           devices does not. PipeWire's and WirePlumber's own holds are left
           out: their clients are named through the links. The watcher is
@@ -995,34 +969,56 @@ Notes on specific features:
       `qs ipc -c shell call controls toggle`, or `panels open controls:DP-1`),
       GNOME's quick settings in a popover under the button: no wider than
       28em or the screen, and capped to what the screen leaves under the bar,
-      past which the card scrolls with a thin indicator. At the top the
-      levels, each a symbol (a mute button for sound), a slider (dragged,
+      past which the card scrolls with a thin indicator. It grows out of its
+      button and shrinks back into it (a fade and a scale from 0.9 about the
+      button, 240 ms `OutQuint` in and 140 ms `InCubic` out, staying loaded
+      until it has faded), since Hyprland's own animations are off; pill
+      colours, hovers and arrows fade or turn over `Theme.fade` and 200 ms,
+      and a pill flipped pops: its symbol dips and springs back while a
+      ripple spreads from the click. At the top GNOME's header: the battery
+      on a laptop (its cell, the percentage and the time left or to full),
+      then a screenshot (`freeze-region copy`, a region to the clipboard, run
+      a moment after the centre has closed so it is not in the shot), the
+      lock (`loginctl lock-session`) and the power menu, round buttons on the
+      right. Then the
+      levels, each a symbol (a mute button for sound), a slider (a 16 px knob; dragged,
       clicked or wheeled, `WheelSteps`) and, for sound, an arrow to its
       devices: the output and the input (`Volume`, `Microphone`; "Sound not
       available" in their place without PipeWire), a slider per backlight
       (`Brightness`, set with `brightnessctl --device`, which goes through
-      logind; never below 1 %), and night light's strength while it is on.
+      logind; never below 1 %).
       Then GNOME's pills, two a row: each a symbol, its name and its state,
       blue while on, the arrow a segment of its own where it has a menu, and
       only those the machine has (`Controls.toggles`): Wired per Ethernet
       device (its speed, "Cable unplugged" dimmed), Wi-Fi ("Off by switch",
       dimmed, under the hardware switch), VPN (any profiles), Bluetooth (an
-      adapter), Night Light (hyprsunset answering), Do Not Disturb and
-      Caffeine; without NetworkManager one dim "Network · Not available" in
-      the first three's place, which comes back with it. Last, the player
-      worth a card (`Media`: MPRIS, the one that started playing last, else
-      one paused; none while all stop): art, title (a click raises the app),
-      artist, progress, and previous, play/pause and next, dimmed where the
-      player cannot. A menu opens right under the row that holds its pill (or
-      under the levels for sound), one at a time, kept by name in `Controls`
+      adapter), Night Light (hyprsunset answering; its menu is its strength,
+      a slider that turns it on as it moves) and Do Not Disturb; without
+      NetworkManager one dim "Network · Not available" in the first three's
+      place, which comes back with it. While something records, GNOME's "In
+      use": a pill per kind (its symbol orange, `Theme.inUse`, in a chip of
+      its own) naming the apps from their desktop entries, a click raising
+      the first one's window (a wlr-foreign-toplevel whose app id is the
+      app's name or its desktop entry's id or `StartupWMClass`), an arrow
+      pointer where none has one. Last, the player worth a card (`Media`:
+      MPRIS, the one that started playing last, else one paused; none while
+      all stop), washed in its album art (the art blurred and darkened behind
+      it with `MultiEffect`, masked to the card): the art, set down a little
+      while paused, the title (a click raises the app), artist, progress, and
+      previous, a big white play/pause and next, dimmed where the player
+      cannot. A menu opens right under the row that holds its pill (or
+      under the levels for sound), one at a time, each in a slot of its own
+      that eases open and shut over 200 ms `OutCubic` (so switching menus
+      closes one as the next opens; rows coming, going and moving in a list
+      ease too), kept by name in `Controls`
       so it outlives the lists changing around it, and takes what the screen
       leaves after everything else, with room for at least four rows besides
       a password row, the card scrolling past that. Each is a title, past 20
       entries a filter (and their count), the list (32 px rows, names plain
       text on one line, elided, stripped of control characters, direction
       overrides and invisible marks by `names.js`), and what leads on:
-      Hidden Network… and Network Settings… (nm-connection-editor, the first
-      with `--create --type=802-11-wireless`), Bluetooth Settings… (`bluetui`
+      Network Settings… (nm-connection-editor, also for hidden networks),
+      Bluetooth Settings… (`bluetui`
       in wezterm). One click, one action, no buttons on hover:
       - Wi-Fi (`Net`, Quickshell.Networking for the first Wi-Fi card,
         scanning only while its menu is open): connected first, then saved
@@ -1047,7 +1043,10 @@ Notes on specific features:
         notifies. The pill takes them all down, or the first up.
       - Bluetooth (`BluetoothDevices`, the default adapter, discovering only
         while its menu is open): paired first, then nearby ones with a name
-        (nameless ones are only addresses); its battery or state beside it. A
+        (nameless ones are only addresses); on the right a connected one's
+        charge (its percentage and `BatteryGlyph`) and the link (bluetooth_connected
+        in the toggles' blue; a paired one's plain and faint), and in words only
+        what is under way or went wrong. A
         click on a new one pairs it, trusts it (so it comes back by itself)
         and connects it; on a paired one connects, on a connected one
         disconnects. Quickshell has no pairing agent, so one wanting a PIN or
@@ -1060,7 +1059,7 @@ Notes on specific features:
       (`night-light.json`) and put back whenever hyprsunset reports another
       temperature, as one started again does (its getter keeps the last value
       through `identity`, so off is never checked). It is looked for every
-      10 s. Do Not Disturb and Caffeine are `Notifs.dnd` and `Caffeine`.
+      10 s. Do Not Disturb is `Notifs.dnd`.
   - `hyprtoolkit.nix` themes hyprtoolkit (`~/.config/hypr/hyprtoolkit.conf`),
     which hyprpolkitagent ≥ 0.2 and hyprland-guiutils' dialogs (app not
     responding, permissions) draw with, as libadwaita's dark style on the darker palette: window
@@ -1100,14 +1099,6 @@ Notes on specific features:
     listener (a fingerprint) clears it through hypridle's `on_unlock_cmd`. hypridle stays the one clock and
     the one watcher of input, and without a shell the lock simply comes, at
     0.6. Sleep and the power menu lock at once.
-  - Caffeine (the control centre's pill, `Caffeine`, `qs ipc -c shell call
-    caffeine toggle|set|active`) is the `caffeine.service` user unit,
-    `systemd-inhibit --what=idle` part of the session target: hypridle honours
-    logind's idle inhibitors, so nothing locks or blanks while it runs, and a
-    unit outlives a shell restart. Sleep is not inhibited. The shell reads
-    `systemctl --user is-active` as it starts, after a toggle and every 5 s
-    (2 s while the control centre is open), since the bar's cup shows it always and a
-    unit can stop by itself.
   - The OSD (`osd/`) shows what just changed on the focused monitor, on the
     overlay layer, for 1.5 s (fading in over 120 ms and out over 200 ms), never taking a click: by its right edge a
     slim upright slider (level filling from the bottom, past 100 % in the
@@ -1367,12 +1358,13 @@ qst x wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.3   # the session's own PipeWire
 qst pipewire restart           # or stop, start
 qst backlight intel_backlight 40 [MAX]   # set a fake backlight and announce it, until the shell has it; `NAME remove` unplugs
 qst camera open zoom [video1]  # a process named zoom holding a fake camera open; `close zoom`, `add video1`, `remove video0`
+qst camera add video1 locked   # plugged in root's alone, as devtmpfs makes it; `unlock video1` is udev handing it on
 qst network wifi add Cafe 40 open # the session's NetworkManager (tests/networkmanager.py): wifi add SSID [STRENGTH] [SECURITY] [PASSWORD], wifi remove|strength|clear,
                                # wifi many 300 [PREFIX], wifi json JSON, device add|remove NAME [wifi|ethernet], cable NAME on|off, profile wifi|ethernet|wireguard|vpn NAME [SSID PSK],
                                # vpn NAME ok|fail|secrets, up NAME, connectivity none|portal|limited|full, switch on|off (the radio's hardware switch), delay MS, dump, stop|start|restart
 qst battery 15 discharging 1800   # the session's UPower battery: PERCENT [charging|discharging|full|pending [SECONDS]], or remove
 qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70   # BlueZ (tests/bluez.py): ADDRESS NAME [ICON] [ok|pin|fail] [paired] [connected] [BATTERY]; remove ADDRESS, adapter add|remove, stop|start
-qst player add spotify Spotify Playing   # an MPRIS player (tests/mpris.py); status NAME Playing|Paused|Stopped, remove NAME, clear
+qst player add spotify Spotify Playing [ART]   # an MPRIS player (tests/mpris.py), ART an image for its cover; status NAME Playing|Paused|Stopped, remove NAME, clear
 qst sync                       # copy edited QML in, restart qs, print its warnings; non-zero if it fails to load
 qst problems                   # warnings and errors, less tests/known-warnings and this case's `expect`s
 qst census                     # what the probe finds wrong on screen now (see below)
@@ -1434,7 +1426,7 @@ WirePlumber gives a node made with `pw-cli create-node` no ports, so it lists
 but never becomes the default; to take the default away, destroy a test
 microphone (`pw-cli destroy test-headset-mic`) after making it the default.
 `systemctl --user start|stop|is-active` keeps each unit's state in
-`$QS_TEST_DIR/units`, as the shell reads Caffeine back. `backlight-watch`
+`$QS_TEST_DIR/units`. `backlight-watch`
 and `camera-users` are the real ones, run on `$QS_TEST_DIR/backlight` and
 `$QS_TEST_DIR/dev` (one camera, `video0`), and `udevadm monitor` replays
 what `qst backlight` appends.
@@ -1488,10 +1480,10 @@ first), `dnd` and `unchecked`, the volume (percent, muted, output), the default 
 `microphone` (percent, muted, `adjustable`, the input, every input by name),
 the `osd` showing (with its screen), `osdShown` (shows so far) and
 `osdSettling`, `brightness`, `caps`, `privacy` (`mic` names, and `screen` and
-`camera` names or null while unused), `caffeine`, `controls` (the open
+`camera` names or null while unused), `status` (each bar's status button: its glyphs by name, `Microphone`, `bell`, `dnd`, `vpn`, `network` and so on, and the battery's percentage or null), `controls` (the open
 menu, the pills by key with their state, and each backend: `network`, `vpns`,
-`vpnAsking`, `bluetooth`, `night`, `media`), `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: the ids on
-it, how many wait behind its button, its width and the room it has), `field`
+`vpnAsking`, `bluetooth`, `night`, `media`), `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: whether its chevron
+shows, how many icons wait behind it and their ids in the overflow's order), `field`
 (the text field up, the launcher's search) and `problems`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.
@@ -1543,10 +1535,13 @@ default, the popup open, backlights coming and going, the media keys at a
 level's end, Caps Lock both ways, its monitor going); `privacy.sh` microphones
 real and virtual, meters, sink monitors, PipeWire going and coming back,
 screen casts, cameras through PipeWire and held from `/dev` (a short probe,
-PipeWire's own hold, one plugged in later, one unplugged in use);
-`caffeine.sh` the unit started and stopped from the shell and elsewhere, the bar's cup turning it off, and
-a shell restart. `controls.sh` is the control centre: the bar's button, SUPER+A,
-Escape, the wheel and a right click; which pills a machine gets
+PipeWire's own hold, one plugged in later, one plugged in root's alone
+until udev hands it on, one unplugged in use);
+`controls.sh` is the control centre: the bar's button, SUPER+A,
+Escape, the wheel and a right click; the status button's glyphs (what
+records, the bell, Do Not Disturb, the battery); the header's screenshot,
+lock and power menu; an In use pill raising its app's window; a Bluetooth
+row's charge; which pills a machine gets
 (NetworkManager, BlueZ, devices gone); NetworkManager stopping and starting
 under it; Wi-Fi's saved, new (a wrong password, then the right one), given
 up (its profile gone), vanishing and open networks, the radio and its
@@ -1581,8 +1576,8 @@ at thousands a second, where notify-send manages a hundred), megabytes of
 text, icons that are no picture, panels toggled faster than they open, a
 hotplug storm under an open panel, a workspace of 40 windows (`foot`), 60
 outputs, 40 apps recording, damaged state files, and the tray and the
-inputs: 30 tray items (the first four kept, a 640x480 screen keeping fewer),
-items leaving and the next moving up, 60 items churning under the open
+inputs: 30 tray items behind the chevron (a 640x480 screen too), the
+overflow keeping their order as items come and go, 60 items churning under the open
 overflow and a menu opened from it, 200 items scrolling in it and its monitor
 going; 40 microphones real and virtual with 30 more outputs, the default
 input switched by 30 clicks and 50 `wpctl`s, inputs coming and going and the

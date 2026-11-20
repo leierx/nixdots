@@ -87,6 +87,13 @@ qst wait '(.privacy.camera | sort) == ["obs", "zoom"]'
 qst camera close zoom
 qst wait '.privacy.camera == ["obs"]'
 
+qst case "a camera plugged in shows once udev hands it to the user, though it came root's alone"
+qst camera add video1 locked
+qst stays '.privacy.camera == null' 0.5
+qst camera unlock video1
+qst camera open obs video1
+qst wait '.privacy.camera == ["obs"]'
+
 qst case "a camera unplugged while in use goes with it"
 qst camera open zoom
 qst wait '.privacy.camera == ["zoom"]'

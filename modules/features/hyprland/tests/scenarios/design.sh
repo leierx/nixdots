@@ -29,11 +29,11 @@ done
 
 qst case "the control centre with each of its menus, a tray menu, the OSD and the privacy tooltip"
 qst bluetooth add 11:22:33:44:55:01 "WH-1000XM4" audio-headset ok paired connected 70
-qst player add spotify Spotify
+qst player add spotify Spotify Playing "$QS_TEST_DIR/shell/weather/icons/clearsky_day.svg"
 qst backlight intel_backlight 600 1000
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1" and .controls.media != null'
-for menu in output input wifi vpn bluetooth; do
+for menu in output input wifi vpn bluetooth night; do
   qst ipc controls menu "$menu" > /dev/null
   qst stays ".controls.menu == \"$menu\" and .panel == \"controls:DP-1\"" 0.6
 done
@@ -41,19 +41,18 @@ qst ipc controls menu "" > /dev/null
 qst ipc panels close > /dev/null
 qst tray
 qst wait '.tray | length > 0'
-# The tray's icon, last on the bar.
-qst click right $((1920 - 31)) 20
-qst wait '.panel == "tray:DP-1"'
-qst stays '.panel == "tray:DP-1"' 0.6
+# The tray's chevron, last on the bar, then the first icon's menu.
+qst click left $((1920 - 21)) 17
+qst wait '.panel == "tray-overflow:DP-1"'
+read -r x y _ < <(qst areas 'TrayOverflow' | awk -F'\t' '$2 > 30' | sort -n -k2 | head -1)
+qst click right "$x" "$y"
+qst wait '.layers | any(endswith(" quickshell:menu"))'
+qst stays '.panel == "tray-overflow:DP-1"' 0.6
 qst x wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.3
 qst wait '.osd.kind == "volume"'
 qst stays '.osd != null' 0.4
 qst camera open zoom
 qst wait '.privacy.camera == ["zoom"]'
-qst ipc panels close > /dev/null
-qst wait '.panel == ""'
-read -r x y _ < <(qst areas 'BarWindow/PrivacyIndicator')
-qst pointer "$x" "$y"
-qst pointer $((x + 1)) "$y"
-qst wait '.layers | any(endswith(" quickshell:privacy"))'
-qst stays '.privacy.camera == ["zoom"]' 1
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+qst stays '.privacy.camera == ["zoom"] and .panel == "controls:DP-1"' 1

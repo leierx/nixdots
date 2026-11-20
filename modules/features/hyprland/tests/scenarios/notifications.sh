@@ -33,16 +33,15 @@ qst wait '.dnd'
 notify-send -u critical -a Battery "battery low"
 qst wait '(.popups | map(.summary)) == ["battery low"]'
 
-qst case "the bell counts notifications not yet looked at, and a click on it opens the center and checks them"
-qst wait '.unchecked == 0'
+qst case "the status button rings the bell for notifications not yet looked at, and the center from the clock checks them"
+qst wait '.unchecked == 0 and (.status[0].glyphs | index("bell") | not)'
 notify-send -a Chat "one"
 notify-send -a Mail "two"
-qst wait '.unchecked == 2'
+qst wait '.unchecked == 2 and .status[0].glyphs[0] == "bell"'
 qst ipc notifications hidePopups
-# The bell, last on the bar with no tray items.
-qst pointer 1890 21
-qst click left 1894 21
-qst wait '.panel == "center" and .unchecked == 0 and .notifications == 2'
+# The clock, in the middle of the bar.
+qst click left 960 17
+qst wait '.panel == "center" and .unchecked == 0 and .notifications == 2 and (.status[0].glyphs | index("bell") | not)'
 
 qst case "one arriving while the center is open is checked, one after it closes is not"
 qst ipc panels open center > /dev/null

@@ -19,7 +19,7 @@ qst player add spotify Spotify
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1" and .controls.media != null'
 qst cursors ControlsPanel
-for menu in wifi vpn bluetooth output input; do
+for menu in wifi vpn bluetooth output input night; do
   qst ipc controls menu "$menu" > /dev/null
   qst wait ".controls.menu == \"$menu\""
   qst cursors ControlsPanel
@@ -28,9 +28,13 @@ done
 qst case "a hand over a tray menu's rows"
 qst tray
 qst wait '.tray | length > 0'
-# The tray's icon, last on the bar.
-qst click right $((1920 - 31)) 20
-qst wait '.panel == "tray:DP-1"'
+# The tray's chevron, last on the bar, then the first icon's menu.
+qst click left $((1920 - 21)) 17
+qst wait '.panel == "tray-overflow:DP-1"'
+qst cursors TrayOverflow
+read -r x y _ < <(qst areas 'TrayOverflow' | awk -F'\t' '$2 > 30' | sort -n -k2 | head -1)
+qst click right "$x" "$y"
+qst wait '.layers | any(endswith(" quickshell:menu"))'
 qst cursors TrayMenu
 
 qst case "a closed hand while a popup is dragged"

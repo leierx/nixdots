@@ -23,7 +23,9 @@ Singleton {
     root.apply();
   }
 
+  // Moving the strength of a night light that is off turns it on.
   function setStrength(value: real): void {
+    saved.on = true;
     saved.temperature = Math.round((root.lightest - Math.max(0, Math.min(1, value)) * (root.lightest - root.warmest)) / 50) * 50;
     // A drag sets it many times a second; hyprsunset gets the latest a frame later.
     Qt.callLater(root.apply);

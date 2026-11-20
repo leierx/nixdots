@@ -25,11 +25,11 @@ Singleton {
   readonly property color success: Colors.success_color
   // A recording light's red.
   readonly property color recording: Colors.red_2
-  // Caffeine's cup.
-  readonly property color coffee: Colors.brown_2
-  // The bell's, for notifications waiting, and Do Not Disturb's.
+  // The bell's, for notifications waiting.
   readonly property color bell: Colors.yellow_2
-  readonly property color dnd: Colors.purple_1
+  // GNOME's "In use", for what records.
+  readonly property color inUse: Colors.orange_2
+  readonly property color inUseBg: Qt.rgba(Colors.orange_2.r, Colors.orange_2.g, Colors.orange_2.b, 0.18)
   readonly property color nixosLight: "#7ebae4"
   readonly property color nixosDark: "#5277c3"
 

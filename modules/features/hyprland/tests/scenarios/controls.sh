@@ -21,7 +21,7 @@ open() {
   fi
 }
 
-# The bar's status button, the last on the bar before the battery that asks for a hand.
+# The bar's status button, the last on the bar that asks for a hand while there is no tray.
 status_button() {
   qst areas 'BarWindow' | awk -F'\t' '$6 == "true" && $1 > 1500 { x = $1; y = $2 } END { print x, y }'
 }
@@ -45,12 +45,12 @@ qst wait '.volume.muted'
 qst stays '.panel == ""' 0.5
 
 qst case "every pill the machine has, and only those"
-qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "bluetooth", "night", "dnd", "caffeine"]' 10
+qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "bluetooth", "night", "dnd"]' 10
 qst bluetooth adapter remove
-qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "night", "dnd", "caffeine"]'
+qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "night", "dnd"]'
 qst network device remove wlp5s0
 qst network device remove enp8s0
-qst wait '[.controls.toggles[].key] == ["vpn", "night", "dnd", "caffeine"]'
+qst wait '[.controls.toggles[].key] == ["vpn", "night", "dnd"]'
 
 qst case "without NetworkManager one dim pill says so, and the pills come back with it"
 open
@@ -64,7 +64,7 @@ QS_TEST_NETWORK=none QS_TEST_BLUETOOTH=none qst case "a machine with neither Net
 qst expect 'Could not find an available backend'
 qst expect 'DBusObjectManagerInterface for "org\.bluez"'
 open
-qst wait '[.controls.toggles[].key] == ["network", "night", "dnd", "caffeine"]'
+qst wait '[.controls.toggles[].key] == ["network", "night", "dnd"]'
 read -r x y < <(at pill:network)
 qst click left "$x" "$y"
 qst stays '.controls.toggles[0].unavailable and .panel == "controls:DP-1"' 0.5
@@ -216,6 +216,17 @@ open
 press pill:night
 qst wait '(.controls.night.on | not)'
 
+qst case "night light's strength is in its pill's menu, and moving it turns night light on"
+open night
+qst wait '.controls.night.present and (.controls.night.on | not)'
+read -r x y < <(at slider:night)
+qst click left $((x + 80)) "$y"
+qst wait '.controls.night.on and .controls.night.temperature < 4000'
+for _ in $(seq 50); do [ "$(qst x hyprctl hyprsunset temperature)" -lt 4000 ] && break; sleep 0.1; done # sleep: hyprsunset is outside the probe
+[ "$(qst x hyprctl hyprsunset temperature)" -lt 4000 ] || { echo "hyprsunset is at $(qst x hyprctl hyprsunset temperature)"; exit 1; }
+press menu:night
+qst wait '.controls.menu == ""'
+
 qst case "a backlight gets a slider, set through brightnessctl, and no OSD over the open centre"
 qst backlight intel_backlight 600 1000
 open
@@ -253,3 +264,44 @@ qst pipewire stop
 qst wait '.volume.output == null'
 qst pipewire start
 qst wait '.volume.output == "Speakers"' 15
+
+qst case "the status button: what records first, the bell while notifications wait, Do Not Disturb struck through, the battery last"
+qst wait '.status[0].glyphs == ["vpn", "network", "volume"] and .status[0].battery == 76'
+notify-send -a Chat "hello"
+qst wait '.status[0].glyphs[0] == "bell"'
+qst spawn pw-record -P "{ application.name=Recorder }" /dev/null
+qst wait '.status[0].glyphs[0:2] == ["Microphone", "bell"]'
+qst ipc notifications setDnd true > /dev/null
+qst wait '.status[0].glyphs[0:2] == ["Microphone", "dnd"]'
+qst battery remove
+qst wait '.status[0].battery == null'
+
+qst case "the header: a screenshot and the lock close the centre first, power opens the power menu"
+open
+press header:screenshot
+qst wait '.panel == ""'
+for _ in $(seq 30); do qst actions | grep -q 'freeze-region copy' && break; sleep 0.1; done # sleep: the screenshot waits out the centre's fade, which the probe does not see
+qst actions | grep -qx 'systemd-run --user --scope --quiet freeze-region copy'
+open
+press header:lock
+qst wait '.panel == ""'
+qst actions | grep -qx 'loginctl lock-session'
+open
+press header:power
+qst wait '.panel == "power"'
+
+qst case "what records gets an In use pill naming the app, which raises its window"
+qst spawn foot
+qst wait '.windows | length == 1'
+qst spawn pw-record -P "{ application.name=foot }" /dev/null
+qst wait '.privacy.mic == ["foot"]'
+open
+for _ in $(seq 30); do qst areas 'ControlsPanel' | grep -q "inuse:Microphone	true" && break; sleep 0.1; done # sleep: the window list reaches the pill through wlr-foreign-toplevel, outside the probe
+press inuse:Microphone
+qst wait '.panel == ""'
+
+qst case "a Bluetooth device's charge and link are drawn in its row"
+qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70
+qst wait '.controls.bluetooth.devices[0].battery == 70'
+open bluetooth
+[ -n "$(at row:Headset)" ]

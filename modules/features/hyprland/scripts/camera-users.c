@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
   dir = resolved;
   dir_len = strlen(dir);
   inotify = inotify_init1(IN_CLOEXEC);
-  if (inotify < 0 || inotify_add_watch(inotify, dir, IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_MOVED_FROM) < 0) {
+  if (inotify < 0 || inotify_add_watch(inotify, dir, IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_MOVED_FROM | IN_ATTRIB) < 0) {
     perror("camera-users");
     return 1;
   }
@@ -184,7 +184,8 @@ int main(int argc, char **argv) {
         } else if (e->len == 0) {
           relevant = true;
         } else if (is_device(e->name)) {
-          if (e->mask & (IN_CREATE | IN_MOVED_TO))
+          // A new node is root's alone until udev hands it to the seat, which only IN_ATTRIB tells.
+          if (e->mask & (IN_CREATE | IN_MOVED_TO | IN_ATTRIB))
             watch_device(e->name);
           relevant = true;
         }

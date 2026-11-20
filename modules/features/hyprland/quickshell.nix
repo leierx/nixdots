@@ -203,24 +203,6 @@ in
         };
       };
 
-      # The center's Caffeine: hypridle honours logind's idle inhibitors, and a unit outlives a shell restart.
-      systemd.user.services.caffeine = {
-        Unit = {
-          Description = "Keep the session from going idle";
-          PartOf = [ config.wayland.systemd.target ];
-          After = [ config.wayland.systemd.target ];
-        };
-        Service.ExecStart = lib.escapeShellArgs [
-          (lib.getExe' osConfig.systemd.package "systemd-inhibit")
-          "--what=idle"
-          "--who=Caffeine"
-          "--why=Turned on in the notification center"
-          "--mode=block"
-          (lib.getExe' pkgs.coreutils "sleep")
-          "infinity"
-        ];
-      };
-
       # Hyprland reports no lock changes, so the Caps Lock key's release asks the shell to look.
       wayland.windowManager.hyprland.settings.on = [
         {

@@ -2,8 +2,7 @@ dir=${1:?usage: qs-design-lint SHELL_DIR}
 cd "$dir"
 
 # What the design standards in AGENTS.md leave to a file on purpose: a file or component, a rule, and why.
-allow='bar/Battery.qml	radius	a meter drawn to its own scale
-power/PowerMenu.qml	radius	the power tiles are large squircles, no role of Theme'"'"'s
+allow='power/PowerMenu.qml	radius	the power tiles are large squircles, no role of Theme'"'"'s
 Slider	component	the volume popup'"'"'s slider and the OSD'"'"'s level meter are different things
 Preview	component	every launcher mode draws its own preview'
 

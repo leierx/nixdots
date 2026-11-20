@@ -24,7 +24,7 @@ PanelWindow {
   property var pending: null
   readonly property int padding: 6
 
-  // The pointer gone from it, or the app's menu gone: the bar closes the panel, the overflow only the menu.
+  // The pointer gone from it, or the app's menu gone: the overflow under it stays.
   signal dismissed
 
   // libadwaita's check button: an outlined box (a ring for a radio), filled with the accent once checked.

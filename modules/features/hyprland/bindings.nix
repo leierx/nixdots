@@ -75,6 +75,9 @@ root: {
       };
     in
     {
+      # The control centre takes a screenshot by name too.
+      home.packages = [ freezeRegion ];
+
       wayland.windowManager.hyprland = {
         settings.bind = [
           (mkBind {

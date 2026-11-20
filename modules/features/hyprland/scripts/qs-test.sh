@@ -46,12 +46,13 @@ usage: qs-test COMMAND
                         wifi remove|strength|clear|many COUNT [PREFIX]|json JSON, device add|remove NAME [wifi|ethernet], cable NAME on|off,
                         profile wifi|ethernet|wireguard|vpn NAME [SSID PSK], vpn NAME ok|fail|secrets, up NAME,
                         connectivity none|portal|limited|full, switch on|off, delay MS, dump
-  player add NAME [IDENTITY] [STATUS]   an MPRIS player (tests/mpris.py); status NAME Playing|Paused|Stopped, remove NAME, clear
+  player add NAME [IDENTITY] [STATUS] [ART]   an MPRIS player (tests/mpris.py), ART an image file for its cover; status NAME Playing|Paused|Stopped, remove NAME, clear
   battery PERCENT [STATE [SECONDS]]   the session's UPower battery (charging, discharging, full, pending), or remove
   bluetooth SUB ...     the session's BlueZ (tests/bluez.py): start|stop, adapter add|remove, remove ADDRESS,
                         add ADDRESS NAME [ICON] [ok|pin|fail] [paired] [connected] [BATTERY]
   backlight NAME VALUE [MAX]    set a fake backlight (max 100) and announce it as udev does; NAME remove unplugs it
   camera open|close NAME [DEV]  a process named NAME holding a fake camera (video0) open; add|remove DEV
+                        add DEV locked plugs one in root's alone, as devtmpfs makes it; unlock DEV is udev handing it on
   spawn CMD...          start CMD in the session, detached (output in spawn.log)
   tray [log]            add a test tray item with submenus (tests/tray.qml), or show what it was told
   tray add NAME [COUNT] COUNT items under the app id NAME (tests/trays.qml); remove NAME, clear
@@ -258,7 +259,7 @@ EOF
 echo "systemd-run \$*" >> "$T/actions.log"
 case " \$* " in *' --scope '*) ;; *) exit ;; esac
 while [ "\${1#-}" != "\$1" ]; do shift; done
-case "\$1" in nixpkgs-run | xdg-open) exit ;; esac
+case "\$1" in nixpkgs-run | xdg-open | freeze-region) exit ;; esac
 exec "\$@"
 EOF
   # systemctl keeps the state of the units it starts and stops, as the shell reads it back.
@@ -279,7 +280,7 @@ EOF
   printf '#!/bin/sh\nexec tail -n0 -F "%s/udev"\n' "$T" > "$T/bin/udevadm"
   printf '#!/bin/sh\nexec %s "%s/backlight"\n' "$(command -v backlight-watch)" "$T" > "$T/bin/backlight-watch"
   printf '#!/bin/sh\nexec %s "%s/dev"\n' "$(command -v camera-users)" "$T" > "$T/bin/camera-users"
-  for entry in loginctl pw-play xdg-open nixpkgs-run; do
+  for entry in loginctl pw-play xdg-open nixpkgs-run freeze-region; do
     printf '#!/bin/sh\necho "%s $*" >> "%s/actions.log"\n' "$entry" "$T" > "$T/bin/$entry"
   done
   # libnm will not register its secret agent with a NetworkManager not run by root, so the fake brings a profile up.
@@ -588,8 +589,8 @@ player() {
   mkdir -p "$T/players"
   case $sub in
     add)
-      [ -n "$name" ] || die "player add NAME [IDENTITY] [STATUS]"
-      QS_MPRIS_NAME=$name setsid qs-dbusmock --session --template "$tests/mpris.py" -p "$(jq -cn --arg identity "${3:-$name}" --arg status "${4:-Playing}" '{ identity: $identity, status: $status }')" > "$T/players/$name.log" 2>&1 < /dev/null &
+      [ -n "$name" ] || die "player add NAME [IDENTITY] [STATUS] [ART]"
+      QS_MPRIS_NAME=$name setsid qs-dbusmock --session --template "$tests/mpris.py" -p "$(jq -cn --arg identity "${3:-$name}" --arg status "${4:-Playing}" --arg art "${5:+file://$(realpath "$5")}" '{ identity: $identity, status: $status, art: $art }')" > "$T/players/$name.log" 2>&1 < /dev/null &
       echo $! > "$T/players/$name.pid"
       for _ in $(seq 100); do
         dbus-send --session --print-reply --dest=org.freedesktop.DBus / org.freedesktop.DBus.NameHasOwner "string:org.mpris.MediaPlayer2.$name" 2> /dev/null | grep -q 'boolean true' && return
@@ -603,7 +604,7 @@ player() {
       rm -f "$T/players/$name.pid"
       ;;
     clear) players_reset ;;
-    *) die "player add NAME [IDENTITY] [STATUS], status NAME STATUS, remove NAME, clear" ;;
+    *) die "player add NAME [IDENTITY] [STATUS] [ART], status NAME STATUS, remove NAME, clear" ;;
   esac
 }
 
@@ -659,9 +660,19 @@ camera() {
       kill -- -"$(cat "$T/holders/$name")" 2> /dev/null || true
       rm -f "$T/holders/$name"
       ;;
-    add) : > "$T/dev/$name" ;;
+    add)
+      if [ "${3:-}" = locked ]; then
+        # Made aside and moved in, so it is never seen readable.
+        : > "$T/dev/.$name"
+        chmod 000 "$T/dev/.$name"
+        mv "$T/dev/.$name" "$T/dev/$name"
+      else
+        : > "$T/dev/$name"
+      fi
+      ;;
+    unlock) chmod 600 "$T/dev/$name" ;;
     remove) rm -f "$T/dev/$name" ;;
-    *) die "camera open|close NAME [DEVICE], or add|remove DEVICE" ;;
+    *) die "camera open|close NAME [DEVICE], add DEVICE [locked], unlock DEVICE or remove DEVICE" ;;
   esac
 }
 

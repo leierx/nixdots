@@ -61,41 +61,14 @@ PanelWindow {
     }
     spacing: 2
 
-    Row {
-      id: status
-
+    StatusButton {
       anchors.verticalCenter: parent.verticalCenter
-      spacing: 2
-
-      PrivacyIndicator {
-        anchors.verticalCenter: parent.verticalCenter
-        screen: root.screen
-      }
-
-      StatusButton {
-        anchors.verticalCenter: parent.verticalCenter
-        screen: root.screen
-      }
-
-      Battery {
-        anchors.verticalCenter: parent.verticalCenter
-        screen: root.screen
-      }
-
-      Cup {
-        anchors.verticalCenter: parent.verticalCenter
-      }
-
-      Bell {
-        anchors.verticalCenter: parent.verticalCenter
-      }
+      screen: root.screen
     }
 
     Tray {
       anchors.verticalCenter: parent.verticalCenter
       screen: root.screen
-      // What the right side has left before it would reach the clock.
-      room: (root.width - clock.width) / 2 - Theme.gap - root.inset - status.width - 2
     }
   }
 }

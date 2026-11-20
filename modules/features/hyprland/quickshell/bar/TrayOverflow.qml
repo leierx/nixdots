@@ -7,7 +7,7 @@ import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.common
 
-// The tray items past the bar's four, in a grid under its button.
+// Every tray item, in a grid under the bar's chevron.
 Overlay {
   id: root
 

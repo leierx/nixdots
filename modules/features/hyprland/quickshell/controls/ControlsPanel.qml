@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Networking
 import Quickshell.Wayland
@@ -19,18 +20,66 @@ Overlay {
   readonly property string check: "m382-354 339-339q12-12 28-12t28 12q12 12 12 28.5T777-636L410-268q-12 12-28 12t-28-12L182-440q-12-12-11.5-28.5T183-497q12-12 28.5-12t28.5 12l142 143Z"
   // The most the card may take: what the screen leaves under the bar.
   readonly property real available: height - top - 2 * Theme.gap
+  readonly property bool open: Panels.active === name
+  property real shown: 0
+  // The open menu, held while the card fades out, as Controls shuts it at once.
+  property string menu: ""
 
-  // What the card stacks, a menu right under the row that opened it; by id, so an open menu outlives every change around it.
+  Binding on menu {
+    when: root.open
+    value: Controls.menu
+    restoreMode: Binding.RestoreNone
+  }
+
+  // What the card stacks, each menu in a slot of its own under the row that opens it, so one eases shut as the next eases open; by id, so an open menu outlives every change around it.
   readonly property var sections: {
-    const list = [{ id: "levels", kind: "levels" }];
-    if (Controls.menu === "output" || Controls.menu === "input") list.push({ id: `menu:${Controls.menu}`, kind: "menu", key: Controls.menu });
+    const list = [{ id: "header", kind: "header" }, { id: "levels", kind: "levels" }, { id: "menu:output", kind: "menu", key: "output" }, { id: "menu:input", kind: "menu", key: "input" }];
     for (let i = 0; i < Controls.toggles.length; i += 2) {
       const row = Controls.toggles.slice(i, i + 2);
       list.push({ id: `toggles:${i}`, kind: "toggles", items: row });
-      if (row.some(toggle => toggle.key === Controls.menu && toggle.menu)) list.push({ id: `menu:${Controls.menu}`, kind: "menu", key: Controls.menu });
+      for (const toggle of row) if (toggle.menu) list.push({ id: `menu:${toggle.key}`, kind: "menu", key: toggle.key });
     }
+    if (Privacy.kinds.length > 0) list.push({ id: "inuse", kind: "inuse" });
     if (Media.player) list.push({ id: "media", kind: "media" });
     return list;
+  }
+
+  signal hidden()
+
+  onOpenChanged: {
+    (open ? closing : opening).stop();
+    // Closed before it moved, it has nothing to animate, and would never report itself hidden.
+    if (!open && shown === 0) Qt.callLater(root.hideClosed);
+    else (open ? opening : closing).start();
+  }
+  onShownChanged: if (shown === 0 && !open) hidden()
+  // A window Hyprland has closed stays closed, so the next open needs a new one.
+  onClosed: hidden()
+  Component.onCompleted: {
+    if (open) opening.start();
+    else Qt.callLater(root.hideClosed);
+  }
+
+  function hideClosed(): void {
+    if (!root.open) root.hidden();
+  }
+
+  function batteryState(): string {
+    if (Power.charging) return Power.remaining > 0 ? `Full in ${Power.duration(Power.remaining)}` : "Charging";
+    if (Power.plugged) return "Plugged in";
+    return Power.remaining > 0 ? `${Power.duration(Power.remaining)} left` : "On battery";
+  }
+
+  // The window of the first app named that has one, by the app's own name or its desktop entry's.
+  function windowOf(apps: var): var {
+    const toplevels = ToplevelManager.toplevels.values;
+    for (const app of apps) {
+      const entry = DesktopEntries.heuristicLookup(app);
+      const ids = [app, entry?.id ?? "", entry?.startupClass ?? ""].filter(id => id !== "").map(id => id.toLowerCase());
+      const found = toplevels.find(toplevel => ids.includes(toplevel.appId.toLowerCase()));
+      if (found) return found;
+    }
+    return null;
   }
 
   function rows(key: string): var {
@@ -55,7 +104,7 @@ Overlay {
       const asking = Net.vpnAsking === vpn.uuid;
       return { key: vpn.uuid, glyph: Symbols.vpn, title: Names.clean(vpn.name), toggle: vpn.active, note: busy === "up" || vpn.state === "activating" ? "Connecting…" : busy === "down" ? "Disconnecting…" : asking ? Net.vpnError || "Password needed" : "", bad: asking && Net.vpnError !== "", asking, target: vpn };
     });
-    if (key === "bluetooth") return BluetoothDevices.devices.map(device => ({ key: device.address, glyph: BluetoothDevices.glyph(device), title: BluetoothDevices.name(device), current: device.connected, note: BluetoothDevices.note(device), bad: (BluetoothDevices.failures[device.address] ?? "") !== "", target: device }));
+    if (key === "bluetooth") return BluetoothDevices.devices.map(device => ({ key: device.address, glyph: BluetoothDevices.glyph(device), title: BluetoothDevices.name(device), current: device.connected, tick: false, note: BluetoothDevices.note(device), bad: (BluetoothDevices.failures[device.address] ?? "") !== "", battery: device.connected && device.batteryAvailable ? device.battery : -1, link: device.connected ? "connected" : device.paired ? "paired" : "", target: device }));
     const backend = key === "output" ? Volume : Microphone;
     const devices = backend.devices.map(device => ({ key: `${device.index}`, glyph: "", title: device.name, current: device.current, target: device.index }));
     return [...devices.filter(device => device.current), ...devices.filter(device => !device.current)];
@@ -91,7 +140,35 @@ Overlay {
   }
 
   card: box
+  // While closing, clicks already go to the windows below.
+  mask: open ? null : nothing
   WlrLayershell.namespace: "quickshell:controls"
+  WlrLayershell.keyboardFocus: open ? root.keyboard : WlrKeyboardFocus.None
+
+  Region {
+    id: nothing
+  }
+
+  // Not a Behavior: one whose duration follows `open` may start before that duration updates.
+  NumberAnimation {
+    id: opening
+
+    target: root
+    property: "shown"
+    to: 1
+    duration: 240
+    easing.type: Easing.OutQuint
+  }
+
+  NumberAnimation {
+    id: closing
+
+    target: root
+    property: "shown"
+    to: 0
+    duration: 140
+    easing.type: Easing.InCubic
+  }
 
   component Slider: Item {
     id: slider
@@ -116,14 +193,20 @@ Overlay {
         height: parent.height
         radius: parent.radius
         color: slider.dim ? Theme.fgDim : Theme.accentBg
+
+        Behavior on color {
+          ColorAnimation {
+            duration: Theme.fade
+          }
+        }
       }
     }
 
     Rectangle {
       x: Math.max(0, Math.min(1, slider.value)) * (slider.width - width)
       anchors.verticalCenter: parent.verticalCenter
-      width: 20
-      height: 20
+      width: 16
+      height: 16
       radius: height / 2
       color: Theme.slider
       scale: drag.pressed ? 1.1 : 1
@@ -206,7 +289,7 @@ Overlay {
       radius: height / 2
       padding: 0
       flat: true
-      checked: level.opens !== "" && Controls.menu === level.opens
+      checked: level.opens !== "" && root.menu === level.opens
       onClicked: Controls.show(level.opens)
 
       Item {
@@ -214,6 +297,13 @@ Overlay {
         width: 16
         height: 16
         rotation: arrow.checked ? 0 : -90
+
+        Behavior on rotation {
+          NumberAnimation {
+            duration: 200
+            easing.type: Easing.OutCubic
+          }
+        }
 
         ExpanderArrow {}
       }
@@ -225,17 +315,130 @@ Overlay {
     id: pill
 
     required property var toggle
-    readonly property bool open: Controls.menu === toggle.key
+    readonly property bool open: root.menu === toggle.key
+    property color ink: toggle.on ? Theme.accentFg : Theme.fg
+    property color dimInk: toggle.on ? Theme.accentFg : Theme.fgDim
+    property color rule: toggle.on ? Theme.accentFg : Theme.border
 
     height: 52
     radius: height / 2
     opacity: toggle.unavailable ? 0.5 : 1
     color: toggle.on ? Theme.accentBg : Theme.button
 
+    Behavior on color {
+      ColorAnimation {
+        duration: Theme.fade
+      }
+    }
+
+    Behavior on ink {
+      ColorAnimation {
+        duration: Theme.fade
+      }
+    }
+
+    Behavior on dimInk {
+      ColorAnimation {
+        duration: Theme.fade
+      }
+    }
+
+    Behavior on rule {
+      ColorAnimation {
+        duration: Theme.fade
+      }
+    }
+
+    Behavior on opacity {
+      NumberAnimation {
+        duration: Theme.fade
+      }
+    }
+
     Rectangle {
       anchors.fill: parent
       radius: parent.radius
       color: main.containsMouse && main.enabled ? Theme.hover : "transparent"
+
+      Behavior on color {
+        ColorAnimation {
+          duration: Theme.fade
+        }
+      }
+    }
+
+    // A flip's feedback: a ripple spreading from the click, and the symbol dipping and springing back.
+    function pop(x: real): void {
+      ripple.from = Math.max(0, Math.min(pill.width - pill.height, x - pill.height / 2));
+      popping.restart();
+    }
+
+    Rectangle {
+      id: ripple
+
+      property real from: 0
+
+      height: parent.height
+      radius: height / 2
+      color: Theme.fg
+      opacity: 0
+    }
+
+    ParallelAnimation {
+      id: popping
+
+      NumberAnimation {
+        target: ripple
+        property: "x"
+        from: ripple.from
+        to: 0
+        duration: 450
+        easing.type: Easing.OutCubic
+      }
+
+      NumberAnimation {
+        target: ripple
+        property: "width"
+        from: pill.height
+        to: pill.width
+        duration: 450
+        easing.type: Easing.OutCubic
+      }
+
+      NumberAnimation {
+        target: ripple
+        property: "opacity"
+        from: 0.25
+        to: 0
+        duration: 450
+        easing.type: Easing.OutCubic
+      }
+
+      SequentialAnimation {
+        NumberAnimation {
+          target: symbol
+          property: "scale"
+          to: 0.78
+          duration: 100
+          easing.type: Easing.OutQuad
+        }
+
+        NumberAnimation {
+          target: symbol
+          property: "scale"
+          to: 1.15
+          duration: 120
+          easing.type: Easing.OutQuad
+        }
+
+        NumberAnimation {
+          target: symbol
+          property: "scale"
+          to: 1
+          duration: 160
+          easing.type: Easing.OutBack
+        }
+      }
     }
 
     Row {
@@ -245,10 +448,12 @@ Overlay {
       spacing: 10
 
       Glyph {
+        id: symbol
+
         anchors.verticalCenter: parent.verticalCenter
         path: pill.toggle.glyph
         size: 20
-        color: pill.toggle.on ? Theme.accentFg : Theme.fg
+        color: pill.ink
       }
 
       Column {
@@ -260,7 +465,7 @@ Overlay {
           text: pill.toggle.title
           textFormat: Text.PlainText
           elide: Text.ElideRight
-          color: pill.toggle.on ? Theme.accentFg : Theme.fg
+          color: pill.ink
           font: Theme.heading
         }
 
@@ -269,8 +474,14 @@ Overlay {
           text: pill.toggle.subtitle
           textFormat: Text.PlainText
           elide: Text.ElideRight
-          color: pill.toggle.on ? Theme.accentFg : Theme.fgDim
+          color: pill.dimInk
           opacity: pill.toggle.on ? 0.8 : 1
+
+          Behavior on opacity {
+            NumberAnimation {
+              duration: Theme.fade
+            }
+          }
           font: Theme.caption
         }
       }
@@ -285,7 +496,10 @@ Overlay {
       hoverEnabled: true
       enabled: !pill.toggle.unavailable
       cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-      onClicked: Controls.flip(pill.toggle)
+      onClicked: mouse => {
+        Controls.flip(pill.toggle);
+        pill.pop(mouse.x);
+      }
     }
 
     Item {
@@ -300,8 +514,14 @@ Overlay {
         width: 1
         height: parent.height - 20
         anchors.verticalCenter: parent.verticalCenter
-        color: pill.toggle.on ? Theme.accentFg : Theme.border
+        color: pill.rule
         opacity: pill.toggle.on ? 0.3 : 1
+
+        Behavior on opacity {
+          NumberAnimation {
+            duration: Theme.fade
+          }
+        }
       }
 
       Rectangle {
@@ -310,6 +530,12 @@ Overlay {
         topRightRadius: pill.radius
         bottomRightRadius: pill.radius
         color: side.containsMouse ? Theme.hover : "transparent"
+
+        Behavior on color {
+          ColorAnimation {
+            duration: Theme.fade
+          }
+        }
       }
 
       Item {
@@ -318,6 +544,13 @@ Overlay {
         width: 16
         height: 16
         rotation: pill.open ? 0 : -90
+
+        Behavior on rotation {
+          NumberAnimation {
+            duration: 200
+            easing.type: Easing.OutCubic
+          }
+        }
 
         ExpanderArrow {}
       }
@@ -342,13 +575,15 @@ Overlay {
     // The most it may take; the list scrolls within.
     property real limit: 1e6
     // Wi-Fi's rows are built at most every 150 ms: three hundred networks each changing strength in a scan would otherwise rebuild them three hundred times.
-    readonly property var all: key === "wifi" ? settled : root.rows(key)
+    // Night light's menu is its strength rather than a list.
+    readonly property bool tint: key === "night"
+    readonly property var all: key === "wifi" ? settled : tint ? [] : root.rows(key)
     property var settled: []
     readonly property real changes: key === "wifi" ? root.touchWifi() : 0
     readonly property bool filtering: all.length > 20
     readonly property var shown: filter.text === "" ? all : all.filter(row => row.asking || row.title.toLowerCase().includes(filter.text.toLowerCase()))
-    readonly property string title: ({ wifi: "Wi-Fi", vpn: "VPN", bluetooth: "Bluetooth", output: "Sound Output", input: "Sound Input" })[key] ?? key
-    readonly property var footer: key === "wifi" ? ["Hidden Network…", "Network Settings…"] : key === "vpn" ? ["Network Settings…"] : key === "bluetooth" ? ["Bluetooth Settings…"] : []
+    readonly property string title: ({ wifi: "Wi-Fi", vpn: "VPN", bluetooth: "Bluetooth", output: "Sound Output", input: "Sound Input", night: "Night Light" })[key] ?? key
+    readonly property var footer: key === "wifi" || key === "vpn" ? ["Network Settings…"] : key === "bluetooth" ? ["Bluetooth Settings…"] : []
     // Said in place of a list with nothing in it.
     readonly property string empty: {
       if (key === "wifi") return !Net.wifiOn ? "Wi-Fi is off" : "Looking for networks…";
@@ -369,8 +604,7 @@ Overlay {
     }
 
     function act(name: string): void {
-      if (name === "Hidden Network…") Net.settings(["--create", "--type=802-11-wireless"]);
-      else if (name === "Network Settings…") Net.settings([]);
+      if (name === "Network Settings…") Net.settings([]);
       else BluetoothDevices.settings();
     }
 
@@ -382,7 +616,7 @@ Overlay {
       Qt.callLater(root.reveal, item);
     }
 
-    implicitHeight: chrome + Math.max(list.contentHeight, 32)
+    implicitHeight: chrome + (tint ? 32 : Math.max(list.contentHeight, 32))
     height: Math.min(implicitHeight, Math.max(chrome + 4 * 32 + (all.some(row => row.asking) ? 76 : 32), limit))
     radius: Theme.cardRadius
     color: Theme.card
@@ -422,8 +656,8 @@ Overlay {
 
         Text {
           anchors.verticalCenter: parent.verticalCenter
-          visible: menuBox.filtering
-          text: `${menuBox.all.length}`
+          visible: menuBox.filtering || menuBox.tint
+          text: menuBox.tint ? `${NightLight.temperature} K` : `${menuBox.all.length}`
           color: Theme.fgDim
           font: Theme.caption
         }
@@ -475,10 +709,22 @@ Overlay {
           x: 10
           height: 32
           verticalAlignment: Text.AlignVCenter
-          visible: menuBox.shown.length === 0
+          visible: menuBox.shown.length === 0 && !menuBox.tint
           text: menuBox.all.length === 0 ? menuBox.empty : "Nothing matches"
           color: Theme.fgDim
           font: Theme.body
+        }
+
+        Slider {
+          objectName: "slider:night"
+          x: 10
+          width: parent.width - 20
+          height: 32
+          visible: menuBox.tint
+          value: NightLight.strength
+          dim: !NightLight.on
+          onMoved: value => NightLight.setStrength(value)
+          onStepped: notches => NightLight.setStrength(NightLight.strength + notches * 0.05)
         }
 
         // Only the rows in view exist, so a thousand cost what a dozen do.
@@ -486,6 +732,7 @@ Overlay {
           id: list
 
           anchors.fill: parent
+          visible: !menuBox.tint
           interactive: contentHeight > height
           boundsBehavior: Flickable.StopAtBounds
           clip: true
@@ -495,6 +742,33 @@ Overlay {
           model: ScriptModel {
             values: menuBox.shown
             objectProp: "key"
+          }
+
+          add: Transition {
+            NumberAnimation {
+              property: "opacity"
+              from: 0
+              to: 1
+              duration: 200
+              easing.type: Easing.OutCubic
+            }
+          }
+
+          remove: Transition {
+            NumberAnimation {
+              property: "opacity"
+              to: 0
+              duration: 200
+              easing.type: Easing.OutCubic
+            }
+          }
+
+          displaced: Transition {
+            NumberAnimation {
+              property: "y"
+              duration: 200
+              easing.type: Easing.OutCubic
+            }
           }
 
           delegate: Rectangle {
@@ -508,6 +782,12 @@ Overlay {
             height: asking ? 76 : 32
             radius: Theme.smallRadius
             color: rowArea.containsMouse || asking ? Theme.hover : "transparent"
+
+            Behavior on color {
+              ColorAnimation {
+                duration: Theme.fade
+              }
+            }
             onHeightChanged: if (asking) Qt.callLater(menuBox.reveal, row)
             onAskingChanged: if (asking) password.forceActiveFocus()
             // Asked again after a wrong one, the field takes the keyboard back for the next try.
@@ -557,7 +837,7 @@ Overlay {
               anchors.leftMargin: 6
               y: 9
               visible: row.modelData.lock ?? false
-              path: Symbols.lockFilled
+              path: Symbols.lock
               size: 14
               color: Theme.fgDim
             }
@@ -579,6 +859,29 @@ Overlay {
                 elide: Text.ElideRight
                 color: row.modelData.bad ? Theme.destructive : Theme.fgDim
                 font: Theme.caption
+              }
+
+              Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: (row.modelData.battery ?? -1) >= 0
+                text: `${Math.round((row.modelData.battery ?? 0) * 100)} %`
+                color: Theme.fgDim
+                font: Theme.caption
+              }
+
+              BatteryGlyph {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: (row.modelData.battery ?? -1) >= 0
+                size: 16
+                level: row.modelData.battery ?? 0
+              }
+
+              Glyph {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: (row.modelData.link ?? "") !== ""
+                path: row.modelData.link === "connected" ? Symbols.bluetoothConnected : Symbols.bluetooth
+                size: 18
+                color: row.modelData.link === "connected" ? Theme.accentBg : Theme.fgFaint
               }
 
               Glyph {
@@ -723,6 +1026,12 @@ Overlay {
             radius: Theme.smallRadius
             color: actionArea.containsMouse ? Theme.hover : "transparent"
 
+            Behavior on color {
+              ColorAnimation {
+                duration: Theme.fade
+              }
+            }
+
             Text {
               x: 10
               anchors.verticalCenter: parent.verticalCenter
@@ -820,38 +1129,260 @@ Overlay {
         onStepped: notches => Brightness.set(backlight.modelData, Math.round((backlight.value + notches * 0.05) * 20) / 20)
       }
     }
+  }
 
-    Level {
-      width: parent.width
-      visible: NightLight.present && NightLight.on
-      glyph: Symbols.nightLight
-      value: NightLight.strength
-      onMoved: value => NightLight.setStrength(value)
-      onStepped: notches => NightLight.setStrength(NightLight.strength + notches * 0.05)
+  // GNOME's top row: the battery on the left, then a screenshot, the lock and the power menu.
+  component Header: Item {
+    id: header
+
+    implicitHeight: 34
+
+    Rectangle {
+      anchors.verticalCenter: parent.verticalCenter
+      visible: Power.present
+      width: charge.width + 24
+      height: 34
+      radius: height / 2
+      color: Theme.card
+
+      Row {
+        id: charge
+
+        anchors.centerIn: parent
+        spacing: 8
+
+        BatteryGlyph {
+          anchors.verticalCenter: parent.verticalCenter
+          level: Power.percent / 100
+          charging: Power.charging
+        }
+
+        Text {
+          anchors.verticalCenter: parent.verticalCenter
+          width: Math.min(implicitWidth, header.width - actions.width - 56)
+          text: `${Power.percent} % · ${root.batteryState()}`
+          elide: Text.ElideRight
+          color: Theme.fg
+          font: Theme.body
+        }
+      }
+    }
+
+    Row {
+      id: actions
+
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      spacing: 8
+
+      Button {
+        objectName: "header:screenshot"
+        radius: height / 2
+        padding: 0
+        glyph: Symbols.screenshot
+        glyphSize: 20
+        onClicked: Controls.screenshot()
+      }
+
+      Button {
+        objectName: "header:lock"
+        radius: height / 2
+        padding: 0
+        glyph: Symbols.lock
+        glyphSize: 20
+        onClicked: Controls.lock()
+      }
+
+      Button {
+        objectName: "header:power"
+        radius: height / 2
+        padding: 0
+        glyph: Symbols.power
+        glyphSize: 20
+        onClicked: Controls.powerMenu()
+      }
     }
   }
 
+  // GNOME's "In use": a pill per kind of recording, naming the apps; a click raises the first one's window.
+  component InUse: Column {
+    id: inUse
+
+    spacing: 8
+
+    Text {
+      text: "In use"
+      color: Theme.fgDim
+      font: Theme.captionHeading
+    }
+
+    Grid {
+      columns: 2
+      columnSpacing: 8
+      rowSpacing: 8
+
+      Repeater {
+        model: ScriptModel {
+          values: Privacy.kinds
+          objectProp: "name"
+        }
+
+        Rectangle {
+          id: use
+
+          required property var modelData
+          readonly property var window: root.windowOf(modelData.apps)
+          readonly property var names: modelData.apps.map(app => DesktopEntries.heuristicLookup(app)?.name ?? app)
+
+          width: (inUse.width - 8) / 2
+          height: 52
+          radius: height / 2
+          color: area.containsMouse && area.enabled ? Theme.buttonHover : Theme.button
+
+          Behavior on color {
+            ColorAnimation {
+              duration: Theme.fade
+            }
+          }
+
+          Rectangle {
+            id: chip
+
+            x: 8
+            anchors.verticalCenter: parent.verticalCenter
+            width: 36
+            height: 36
+            radius: height / 2
+            color: Theme.inUseBg
+
+            Glyph {
+              anchors.centerIn: parent
+              path: use.modelData.glyph
+              size: 20
+              color: Theme.inUse
+            }
+          }
+
+          Column {
+            anchors.left: chip.right
+            anchors.leftMargin: 10
+            anchors.right: parent.right
+            anchors.rightMargin: 14
+            anchors.verticalCenter: parent.verticalCenter
+
+            Text {
+              width: parent.width
+              text: use.modelData.name === "Screen" ? "Screen Sharing" : use.modelData.name
+              elide: Text.ElideRight
+              color: Theme.fg
+              font: Theme.heading
+            }
+
+            Text {
+              width: parent.width
+              text: use.names.join(", ") || "Through the screen sharing portal"
+              textFormat: Text.PlainText
+              elide: Text.ElideRight
+              color: Theme.fgDim
+              font: Theme.caption
+            }
+          }
+
+          MouseArea {
+            id: area
+
+            objectName: `inuse:${use.modelData.name}`
+            anchors.fill: parent
+            hoverEnabled: true
+            enabled: use.window !== null
+            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: {
+              Panels.close();
+              use.window?.activate();
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // The player, washed in its album art: the art blurred behind, a big white play.
   component MediaCard: Rectangle {
-    implicitHeight: 76
+    id: card
+
+    readonly property bool art: cover.status === Image.Ready
+    readonly property bool playing: Media.player?.isPlaying ?? false
+
+    implicitHeight: 112
     radius: Theme.cardRadius
     color: Theme.card
 
-    Rectangle {
-      id: art
+    Image {
+      id: wash
 
-      x: 10
+      anchors.fill: parent
+      visible: false
+      source: cover.source
+      sourceSize: Qt.size(96, 96)
+      fillMode: Image.PreserveAspectCrop
+      asynchronous: true
+    }
+
+    Rectangle {
+      id: shape
+
+      anchors.fill: parent
+      visible: false
+      radius: parent.radius
+      layer.enabled: true
+    }
+
+    MultiEffect {
+      anchors.fill: parent
+      opacity: card.art && wash.status === Image.Ready ? 1 : 0
+      source: wash
+      autoPaddingEnabled: false
+      blurEnabled: true
+      blur: 1
+      blurMax: 64
+      saturation: 0.1
+      brightness: -0.4
+      maskEnabled: true
+      maskSource: shape
+
+      Behavior on opacity {
+        NumberAnimation {
+          duration: 400
+          easing.type: Easing.OutCubic
+        }
+      }
+    }
+
+    Rectangle {
+      id: artwork
+
+      x: 14
       anchors.verticalCenter: parent.verticalCenter
-      width: 56
-      height: 56
+      width: 84
+      height: 84
       radius: Theme.buttonRadius
       color: Theme.button
       clip: true
+      // Set down while paused, picked up as it plays.
+      scale: card.playing ? 1 : 0.92
+
+      Behavior on scale {
+        NumberAnimation {
+          duration: 300
+          easing.type: Easing.OutCubic
+        }
+      }
 
       Glyph {
         anchors.centerIn: parent
-        visible: cover.status !== Image.Ready
+        visible: !card.art
         path: Symbols.music
-        size: 28
+        size: 36
         color: Theme.fgDim
       }
 
@@ -859,19 +1390,19 @@ Overlay {
         id: cover
 
         anchors.fill: parent
-        visible: status === Image.Ready
+        visible: card.art
         source: Media.player?.trackArtUrl ?? ""
-        sourceSize: Qt.size(112, 112)
+        sourceSize: Qt.size(168, 168)
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
       }
     }
 
     Column {
-      anchors.left: art.right
-      anchors.leftMargin: 12
-      anchors.right: buttons.left
-      anchors.rightMargin: 8
+      anchors.left: artwork.right
+      anchors.leftMargin: 14
+      anchors.right: parent.right
+      anchors.rightMargin: 14
       anchors.verticalCenter: parent.verticalCenter
       spacing: 2
 
@@ -900,63 +1431,98 @@ Overlay {
         text: Media.artist
         textFormat: Text.PlainText
         elide: Text.ElideRight
-        color: Theme.fgDim
+        color: Theme.fgStrong
         font: Theme.body
       }
 
-      Rectangle {
+      Item {
         width: parent.width
-        height: 4
-        radius: height / 2
-        visible: (Media.player?.lengthSupported ?? false) && Media.player.length > 0
-        color: Theme.trough
+        height: 14
 
         Rectangle {
-          width: parent.width * Math.max(0, Math.min(1, (Media.player?.position ?? 0) / Math.max(1, Media.player?.length ?? 1)))
-          height: parent.height
-          radius: parent.radius
-          color: Theme.fg
+          anchors.verticalCenter: parent.verticalCenter
+          width: parent.width
+          height: 4
+          radius: height / 2
+          visible: (Media.player?.lengthSupported ?? false) && Media.player.length > 0
+          color: Theme.trough
+
+          Rectangle {
+            width: parent.width * Math.max(0, Math.min(1, (Media.player?.position ?? 0) / Math.max(1, Media.player?.length ?? 1)))
+            height: parent.height
+            radius: parent.radius
+            color: Theme.fg
+
+            Behavior on width {
+              NumberAnimation {
+                duration: 1000
+              }
+            }
+          }
         }
       }
-    }
 
-    Row {
-      id: buttons
+      Row {
+        spacing: 6
 
-      anchors.right: parent.right
-      anchors.rightMargin: 8
-      anchors.verticalCenter: parent.verticalCenter
+        Button {
+          anchors.verticalCenter: parent.verticalCenter
+          flat: true
+          radius: height / 2
+          padding: 0
+          enabled: Media.player?.canGoPrevious ?? false
+          opacity: enabled ? 1 : 0.5
+          glyph: Symbols.previous
+          glyphSize: 22
+          onClicked: Media.player?.previous()
+        }
 
-      Button {
-        flat: true
-        radius: height / 2
-        padding: 0
-        enabled: Media.player?.canGoPrevious ?? false
-        opacity: enabled ? 1 : 0.5
-        glyph: Symbols.previous
-        glyphSize: 22
-        onClicked: Media.player?.previous()
-      }
+        Rectangle {
+          anchors.verticalCenter: parent.verticalCenter
+          width: 42
+          height: 42
+          radius: height / 2
+          color: Theme.fg
+          opacity: playArea.enabled ? 1 : 0.5
+          scale: playArea.pressed ? 0.92 : playArea.containsMouse ? 1.06 : 1
 
-      Button {
-        radius: height / 2
-        padding: 0
-        enabled: Media.player?.canTogglePlaying ?? false
-        opacity: enabled ? 1 : 0.5
-        glyph: Media.player?.isPlaying ? Symbols.pause : Symbols.play
-        glyphSize: 22
-        onClicked: Media.player?.togglePlaying()
-      }
+          Behavior on scale {
+            NumberAnimation {
+              duration: 120
+              easing.type: Easing.OutCubic
+            }
+          }
 
-      Button {
-        flat: true
-        radius: height / 2
-        padding: 0
-        enabled: Media.player?.canGoNext ?? false
-        opacity: enabled ? 1 : 0.5
-        glyph: Symbols.next
-        glyphSize: 22
-        onClicked: Media.player?.next()
+          Glyph {
+            anchors.centerIn: parent
+            path: card.playing ? Symbols.pause : Symbols.play
+            size: 24
+            color: Theme.bg
+          }
+
+          MouseArea {
+            id: playArea
+
+            objectName: "media:play"
+            anchors.fill: parent
+            hoverEnabled: true
+            enabled: Media.player?.canTogglePlaying ?? false
+            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: Media.player?.togglePlaying()
+          }
+        }
+
+        Button {
+          anchors.verticalCenter: parent.verticalCenter
+          flat: true
+          radius: height / 2
+          padding: 0
+          enabled: Media.player?.canGoNext ?? false
+          opacity: enabled ? 1 : 0.5
+          glyph: Symbols.next
+          glyphSize: 22
+          onClicked: Media.player?.next()
+        }
       }
     }
   }
@@ -970,6 +1536,14 @@ Overlay {
     height: Math.min(column.implicitHeight + 2 * Theme.padding, root.available)
     radius: Theme.cardRadius
     focus: true
+    opacity: root.shown
+    // Grown out of its button.
+    transform: Scale {
+      origin.x: root.anchorX - box.x
+      origin.y: -Theme.gap
+      xScale: 0.9 + 0.1 * root.shown
+      yScale: 0.9 + 0.1 * root.shown
+    }
 
     Rectangle {
       anchors.right: parent.right
@@ -996,17 +1570,16 @@ Overlay {
       Column {
         id: column
 
-        // Everything but the open menu, which takes what is left of the screen; measured a frame later, as the menu's own height feeds back into the column.
+        // Everything but the menus, which take what is left of the screen; measured a frame later, as a menu's own height feeds back into the column.
         property real fixed: 0
 
         function measure(): void {
-          column.fixed = column.children.filter(child => child.menu === false).reduce((sum, child) => sum + child.height + column.spacing, 0);
+          column.fixed = column.children.filter(child => child.menu === false).reduce((sum, child) => sum + child.height, 0);
         }
 
         onChildrenChanged: Qt.callLater(column.measure)
 
         width: scroller.width
-        spacing: 12
 
         Repeater {
           model: ScriptModel {
@@ -1014,16 +1587,48 @@ Overlay {
             objectProp: "id"
           }
 
-          Loader {
+          // The gap above each is its own, so a menu eases open from nothing, gap and all.
+          Item {
             id: section
 
             required property var modelData
             readonly property bool menu: modelData.kind === "menu"
+            readonly property real gap: modelData.kind === "header" ? 0 : 12
+            property real opened: !menu || root.menu === modelData.key ? 1 : 0
+
+            Behavior on opened {
+              NumberAnimation {
+                duration: 200
+                easing.type: Easing.OutCubic
+              }
+            }
 
             width: column.width
+            height: (gap + (loader.item?.height ?? 0)) * opened
+            clip: menu
             onHeightChanged: if (!menu) Qt.callLater(column.measure)
             Component.onCompleted: Qt.callLater(column.measure)
-            sourceComponent: ({ levels: levels, toggles: toggleRow, menu: menuSection, media: media })[modelData.kind]
+
+            Loader {
+              id: loader
+
+              y: section.gap
+              width: parent.width
+              active: section.opened > 0
+              sourceComponent: ({ header: headerSection, levels: levels, toggles: toggleRow, menu: menuSection, inuse: inUseSection, media: media })[section.modelData.kind]
+            }
+
+            Component {
+              id: headerSection
+
+              Header {}
+            }
+
+            Component {
+              id: inUseSection
+
+              InUse {}
+            }
 
             Component {
               id: levels
@@ -1042,7 +1647,7 @@ Overlay {
 
               Menu {
                 key: section.modelData.key
-                limit: root.available - 2 * Theme.padding - column.fixed
+                limit: root.available - 2 * Theme.padding - column.fixed - section.gap
               }
             }
 

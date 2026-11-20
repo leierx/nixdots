@@ -73,16 +73,15 @@ qst ipc controls menu output > /dev/null
 qst wait '.panel == "controls:DP-1"'
 qst stays '.panel == "controls:DP-1"' 1
 
-qst case "forty apps recording fit under the privacy indicator"
+qst case "forty apps recording fit in the status button and the centre's In use pill"
 for n in $(seq 40); do qst spawn pw-record -P "{ application.name=Recorder$n }" /dev/null; done
 qst wait '(.privacy.mic | length) == 40' 20
-read -r x y _ < <(qst areas 'BarWindow/PrivacyIndicator' | head -1)
-qst pointer "$x" "$y"
-qst pointer $((x + 1)) "$y"
-qst wait '.layers | any(endswith(" quickshell:privacy"))'
-qst stays '(.privacy.mic | length) == 40' 1
+qst wait '.status[0].glyphs[0] == "Microphone"'
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+qst stays '(.privacy.mic | length) == 40 and .panel == "controls:DP-1"' 1
 
-# The tray's button closes its pill, the last area on a bar that asks for a hand; DP-1's bar ends at 1920.
+# The tray's chevron, the last area on a bar that asks for a hand; DP-1's bar ends at 1920.
 tray_button() {
   qst areas 'BarWindow' | awk -F'\t' -v screen="$1" '(screen == "DP-1") == ($1 < 1920) && $6 == "true" { x = $1; y = $2 } END { print x, y }'
 }
@@ -92,23 +91,18 @@ menu_rows() {
   qst areas 'ControlsPanel' | awk -F'\t' '$2 > 60 && $2 < 1000 { print $1, $2 }' | sort -n -k2 | awk '{ n[$1]++; at[$1] = at[$1] " " $2 } END { for (x in n) if (n[x] > best) { best = n[x]; bx = x } print bx at[bx] }'
 }
 
-qst case "thirty tray items keep the bar off the clock: the first four stay, the rest wait behind its button"
-for n in 1 2 3 4; do
-  qst tray add "first$n"
-  qst wait "(.tray | length) == $n" 10
-done
-qst tray add crowd 26
+qst case "thirty tray items all wait behind the chevron, which keeps the bar off the clock"
+qst tray add crowd 30
 qst wait '(.tray | length) == 30' 10
-qst wait 'all(.trays[]; .shown == ["first1", "first2", "first3", "first4"] and .hidden == 26 and .width <= .room)'
+qst wait 'all(.trays[]; .shown and .hidden == 30)'
 read -r x y < <(tray_button DP-1)
 qst click left "$x" "$y"
 qst wait '.panel == "tray-overflow:DP-1"'
 qst stays '.panel == "tray-overflow:DP-1"' 1
-# A narrow screen keeps fewer rather than reaching the clock.
 qst output 640x480 1
-qst wait 'any(.trays[]; .screen == "DP-1" and (.shown | length) < 4 and (.shown | length) + .hidden == 30 and .width <= .room)'
+qst wait 'all(.trays[]; .shown and .hidden == 30)'
 
-qst case "the first tray items keep their places as items come and go"
+qst case "the overflow keeps tray items in the order they came as items come and go"
 n=0
 for name in a b c d e f; do
   qst tray add "$name"
@@ -117,14 +111,14 @@ for name in a b c d e f; do
 done
 qst tray add crowd 40
 qst wait '(.tray | length) == 46' 10
-qst wait '.trays[0].shown == ["a", "b", "c", "d"]'
+qst wait '.trays[0].items[0:4] == ["a", "b", "c", "d"]'
 qst tray remove b
-qst wait '.trays[0].shown == ["a", "c", "d", "e"]'
+qst wait '.trays[0].items[0:4] == ["a", "c", "d", "e"]'
 qst tray remove a
-qst wait '.trays[0].shown == ["c", "d", "e", "f"]'
+qst wait '.trays[0].items[0:4] == ["c", "d", "e", "f"]'
 qst tray add b
 qst wait '(.tray | length) == 45' 10
-qst stays '.trays[0].shown == ["c", "d", "e", "f"]' 1
+qst stays '.trays[0].items[0:4] == ["c", "d", "e", "f"] and .trays[0].items[-1] == "b"' 1
 
 qst case "tray items churning under the open overflow and a menu opened from it"
 qst tray add held 20
@@ -133,7 +127,7 @@ qst wait '(.tray | length) == 60' 10
 read -r x y < <(tray_button DP-1)
 qst click left "$x" "$y"
 qst wait '.panel == "tray-overflow:DP-1"'
-read -r cx cy _ < <(qst areas 'TrayOverflow' | awk -F'\t' '$2 > 60 && $2 < 1000' | sort -n -k2 | head -1)
+read -r cx cy _ < <(qst areas 'TrayOverflow' | awk -F'\t' '$2 > 30 && $2 < 1000' | sort -n -k2 | head -1)
 qst click right "$cx" "$cy"
 qst wait '.layers | any(endswith(" quickshell:menu"))'
 # The item whose menu is open leaves: the menu goes, the overflow stays.
@@ -143,14 +137,14 @@ for n in $(seq 30); do qst tray add "churn$n" 2; done
 for n in $(seq 30); do qst tray remove "churn$n"; done
 qst wait '(.tray | length) == 40' 20
 qst stays '.panel == "tray-overflow:DP-1"' 1
-# Nothing left behind the button closes the overflow.
+# Nothing left behind the chevron closes the overflow.
 qst tray remove stay
 qst wait '.panel == "" and (.tray | length) == 0' 10
 
 qst case "two hundred tray items scroll in the overflow rather than running off the screen"
 qst tray add swarm 200
 qst wait '(.tray | length) == 200' 20
-qst wait 'all(.trays[]; .hidden == 196)' 10
+qst wait 'all(.trays[]; .hidden == 200)' 10
 read -r x y < <(tray_button DP-2)
 qst focus DP-2
 qst click left "$x" "$y"
@@ -223,8 +217,8 @@ qst stays '.panel == "controls:DP-1"' 1
 qst case "the microphone's mute and level hammered from the control centre"
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
-# A sound level is the y with three areas, its mute, its slider and its arrow; the output's first, the input's second.
-read -r mx my < <(qst areas 'ControlsPanel' | awk -F'\t' '$2 > 40 { print $1, $2 }' | sort -n -k2 -k1 | awk '{ count[$2]++; if (!($2 in x)) x[$2] = $1 } END { for (y in count) if (count[y] == 3) print x[y], y }' | sort -n -k2 | sed -n 2p)
+# A sound level is the y with three areas, its mute, its slider and its arrow (the header's buttons aside); the output's first, the input's second.
+read -r mx my < <(qst areas 'ControlsPanel' | grep -v ':header:' | awk -F'\t' '$2 > 40 { print $1, $2 }' | sort -n -k2 -k1 | awk '{ count[$2]++; if (!($2 in x)) x[$2] = $1 } END { for (y in count) if (count[y] == 3) print x[y], y }' | sort -n -k2 | sed -n 2p)
 for _ in $(seq 20); do qst click left "$mx" "$my"; done
 qst wait '.microphone.muted | not'
 qst stays '.microphone.muted | not' 0.5
@@ -399,7 +393,7 @@ QS_TEST_MONITORS="DP-1:3840x2160:2" QS_TEST_SCALE=1.2 qst case "on a 4K monitor 
 qst network wifi many 40
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
-for menu in wifi output input bluetooth vpn; do
+for menu in wifi output input bluetooth vpn night; do
   qst ipc controls menu "$menu" > /dev/null
   qst stays ".controls.menu == \"$menu\" and .panel == \"controls:DP-1\"" 0.6
 done

@@ -16,7 +16,7 @@ Scope {
 
   // Sizes and corners that are not a role's, by the type that draws them.
   readonly property var ownShapes: ({
-    Battery: "a meter drawn to its own scale",
+    BatteryGlyph: "a cell drawn to its own scale",
     LayoutDiagram: "outputs drawn to scale",
     PowerMenu: "the power tiles' large squircles",
     TrayMenu: "libadwaita's check box"
@@ -387,22 +387,22 @@ Scope {
         brightness: Brightness.devices,
         caps: CapsLock.on,
         privacy: { mic: Privacy.mic, screen: Privacy.screenActive ? Privacy.screen : null, camera: Privacy.cameraActive ? Privacy.camera : null },
-        caffeine: Caffeine.active,
         controls: {
           menu: Controls.menu,
           toggles: Controls.toggles.map(t => ({ key: t.key, subtitle: t.subtitle, on: t.on, unavailable: t.unavailable ?? false })),
           network: { present: Net.present, running: Net.running, wifi: Net.wifi !== null, wifiOn: Net.wifiOn, scanning: Net.scanning, connected: Net.connected?.name ?? null, networks: Net.networks.map(n => n.name), known: Net.networks.filter(n => n.known).map(n => n.name), asking: Net.asking || null, askError: Net.askError || null, created: Net.created, failures: Net.failures, portal: Net.portal, limited: Net.limited, wired: Net.wired.map(d => ({ name: d.name, connected: d.connected, link: d.hasLink })) },
           vpns: Net.vpns.map(v => ({ name: v.name, active: v.active, busy: Net.busy(v.uuid) || null })),
           vpnAsking: Net.vpnAsking || null,
-          bluetooth: { present: BluetoothDevices.present, on: BluetoothDevices.on, scanning: BluetoothDevices.scanning, devices: BluetoothDevices.devices.map(d => ({ name: d.name, address: d.address, paired: d.paired, connected: d.connected, trusted: d.trusted, note: BluetoothDevices.note(d) || null })) },
+          bluetooth: { present: BluetoothDevices.present, on: BluetoothDevices.on, scanning: BluetoothDevices.scanning, devices: BluetoothDevices.devices.map(d => ({ name: d.name, address: d.address, paired: d.paired, connected: d.connected, trusted: d.trusted, note: BluetoothDevices.note(d) || null, battery: d.batteryAvailable ? Math.round(d.battery * 100) : null })) },
           night: { present: NightLight.present, on: NightLight.on, temperature: NightLight.temperature },
           media: Media.player ? { title: Media.title, artist: Media.artist, playing: Media.player.isPlaying, identity: Media.player.identity } : null
         },
         tray: SystemTray.items.values.filter(item => item.status !== Status.Passive).map(item => item.id),
-        // Each bar's tray: the ids on the bar, and how many wait behind its button.
+        // Each bar's status button, what it shows by name, and its tray: how many icons wait behind the chevron.
+        status: probe.windows().filter(entry => entry.type === "BarWindow").map(entry => ({ screen: entry.screen, glyphs: entry.items.find(({ item }) => "glyphs" in item && "panel" in item)?.item.glyphs.map(glyph => glyph.name) ?? [], battery: Power.present ? Power.percent : null })),
         trays: probe.windows().filter(entry => entry.type === "BarWindow").map(entry => {
-          const tray = entry.items.find(({ item }) => "overflowPanel" in item && "kept" in item)?.item;
-          return { screen: entry.screen, shown: tray ? tray.shown.map(item => item.id) : [], hidden: tray ? tray.hidden.length : 0, width: tray ? Math.round(tray.width) : 0, room: tray ? Math.round(tray.room) : 0 };
+          const tray = entry.items.find(({ item }) => "overflowPanel" in item && "menuAnchor" in item)?.item;
+          return { screen: entry.screen, shown: tray?.visible ?? false, hidden: tray ? tray.items.length : 0, items: tray ? tray.items.map(item => item.id) : [] };
         }),
         // The text field being typed into, or else the first one up: the launcher's search.
         field: (probe.windows().map(entry => entry.items.find(({ item }) => "cursorPosition" in item && "echoMode" in item && item.activeFocus)).find(found => found) ?? probe.windows().map(entry => entry.items.find(({ item }) => "cursorPosition" in item && "echoMode" in item)).find(found => found))?.item.text ?? null,
