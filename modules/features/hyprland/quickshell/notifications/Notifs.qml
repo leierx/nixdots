@@ -139,6 +139,11 @@ Singleton {
     }
   }
 
+  // As CloseNotification would, for a card the shell itself sent.
+  function close(id) {
+    root.entries.find(entry => entry.notification.id === id)?.notification.expire();
+  }
+
   function hidePopups() {
     for (const entry of entries) entry.popup = false;
   }

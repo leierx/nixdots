@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Networking
 import qs.common
+import qs.notifications
 import "names.js" as Names
 
 // NetworkManager: Wi-Fi and wired through Quickshell, and through nmcli what Quickshell lacks (VPNs, whether it runs at all).
@@ -265,17 +266,28 @@ Singleton {
   Process {
     id: portalNote
 
-    command: ["notify-send", "-a", "Network", "-i", "network-wireless", "-A", "sign-in=Sign in", "Sign in to network", "This network wants you to sign in before it lets you on the internet."]
+    // Its card's id, printed first, so the card goes when the portal does.
+    property int card: 0
+
+    command: ["notify-send", "-p", "-a", "Network", "-i", "network-wireless", "-A", "sign-in=Sign in", "Sign in to network", "This network wants you to sign in before it lets you on the internet."]
     stdout: SplitParser {
       onRead: line => {
-        if (line.trim() === "sign-in") root.signIn();
+        const text = line.trim();
+        if (portalNote.card === 0 && /^\d+$/.test(text)) portalNote.card = Number(text);
+        else if (text === "sign-in") root.signIn();
       }
     }
   }
 
   onPortalChanged: {
-    portalNote.running = root.portal;
-    if (root.portal) recheck.start();
+    if (root.portal) {
+      portalNote.card = 0;
+      portalNote.running = true;
+      recheck.start();
+    } else {
+      Notifs.close(portalNote.card);
+      portalNote.running = false;
+    }
   }
 
   // Signing in happens in the browser, which says nothing to NetworkManager.

@@ -144,6 +144,8 @@ qst wait '.panel == ""'
 qst actions | grep -q 'xdg-open http://neverssl.com/' || { qst actions; echo "the portal was not opened"; exit 1; }
 qst network connectivity full
 qst wait '(.controls.network.portal | not)'
+# Online again, its card goes with the portal.
+qst wait 'all(.history[]; .summary != "Sign in to network")'
 
 qst case "a VPN goes down and up on a click, and the pill takes them all"
 open vpn
