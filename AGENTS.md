@@ -927,7 +927,8 @@ Notes on specific features:
     `quickshell:idle` layer on every screen, on the overlay layer and taking
     no input): hypridle's listener 10 s before its lock runs `qs ipc -c shell
     call idle fade 10`, and the same listener's resume `cancel`, so any input
-    during the fade brings the screens back. hypridle stays the one clock and
+    during the fade brings the screens back. An unlock with no key or mouse to resume the
+    listener (a fingerprint) cancels it through hypridle's `on_unlock_cmd`. hypridle stays the one clock and
     the one watcher of input, and without a shell the lock simply comes. hyprlock
     is that same black (the palette's `dark_5`, no picture), so the lock
     follows the fade without a flash. Sleep and the power menu lock at once.

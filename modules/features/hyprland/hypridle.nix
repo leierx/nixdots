@@ -26,6 +26,8 @@
             # one locker even when the idle timer and before_sleep_cmd race
             lock_cmd = "${lib.getExe' pkgs.procps "pidof"} hyprlock || ${lib.getExe config.programs.hyprlock.package}";
             inhibit_sleep = 3;
+            # an unlock without a key or the mouse (fingerprint) never resumes the fade's listener
+            on_unlock_cmd = idle "cancel";
           };
           listener = [
             # the shell only draws the fade; input during it resumes this listener, which cancels it
