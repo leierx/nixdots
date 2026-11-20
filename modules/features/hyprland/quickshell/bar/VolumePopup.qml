@@ -145,49 +145,63 @@ Overlay {
         font: Theme.captionHeading
       }
 
-      Column {
+      // As tall as the screen leaves room for; past it the outputs scroll.
+      Flickable {
+        id: outputs
+
         width: parent.width
+        height: Math.min(contentHeight, Math.max(32, root.height - root.top - 2 * Theme.gap - 2 * Theme.padding - y))
+        contentHeight: rows.implicitHeight
+        interactive: contentHeight > height
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
 
-        Repeater {
-          model: Volume.devices
+        Column {
+          id: rows
 
-          Rectangle {
-            id: row
+          width: parent.width
 
-            required property var modelData
+          Repeater {
+            model: Volume.devices
 
-            width: parent.width
-            height: 32
-            radius: Theme.smallRadius
-            color: rowArea.containsMouse ? Theme.hover : "transparent"
+            Rectangle {
+              id: row
 
-            Text {
-              anchors.verticalCenter: parent.verticalCenter
-              x: 10
-              width: parent.width - 44
-              text: row.modelData.name
-              elide: Text.ElideRight
-              color: Theme.fg
-              font: row.modelData.current ? Theme.heading : Theme.body
-            }
+              required property var modelData
 
-            Glyph {
-              anchors.verticalCenter: parent.verticalCenter
-              anchors.right: parent.right
-              anchors.rightMargin: 10
-              visible: row.modelData.current
-              path: root.check
-              size: 18
-              color: Theme.accent
-            }
+              width: parent.width
+              height: 32
+              radius: Theme.smallRadius
+              color: rowArea.containsMouse ? Theme.hover : "transparent"
 
-            MouseArea {
-              id: rowArea
+              Text {
+                anchors.verticalCenter: parent.verticalCenter
+                x: 10
+                width: parent.width - 44
+                text: row.modelData.name
+                elide: Text.ElideRight
+                color: Theme.fg
+                font: row.modelData.current ? Theme.heading : Theme.body
+              }
 
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: row.modelData.current ? Qt.ArrowCursor : Qt.PointingHandCursor
-              onClicked: Volume.choose(row.modelData.index)
+              Glyph {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.right: parent.right
+                anchors.rightMargin: 10
+                visible: row.modelData.current
+                path: root.check
+                size: 18
+                color: Theme.accent
+              }
+
+              MouseArea {
+                id: rowArea
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: row.modelData.current ? Qt.ArrowCursor : Qt.PointingHandCursor
+                onClicked: Volume.choose(row.modelData.index)
+              }
             }
           }
         }

@@ -9,8 +9,10 @@ BarButton {
   id: root
 
   required property ShellScreen screen
-  // A name per screen, as the tray's menus have.
-  readonly property string panel: `volume:${screen?.name}`
+  // A name per screen, as the tray's menus have; set once, so it outlives the screen.
+  property string panel: ""
+
+  Component.onCompleted: panel = `volume:${screen.name}`
 
   visible: Volume.present
   checked: Panels.active === root.panel

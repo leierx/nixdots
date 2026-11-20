@@ -14,6 +14,9 @@ Overlay {
   readonly property bool open: Panels.active === name
   readonly property var apps: [...new Set(Notifs.entries.map(entry => Notifs.appKey(entry)))]
   readonly property int padding: Theme.padding
+  // Beside the calendar the list keeps 24em, or the calendar steps aside, as on a small screen at a large scale.
+  readonly property real room: width - 2 * Theme.gap - 4 * padding - 1 - side.implicitWidth
+  readonly property bool besides: room >= Math.round(24 * Theme.em)
 
   property real shown: 0
   // Groups expanded, for Collapse all; each counts itself in and out.
@@ -25,7 +28,9 @@ Overlay {
   onOpenChanged: {
     if (open) Notifs.hidePopups();
     (open ? closing : opening).stop();
-    (open ? opening : closing).start();
+    // Closed before it moved, it has nothing to animate, and would never report itself hidden.
+    if (!open && shown === 0) Qt.callLater(root.hideClosed);
+    else (open ? opening : closing).start();
   }
   onShownChanged: if (shown === 0 && !open) hidden()
   // A window Hyprland has closed stays closed, so the next open needs a new one.
@@ -33,6 +38,11 @@ Overlay {
   Component.onCompleted: {
     Notifs.hidePopups();
     if (open) opening.start();
+    else Qt.callLater(root.hideClosed);
+  }
+
+  function hideClosed(): void {
+    if (!root.open) root.hidden();
   }
 
   name: "center"
@@ -150,8 +160,8 @@ Overlay {
 
       ColumnLayout {
         Layout.alignment: Qt.AlignTop
-        // Wider than GNOME Shell's 29em message list, which read long and narrow beside the calendar.
-        Layout.preferredWidth: Math.round(40 * Theme.em)
+        // Wider than GNOME Shell's 29em message list, which read long and narrow beside the calendar; narrower where the screen is.
+        Layout.preferredWidth: Math.min(Math.round(40 * Theme.em), root.besides ? root.room : root.width - 2 * Theme.gap - 2 * root.padding)
         spacing: root.padding
 
         Item {
@@ -337,6 +347,7 @@ Overlay {
 
       Rectangle {
         Layout.fillHeight: true
+        visible: root.besides
         implicitWidth: 1
         color: Theme.border
       }
@@ -345,6 +356,7 @@ Overlay {
         id: side
 
         Layout.alignment: Qt.AlignTop
+        visible: root.besides
         spacing: root.padding
 
         Calendar {

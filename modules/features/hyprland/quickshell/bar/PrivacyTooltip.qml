@@ -110,10 +110,15 @@ PanelWindow {
             }
 
             Row {
+              id: names
+
+              // A few, rather than a row running off the screen.
+              readonly property int most: 5
+
               spacing: 8
 
               Repeater {
-                model: kind.modelData.apps.length > 0 ? kind.modelData.apps : [""]
+                model: kind.modelData.apps.length > 0 ? kind.modelData.apps.slice(0, names.most) : [""]
 
                 Row {
                   id: app
@@ -132,11 +137,21 @@ PanelWindow {
 
                   Text {
                     anchors.verticalCenter: parent.verticalCenter
+                    width: Math.min(implicitWidth, Math.round(12 * Theme.em))
                     text: app.desktop?.name ?? (app.modelData || "Through the screen sharing portal")
+                    elide: Text.ElideRight
                     color: Theme.fgDim
                     font: Theme.caption
                   }
                 }
+              }
+
+              Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: kind.modelData.apps.length > names.most
+                text: `and ${kind.modelData.apps.length - names.most} more`
+                color: Theme.fgDim
+                font: Theme.caption
               }
             }
           }

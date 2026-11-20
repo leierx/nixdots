@@ -7,8 +7,10 @@ import qs.common
 PanelWindow {
   id: root
 
+  // Taken once: the screen object dangles while its monitor goes.
+  property string screenName: ""
   // Hyprland.monitorFor() is not reactive: it stays null if the output appears before the monitor.
-  readonly property HyprlandMonitor monitor: Hyprland.monitors.values.find(m => m.name === screen?.name) ?? null
+  readonly property HyprlandMonitor monitor: Hyprland.monitors.values.find(m => m.name === screenName) ?? null
   readonly property int inset: 8
 
   anchors {
@@ -18,6 +20,7 @@ PanelWindow {
   }
   implicitHeight: 34
   color: Theme.panel
+  Component.onCompleted: screenName = screen?.name ?? ""
 
   WlrLayershell.namespace: "quickshell:bar"
 

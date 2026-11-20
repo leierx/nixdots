@@ -12,10 +12,13 @@ Variants {
     id: window
 
     required property ShellScreen modelData
+    // Taken once: the screen object dangles while its monitor goes.
+    property string screenName: ""
     readonly property int shadowRoom: 24
     // Cards register here, as the window's input region is theirs alone: a click between them reaches the window behind.
     property list<Item> cards: []
 
+    Component.onCompleted: screenName = modelData?.name ?? ""
     screen: modelData
     anchors {
       top: true
@@ -37,14 +40,10 @@ Variants {
 
     // Pictures only the server holds, drawn once each left of the window, where nobody sees them, so the saved history keeps them whether they pop up or not.
     Item {
-      // Taken once: the screen object dangles while its monitor goes.
-      property string screenName: ""
-
       x: -width
       width: 80
       height: 80
-      visible: screenName !== "" && screenName === Screens.real[0]?.name
-      Component.onCompleted: screenName = window.modelData?.name ?? ""
+      visible: window.screenName !== "" && window.screenName === Screens.real[0]?.name
 
       Repeater {
         model: ScriptModel {
@@ -81,7 +80,7 @@ Variants {
       spacing: Theme.gap
       interactive: false
       model: ScriptModel {
-        values: Notifs.popups.filter(e => e.screen === window.modelData?.name)
+        values: Notifs.popups.filter(e => e.screen === window.screenName)
       }
 
       delegate: NotificationCard {

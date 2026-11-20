@@ -72,11 +72,13 @@ LauncherMode {
       id: frame
 
       // Hyprland knows the window's size before its first frame arrives, so the frame keeps its shape as the selection moves.
+      readonly property var known: preview.row?.hyprland?.lastIpcObject?.size ?? null
       readonly property var size: {
-        const known = preview.row?.hyprland?.lastIpcObject?.size;
         if (known?.[0] > 0 && known?.[1] > 0) return Qt.size(known[0], known[1]);
         return capture.hasContent ? capture.sourceSize : null;
       }
+      // A tile squeezed below nothing (Hyprland past a few dozen on a workspace) exports a buffer Wayland rejects, which kills the shell.
+      readonly property bool capturable: known === null || (known[0] > 0 && known[1] > 0)
       readonly property real ratio: frame.size ? Math.min(frame.width / frame.size.width, frame.height / frame.size.height) : 0
 
       Layout.fillWidth: true
@@ -98,7 +100,7 @@ LauncherMode {
           readonly property real density: 2 * Screen.devicePixelRatio
 
           anchors.fill: parent
-          captureSource: preview.row?.toplevel ?? null
+          captureSource: frame.capturable ? preview.row?.toplevel ?? null : null
           live: true
           layer.enabled: capture.hasContent
           layer.mipmap: true

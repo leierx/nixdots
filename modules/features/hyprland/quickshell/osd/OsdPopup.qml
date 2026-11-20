@@ -179,7 +179,9 @@ Scope {
 
     required property ShellScreen modelData
     required property bool levels
-    readonly property bool here: Osd.current !== null && Osd.screen === modelData?.name && root.hasLevel(Osd.current) === levels
+    // Taken once: the screen object dangles while its monitor goes.
+    property string screenName: ""
+    readonly property bool here: Osd.current !== null && Osd.screen === screenName && root.hasLevel(Osd.current) === levels
     property real fade: 0
 
     // Not a Behavior: one whose duration follows `here` may start before that duration updates.
@@ -188,6 +190,7 @@ Scope {
       (here ? fadeIn : fadeOut).start();
     }
 
+    Component.onCompleted: screenName = modelData?.name ?? ""
     screen: modelData
     visible: fade > 0
     color: "transparent"

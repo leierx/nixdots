@@ -29,8 +29,8 @@ Singleton {
   // "DP2-1" for the first workspace of DP-2; the bare id while the owner is unknown.
   function foreignLabel(workspaceId: int): string {
     const owner = root.owner(workspaceId);
-    const name = live.find(([id]) => id === owner)?.[1] ?? state.names[owner];
-    return name ? `${name.replace(/-/g, "")}-${index(workspaceId)}` : String(workspaceId);
+    const name = live.find(([id]) => id === owner)?.[1] ?? state.names?.[owner];
+    return typeof name === "string" && name ? `${name.replace(/-/g, "")}-${index(workspaceId)}` : String(workspaceId);
   }
 
   // Kept per id, so a workspace that outlives its monitor still names it; Hyprland reuses ids, so the latest wins, but never for its FALLBACK.
@@ -40,7 +40,7 @@ Singleton {
   Component.onCompleted: remember()
 
   function remember(): void {
-    const names = Object.assign({}, state.names);
+    const names = Object.assign({}, typeof state.names === "object" && !Array.isArray(state.names) ? state.names : {});
     for (const [id, name] of live) names[id] = name;
     for (const id of Object.keys(names).filter(id => names[id] === Screens.fallback)) delete names[id];
     if (JSON.stringify(names) !== JSON.stringify(state.names)) state.names = names;
