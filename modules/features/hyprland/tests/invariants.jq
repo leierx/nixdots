@@ -3,8 +3,7 @@
 def real: [.screens[].name | select(. != "FALLBACK")];
 def wanted:
   if .panel == "" then null
-  elif (.panel | startswith("volume:")) then "volume"
-  elif (.panel | startswith("tray:")) then "menu"
+  elif (.panel | startswith("controls:")) then "controls"
   elif (.panel | startswith("tray-overflow:")) then "tray-overflow"
   else { apps: "launcher", clipboard: "launcher", monitors: "launcher", windows: "launcher", nixpkgs: "launcher", center: "center", shortcuts: "shortcuts", power: "power" }[.panel]
   end;
@@ -16,7 +15,7 @@ def wanted:
 | . + { invariants: [
     (if $want != null and ($real | length) > 0 and ($shown | index($want)) == null then "panel \($s.panel) is open, but no quickshell:\($want) layer is up" else empty end),
     # A menu opened from the tray's overflow sits over it.
-    ($shown[] | select(IN("launcher", "center", "shortcuts", "power", "volume", "menu", "tray-overflow")) | select(. != $want and (. != "menu" or $want != "tray-overflow")) | "a quickshell:\(.) layer is up while the open panel is \"\($s.panel)\""),
+    ($shown[] | select(IN("launcher", "center", "shortcuts", "power", "controls", "menu", "tray-overflow")) | select(. != $want and (. != "menu" or $want != "tray-overflow")) | "a quickshell:\(.) layer is up while the open panel is \"\($s.panel)\""),
     ($s.layers[] | select(startswith("FALLBACK quickshell:")) | "\(.) is on Hyprland's FALLBACK, where nobody sees it"),
     (if ($real | length) > 0 then $s.popups[] | select(.screen as $screen | $real | index($screen) | not) | "popup \"\(.summary)\" is on \(.screen), which is not a screen" else empty end),
     # A shell held up this long by anything (a flood, a megabyte of text, a list built over and over) is a frozen desktop.
