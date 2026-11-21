@@ -52,7 +52,7 @@ qst key p
 qst wait '.panel == ""'
 qst actions | grep -q 'systemctl poweroff' || { echo "two presses did not power off"; exit 1; }
 
-qst case "the power menu's keys are the letters underlined in its tiles: O twice logs out"
+qst case "the power menu's keys are the keycaps on its tiles: O twice logs out"
 qst ipc panels open power > /dev/null
 qst wait '.panel == "power"'
 qst key o

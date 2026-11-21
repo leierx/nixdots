@@ -180,11 +180,20 @@ Overlay {
 
                 Text {
                   Layout.alignment: Qt.AlignHCenter
-                  text: Theme.accessKey(tile.armed ? `${tile.modelData.title}?` : tile.modelData.title, tile.modelData.letter)
-                  textFormat: Text.StyledText
+                  text: tile.armed ? `${tile.modelData.title}?` : tile.modelData.title
                   color: Theme.fg
                   font: Theme.heading
                 }
+              }
+
+              // Its key, pressed without Alt (ours: GNOME's end-session dialog shows no keys).
+              Keycap {
+                anchors {
+                  top: parent.top
+                  right: parent.right
+                  margins: 12
+                }
+                text: tile.modelData.letter
               }
             }
           }
