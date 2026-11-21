@@ -1,8 +1,8 @@
 export QS_TEST_MONITORS="DP-1:1920x1080:1"
 
-# Where the area named NAME is (pill:wifi, menu:vpn, row:Pixel_7128), as "x y".
+# Where the area named NAME is (pill:wifi, menu:vpn, row:Pixel_7128) in WINDOW (the control centre), as "x y".
 at() {
-  qst areas 'ControlsPanel' | awk -F'\t' -v name="$1" 'index($3, ":" name) && substr($3, index($3, ":" name) + length(name) + 1, 1) ~ /^( |$)/ { print $1, $2; exit }'
+  qst areas "${2:-ControlsPanel}" | awk -F'\t' -v name="$1" 'index($3, ":" name) && substr($3, index($3, ":" name) + length(name) + 1, 1) ~ /^( |$)/ { print $1, $2; exit }'
 }
 
 press() {
@@ -19,6 +19,12 @@ open() {
     press "menu:$1"
     qst wait ".controls.menu == \"$1\""
   fi
+}
+
+# The center, where the player's card is.
+center() {
+  qst ipc panels open center > /dev/null
+  qst wait '.panel == "center"'
 }
 
 # The bar's status button, the last on the bar that asks for a hand while there is no tray.
@@ -44,12 +50,12 @@ qst click right "$x" "$y"
 qst stays '(.volume.muted | not) and .panel == ""' 0.5
 
 qst case "every pill the machine has, and only those"
-qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "bluetooth", "night", "dnd"]' 10
+qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "bluetooth", "night"]' 10
 qst bluetooth adapter remove
-qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "night", "dnd"]'
+qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "night"]'
 qst network device remove wlp5s0
 qst network device remove enp8s0
-qst wait '[.controls.toggles[].key] == ["vpn", "night", "dnd"]'
+qst wait '[.controls.toggles[].key] == ["vpn", "night"]'
 
 qst case "without NetworkManager one dim pill says so, and the pills come back with it"
 open
@@ -63,7 +69,7 @@ QS_TEST_NETWORK=none QS_TEST_BLUETOOTH=none qst case "a machine with neither Net
 qst expect 'Could not find an available backend'
 qst expect 'DBusObjectManagerInterface for "org\.bluez"'
 open
-qst wait '[.controls.toggles[].key] == ["network", "night", "dnd"]'
+qst wait '[.controls.toggles[].key] == ["network", "night"]'
 read -r x y < <(at pill:network)
 qst click left "$x" "$y"
 qst stays '.controls.toggles[0].unavailable and .panel == "controls:DP-1"' 0.5
@@ -257,7 +263,7 @@ qst expect --may 'Error updating property org.mpris.MediaPlayer2.firefox'
 qst expect --may 'Message recipient disconnected from message bus without replying'
 qst player add spotify Spotify Playing
 qst player add firefox Firefox Paused
-open
+center
 qst wait '.controls.media.identity == "Spotify" and .controls.media.playing'
 qst player status spotify Paused
 qst player status firefox Playing
@@ -323,22 +329,22 @@ qst wait '.controls.bluetooth.devices[0].battery == 70'
 open bluetooth
 [ -n "$(at row:Headset)" ]
 
-qst case "the player's progress shows where the track is as the centre opens, and seeks where it is clicked"
+qst case "the player's progress shows where the track is as the center opens, and seeks where it is clicked"
 qst player add spotify Spotify
-open
+center
 qst wait '.controls.media.position >= 96 and .controls.media.position < 110 and .controls.media.length == 251'
-read -r x y < <(at slider:media)
+read -r x y < <(at slider:media NotificationCenter)
 qst click left "$x" "$y"
 qst wait '.controls.media.position > 115 and .controls.media.position < 140'
 
 qst case "a length the player drops from a new track's metadata as it plays stays on the card, as Firefox drops it on YouTube"
 qst player add spotify Spotify
-open
+center
 qst wait '.controls.media.length == 251'
 dbus-send --session --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.Next > /dev/null
 qst wait '.controls.media.title == "Kid A"'
 qst stays '.controls.media.length == 284' 1
-[ -n "$(at slider:media)" ]
+[ -n "$(at slider:media NotificationCenter)" ]
 
 qst case "past 100 % the output's slider reaches as far as the level, marks 100 %, and a click sets a share of that range"
 wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.3

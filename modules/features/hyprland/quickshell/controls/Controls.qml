@@ -35,7 +35,6 @@ Singleton {
       list.push({ key: "bluetooth", title: "Bluetooth", subtitle: !BluetoothDevices.on ? "Off" : count === 1 ? BluetoothDevices.name(BluetoothDevices.connected[0]) : count > 1 ? `${count} connected` : "On", glyph: BluetoothDevices.on ? Symbols.bluetooth : Symbols.bluetoothOff, on: BluetoothDevices.on, menu: true });
     }
     if (NightLight.present) list.push({ key: "night", title: "Night Light", subtitle: NightLight.on ? `${NightLight.temperature} K` : "Off", glyph: Symbols.nightLight, on: NightLight.on, menu: true });
-    list.push({ key: "dnd", title: "Do Not Disturb", subtitle: Notifs.dnd ? "On" : "Off", glyph: Symbols.dnd, on: Notifs.dnd, menu: false });
     return list;
   }
   function wiredState(device: var): string {
@@ -64,7 +63,6 @@ Singleton {
     else if (toggle.key === "vpn") Net.toggleVpns();
     else if (toggle.key === "bluetooth") BluetoothDevices.toggle();
     else if (toggle.key === "night") NightLight.toggle();
-    else if (toggle.key === "dnd") Notifs.dnd = !Notifs.dnd;
   }
 
 
@@ -115,7 +113,7 @@ Singleton {
   Binding {
     target: Media
     property: "watched"
-    value: root.open
+    value: Panels.active === "center"
   }
 
   // Once the centre has faded, so the frozen screen is without it.

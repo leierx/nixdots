@@ -5,6 +5,8 @@ Rectangle {
   id: toggle
 
   property bool checked: false
+  // Alone, rather than in a row that takes the keyboard for it.
+  property bool focusable: false
   // The mouse's, unless something (the gallery) holds a look.
   property bool hovered: area.containsMouse
 
@@ -14,6 +16,9 @@ Rectangle {
   implicitHeight: 26
   radius: height / 2
   opacity: enabled ? 1 : 0.5
+  activeFocusOnTab: focusable && enabled
+  Keys.onReturnPressed: toggle.clicked()
+  Keys.onSpacePressed: toggle.clicked()
   color: {
     if (checked) return hovered ? Theme.accentHover : Theme.accentBg;
     return hovered ? Theme.switchHoverBg : Theme.switchBg;
@@ -49,5 +54,10 @@ Rectangle {
     enabled: toggle.enabled
     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
     onClicked: toggle.clicked()
+  }
+
+  FocusRing {
+    corner: toggle.radius
+    on: toggle.activeFocus
   }
 }

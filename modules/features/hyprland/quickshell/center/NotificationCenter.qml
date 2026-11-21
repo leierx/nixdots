@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import qs.common
+import qs.controls
 import qs.nix
 import qs.notifications
 import qs.weather
@@ -140,6 +141,20 @@ Overlay {
               values: root.apps
             }
 
+            header: Item {
+              width: list.width
+              height: media.active ? media.height + Theme.padding : 0
+
+              Loader {
+                id: media
+
+                width: parent.width
+                active: Media.player !== null
+
+                sourceComponent: MediaCard {}
+              }
+            }
+
             delegate: NotificationGroup {
               id: group
 
@@ -221,6 +236,7 @@ Overlay {
           }
 
           EmptyLine {
+            y: list.headerItem?.height ?? 0
             width: parent.width
             visible: Notifs.shown.length === 0
             text: "No Notifications"
@@ -233,6 +249,28 @@ Overlay {
           Layout.fillWidth: true
           Layout.leftMargin: Theme.basePadding
           spacing: Theme.padding
+
+          // GNOME's place for it: beside Clear, under the list it quiets.
+          Row {
+            spacing: Theme.padding
+            opacity: toast.shown ? 0 : 1
+
+            Text {
+              anchors.verticalCenter: parent.verticalCenter
+              text: "Do Not Disturb"
+              color: Theme.fg
+              font: Theme.body
+            }
+
+            Switch {
+              objectName: "switch:dnd"
+              anchors.verticalCenter: parent.verticalCenter
+              checked: Notifs.dnd
+              focusable: true
+              enabled: !toast.shown
+              onClicked: Notifs.dnd = !Notifs.dnd
+            }
+          }
 
           Item {
             Layout.fillWidth: true

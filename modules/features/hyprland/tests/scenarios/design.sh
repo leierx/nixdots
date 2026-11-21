@@ -67,3 +67,11 @@ for monitor in DP-1 DP-2; do
   qst wheel 20
   qst stays '.panel == "gallery"' 0.6
 done
+
+qst case "the center with a player, notifications and the weather"
+qst player add spotify Spotify Playing "$QS_TEST_DIR/shell/weather/icons/clearsky_day.svg"
+notify-send -a Chat "Lunch at noon" "Meet at the usual place"
+qst wait '.notifications == 1'
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center" and .controls.media != null'
+qst stays '.panel == "center"' 0.6

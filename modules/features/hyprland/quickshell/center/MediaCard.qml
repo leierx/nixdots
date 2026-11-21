@@ -3,9 +3,10 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import qs.common
+import qs.controls
 import qs.nix
 
-// The player, washed in its album art: the art blurred behind, a big white play.
+// The player that played last, first in the center as GNOME shows media: a message card washed in its album art, a big white play.
 Rectangle {
   id: card
 
@@ -22,8 +23,8 @@ Rectangle {
   readonly property real length: Media.length
 
   implicitHeight: info.implicitHeight + 2 * Theme.padding
-  radius: Theme.cardRadius
-  color: Theme.card
+  radius: Theme.messageRadius
+  color: Theme.messageBg
 
   Image {
     id: wash
@@ -73,8 +74,8 @@ Rectangle {
     anchors.verticalCenter: parent.verticalCenter
     width: 84
     height: 84
-    radius: Theme.buttonRadius
-    color: Theme.button
+    radius: Theme.baseRadius
+    color: Theme.buttonBg
     clip: true
     // Set down while paused, picked up as it plays.
     scale: card.playing ? 1 : 0.92
@@ -197,20 +198,11 @@ Rectangle {
           activeFocusOnTab: playArea.enabled
           Keys.onReturnPressed: Media.player?.togglePlaying()
           Keys.onSpacePressed: Media.player?.togglePlaying()
-          scale: playArea.pressed ? 0.92 : playArea.containsMouse ? 1.06 : 1
-
-          Behavior on scale {
-            NumberAnimation {
-              duration: Theme.tap
-              easing.type: Easing.OutCubic
-            }
-          }
-
           Glyph {
             anchors.centerIn: parent
             path: card.playing ? Symbols.pause : Symbols.play
             size: 16
-            color: Theme.bg
+            color: Theme.panelBg
           }
 
           MouseArea {

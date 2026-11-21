@@ -35,7 +35,6 @@ Overlay {
       for (const toggle of row) if (toggle.menu) list.push({ id: `menu:${toggle.key}`, kind: "menu", key: toggle.key });
     }
     if (Privacy.kinds.length > 0) list.push({ id: "inuse", kind: "inuse" });
-    if (Media.player) list.push({ id: "media", kind: "media" });
     return list;
   }
 
@@ -179,7 +178,7 @@ Overlay {
               y: section.gap
               width: parent.width
               active: section.opened > 0
-              sourceComponent: ({ header: headerSection, levels: levels, toggles: toggleRow, menu: menuSection, inuse: inUseSection, media: media })[section.modelData.kind]
+              sourceComponent: ({ header: headerSection, levels: levels, toggles: toggleRow, menu: menuSection, inuse: inUseSection })[section.modelData.kind]
             }
 
             Component {
@@ -200,12 +199,6 @@ Overlay {
               Levels {
                 menu: root.menu
               }
-            }
-
-            Component {
-              id: media
-
-              MediaCard {}
             }
 
             Component {

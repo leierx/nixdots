@@ -90,3 +90,9 @@ qst case "a hand over every piece in the gallery that takes a click"
 qst gallery
 qst wait '.panel == "gallery"'
 qst cursors GalleryWindow
+
+qst case "a hand over everything clickable in the center with a player in"
+qst player add spotify Spotify
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center" and .controls.media != null'
+qst cursors NotificationCenter

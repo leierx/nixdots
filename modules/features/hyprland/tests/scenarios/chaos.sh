@@ -464,8 +464,8 @@ done
 qst case "a player skipping and pausing faster than the card draws keeps the length of the track it lands on, and the card moves on when it quits"
 for n in 1 2 3 4 5; do qst player add "p$n" "Player $n" Paused; done
 qst player add spotify Spotify
-qst ipc panels open controls:DP-1 > /dev/null
-qst wait '.panel == "controls:DP-1" and .controls.media.identity == "Spotify"'
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center" and .controls.media.identity == "Spotify"'
 call() { dbus-send --session --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 "org.mpris.MediaPlayer2.Player.$1" > /dev/null; }
 # Forty tracks on, a pause or play every second one: the last pause sent the third track's length, the last two skips dropped theirs.
 for i in $(seq 40); do

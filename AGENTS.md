@@ -655,8 +655,9 @@ Notes on specific features:
         only the server held, drawn once off screen and grabbed into the cache
         under a uid per entry. Scripts use `qs ipc -c shell call notifications
         <toggleDnd|setDnd|dnd|count|clear|hidePopups>`.
-      - `center/`: the notification center under the clock: notifications
-        grouped per app (`NotificationGroup`), each card three lines tall so
+      - `center/`: the notification center under the clock, GNOME's date menu:
+        the `MediaCard` of the MPRIS player that played last heading the list
+        (where GNOME shows media), then notifications grouped per app (`NotificationGroup`), each card three lines tall so
         the stack is even, the calendar (ISO weeks) and the weather beside it
         where the screen has room. Opening it checks every notification and
         puts the popups away. Each card's close button sits after its age
@@ -665,13 +666,13 @@ Notes on specific features:
         Undo in a `Toast` for five seconds; `Notifs` dismisses what it held as
         the toast goes or the center closes (the `notifications clear` IPC at
         once). Its list glides on the wheel
-        and flicks.
+        and flicks. Do Not Disturb is a switch in its footer beside Clear, as
+        GNOME's, with no quick toggle.
       - `controls/`: the control centre, GNOME's quick settings under the
         status button (SUPER+A): `Header`, `Levels` (output, input and each
         backlight), the `Pill`s the machine has (`Controls.toggles`: wired per
-        device, Wi-Fi, VPNs, Bluetooth, night light, Do Not Disturb), a `Menu`
-        under the row that opens it, `InUse` while something records and the
-        `MediaCard` of the MPRIS player that played last. `ControlsPanel`
+        device, Wi-Fi, VPNs, Bluetooth, night light), a `Menu`
+        under the row that opens it and `InUse` while something records. `ControlsPanel`
         stacks them, each menu in a slot of its own so one eases shut as the
         next opens, and scrolls past what the screen leaves under the bar. The
         backends are singletons: `Net` (Quickshell.Networking for Wi-Fi and

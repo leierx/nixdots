@@ -166,3 +166,26 @@ qst key Return
 qst wait '.center | map(select(.app == "Mail"))[0].expanded'
 qst key Delete
 qst wait '.notifications == 1 and .history[0].app == "Chat"'
+
+qst case "Do Not Disturb is a switch in the center's footer, as GNOME's, and the bar strikes the bell while it is on"
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center"'
+read -r x y _ < <(qst areas NotificationCenter | awk -F'\t' 'index($3, "switch:dnd") { print $1, $2; exit }')
+[ -n "$x" ] || { echo "no Do Not Disturb switch in the center"; exit 1; }
+qst click left "$x" "$y"
+qst wait '.dnd and (.status[0].glyphs | index("dnd")) != null'
+qst click left "$x" "$y"
+qst wait '(.dnd | not)'
+# The keyboard reaches it too: Tab from the card lands on it first.
+qst key Tab space
+qst wait '.dnd'
+
+qst case "the player that played last heads the center's list, above the notifications"
+qst player add spotify Spotify Playing
+notify-send -a Chat "Lunch at noon" "Meet at the usual place"
+qst wait '.notifications == 1 and .controls.media.identity == "Spotify"'
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center"'
+read -r media _ < <(qst areas NotificationCenter | awk -F'\t' 'index($3, "media:play") { print $2; exit }')
+read -r first _ < <(qst areas NotificationCenter | awk -F'\t' '$3 ~ /SwipeArea|NotificationGroup/ { print $2; exit }')
+[ -n "$media" ] && [ -n "$first" ] && [ "$media" -lt "$first" ] || { echo "the player is not above the notifications ($media, $first)"; exit 1; }
