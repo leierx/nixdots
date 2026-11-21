@@ -735,10 +735,10 @@ Notes on specific features:
     the one watcher of input, and without a shell the lock simply comes, at
     0.6. Sleep and the power menu lock at once.
   - The OSD (`osd/`) shows what just changed on the focused monitor, on the
-    overlay layer, for 1.5 s (fading over `Theme.fade`), never taking a click, in
+    overlay layer, for 1.5 s (fading over Shell's 100 ms), never taking a click, in
     one place: a pill at the bottom centre, 4em up as GNOME Shell's. A level
     shows its symbol, the level filling across (past 100 % the share over it
-    in the warning colour at the end) and the number, for every change
+    in red after a 3 px gap, as Shell's .level) and the number, for every change
     of the output's or the input's level or mute and of brightness, wherever
     it came from (the keys, the control centre, another app); a symbol and a
     word show a new default output or input, and Caps Lock. `Osd` is the backend,

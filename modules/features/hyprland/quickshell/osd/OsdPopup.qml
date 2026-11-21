@@ -65,15 +65,18 @@ Scope {
     readonly property bool dim: root.level?.muted ?? false
     readonly property color tone: dim ? Theme.fgDim : Theme.fg
 
-    implicitWidth: row.implicitWidth + 40
-    implicitHeight: 52
+    implicitWidth: row.implicitWidth + 36
+    implicitHeight: 56
     radius: height / 2
+    color: Theme.osdBg
+    border.color: Theme.osdBorder
+    shadow.visible: false
 
     // As wide for 5 as for 130, so the pill holds still while the number changes.
     TextMetrics {
       id: widest
 
-      font: Theme.captionHeading
+      font: Theme.numericHeading
       text: "100"
     }
 
@@ -81,7 +84,7 @@ Scope {
       id: row
 
       anchors.centerIn: parent
-      spacing: 14
+      spacing: Theme.padding
 
       Glyph {
         anchors.verticalCenter: parent.verticalCenter
@@ -92,13 +95,14 @@ Scope {
 
       Rectangle {
         anchors.verticalCenter: parent.verticalCenter
-        width: 200
-        height: 8
+        // Shell's .level: 6 px, white, and past 100 % red after a 3 px gap.
+        width: 160
+        height: 6
         radius: height / 2
-        color: Theme.trough
+        color: Theme.troughBg
 
         Rectangle {
-          width: Math.max(parent.height, parent.width * Math.min(slider.value, 1))
+          width: Math.max(parent.height, parent.width * Math.min(slider.value, 1) / Math.max(slider.value, 1) - (slider.value > 1 ? 1.5 : 0))
           height: parent.height
           radius: parent.radius
           color: slider.tone
@@ -106,7 +110,8 @@ Scope {
 
           Behavior on width {
             NumberAnimation {
-              duration: Theme.move
+              duration: Theme.levelTime
+              easing.type: Easing.OutQuad
             }
           }
         }
@@ -115,10 +120,10 @@ Scope {
         Rectangle {
           anchors.right: parent.right
           visible: slider.value > 1
-          width: parent.width * Math.min(slider.value - 1, 1) / Math.max(slider.value, 1)
+          width: parent.width * (slider.value - 1) / slider.value - 1.5
           height: parent.height
           radius: parent.radius
-          color: Theme.warning
+          color: Theme.destructiveBg
         }
       }
 
@@ -128,15 +133,18 @@ Scope {
         horizontalAlignment: Text.AlignRight
         text: Math.round(slider.value * 100)
         color: slider.tone
-        font: Theme.captionHeading
+        font: Theme.numericHeading
       }
     }
   }
 
   component Tag: Card {
     implicitWidth: row.implicitWidth + 36
-    implicitHeight: 52
+    implicitHeight: 56
     radius: height / 2
+    color: Theme.osdBg
+    border.color: Theme.osdBorder
+    shadow.visible: false
 
     Row {
       id: row
@@ -182,8 +190,8 @@ Scope {
 
     Behavior on fade {
       NumberAnimation {
-        duration: Theme.fade
-        easing.type: Easing.OutCubic
+        duration: Theme.quickTime
+        easing.type: Easing.OutQuad
       }
     }
 
