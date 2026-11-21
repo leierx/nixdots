@@ -29,7 +29,7 @@ qst flood 3000 --urgency 2
 qst wait '(.popups | length) == 5'
 sounds=$(qst actions | grep -c '^pw-play' || true)
 [ "$sounds" -le 3 ] || { echo "$sounds sounds for one flood"; exit 1; }
-qst wait 'any(.history[]; .app == "Notifications" and (.summary | test("notifications dropped$")))' 10
+qst wait 'any(.history[]; .app == "Notifications" and (.summary | test("Notifications Dropped$")))' 10
 qst stays '.notifications <= 105' 1
 
 qst case "a flood from thousands of apps keeps the history bounded and the center quick to open"
@@ -283,7 +283,7 @@ qst wait "$(idle_layers 0)"
 qst case "a burst of saved screenshots keeps three cards and no notify-send waiting for the rest"
 picture=$QS_TEST_REPO/modules/features/hyprland/tests/tray-icon.svg
 for n in $(seq 20); do
-  notify-send -a Screenshot -n accessories-screenshot -i "file://$picture" -A default=Open -A open=Open -A "folder=Show in Folder" "Screenshot saved" "~/Pictures/screenshots/$n.png" > /dev/null &
+  notify-send -a Screenshot -n accessories-screenshot -i "file://$picture" -A default=Open -A open=Open -A "folder=Show in Folder" "Screenshot Saved" "~/Pictures/screenshots/$n.png" > /dev/null &
 done
 qst wait '(.history | length) >= 5' 10
 qst ipc notifications hidePopups
@@ -297,7 +297,7 @@ wait
 qst case "a run of copied screenshots is one card"
 picture=$QS_TEST_REPO/modules/features/hyprland/tests/tray-icon.svg
 for n in $(seq 30); do
-  notify-send -a Screenshot -n accessories-screenshot -i "file://$picture" -h string:x-canonical-private-synchronous:screenshot "Screenshot copied to clipboard" "$n"
+  notify-send -a Screenshot -n accessories-screenshot -i "file://$picture" -h string:x-canonical-private-synchronous:screenshot "Screenshot Copied to Clipboard" "$n"
 done
 qst wait '(.history | length) == 1 and (.popups | length) == 1'
 qst stays '(.history | length) == 1' 1

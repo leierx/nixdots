@@ -62,7 +62,7 @@ if ! { NIXPKGS_ALLOW_UNFREE=1 nix build --no-link --print-out-paths --impure --l
   tee "$json" | jq -nrR --unbuffered -f "$progress" | report; then
   sed -n 's/^@nix //p' "$json" | jq -r 'select(.action == "msg" and .level == 0) | .msg' | sed 's/\x1b\[[0-9;]*m//g' >"$log"
   grep -v '^@nix ' "$json" >>"$log" || true
-  fail "$attr failed to build"
+  fail "$attr Failed to Build"
 fi
 paths=$(<"$built")
 
@@ -86,7 +86,7 @@ done <<<"$paths"
 
 if [ -z "$exe" ]; then
   echo "no bin/$program in $paths" >"$log"
-  fail "$attr has no program to run"
+  fail "$attr Has No Program to Run"
 fi
 
 # Its window, or its terminal, takes over from the card.
@@ -128,7 +128,7 @@ done
 
 # Waited on, as the socket takes connections only while security-context runs.
 if $gui; then
-  security-context "$wayland/socket" "$attr" "${sandbox[@]}" --wait "$exe" 2>"$log" || fail "$attr stopped with an error"
+  security-context "$wayland/socket" "$attr" "${sandbox[@]}" --wait "$exe" 2>"$log" || fail "$attr Stopped With an Error"
 else
   # A command that is over at once, or failed, stays on screen until Enter.
   # shellcheck disable=SC2016

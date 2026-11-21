@@ -469,7 +469,7 @@ Notes on specific features:
         and `barStrong` (the bar's lettering, numbers and badges); and one each
         for the launcher's `search`, the weather's `temperature` and the power
         menu's clock (`display`). Long text elides at a line limit. Words
-        follow GNOME's HIG: header capitals for titles, buttons, pills and menu
+        follow GNOME's HIG: header capitals for titles (the notifications our scripts send too), buttons, pills and menu
         items ("Collapse All", "In Use"), sentence case for subtitles, states,
         placeholders and bind descriptions. Numbers take a space before % and
         units ("76 %", "2 h 40 min"), degrees none ("5°"); a track's time is
@@ -706,15 +706,15 @@ Notes on specific features:
     `copy|save`) that carries its own runtime inputs, and end with a
     notification from "Screenshot": the shot as its picture (a `file://` URI) and
     Papirus' `accessories-screenshot` as the badge (`-n`). A copy says
-    "Screenshot copied to clipboard", its picture kept in
+    "Screenshot Copied to Clipboard", its picture kept in
     `$XDG_RUNTIME_DIR/screenshots` until the next copy, under the stack tag
     `screenshot`, so a run of copies is one card. A save says "Screenshot
-    saved" with the path (`~` for home), untagged, so each file keeps its own
+    Saved" with the path (`~` for home), untagged, so each file keeps its own
     card, with Open (also a click on the card) and Show in Folder
     (`xdg-open` on the file or its folder), waited on in the background.
     Both are transient and silent (`suppress-sound`), so they leave nothing
     in the history, and both take the popups' own timeout. Escape in slurp sends
-    nothing; a failure sends a critical "Screenshot failed" with why.
+    nothing; a failure sends a critical "Screenshot Failed" with why.
   - Binds reference configured packages (`config.programs.wezterm.package`,
     `config.programs.quickshell.package`, …) rather than `pkgs.*`.
   - The HM half reads `osConfig` (compositor package, xkb layout, fprintd,

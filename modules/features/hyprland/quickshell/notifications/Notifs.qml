@@ -97,7 +97,7 @@ Singleton {
       const total = root.flood.total;
       root.flood.total = 0;
       root.flood.dropped = {};
-      Quickshell.execDetached(["notify-send", "-a", "Notifications", "-i", "dialog-warning", `${total.toLocaleString(Qt.locale(), "f", 0)} notifications dropped`, `${from} sent more than ${root.floodLimit} a second.`]);
+      Quickshell.execDetached(["notify-send", "-a", "Notifications", "-i", "dialog-warning", `${total.toLocaleString(Qt.locale(), "f", 0)} Notifications Dropped`, `${from} sent more than ${root.floodLimit} a second.`]);
     }
   }
 

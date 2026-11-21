@@ -187,7 +187,7 @@ Singleton {
       root.vpnError = withSecret ? "Wrong password" : "";
       return;
     }
-    Quickshell.execDetached(["notify-send", "-a", "Network", "-i", "network-vpn", `${vpn ? Names.clean(vpn.name) : "VPN"} ${action === "up" ? "did not connect" : "did not disconnect"}`, message || "nmcli failed"]);
+    Quickshell.execDetached(["notify-send", "-a", "Network", "-i", "network-vpn", `${vpn ? Names.clean(vpn.name) : "VPN"} ${action === "up" ? "Failed to Connect" : "Failed to Disconnect"}`, message || "nmcli failed"]);
   }
 
   function busy(uuid: string): string {

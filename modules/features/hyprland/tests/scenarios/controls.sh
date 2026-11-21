@@ -174,7 +174,7 @@ qst network vpn Broken fail
 open vpn
 qst wait '(.controls.vpns | length) == 2'
 press row:Broken
-qst wait 'any(.history[]; .summary == "Broken did not connect")' 10
+qst wait 'any(.history[]; .summary == "Broken Failed to Connect")' 10
 qst wait '.controls.vpns | map(select(.name == "Broken"))[0] | (.active | not) and .busy == null'
 
 qst case "a new headset pairs, is trusted and connects in one click; a keyboard wanting a PIN says where to go"
