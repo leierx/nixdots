@@ -1,6 +1,7 @@
 import QtQuick
+import qs.nix
 
-// What just happened and a button to take it back, as libadwaita's toast: gone after five seconds, on its button, or when its panel closes.
+// What just happened, a button to take it back and a round close, as libadwaita's toast: gone after five seconds, on either button, or when its panel closes.
 Rectangle {
   id: root
 
@@ -51,13 +52,21 @@ Rectangle {
     Button {
       objectName: `action:${root.action}`
       anchors.verticalCenter: parent.verticalCenter
-      flat: true
       text: root.action
-      font: Theme.body
       onClicked: {
         timer.stop();
         root.acted();
       }
+    }
+
+    IconButton {
+      objectName: "action:Dismiss"
+      anchors.verticalCenter: parent.verticalCenter
+      implicitHeight: Theme.buttonHeight
+      flat: true
+      glyph: Symbols.close
+      tooltip: "Dismiss"
+      onClicked: root.dismiss()
     }
   }
 }
