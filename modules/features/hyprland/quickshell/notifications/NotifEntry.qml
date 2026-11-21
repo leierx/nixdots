@@ -18,17 +18,9 @@ QtObject {
   property bool popup: false
   // Looked at in the center; the bar's bell shows while any is not.
   property bool checked: false
-  // The popup under the pointer holds the timeout.
-  property bool hovered: false
-  // So does one below the screen's edge, until there is room for it, or one with no monitor on to show it.
+  // Below the screen's edge until there is room for it; this, or no monitor on to show it, holds the timeout.
   property bool waiting: false
   readonly property bool unseen: waiting || !Screens.has(screen)
-  // Above a hovered popup on its screen, so its going would move that one from under the pointer.
-  readonly property bool above: {
-    const stack = Notifs.popups.filter(e => e.screen === screen);
-    const held = stack.findIndex(e => e.hovered);
-    return held > 0 && stack.indexOf(root) < held;
-  }
 
   readonly property bool critical: notification.urgency === NotificationUrgency.Critical
   readonly property string appIcon: Notifs.appIcon(notification)
@@ -91,8 +83,6 @@ QtObject {
 
   onPopupChanged: {
     if (popup) return;
-    // A popup removed under the pointer never reports it gone.
-    hovered = false;
     // Transient notifications stay out of the history.
     if (notification.transient) notification.expire();
     else Notifs.trimHistory();
@@ -113,7 +103,7 @@ QtObject {
     to: 0
     duration: root.timeout
     running: root.popup && root.timeout > 0 && !root.lock.retained
-    paused: running && (root.hovered || root.above || root.unseen)
+    paused: running && root.unseen
     onFinished: root.popup = false
   }
 

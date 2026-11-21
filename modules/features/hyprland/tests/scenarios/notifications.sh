@@ -54,7 +54,7 @@ qst wait '.panel == ""'
 notify-send -a Chat "new"
 qst wait '.unchecked == 1 and .notifications == 2'
 
-qst case "hovering a popup holds those above it, which would move it away, but not those below"
+qst case "a popup under the pointer times out as any other, and those above it too"
 notify-send -t 1500 -a Chat "bottom"
 qst wait '(.popups | length) == 1'
 notify-send -t 1500 -a Chat "middle"
@@ -63,21 +63,7 @@ qst wait '(.popups | map(.summary)) == ["top", "middle", "bottom"]'
 # The second card from the top of DP-1's stack.
 qst pointer 1640 160
 qst pointer 1642 162
-qst wait '.popups[1].hovered'
-qst wait '(.popups | map(.summary)) == ["top", "middle"]' 4
-qst stays '(.popups | map(.summary)) == ["top", "middle"]' 2
-qst pointer 900 600
 qst wait '(.popups | length) == 0' 4
-
-qst case "a popup put away under the pointer is no longer held"
-notify-send -t 0 -a Chat "under the pointer"
-qst wait '(.popups | length) == 1'
-read -r x y _ < <(qst areas 'NotificationPopups/SwipeArea' | head -1)
-qst pointer "$x" "$y"
-qst pointer $((x + 2)) $((y + 2))
-qst wait '.popups[0].hovered'
-qst ipc notifications hidePopups
-qst stays '(.popups | length) == 0' 1
 
 qst case "a flood plays a sound at most every 300 ms, and an app saying the same again is one card"
 start=$(date +%s%N)

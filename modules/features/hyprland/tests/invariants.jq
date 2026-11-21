@@ -21,8 +21,6 @@ def wanted:
     # A shell held up this long by anything (a flood, a megabyte of text, a list built over and over) is a frozen desktop.
     (if ($s.answered // 0) > 2000 then "!the shell took \($s.answered) ms to answer the probe" else empty end),
     (if ($s.popups | length) > 5 then "\($s.popups | length) popups are up, past the five allowed" else empty end),
-    ($s.history[] | select(.hovered and (.popup | not)) | "\"\(.summary)\" is held as hovered with no popup to hover"),
-    (if ([$s.history[] | select(.hovered)] | length) > 1 then "more than one popup is hovered" else empty end),
     ($s.history | group_by(.app)[] | .[3:][] | select(.popup | not) | "\(.app) keeps \"\(.summary)\" past its newest three"),
     (if $s.notifications > 105 then "the history holds \($s.notifications), past the 100 kept and five popups" else empty end),
     (if $s.unchecked > $s.notifications then "\($s.unchecked) unchecked of \($s.notifications) notifications" else empty end),

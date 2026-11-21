@@ -587,8 +587,8 @@ Notes on specific features:
       - `notifications/`: the notification daemon and its popups. `Notifs`
         keeps every notification as a `NotifEntry` until dismissed, holding it
         a second past its close so views slide it away whole. Popups stack on
-        the monitor focused when each arrived, five at most, held while
-        hovered (and those above it), out of sight or without a monitor; the
+        the monitor focused when each arrived, five at most, timing out under the pointer too (the center
+        keeps them), held only out of sight or without a monitor; the
         countdown bar is the entry's own. Over a fullscreen window only
         critical ones pop up. A stack tag (`x-canonical-private-synchronous`,
         `x-dunst-stack-tag`), an update by id or the same app, summary and
@@ -1063,7 +1063,7 @@ what `qst backlight` appends.
 the session's copy of the shell (never the built one): the open panel, the
 screens and the Hyprland monitor each resolves to, the focused monitor,
 workspaces with the label the bar gives them and their window count, windows, and every popup with
-the screen it is on, the notification `history` (app and summary, popped up, hovered, checked, `restored` from disk, its picture and the
+the screen it is on, the notification `history` (app and summary, popped up, checked, `restored` from disk, its picture and the
 pictures `kept`, newest
 first), `dnd` and `unchecked`, the volume (percent, muted, output), the default `input` and the
 `microphone` (percent, muted, `adjustable`, the input, every input by name),
@@ -1089,8 +1089,7 @@ window, text drawn over other text (where the glyphs are, cut by clipping
 ancestors), and a window that is not a layer surface. `invariants`
 (`tests/invariants.jq`): an open panel has its layer and a layer its panel (a tray menu may sit over
 the tray's overflow),
-nothing on `FALLBACK`, popups only on real screens and five at most, hovered
-only while popped up and one at a time, three per app past the popped up,
+nothing on `FALLBACK`, popups only on real screens and five at most, three per app past the popped up,
 unchecked within the count, the history within 100 and five popups, a
 probe answered within 2 s (a shell held up by a flood or a list rebuilt over
 and over is a frozen desktop; this one fails at once), and a countdown never
