@@ -541,7 +541,8 @@ Notes on specific features:
         packages from `nixpkgs-index`'s TSV in columns with its own loop and
         memo, and runs one with `nixpkgs-run`.
       - `nixpkgs-run` builds `github:NixOS/nixpkgs/<rev>#<attr>` with a
-        progress card (`nixpkgs-progress.jq` over nix's internal-json log),
+        progress card (`nixpkgs-progress.jq` over nix's internal-json log) under
+        Papirus' `nix-snowflake` (`-n`, as are its failures),
         then runs the program in a transient `systemd-run --user` service
         sandboxed by systemd alone: `ProtectSystem=strict`, `PrivateTmp`, a
         writable tmpfs over `$HOME` and `$XDG_RUNTIME_DIR` (the user

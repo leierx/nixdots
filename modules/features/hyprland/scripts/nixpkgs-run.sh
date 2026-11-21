@@ -19,18 +19,18 @@ cleanup() {
 trap cleanup EXIT
 
 # Waits on the card, so one dismissed mid-build stays dismissed rather than coming back with the next update.
-coproc card { notify-send -p -w -u low -t 0 -a nixpkgs "Fetching $attr" "Evaluating nixpkgs ${rev:0:12}"; }
+coproc card { notify-send -p -w -u low -t 0 -a nixpkgs -n nix-snowflake "Fetching $attr" "Evaluating nixpkgs ${rev:0:12}"; }
 holder=$!
 read -r id <&"${card[0]}" || id=0
 
 fail() {
-  notify-send -r "$id" -u critical -a nixpkgs "$1" "$(tail -n 4 "$log")"
+  notify-send -r "$id" -u critical -a nixpkgs -n nix-snowflake "$1" "$(tail -n 4 "$log")"
   exit 1
 }
 
 update() {
   if kill -0 "$holder" 2>/dev/null; then
-    notify-send -r "$id" -u low -t 0 -a nixpkgs "$@" || true
+    notify-send -r "$id" -u low -t 0 -a nixpkgs -n nix-snowflake "$@" || true
   fi
 }
 
