@@ -189,7 +189,7 @@ Scope {
           const radius = item.radius;
           const half = Math.min(item.width, item.height) / 2;
           const inherited = item.parent && isRect(item.parent) && item.parent.radius === radius;
-          const roles = [0, Theme.smallRadius, Theme.buttonRadius, Theme.cardRadius, Theme.windowRadius];
+          const roles = [0, Theme.smallRadius, Theme.buttonRadius, Theme.windowRadius, Theme.keycapRadius, Theme.baseRadius, Theme.menuItemRadius, Theme.cardRadius, Theme.tileRadius, Theme.messageRadius, Theme.popoverRadius, Theme.toggleMenuRadius, Theme.dateMenuRadius, Theme.quickSettingsRadius];
           if (!own && !inherited && !roles.includes(radius) && Math.abs(radius - half) > 0.6) problems.push(`${label(entry, item)} has a radius of ${radius}: neither Theme's nor half its size`);
           if (!own && item.color.a > 0 && !allowedColors.has(key(item.color))) problems.push(`${label(entry, item)} is coloured ${item.color}, which is not Theme's`);
           if (!own && item.border.width > 0 && !allowedColors.has(key(item.border.color))) problems.push(`${label(entry, item)} has a border coloured ${item.border.color}, which is not Theme's`);

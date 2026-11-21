@@ -56,3 +56,14 @@ qst wait '.privacy.camera == ["zoom"]'
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
 qst stays '.privacy.camera == ["zoom"] and .panel == "controls:DP-1"' 1
+
+for monitor in DP-1 DP-2; do
+  qst case "the gallery of every common piece in every state on $monitor"
+  qst focus "$monitor"
+  qst gallery
+  qst wait '.panel == "gallery"'
+  qst stays '.panel == "gallery"' 0.6
+  qst pointer 960 600
+  qst wheel 20
+  qst stays '.panel == "gallery"' 0.6
+done

@@ -1,21 +1,27 @@
 import QtQuick
 
-// libadwaita's switch.
+// Shell's .toggle-switch: 46 by 26, a 20 px knob 3 px in.
 Rectangle {
   id: toggle
 
   property bool checked: false
+  // The mouse's, unless something (the gallery) holds a look.
+  property bool hovered: area.containsMouse
 
   signal clicked()
 
   implicitWidth: 46
   implicitHeight: 26
   radius: height / 2
-  color: checked ? Theme.accentBg : Theme.trough
+  opacity: enabled ? 1 : 0.5
+  color: {
+    if (checked) return hovered ? Theme.accentHover : Theme.accentBg;
+    return hovered ? Theme.switchHoverBg : Theme.switchBg;
+  }
 
   Behavior on color {
     ColorAnimation {
-      duration: Theme.fade
+      duration: Theme.quickTime
     }
   }
 
@@ -25,12 +31,12 @@ Rectangle {
     width: 20
     height: 20
     radius: width / 2
-    color: toggle.checked || area.containsMouse ? Theme.fg : Theme.slider
+    color: toggle.checked ? Theme.fg : Theme.switchKnob
 
     Behavior on x {
       NumberAnimation {
-        duration: Theme.move
-        easing.type: Easing.OutCubic
+        duration: Theme.quickTime
+        easing.type: Easing.OutQuad
       }
     }
   }

@@ -1,12 +1,15 @@
 import QtQuick
 
+// What floats: Shell's popover surface, its 1 px edge and its shadow.
 Rectangle {
   id: root
 
-  radius: Theme.windowRadius
-  color: Theme.bg
+  property alias shadow: shade
+
+  radius: Theme.popoverRadius
+  color: Theme.popoverBg
   border.width: 1
-  border.color: Theme.outline
+  border.color: Theme.popoverBorder
 
   Keys.onEscapePressed: Panels.close()
   // A control of its own the keyboard was on can go (a row rebuilt, a menu shut): the card takes it back, so Escape and Tab still work.
@@ -34,5 +37,7 @@ Rectangle {
     }
   }
 
-  Shadow {}
+  Shadow {
+    id: shade
+  }
 }

@@ -11,6 +11,6 @@ Rectangle {
   radius: corner
   color: "transparent"
   border.width: 2
-  border.color: Theme.accentBg
+  border.color: Theme.focusRing
   visible: on && Panels.keyboard
 }

@@ -959,6 +959,7 @@ qst() { nix run "path:$PWD#qs-test" -- "$@"; }   # or build it once and call the
 
 qst up                         # the checkout's Hyprland config and shell (path:, so untracked files count) for this host
 qst ipc panels open apps       # qs ipc call, with a timeout
+qst gallery                    # every common/ piece in every state (tests/Gallery.qml), a panel of its own
 qst key super+d                # through Hyprland's bind and the shell's global shortcut
 qst type fire
 qst key ctrl+n Down Return     # one key per argument

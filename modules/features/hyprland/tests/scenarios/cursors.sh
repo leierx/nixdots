@@ -85,3 +85,8 @@ qst press left
 qst pointer $((x + 40)) "$y"
 qst cursor $((x + 60)) "$y" closed
 qst release left
+
+qst case "a hand over every piece in the gallery that takes a click"
+qst gallery
+qst wait '.panel == "gallery"'
+qst cursors GalleryWindow

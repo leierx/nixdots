@@ -1,6 +1,6 @@
 import QtQuick
 
-// A row of a list in a panel: a 20 px symbol in a column of its own, the name beside it, and what it says on the right.
+// Shell's .popup-menu-item: a row of a panel's list, its 16 px symbol in a column of its own, the name beside it, and what it says on the right.
 Rectangle {
   id: root
 
@@ -11,21 +11,31 @@ Rectangle {
   // Whether a click does something, for the pointer.
   property bool acts: true
   property alias areaName: area.objectName
-  readonly property alias hovered: area.containsMouse
+  // The mouse's, unless something (the gallery) holds a look.
+  property bool hovered: area.containsMouse
+  property bool pressed: area.pressed
+  // A row with the keyboard takes the grey fill rather than a ring, as menus mark it.
+  property bool selected: activeFocus && Panels.keyboard
   default property alias trailing: end.data
 
   signal clicked()
 
-  implicitHeight: 36
-  radius: Theme.smallRadius
+  implicitHeight: Theme.menuRowHeight
+  radius: Theme.menuItemRadius
+  opacity: enabled ? 1 : 0.5
   activeFocusOnTab: acts
   Keys.onReturnPressed: root.clicked()
   Keys.onSpacePressed: root.clicked()
-  color: area.containsMouse && area.enabled && acts ? Theme.hover : "transparent"
+  color: {
+    if (!acts || !enabled) return "transparent";
+    if (pressed) return Theme.menuActiveBg;
+    if (selected) return Theme.selectedBg;
+    return hovered ? Theme.menuHoverBg : "transparent";
+  }
 
   Behavior on color {
     ColorAnimation {
-      duration: Theme.fade
+      duration: Theme.quickTime
     }
   }
 
@@ -40,13 +50,8 @@ Rectangle {
     onClicked: root.clicked()
   }
 
-  FocusRing {
-    corner: root.radius
-    on: root.activeFocus
-  }
-
   Glyph {
-    x: 10
+    x: Theme.padding
     anchors.verticalCenter: parent.verticalCenter
     visible: root.glyph !== ""
     path: root.glyph
@@ -55,9 +60,9 @@ Rectangle {
   }
 
   Text {
-    x: 40
+    x: Theme.padding + 16 + Theme.basePadding
     anchors.verticalCenter: parent.verticalCenter
-    width: Math.min(implicitWidth, parent.width - x - 10 - (end.width > 0 ? end.width + 10 : 0))
+    width: Math.min(implicitWidth, parent.width - x - Theme.padding - (end.width > 0 ? end.width + Theme.basePadding : 0))
     text: root.title
     textFormat: Text.PlainText
     maximumLineCount: 1
@@ -70,8 +75,8 @@ Rectangle {
     id: end
 
     anchors.right: parent.right
-    anchors.rightMargin: 10
+    anchors.rightMargin: Theme.padding
     anchors.verticalCenter: parent.verticalCenter
-    spacing: 8
+    spacing: Theme.basePadding
   }
 }

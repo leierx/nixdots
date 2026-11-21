@@ -19,6 +19,7 @@ usage: qs-test COMMAND
   lint                  qmllint the checkout's shell, as nix flake check does
 
   ipc ARGS...           qs ipc call ARGS (panels open apps, notifications count, ...)
+  gallery               open tests/Gallery.qml, every common/ piece in every state
   state [JQ]            what the shell sees (tests/Probe.qml) with Hyprland's layers and monitors, through JQ
   wait JQ [SECONDS]     until JQ holds on the state (5 s), or fail and print it
   stays JQ [SECONDS]    fail if JQ stops holding within SECONDS (1)
@@ -295,8 +296,8 @@ sync_source() {
 # The test's own window into the shell, in its copy only.
 install_probe() {
   mkdir -p "$T/shell/probe"
-  cp "$tests"/Probe*.qml "$T/shell/probe/"
-  sed -i -e 's/^import Quickshell$/&\nimport qs.probe/' -e '$ s/^}$/\n  Probe {}\n}/' "$T/shell/shell.qml"
+  cp "$tests"/Probe*.qml "$tests"/Gallery*.qml "$T/shell/probe/"
+  sed -i -e 's/^import Quickshell$/&\nimport qs.probe/' -e '$ s/^}$/\n  Probe {}\n  Gallery {}\n}/' "$T/shell/shell.qml"
   grep -q 'Probe {}' "$T/shell/shell.qml" || die "could not add the probe to shell.qml"
   local file name
   while IFS= read -r file; do
@@ -1597,6 +1598,7 @@ case $cmd in
   restart) need_up; case_check; stop_qs; start_qs ;;
   lint) qs-lint "$(readlink -f "$(build)/shell")" ;;
   ipc) need_up; enter; timeout 5 qs ipc -p "$T/shell" call "$@" ;;
+  gallery) need_up; enter; timeout 5 qs ipc -p "$T/shell" call panels open gallery > /dev/null ;;
   state) need_up; state "$@" ;;
   wait) need_up; wait_for "$@" ;;
   stays) need_up; stays "$@" ;;

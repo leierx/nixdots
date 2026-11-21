@@ -1,6 +1,6 @@
 import QtQuick
 
-// What just happened and a button to take it back, as libadwaita's toasts: gone after five seconds, on its button, or when its panel closes.
+// What just happened and a button to take it back, as libadwaita's toast: gone after five seconds, on its button, or when its panel closes.
 Rectangle {
   id: root
 
@@ -21,10 +21,10 @@ Rectangle {
     root.expired();
   }
 
-  implicitWidth: row.implicitWidth + Theme.padding + 6
-  implicitHeight: 34
+  implicitWidth: row.implicitWidth + Theme.padding + Theme.basePadding
+  implicitHeight: Theme.buttonHeight + 2 * Theme.basePadding
   radius: height / 2
-  color: Theme.card
+  color: Theme.toastBg
   visible: shown
 
   Timer {
@@ -39,7 +39,7 @@ Rectangle {
 
     anchors.verticalCenter: parent.verticalCenter
     x: Theme.padding
-    spacing: 10
+    spacing: Theme.padding
 
     Text {
       anchors.verticalCenter: parent.verticalCenter

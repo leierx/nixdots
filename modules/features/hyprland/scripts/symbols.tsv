@@ -58,3 +58,4 @@ logOut	system-log-out
 restart	system-reboot
 reload	view-refresh
 firmware	computer
+panDown	pan-down

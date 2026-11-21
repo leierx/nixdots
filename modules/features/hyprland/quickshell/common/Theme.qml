@@ -9,9 +9,10 @@ Singleton {
   id: root
 
   readonly property color fg: Colors.view_fg_color
-  readonly property color fgDim: overlay(0.5)
+  readonly property color fgDim: overlay(0.55)
   readonly property color fgFaint: overlay(0.16)
   readonly property color fgStrong: overlay(0.8)
+  readonly property color placeholder: overlay(0.7)
 
   readonly property color panelBg: Colors.dark_5
   readonly property color popoverBg: Colors.shell_bg_color
@@ -27,6 +28,10 @@ Singleton {
   readonly property color tooltipBorder: overlay(0.1)
   readonly property color separator: overlay(0.1)
   readonly property color shadowColor: Qt.rgba(0, 0, 0, 0.2)
+  // libadwaita's $toast_bg_color #505053, less 14 as an opaque surface.
+  readonly property color toastBg: "#424245"
+  readonly property color keycapBg: overlay(0.1)
+  readonly property color keycapShade: Colors.card_shade_color
 
   readonly property color accentBg: Colors.accent_bg_color
   readonly property color accentFg: Colors.accent_fg_color
@@ -46,9 +51,10 @@ Singleton {
   readonly property color buttonActiveBg: overlay(0.19)
   readonly property color buttonCheckedBg: overlay(0.18)
   readonly property color buttonCheckedHoverBg: overlay(0.22)
-  readonly property color buttonInsensitiveBg: overlay(0.05)
   readonly property color menuHoverBg: overlay(0.13)
   readonly property color menuActiveBg: overlay(0.16)
+  // The user's pick over Shell's, which marks the keyboard as it marks hover.
+  readonly property color selectedBg: overlay(0.15)
   readonly property color cardHoverBg: overlay(0.13)
   readonly property color panelHoverBg: overlay(0.17)
   readonly property color panelActiveBg: overlay(0.28)
@@ -76,6 +82,7 @@ Singleton {
   readonly property font numeric: Qt.font({ family: "Adwaita Sans", pointSize: 11, features: { "tnum": 1 } })
   readonly property font numericHeading: Qt.font({ family: "Adwaita Sans", pointSize: 11, weight: Font.Bold, features: { "tnum": 1 } })
 
+  readonly property int keycapRadius: 6
   readonly property int baseRadius: 8
   readonly property int menuItemRadius: 12
   readonly property int cardRadius: 12

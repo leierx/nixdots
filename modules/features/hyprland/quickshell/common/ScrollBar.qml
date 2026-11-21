@@ -12,7 +12,7 @@ QQC.ScrollIndicator {
     implicitWidth: 4
     implicitHeight: 4
     radius: width / 2
-    color: Theme.fgDim
+    color: Theme.scrollHandle
     opacity: (root.active || root.held) && root.size < 1 ? 1 : 0
 
     Behavior on opacity {

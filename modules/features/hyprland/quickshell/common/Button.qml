@@ -1,5 +1,6 @@
 import QtQuick
 
+// Shell's %button: 8 px or a pill, bold, the foreground's shades; flat on a surface of its own, suggested in the accent, destructive in red.
 Rectangle {
   id: root
 
@@ -9,35 +10,52 @@ Rectangle {
   // A Symbols path, before the text.
   property string glyph: ""
   property int glyphSize: 16
-  property color foreground: Theme.fg
   property bool flat: false
-  // Held down, as a flat button is while what it opens is open.
+  property bool suggested: false
+  property bool destructive: false
+  property bool pill: false
+  // Held down, as a button is while what it opens is open.
   property bool checked: false
   // An ExpanderArrow after the text, pointing as it says.
   property bool expander: false
   property string pointing: "down"
-  property real padding: 17
+  property real padding: 24
   // What an icon alone does, shown as the pointer rests on it and read out as its name.
   property string tooltip: ""
+  // The mouse's, unless something (the gallery) holds a look.
+  property bool hovered: area.containsMouse
+  property bool pressed: area.pressed
 
-  readonly property bool hovered: area.containsMouse
+  readonly property bool filled: suggested || destructive
+  readonly property color fillBg: suggested ? Theme.accentBg : Theme.destructiveBg
+  property color foreground: filled ? Theme.accentFg : Theme.fg
   readonly property var parts: [glyph !== "" ? glyphSize : -1, label.text !== "" ? label.implicitWidth : -1, expander ? arrow.width : -1].filter(width => width >= 0)
   readonly property real contentWidth: parts.reduce((sum, width) => sum + width, 0) + Math.max(0, parts.length - 1) * row.spacing
 
   signal clicked(int button)
 
   implicitWidth: Math.max(implicitHeight, contentWidth + 2 * padding)
-  implicitHeight: 34
-  radius: Theme.buttonRadius
+  implicitHeight: Theme.buttonHeight
+  radius: pill ? height / 2 : Theme.baseRadius
+  // libadwaita's --disabled-opacity, as the panels hold app-like content.
+  opacity: enabled ? 1 : 0.5
   color: {
-    if (area.pressed || checked) return Theme.buttonChecked;
-    if (area.containsMouse) return Theme.buttonHover;
-    return flat ? "transparent" : Theme.button;
+    if (filled) {
+      if (pressed || checked) return Theme.lighten(fillBg, 0.09);
+      return hovered ? Theme.lighten(fillBg, 0.04) : fillBg;
+    }
+    if (flat) {
+      if (pressed || checked) return Theme.buttonHoverBg;
+      return hovered ? Theme.buttonBg : "transparent";
+    }
+    if (pressed) return Theme.buttonActiveBg;
+    if (checked) return hovered ? Theme.buttonCheckedHoverBg : Theme.buttonCheckedBg;
+    return hovered ? Theme.buttonHoverBg : Theme.buttonBg;
   }
 
   Behavior on color {
     ColorAnimation {
-      duration: Theme.fade
+      duration: Theme.quickTime
     }
   }
 
@@ -45,7 +63,7 @@ Rectangle {
     id: row
 
     anchors.centerIn: parent
-    spacing: 6
+    spacing: Theme.basePadding
 
     Glyph {
       anchors.verticalCenter: parent.verticalCenter
@@ -72,6 +90,7 @@ Rectangle {
       anchors.verticalCenter: parent.verticalCenter
       visible: root.expander
       pointing: root.pointing
+      color: root.foreground
     }
   }
 

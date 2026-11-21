@@ -32,7 +32,7 @@ popover, so they hold over any surface.
 | Theme | Value | Source | Role |
 | --- | --- | --- | --- |
 | `fg` | `#ffffff` | gs `$fg_color` | Text and symbols |
-| `fgDim` | fg 50 % | gs `$insensitive_fg_color` (`mix(fg, bg, 50%)`), `.device-subtitle` | Secondary text: subtitles, ages, other months, the empty-state line |
+| `fgDim` | fg 55 % | gs `$card_insensitive_fg_color` (about 55 % over a card; 50 % over the popover would fall under 3:1 on cards), adw `--dim-opacity` | Secondary text: subtitles, ages, other months, the empty-state line |
 | `fgFaint` | fg 16 % | ours | Empty workspaces |
 | `fgStrong` | fg 80 % | ours | Text over album art, occupied workspaces |
 | `panelBg` | `dark_5` `#000000` | gs `$panel_bg_color` | The bar |
