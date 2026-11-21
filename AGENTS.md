@@ -471,7 +471,7 @@ Notes on specific features:
         menu's clock (`display`). Long text elides at a line limit. Words
         follow GNOME's HIG: header capitals for titles (the notifications our scripts send too), buttons, pills and menu
         items ("Collapse All", "In Use"), sentence case for subtitles, states,
-        placeholders and bind descriptions; "…" only where more input follows (a placeholder that acts), never on a settings item ("Network Settings"); no text ends in a full stop, our own notifications' bodies too. Numbers take a narrow no-break
+        placeholders and bind descriptions; "…" only where more input follows (a placeholder that acts), never on a settings item ("Network Settings"); an estimate says about ("About 2 h 40 min left"); no text ends in a full stop, our own notifications' bodies too. Numbers take a narrow no-break
         space (U+202F, `Theme.unit`) before % and units ("76 %", "2 h 40 min"),
         degrees none ("5°"); a track's time is
         m:ss; a date is in the locale's order with the day unpadded ("Friday

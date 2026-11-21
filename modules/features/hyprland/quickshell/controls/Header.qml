@@ -8,11 +8,10 @@ Item {
   id: header
 
   function batteryState(): string {
-    if (Power.charging) return Power.remaining > 0 ? `Full in ${Power.duration(Power.remaining)}` : "Charging";
+    if (Power.charging) return Power.remaining > 0 ? `Full in about ${Power.duration(Power.remaining)}` : "Charging";
     if (Power.plugged) return "Plugged in";
-    return Power.remaining > 0 ? `${Power.duration(Power.remaining)} left` : "On battery";
+    return Power.remaining > 0 ? `About ${Power.duration(Power.remaining)} left` : "On battery";
   }
-
 
   implicitHeight: 34
 
