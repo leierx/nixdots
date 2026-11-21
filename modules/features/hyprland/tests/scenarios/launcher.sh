@@ -39,3 +39,15 @@ qst key super+d
 qst wait '.panel == "apps"'
 qst click left 2900 600
 qst wait '.panel == ""'
+
+qst case "a word with one letter wrong, missing, extra or swapped still finds the app, below what matches as typed"
+qst key super+d
+qst wait '.panel == "apps"'
+for typo in firfeox firefx fierfox fireffox; do
+  qst key ctrl+a BackSpace
+  qst type "$typo"
+  qst wait ".field == \"$typo\" and (.results | index(\"Firefox\")) != null"
+done
+qst key ctrl+a BackSpace
+qst type fire
+qst wait '.field == "fire" and .results[0] == "Firefox"'

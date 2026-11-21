@@ -407,6 +407,8 @@ Scope {
           const tray = entry.items.find(({ item }) => "overflowPanel" in item && "menuAnchor" in item)?.item;
           return { screen: entry.screen, shown: tray?.visible ?? false, hidden: tray ? tray.items.length : 0, items: tray ? tray.items.map(item => item.id) : [] };
         }),
+        // The launcher's first ten results by title, best first.
+        results: (probe.windows().map(entry => entry.items.find(({ item }) => "results" in item && "query" in item && "mode" in item)).find(found => found)?.item.results ?? []).slice(0, 10).map(row => row.title ?? row.key ?? null),
         // The text field being typed into, or else the first one up: the launcher's search.
         field: (probe.windows().map(entry => entry.items.find(({ item }) => "cursorPosition" in item && "echoMode" in item && item.activeFocus)).find(found => found) ?? probe.windows().map(entry => entry.items.find(({ item }) => "cursorPosition" in item && "echoMode" in item)).find(found => found))?.item.text ?? null,
         problems: probe.census()

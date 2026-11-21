@@ -543,7 +543,8 @@ Notes on specific features:
         `windows`, SUPER+N `nixpkgs`. A mode sets its `rows` (each with a
         unique `key`, which keeps delegates as a search changes), the `fields`
         searched (`search.js`: every word as a substring, or in a loose field
-        its letters in order), a `glyph` or `image`, an optional `accent`,
+        its letters in order, or else, from four letters, a word of the text
+        it begins with but for one slip, ranked below both), a `glyph` or `image`, an optional `accent`,
         `preview` and own `find`. The card opens at full height and centred,
         so it holds still while typing; keys go round, the wheel stops at the
         ends. `apps` orders equal matches by `AppUsage` (frecency as one
@@ -558,7 +559,8 @@ Notes on specific features:
         it, and previews them live (no `ScreencopyView` of a window Hyprland
         squeezed below nothing). `nixpkgs` searches nixos-unstable's 130 000
         packages from `nixpkgs-index`'s TSV in columns with its own loop and
-        memo, and runs one with `nixpkgs-run`.
+        memo, matching as typed only, since a slip pass would cost one over
+        every row on each key, and runs one with `nixpkgs-run`.
       - `nixpkgs-run` builds `github:NixOS/nixpkgs/<rev>#<attr>` with a
         progress card (`nixpkgs-progress.jq` over nix's internal-json log) under
         Papirus' `nix-snowflake` (`-n`, as are its failures),
@@ -1095,7 +1097,7 @@ the `osd` showing (with its screen), `osdShown` (shows so far) and
 `camera` names or null while unused), `status` (each bar's status button: its glyphs by name, `Microphone`, `bell`, `dnd`, `vpn`, `network` and so on, and the battery's percentage or null), `controls` (the open
 menu, the pills by key with their state, and each backend: `network`, `vpns`,
 `vpnAsking`, `bluetooth`, `night`, `media`), `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: whether its chevron
-shows, how many icons wait behind it and their ids in the overflow's order), `sliders` (every slider by name, its value and range), `center` (the center's groups in view, each one's lines in its order), `field`
+shows, how many icons wait behind it and their ids in the overflow's order), `sliders` (every slider by name, its value and range), `results` (the launcher's first ten by title), `center` (the center's groups in view, each one's lines in its order), `field`
 (the text field up, the launcher's search) and `problems`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.

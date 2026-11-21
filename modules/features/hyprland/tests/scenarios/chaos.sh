@@ -488,3 +488,13 @@ for _ in 1 2 3; do
 done
 qst wait '.volume.percent == 40 and .microphone.percent == 70'
 qst stays '.panel == "controls:DP-1" and .volume.percent == 40 and .microphone.percent == 70' 0.6
+
+qst case "words of garbage and slips typed as fast as keys go keep the launcher answering, and the last slip finds its app"
+qst key super+d
+qst wait '.panel == "apps"'
+for word in qwxz zzzzzzzz fxfxfxfx aaaa firfeox thunderbrd gimpp fierfox; do
+  qst key ctrl+a BackSpace
+  qst type "$word"
+done
+qst wait '.field == "fierfox" and (.results | index("Firefox")) != null'
+qst stays '.panel == "apps"' 0.5

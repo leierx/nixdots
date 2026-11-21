@@ -23,7 +23,12 @@ function scoreLowered(typed, haystack, loose) {
     if (at < 0) {
       const letters = loose ? spread(haystack, word) : null;
       if (!letters) {
-        return -1;
+        // One letter wrong, missing, extra or swapped, as the HIG asks search to forgive; below every match as typed.
+        if (!slipped(haystack, word)) {
+          return -1;
+        }
+        total += 300;
+        continue;
       }
       // Tighter is better: "ffx" in "firefox" spans all seven letters.
       total += 500 - (letters[letters.length - 1] - letters[0] + 1);
@@ -101,4 +106,35 @@ function mark(query, text, loose) {
     start = end;
   }
   return styled;
+}
+
+// A word of four letters or more that some word of the text begins with, but for one slip.
+function slipped(haystack, word) {
+  if (word.length < 4) {
+    return false;
+  }
+  for (const token of haystack.split(/[\s\-_./:]+/)) {
+    for (let length = word.length - 1; length <= word.length + 1; length++) {
+      if (length <= token.length && withinOne(token.slice(0, length), word)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Equal but for one substitution, insertion, deletion or swap of neighbours.
+function withinOne(a, b) {
+  if (Math.abs(a.length - b.length) > 1) {
+    return false;
+  }
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) {
+    i++;
+  }
+  if (i === a.length && i === b.length) {
+    return true;
+  }
+  const swapped = a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2);
+  return swapped || a.slice(i + 1) === b.slice(i + 1) || a.slice(i) === b.slice(i + 1) || a.slice(i + 1) === b.slice(i);
 }
