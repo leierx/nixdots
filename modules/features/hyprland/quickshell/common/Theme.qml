@@ -133,6 +133,15 @@ Singleton {
   readonly property color backdrop: Qt.rgba(0, 0, 0, 0.88)
   readonly property font display: Qt.font({ family: "Adwaita Sans", pointSize: 64, weight: Font.Bold })
   readonly property color idle: Colors.dark_5
+  // The weather card's skies, top to bottom: the user's colour, dark enough for white text.
+  readonly property var skies: ({
+    day: ["#1d4f8c", "#3474b8"],
+    night: ["#0b1230", "#1e2a58"],
+    cloud: ["#3a404c", "#545c6a"],
+    rain: ["#22303f", "#384b60"],
+    snow: ["#3e4a5a", "#5a6878"],
+    storm: ["#2a2438", "#443a58"]
+  })
 
   // A label with its access key underlined, as the HIG marks one; the labels are the shell's own, so nothing needs escaping.
   function accessKey(label: string, key: string): string {

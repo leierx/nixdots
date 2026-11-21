@@ -54,8 +54,9 @@ Rectangle {
     blurEnabled: true
     blur: 1
     blurMax: 64
-    saturation: 0.1
-    brightness: -0.4
+    // The art's colour kept, as the user asked, and darkened enough to read over.
+    saturation: 0.9
+    brightness: -0.5
     maskEnabled: true
     maskSource: shape
 

@@ -27,6 +27,16 @@ Singleton {
     return `file://${Quickshell.shellPath(`weather/icons/${symbol}.svg`)}`;
   }
 
+  // The sky MET's code shows, for the card's gradient: day, night, cloud, rain, snow or storm.
+  function sky(symbol: string): string {
+    const [kind, time] = symbol.split("_");
+    if (kind.includes("thunder")) return "storm";
+    if (kind.includes("snow") || kind.includes("sleet")) return "snow";
+    if (kind.includes("rain")) return "rain";
+    if (kind === "cloudy" || kind === "fog") return "cloud";
+    return time === "night" || time === "polartwilight" ? "night" : "day";
+  }
+
   function describe(symbol: string): string {
     return root.names[symbol.split("_")[0]] ?? "";
   }

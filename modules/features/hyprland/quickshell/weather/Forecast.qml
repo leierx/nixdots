@@ -23,9 +23,22 @@ Rectangle {
     fillMode: Image.PreserveAspectFit
   }
 
+  readonly property var sky: Theme.skies[Weather.sky(root.now?.symbol ?? "")] ?? Theme.skies.cloud
+
   implicitHeight: content.implicitHeight + 2 * padding
   radius: Theme.cardRadius
-  color: Theme.cardBg
+  color: "transparent"
+  // The sky it forecasts, as the user asked for colour here.
+  gradient: Gradient {
+    GradientStop {
+      position: 0
+      color: root.sky[0]
+    }
+    GradientStop {
+      position: 1
+      color: root.sky[1]
+    }
+  }
 
   ColumnLayout {
     id: content
@@ -66,7 +79,7 @@ Rectangle {
           Text {
             topPadding: 10
             text: "°C"
-            color: Theme.fgDim
+            color: Theme.fgStrong
             font: Theme.heading
           }
         }
@@ -94,7 +107,7 @@ Rectangle {
           horizontalAlignment: Text.AlignRight
           visible: root.day.length > 0
           text: `${Weather.degrees(Math.max(...root.day))} / ${Weather.degrees(Math.min(...root.day))}`
-          color: Theme.fgDim
+          color: Theme.fgStrong
           font: Theme.body
         }
       }
@@ -120,7 +133,7 @@ Rectangle {
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
             text: Qt.locale().toString(hour.modelData.time, "HH")
-            color: Theme.fgDim
+            color: Theme.fgStrong
             font: Theme.caption
           }
 
