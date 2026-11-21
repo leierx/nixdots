@@ -74,7 +74,7 @@ Item {
     width: root.width
     height: content.implicitHeight + 2 * Theme.padding - root.excess
     radius: Theme.messageRadius
-    color: hover.hovered ? Theme.messageHoverBg : Theme.messageBg
+    color: hover.hovered ? Theme.bannerHoverBg : Theme.bannerBg
     border.color: root.entry.critical ? Theme.destructive : Theme.popupBorder
     shadow.spreadBy: 2
 
@@ -122,19 +122,10 @@ Item {
         }
         spacing: Theme.basePadding
 
-        // Shell's banner header: the app, the age, then expand and close.
+        // Shell's banner header: the app, the age, then expand and close; no app icon (ours), as the body shows it already, whole or as the picture's badge.
         RowLayout {
           Layout.fillWidth: true
           spacing: Theme.basePadding
-
-          IconImage {
-            id: appIcon
-
-            // One that is no picture leaves the name alone, as the body's icon gives way to the initial.
-            visible: root.entry.appIcon !== "" && appIcon.status === Image.Ready
-            implicitSize: 16
-            source: root.entry.appIcon
-          }
 
           Text {
             Layout.fillWidth: true

@@ -3,17 +3,19 @@ import qs.common
 import qs.nix
 import qs.notifications
 
-// The age, and after it the close button, there without the pointer as the HIG asks of actions.
+// The age, the expander and the close button, in gs MessageHeader's order; the close there without the pointer as the HIG asks of actions.
 Item {
   id: root
 
   required property NotifEntry entry
   property bool closable: false
+  property bool expandable: false
+  property string pointing: "down"
 
   signal closed()
 
-  // Room for it on every line, so the ages line up.
-  implicitWidth: age.implicitWidth + close.width
+  // Room for all three on every line, so the ages line up.
+  implicitWidth: age.implicitWidth + arrow.width + close.width
   implicitHeight: age.implicitHeight
 
   NotificationAge {
@@ -22,6 +24,20 @@ Item {
     anchors.left: parent.left
     anchors.verticalCenter: parent.verticalCenter
     entry: root.entry
+  }
+
+  Item {
+    id: arrow
+
+    x: age.implicitWidth
+    width: 24
+    height: parent.height
+
+    ExpanderArrow {
+      anchors.centerIn: parent
+      visible: root.expandable
+      pointing: root.pointing
+    }
   }
 
   // Overhanging the line, so it costs the line no height.

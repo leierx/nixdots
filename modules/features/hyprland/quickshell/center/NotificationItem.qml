@@ -14,6 +14,8 @@ Item {
   // A lone notification's body has the lines its summary leaves; a group's rows have one each.
   property int lines: 2
   property bool closable: false
+  // Its group's arrow, on the first line while the group is collapsed.
+  property bool expander: false
   // The group's: nothing eases until it has laid out.
   property bool settled: true
 
@@ -21,6 +23,8 @@ Item {
 
   readonly property bool boxed: expanded && !single
   readonly property bool truncated: line.truncated
+  // Its collapsed line's height, which stays put while expanded.
+  readonly property real collapsedHeight: root.single && root.entry.body === "" ? 0 : line.implicitHeight
   // A card of its own in an expanded group, opened as a popup is, so a few long ones do not fill the center.
   property bool open: false
   readonly property bool openable: boxed && (open || whole || summary.truncated || body.truncated)
@@ -185,6 +189,7 @@ Item {
           visible: !root.single
           entry: root.entry
           closable: root.closable
+          expandable: root.expander
           onClosed: root.closed()
         }
       }
@@ -237,20 +242,9 @@ Item {
               Layout.topMargin: 1
               entry: root.entry
               closable: true
+              expandable: root.openable
+              pointing: root.open ? "up" : "down"
               onClosed: swipe.slideAway(false, root.entry.dismissal())
-            }
-
-            // Overhanging the line, so the arrow costs it no height.
-            Item {
-              Layout.alignment: Qt.AlignTop
-              visible: root.openable
-              implicitWidth: 24
-              implicitHeight: heading.height
-
-              ExpanderArrow {
-                anchors.centerIn: parent
-                pointing: root.open ? "up" : "down"
-              }
             }
           }
 

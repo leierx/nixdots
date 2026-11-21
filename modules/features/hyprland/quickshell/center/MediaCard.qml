@@ -25,8 +25,6 @@ Rectangle {
   implicitHeight: info.implicitHeight + 2 * Theme.padding
   radius: Theme.messageRadius
   color: Theme.messageBg
-  border.width: 1
-  border.color: Theme.popoverBorder
 
   Image {
     id: wash

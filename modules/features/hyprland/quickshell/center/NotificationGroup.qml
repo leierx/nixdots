@@ -33,10 +33,10 @@ Item {
   property bool settled: false
   // Laid out expanded, until collapsing has eased the card down, so collapsing animates as expanding does.
   property bool unfolded: false
-  // Expanded, the cards inside keep off its top and bottom edges as they keep off its sides.
-  readonly property real inset: expanded ? 8 : 0
-  // The text centred while collapsed and at the top expanded, easing between them; the icon keeps level with the title.
-  property real textOffset: expanded ? inset : Math.max(0, (threeLines - column.implicitHeight) / 2)
+  // Expanded, a group's cards keep off its top and bottom edges as they keep off its sides.
+  readonly property real inset: expanded && !single ? 8 : 0
+  // The text centred while collapsed; a group's goes to the top expanded, a lone one's stays put, so its card only pulls up and drops down. The icon keeps level with the title.
+  property real textOffset: single ? Math.max(0, (threeLines - heading.height - (root.first?.collapsedHeight ?? 0)) / 2) : expanded ? inset : Math.max(0, (threeLines - column.implicitHeight) / 2)
 
   Behavior on textOffset {
     enabled: root.settled
@@ -131,9 +131,9 @@ Item {
     height: root.expanded ? content + root.padding * 2 + root.inset : root.threeLines + root.padding * 2
     radius: Theme.messageRadius
     color: !root.expanded && hover.hovered ? Theme.messageHoverBg : Theme.messageBg
-    // The popover's edge; a lone critical notification is red as its popup is, in a group only its own box or line.
-    border.width: 1
-    border.color: root.single && root.newest?.critical ? Theme.destructive : Theme.popoverBorder
+    // A lone critical notification is marked as its popup is; in a group, only its own box or line is.
+    border.width: root.single && root.newest?.critical ? 1 : 0
+    border.color: Theme.destructive
     clip: true
 
     Behavior on height {
@@ -238,6 +238,8 @@ Item {
             Layout.topMargin: 1
             entry: root.newest
             closable: true
+            expandable: root.expandable
+            pointing: root.expanded ? "up" : "down"
             onClosed: root.slideAway(false)
           }
         }
@@ -261,24 +263,24 @@ Item {
             single: root.single
             lines: root.rows - 1
             closable: !root.unfolded && index === 0
+            expander: root.expandable && !root.unfolded && index === 0
             settled: root.settled
             onClosed: root.slideAway(false)
           }
         }
       }
 
-      // On every card so the ages line up, overhanging the first line so the arrow costs no height.
+      // An expanded group's way back, beside its first card; collapsed, its first line's stamp holds the arrow.
       Item {
         Layout.alignment: Qt.AlignTop
         Layout.topMargin: root.textOffset
+        visible: root.unfolded && !root.single
         implicitWidth: 24
-        implicitHeight: column.implicitHeight
+        implicitHeight: heading.height
 
         ExpanderArrow {
-          anchors.horizontalCenter: parent.horizontalCenter
-          y: heading.height / 2 - height / 2
-          visible: root.expandable
-          pointing: root.expanded ? "up" : "down"
+          anchors.centerIn: parent
+          pointing: "up"
         }
       }
     }
