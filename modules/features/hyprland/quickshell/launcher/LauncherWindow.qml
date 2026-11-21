@@ -280,7 +280,7 @@ Overlay {
         Glyph {
           anchors.centerIn: parent
           path: row.modelData.glyph ?? ""
-          size: 24
+          size: 32
         }
       }
 
@@ -331,7 +331,7 @@ Overlay {
       Glyph {
         visible: row.current && !row.modelData.thumbnail
         path: Symbols.keyboardReturn
-        size: 18
+        size: 16
         color: Theme.fgDim
       }
     }
@@ -362,7 +362,7 @@ Overlay {
       Glyph {
         visible: root.mode.image === ""
         path: root.mode.glyph
-        size: 26
+        size: 32
       }
 
       Image {

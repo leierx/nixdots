@@ -262,7 +262,7 @@ Notes on specific features:
     component is its own directory owning its windows, widgets and sizes, and
     `shell.qml` only instantiates them. `common/` holds what several share:
     the widgets of the design standards below, `Theme`, `Symbols` (every
-    Material Symbols path), `Panels` (the one open panel by name: opening one
+    icon, Adwaita's symbolic ones as path data), `Panels` (the one open panel by name: opening one
     closes the others, and nothing opens while no monitor is on, where it would
     land on `FALLBACK` holding the keyboard; IPC `panels open|close|toggle
     <name>`: `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`,
@@ -421,8 +421,8 @@ Notes on specific features:
       - Pieces, all in `common/`: a bar item is a `BarButton`; a button a
         `Button` (`flat` on a surface, `checked` while what it opens is open,
         a `glyph` before its text, `expander` for a chevron after it); a round
-        icon-only one an `IconButton` (34 px with a 20 px glyph, or 24 px with
-        16 px in a row); every chevron an `ExpanderArrow`, turned by its
+        icon-only one an `IconButton` (34 px, or 24 px in a row, a 16 px
+        glyph either way); every chevron an `ExpanderArrow`, turned by its
         `pointing` (`down`, `up`, `left`, `right`) and never by hand: down to
         up for what expands in place, right to down for what opens a menu
         under it; a level to drag a `Slider` (its range reaching past 1 while the level does, with a tick at 100 %, held still for a drag, which Escape puts back where it began); a scroll bar a `ScrollBar` (Qt's
@@ -458,8 +458,8 @@ Notes on specific features:
         is 2 px `accentBg`. A divider is 1 px `Theme.border` inside its
         container's padding, and only between two panes or between a list and
         its actions; everything else is parted by spacing.
-      - Size: bar items 26 px with 18 px glyphs; buttons 34 px; a panel's list
-        rows 36 px with 20 px symbols in a column of their own, the tray menu's
+      - Size: bar items 26 px with 16 px glyphs; buttons 34 px; a panel's list
+        rows 36 px with 16 px symbols in a column of their own, the tray menu's
         32 px, the launcher's 50 px. Panels pad `Theme.padding` (12), menus 6,
         and keep `Theme.gap` (10) from the screen's edges; a popover under the
         bar sits the bar's `Window.height` plus `Theme.gap` down, centred on
@@ -478,10 +478,16 @@ Notes on specific features:
         degrees none ("5°"); a track's time is
         m:ss; a date is in the locale's order with the day unpadded ("Friday
         20 November").
-      - Icons: every path is in `Symbols` (Material Symbols Rounded), filled
-        for status and state at 20 px and below, outlined (`…Outline`) for
-        large action tiles and launcher modes; 18 px in the bar, 20 px in
-        panels, 16 px beside text in a row.
+      - Icons: every path is in `Symbols`, Adwaita's own symbolic icons as
+        the HIG asks, written by `scripts/symbols.mjs` from the names in
+        `scripts/symbols.tsv` (svgo turns shapes and transforms into path
+        data; a faint part, Adwaita's 35 %, follows a "|"): `nix shell
+        nixpkgs#nodejs nixpkgs#svgo` and `node scripts/symbols.mjs
+        <svgo>/lib/svgo <adwaita-icon-theme>/share/icons/Adwaita/symbolic >
+        quickshell/common/Symbols.qml`. Drawn at 16 px in the bar, rows and
+        buttons, 32 px in the OSD, the launcher's modes and rows and the
+        player's placeholder, 64 px on the power tiles and the center's empty
+        state; the lint fails any other size.
       - Motion: `Theme.fade` (150 ms) colours and opacity; `Theme.move` (200
         ms, `Easing.OutCubic`) moves, resizes, slides, expansions and turns
         (popups slide out `InCubic`); `Theme.open` (240 ms, `OutQuint`) and
@@ -873,7 +879,7 @@ nix fmt                  # formatter = nixfmt-tree
   standards as far as the source shows them: a colour that is not Theme's
   (a literal, `Qt.rgba`, a `Qt.tint` of anything but Theme), a radius typed
   out, a duration or font that is not a Theme token, an icon path outside
-  `Symbols`, a shadow on anything but a `Card`, anything turned by hand
+  `Symbols` or a symbol at a size Adwaita does not draw at (16, 32, 64, 128), a shadow on anything but a `Card`, anything turned by hand
   rather than an `ExpanderArrow`'s `pointing`, one inline component name
   in two files or shadowing one in `common/`, `flatMap`, text ending in a full stop, an ellipsis on a settings item, and a plain
   space between a number and its unit.

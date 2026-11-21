@@ -14,15 +14,15 @@ Overlay {
   required property bool firmware
 
   readonly property var tiles: [
-    { title: "Lock", letter: "L", command: ["loginctl", "lock-session"], glyph: Symbols.lockOutline },
-    { title: "Suspend", letter: "S", command: ["systemctl", "suspend"], glyph: Symbols.suspendOutline },
-    { title: "Log Out", letter: "O", command: ["hyprctl", "dispatch", "hl.dsp.exit()"], glyph: Symbols.logOutOutline, confirm: true },
-    { title: "Restart", letter: "R", command: ["systemctl", "reboot"], glyph: Symbols.restartOutline, confirm: true },
-    { title: "Power Off", letter: "P", command: ["systemctl", "poweroff"], glyph: Symbols.powerOffOutline, confirm: true, destructive: true },
+    { title: "Lock", letter: "L", command: ["loginctl", "lock-session"], glyph: Symbols.lock },
+    { title: "Suspend", letter: "S", command: ["systemctl", "suspend"], glyph: Symbols.suspend },
+    { title: "Log Out", letter: "O", command: ["hyprctl", "dispatch", "hl.dsp.exit()"], glyph: Symbols.logOut, confirm: true },
+    { title: "Restart", letter: "R", command: ["systemctl", "reboot"], glyph: Symbols.restart, confirm: true },
+    { title: "Power Off", letter: "P", command: ["systemctl", "poweroff"], glyph: Symbols.power, confirm: true, destructive: true },
   ]
   readonly property var extras: [
-    { title: "Reload Hyprland",command: ["hyprctl", "reload", "full-reset"], glyph: Symbols.reloadOutline },
-    ...(root.firmware ? [{ title: "Restart to Firmware",command: ["systemctl", "reboot", "--firmware-setup"], glyph: Symbols.firmwareOutline, confirm: true }] : []),
+    { title: "Reload Hyprland",command: ["hyprctl", "reload", "full-reset"], glyph: Symbols.reload },
+    ...(root.firmware ? [{ title: "Restart to Firmware",command: ["systemctl", "reboot", "--firmware-setup"], glyph: Symbols.firmware, confirm: true }] : []),
   ]
   readonly property var armedAction: [...root.tiles, ...root.extras].find(action => action.title === root.armed) ?? null
 
@@ -174,7 +174,7 @@ Overlay {
                 Glyph {
                   Layout.alignment: Qt.AlignHCenter
                   path: tile.modelData.glyph
-                  size: 44
+                  size: 64
                 }
 
                 Text {
@@ -228,7 +228,7 @@ Overlay {
 
                 Glyph {
                   path: extra.modelData.glyph
-                  size: 18
+                  size: 16
                 }
 
                 Text {

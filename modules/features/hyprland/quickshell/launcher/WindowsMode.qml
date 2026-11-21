@@ -11,7 +11,7 @@ LauncherMode {
 
   name: "windows"
   title: "Windows"
-  glyph: Symbols.windowsOutline
+  glyph: Symbols.windows
   placeholder: "Search windows…"
   nothing: "No windows open"
   fields: row => [[1.0, row.title, true], [0.8, row.app, true], [0.4, row.where]]

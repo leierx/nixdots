@@ -84,7 +84,7 @@ Column {
       Glyph {
         anchors.centerIn: parent
         path: Symbols.volumeOff
-        size: 20
+        size: 16
         color: Theme.fg
       }
     }

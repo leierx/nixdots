@@ -163,7 +163,7 @@ Rectangle {
         Glyph {
           anchors.centerIn: parent
           path: menuBox.glyph
-          size: 20
+          size: 16
           color: menuBox.on ? Theme.accentFg : Theme.fg
         }
       }
@@ -350,7 +350,7 @@ Rectangle {
               anchors.verticalCenter: parent.verticalCenter
               visible: (row.modelData.link ?? "") !== ""
               path: row.modelData.link === "connected" ? Symbols.bluetoothConnected : Symbols.bluetooth
-              size: 20
+              size: 16
               color: row.modelData.link === "connected" ? Theme.accentBg : Theme.fgFaint
             }
 
@@ -358,7 +358,7 @@ Rectangle {
               anchors.verticalCenter: parent.verticalCenter
               visible: row.modelData.current === true && row.modelData.toggle === undefined && row.modelData.tick !== false
               path: Symbols.check
-              size: 20
+              size: 16
               color: Theme.accentBg
             }
 

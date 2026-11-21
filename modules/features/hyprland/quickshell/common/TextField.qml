@@ -54,7 +54,7 @@ Rectangle {
     Glyph {
       anchors.centerIn: parent
       path: root.revealed ? Symbols.visibilityOff : Symbols.visibility
-      size: 20
+      size: 16
       color: Theme.fgDim
     }
 

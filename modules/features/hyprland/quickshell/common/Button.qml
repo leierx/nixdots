@@ -8,7 +8,7 @@ Rectangle {
   property alias acceptedButtons: area.acceptedButtons
   // A Material Symbols path, before the text.
   property string glyph: ""
-  property int glyphSize: 18
+  property int glyphSize: 16
   property color foreground: Theme.fg
   property bool flat: false
   // Held down, as a flat button is while what it opens is open.

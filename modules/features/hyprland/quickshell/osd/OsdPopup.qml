@@ -85,7 +85,7 @@ Scope {
       Glyph {
         anchors.verticalCenter: parent.verticalCenter
         path: root.glyphOf(root.level)
-        size: 22
+        size: 32
         color: slider.tone
       }
 
@@ -146,7 +146,7 @@ Scope {
       Glyph {
         anchors.verticalCenter: parent.verticalCenter
         path: root.glyphOf(root.tag)
-        size: 22
+        size: 32
         color: root.tag?.muted ? Theme.fgDim : Theme.fg
       }
 

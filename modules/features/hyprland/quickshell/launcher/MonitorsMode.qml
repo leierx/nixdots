@@ -62,7 +62,7 @@ LauncherMode {
 
   name: "monitors"
   title: "Monitor layouts"
-  glyph: Symbols.monitorsOutline
+  glyph: Symbols.monitors
   placeholder: "Monitor layout…"
   nothing: "No monitor layouts"
   split: 0.5

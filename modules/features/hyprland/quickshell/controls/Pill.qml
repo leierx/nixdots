@@ -124,7 +124,7 @@ Rectangle {
 
       anchors.verticalCenter: parent.verticalCenter
       path: pill.toggle.glyph
-      size: 20
+      size: 16
       color: pill.ink
     }
 

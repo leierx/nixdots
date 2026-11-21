@@ -42,7 +42,7 @@ Rectangle {
     anchors.verticalCenter: parent.verticalCenter
     visible: root.glyph !== ""
     path: root.glyph
-    size: 20
+    size: 16
     color: root.glyphColor
   }
 

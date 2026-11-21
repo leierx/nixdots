@@ -38,7 +38,7 @@ LauncherMode {
       key: attr,
       title: attr,
       subtitle: [version, unfree, description].filter(part => part).join(" · "),
-      glyph: Symbols.packageOutline,
+      glyph: Symbols.packages,
       attr,
       program,
     };

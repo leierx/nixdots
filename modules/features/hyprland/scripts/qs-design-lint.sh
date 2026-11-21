@@ -20,6 +20,8 @@ findings() {
     [ "$file" = common/Card.qml ] || grep -nP '^\s*Shadow \{' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a shadow on something that is not a Card\tshadow|" || true
     [ "$file" = common/ExpanderArrow.qml ] || grep -nP '^\s*rotation:' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: something turned by hand rather than an ExpanderArrow's pointing\tturn|" || true
     grep -nP '\.flatMap\(|\.flat\(' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: Qt's JavaScript has no flatMap or flat\tjs|" || true
+    awk -v file="$file" '/^\s*Glyph \{/ { inside = 1 } inside && /^\s*size: [0-9]+\s*$/ && $2 !~ /^(16|32|64|128)$/ { printf "%s:%d: a symbol at %s px, where Adwaita draws at 16, 32, 64 or 128\ticon\n", file, NR, $2 } inside && /^\s*\}/ { inside = 0 }' "$file"
+    grep -nP 'glyphSize: (?!(16|32|64|128)\s*$)[0-9]+' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a symbol at a size Adwaita's do not draw at\ticon|" || true
     grep -nP '^(?!\s*//).*["`][^"`]*[A-Za-z)]\.["`]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: text ending in a full stop, which the HIG leaves off\twords|" || true
     grep -nP '(Settings|Preferences|Properties)…["`]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: an ellipsis on a settings item, which asks for no more input\twords|" || true
     grep -nP '^(?!\s*//).*["`][^"`]*(\}|\d) (%|h|min|s|ms|Hz|[KMGT]i?B|[KMG]b/s)(?![A-Za-z0-9.])' "$file" | grep -v -e 'console\.' -e 'path: "' | sed "s|^\([0-9]*\):.*|$file:\1: a plain space before a unit rather than Theme.unit's narrow no-break space\twords|" || true

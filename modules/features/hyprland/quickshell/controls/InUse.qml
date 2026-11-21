@@ -66,7 +66,7 @@ Column {
           x: 14
           anchors.verticalCenter: parent.verticalCenter
           path: use.modelData.glyph
-          size: 20
+          size: 16
           color: Theme.inUse
         }
 

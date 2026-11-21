@@ -16,7 +16,7 @@ LauncherMode {
 
   name: "clipboard"
   title: "Clipboard"
-  glyph: Symbols.assignmentOutline
+  glyph: Symbols.clipboard
   placeholder: "Search clipboard…"
   nothing: "Nothing copied yet"
   wide: true
@@ -28,15 +28,15 @@ LauncherMode {
     return Object.assign(image ? {
       title: "Image",
       subtitle: `${image[3]}×${image[4]} ${image[2].toUpperCase()}, ${image[1]}`,
-      glyph: Symbols.imageOutline,
+      glyph: Symbols.image,
       thumbnail: root.pictures[entry.id] ? `file://${root.cache}/${entry.id}` : "",
       size: { width: Number(image[3]), height: Number(image[4]) },
     } : {
       title: entry.text,
       subtitle: stats ? `${root.plural(stats[1], "character")}, ${root.plural(stats[0], "line")}` : "",
       glyph: /^https?:\/\/\S+$/.test(entry.text)
-        ? Symbols.linkOutline
-        : Symbols.notesOutline,
+        ? Symbols.link
+        : Symbols.notes,
     }, { key: entry.id, id: entry.id, line: entry.line });
   })
   fields: row => [[1.0, row.title], [1.0, row.subtitle]]

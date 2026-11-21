@@ -49,7 +49,7 @@ BarButton {
         required property var modelData
 
         path: modelData.path
-        size: 18
+        size: 16
         color: modelData.color
       }
     }

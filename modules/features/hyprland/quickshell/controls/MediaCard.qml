@@ -89,7 +89,7 @@ Rectangle {
       anchors.centerIn: parent
       visible: !card.art
       path: Symbols.music
-      size: 36
+      size: 32
       color: Theme.fgDim
     }
 
@@ -204,7 +204,7 @@ Rectangle {
           Glyph {
             anchors.centerIn: parent
             path: card.playing ? Symbols.pause : Symbols.play
-            size: 24
+            size: 16
             color: Theme.bg
           }
 

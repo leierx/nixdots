@@ -229,7 +229,7 @@ Overlay {
             Glyph {
               anchors.horizontalCenter: parent.horizontalCenter
               path: Notifs.dnd ? Symbols.dnd : Symbols.bell
-              size: 48
+              size: 64
               color: Theme.fgDim
             }
 
