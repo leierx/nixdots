@@ -22,8 +22,9 @@ so a Shell length in `to_em` is that many px at the default font.
 
 ## Colours
 
-The palette rule: an opaque surface is upstream's less 14 per channel
-(`#36363a` becomes `#28282c`); accents, text and translucent colours are
+The palette rule (`modules/theme/palette.nix`, `depth`): an opaque surface is
+upstream's less 28 per channel (`#36363a` becomes `#1a1a1e`), for the whole
+desktop (GTK, the terminal, hyprlock, hyprtoolkit and the shell alike); accents, text and translucent colours are
 upstream's. libadwaita 1.10's dark surfaces equal 1.9's, so nothing outside the
 shell changed. Shell mixes its states into opaque colours per surface; `Theme`
 gives them as the foreground at the alpha that lands on the same colour over the
@@ -37,14 +38,14 @@ popover, so they hold over any surface.
 | `fgStrong` | fg 80 % | ours | Text over album art, occupied workspaces |
 | `placeholder` | fg 70 % | gs `%entry StLabel.hint-text` | A text field's placeholder |
 | `panelBg` | `dark_5` `#000000` | gs `$panel_bg_color` | The bar |
-| `popoverBg` | `shell_bg_color` `#28282c` | gs `$bg_color` `#36363a` | Popovers, quick settings, the date menu, centred panels |
-| `popoverBorder` | `shell_outer_borders_color` `#343439` | gs `$outer_borders_color` (`lighten(bg, 5%)`) | A popover's 1 px edge |
-| `cardBg` | `shell_card_bg_color` `#39393e` | gs `$card_bg_color` (`lighten(bg, 7%)`) | Quick toggle menus, inset cards (weather, events) |
-| `messageBg` | `shell_message_bg_color` `#46464c` | gs `.message` `#54545a` | Notification cards and banners |
+| `popoverBg` | `shell_bg_color` `#1a1a1e` | gs `$bg_color` `#36363a` | Popovers, quick settings, the date menu, centred panels |
+| `popoverBorder` | `shell_outer_borders_color` `#26262b` | gs `$outer_borders_color` (`lighten(bg, 5%)`) | A popover's 1 px edge |
+| `cardBg` | `shell_card_bg_color` `#2b2b30` | gs `$card_bg_color` (`lighten(bg, 7%)`) | Quick toggle menus, inset cards (weather, events) |
+| `messageBg` | `shell_message_bg_color` `#38383e` | gs `.message` `#54545a` | Notification cards and banners |
 | `messageHoverBg` | message + 4 % lightness | gs `%card:hover` | A notification card under the pointer |
 | `messageButtonBg`, `messageButtonHoverBg`, `messageButtonActiveBg` | fg 15 %, 30 %, 20 % | gs `%notification_button` | A notification's actions |
-| `toastBg` | `#424245` | adw `$toast_bg_color` `#505053`, less 14 | The Undo toast |
-| `osdBg` | `shell_osd_bg_color` `#202025` | gs `$osd_bg_color` (`lighten(#222226, 5%)`) | The OSD pill |
+| `toastBg` | `#343437` | adw `$toast_bg_color` `#505053`, less 28 | The Undo toast |
+| `osdBg` | `shell_osd_bg_color` `#121217` | gs `$osd_bg_color` (`lighten(#222226, 5%)`) | The OSD pill |
 | `osdBorder` | fg 2 % | gs `$osd_outer_borders_color` | The OSD's edge |
 | `tooltipBg`, `tooltipBorder` | black 90 %, fg 10 % | gs `%tooltip` | Tooltips |
 | `separator` | fg 10 % | gs `.popup-separator-menu-item-separator` | Dividers |

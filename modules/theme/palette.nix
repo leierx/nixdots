@@ -1,4 +1,21 @@
 { lib, ... }:
+let
+  # How far below GNOME's own dark surfaces: GNOME's look, darker, its steps between surfaces kept
+  depth = 28;
+  channel =
+    hex:
+    lib.fixedWidthString 2 "0" (
+      lib.toLower (lib.toHexString (lib.max 0 (lib.fromHexString hex - depth)))
+    );
+  darker =
+    hex:
+    "#"
+    + lib.concatMapStrings (i: channel (lib.substring i 2 hex)) [
+      1
+      3
+      5
+    ];
+in
 {
   options.palettes = lib.mkOption {
     type = lib.types.attrsOf (lib.types.attrsOf lib.types.str);
@@ -9,7 +26,7 @@
   # libadwaita 1.10's dark style under its own names (doc/css-variables.md), GNOME Shell 51's
   # surfaces under its Sass names with a shell_ prefix, and ghostty's "Adwaita Dark" terminal colours;
   # translucent ones are CSS #rrggbbaa.
-  # The opaque surfaces and the terminal background are upstream's less 14 per channel, so their steps survive
+  # The opaque surfaces and the terminal background are upstream's, written as upstream has them, made `darker`
   config.palettes.adwaita_darker = {
     accent_bg_color = "#3584e4";
     accent_fg_color = "#ffffff";
@@ -27,49 +44,49 @@
     error_fg_color = "#ffffff";
     error_color = "#ff938c";
 
-    window_bg_color = "#141418";
+    window_bg_color = darker "#222226";
     window_fg_color = "#ffffff";
-    view_bg_color = "#0f0f12";
+    view_bg_color = darker "#1d1d20";
     view_fg_color = "#ffffff";
-    headerbar_bg_color = "#202024";
+    headerbar_bg_color = darker "#2e2e32";
     headerbar_fg_color = "#ffffff";
     headerbar_border_color = "#ffffff";
-    headerbar_backdrop_color = "#141418";
+    headerbar_backdrop_color = darker "#222226";
     headerbar_shade_color = "#0000065c";
     headerbar_darker_shade_color = "#00000ce6";
-    sidebar_bg_color = "#202024";
+    sidebar_bg_color = darker "#2e2e32";
     sidebar_fg_color = "#ffffff";
-    sidebar_backdrop_color = "#1a1a1e";
+    sidebar_backdrop_color = darker "#28282c";
     sidebar_border_color = "#0000065c";
     sidebar_shade_color = "#00000640";
-    secondary_sidebar_bg_color = "#1a1a1e";
+    secondary_sidebar_bg_color = darker "#28282c";
     secondary_sidebar_fg_color = "#ffffff";
-    secondary_sidebar_backdrop_color = "#17171b";
+    secondary_sidebar_backdrop_color = darker "#252529";
     secondary_sidebar_border_color = "#0000065c";
     secondary_sidebar_shade_color = "#00000640";
     card_bg_color = "#ffffff14";
     card_fg_color = "#ffffff";
     card_shade_color = "#0000065c";
-    overview_bg_color = "#1a1a1e";
+    overview_bg_color = darker "#28282c";
     overview_fg_color = "#ffffff";
-    thumbnail_bg_color = "#2b2b2f";
+    thumbnail_bg_color = darker "#39393d";
     thumbnail_fg_color = "#ffffff";
     active_toggle_bg_color = "#ffffff33";
     active_toggle_fg_color = "#ffffff";
-    dialog_bg_color = "#28282c";
+    dialog_bg_color = darker "#36363a";
     dialog_fg_color = "#ffffff";
-    popover_bg_color = "#28282c";
+    popover_bg_color = darker "#36363a";
     popover_fg_color = "#ffffff";
     popover_shade_color = "#00000640";
     shade_color = "#00000640";
     scrollbar_outline_color = "#00000cf2";
 
-    shell_bg_color = "#28282c";
-    shell_base_color = "#141418";
-    shell_osd_bg_color = "#202025";
-    shell_outer_borders_color = "#343439";
-    shell_card_bg_color = "#39393e";
-    shell_message_bg_color = "#46464c";
+    shell_bg_color = darker "#36363a";
+    shell_base_color = darker "#222226";
+    shell_osd_bg_color = darker "#2e2e33";
+    shell_outer_borders_color = darker "#424247";
+    shell_card_bg_color = darker "#47474c";
+    shell_message_bg_color = darker "#54545a";
 
     accent_blue = "#3584e4";
     accent_teal = "#2190a4";
@@ -127,10 +144,10 @@
     dark_4 = "#241f31";
     dark_5 = "#000000";
 
-    background = "#0f0f12";
+    background = darker "#1d1d20";
     foreground = "#ffffff";
     cursor = "#ffffff";
-    cursor_text_color = "#0f0f12";
+    cursor_text_color = darker "#1d1d20";
     selection_background = "#ffffff";
     selection_foreground = "#5e5c64";
     color0 = "#241f31";

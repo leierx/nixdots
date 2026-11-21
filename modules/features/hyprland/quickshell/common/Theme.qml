@@ -29,8 +29,8 @@ Singleton {
   readonly property color tooltipBorder: overlay(0.1)
   readonly property color separator: overlay(0.1)
   readonly property color shadowColor: Qt.rgba(0, 0, 0, 0.2)
-  // libadwaita's $toast_bg_color #505053, less 14 as an opaque surface.
-  readonly property color toastBg: "#424245"
+  // libadwaita's $toast_bg_color #505053, darkened as every opaque surface (palette.nix's depth).
+  readonly property color toastBg: "#343437"
   readonly property color keycapBg: overlay(0.1)
   readonly property color keycapShade: Colors.card_shade_color
 
