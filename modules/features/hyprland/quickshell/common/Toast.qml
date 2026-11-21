@@ -22,7 +22,8 @@ Rectangle {
     root.expired();
   }
 
-  implicitWidth: row.implicitWidth + Theme.padding + Theme.basePadding
+  // adw: 12 px padding and 6 px round each child on the left, 6 px on the right.
+  implicitWidth: row.implicitWidth + Theme.padding + 2 * Theme.basePadding
   implicitHeight: Theme.buttonHeight + 2 * Theme.basePadding
   radius: height / 2
   color: Theme.toastBg
@@ -39,7 +40,7 @@ Rectangle {
     id: row
 
     anchors.verticalCenter: parent.verticalCenter
-    x: Theme.padding
+    x: Theme.padding + Theme.basePadding
     spacing: Theme.padding
 
     Text {
