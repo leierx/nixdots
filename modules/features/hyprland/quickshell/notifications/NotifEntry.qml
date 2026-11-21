@@ -47,13 +47,11 @@ QtObject {
     return !root.restored && !root.kept[role] && Notifs.inMemory(root.source(role));
   }
 
-  // From the item drawing it, which NotificationPopups keeps out of sight for each one wanted.
-  function keep(role: string, item: Item): void {
+  // A grab of the picture for ROLE, from the copy the popups' window drew.
+  function keep(role: string, result: var): void {
     if (!root.wants(role)) return;
     const path = `${History.images}/${root.uid}-${role}.png`;
-    item.grabToImage(result => {
-      if (result.saveToFile(path)) root.kept = Object.assign({}, root.kept, { [role]: `file://${path}` });
-    }, Qt.size(item.sourceSize.width, item.sourceSize.height));
+    if (result.saveToFile(path)) root.kept = Object.assign({}, root.kept, { [role]: `file://${path}` });
   }
 
   function restartTimeout(): void {

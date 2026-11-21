@@ -626,3 +626,23 @@ qst key Tab
 qst wait '.focused != null and (.focused | startswith("ControlsPanel/"))'
 qst key Escape
 qst wait '.panel == ""'
+
+qst case "pictures only the server holds, replaced by id faster than a frame and dismissed mid-grab, never crash the shell"
+# A copy destroyed while Qt grabs it crashed the shell on the render thread (QQuickItemGrabResult::render).
+replace() {
+  gdbus call --session --dest org.freedesktop.Notifications --object-path /org/freedesktop/Notifications \
+    --method org.freedesktop.Notifications.Notify "'Downloads'" "uint32 $1" "''" "'Download $2'" "'a picture from memory'" "@as []" \
+    "{'image-data': <(2, 2, 8, true, 8, 4, [byte $(( $2 % 256 )), 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255])>}" "int32 -1" | tr -dc '0-9'
+}
+id=$(replace 0 0)
+for n in $(seq 1 60); do replace "$id" "$n" > /dev/null & done
+wait
+for n in $(seq 1 40); do
+  other=$(replace 0 "$n")
+  qst ipc notifications clear > /dev/null &
+  replace "$other" $((n + 100)) > /dev/null &
+done
+wait
+qst stays 'true' 2
+qst ipc notifications clear > /dev/null
+qst wait '.notifications == 0'
