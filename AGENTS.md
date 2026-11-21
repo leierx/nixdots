@@ -427,7 +427,7 @@ Notes on specific features:
       `quickshell.nix` installs the ones no other feature does. The only Nix
       in the QML is `palettes.adwaita_darker` as the `Colors` singleton (translucent
       colours turned into Qt's `#aarrggbb`) and `hyprland.workspaces` as
-      `Hyprsplit.workspaces`, with GNOME's symbolic icons as `Symbols`, in a `qs.nix`
+      `Hyprsplit.workspaces`, with Material Design Icons as `Symbols` (`scripts/symbols.mjs` over `scripts/symbols.tsv`), in a `qs.nix`
       module added to the store copy, so it only runs from the built copy
       (`programs.quickshell.configs.shell`), not the checkout. A new component
       is a directory with a `Scope`, a line in `shell.qml`, an `IpcHandler`

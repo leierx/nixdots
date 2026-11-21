@@ -65,19 +65,18 @@ in
         }
       '';
 
-      # GNOME 51's symbolic icons as path data, the Shell's own before Adwaita's
+      # Material Design Icons as path data, the set Nerd Fonts ships as nf-md
       symbols =
         let
-          shellIcons = pkgs.runCommand "gnome-shell-icons" { } ''
-            tar -xf ${pkgs.unstable.gnome-shell.src} --strip-components=3 --wildcards '*/data/icons/scalable/*'
-            mv scalable $out
-          '';
+          mdi = pkgs.fetchzip {
+            url = "https://registry.npmjs.org/@mdi/svg/-/svg-7.4.47.tgz";
+            hash = "sha256-7wQn4z0r1ebE2ovuF3H1ho2glB5x0bsax5rA7Q8/Ez4=";
+          };
         in
         pkgs.runCommand "Symbols.qml" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
           cp ${./scripts/symbols.mjs} symbols.mjs
           cp ${./scripts/symbols.tsv} symbols.tsv
-          node symbols.mjs ${pkgs.svgo}/lib/svgo ${shellIcons} \
-            ${pkgs.unstable.adwaita-icon-theme}/share/icons/Adwaita/symbolic ${./scripts/icons} > $out
+          node symbols.mjs ${mdi}/svg > $out
         '';
 
       # MET Norway's weather symbols, named by its symbol codes
