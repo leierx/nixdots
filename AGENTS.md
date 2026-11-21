@@ -180,7 +180,7 @@ One flat file per feature; a directory when it has parts. Every file exports
 
 | Feature | Classes | Aspect(s) | What it does |
 | --- | --- | --- | --- |
-| `bluetooth.nix` | homeManager | `bluetooth` | `bluetui` when the host enables `hardware.bluetooth` (via `osConfig`), the control centre's Bluetooth Settings… |
+| `bluetooth.nix` | homeManager | `bluetooth` | `bluetui` when the host enables `hardware.bluetooth` (via `osConfig`), the control centre's Bluetooth Settings |
 | `boot.nix` | nixos | `boot`, `systemd-boot` | GRUB-on-EFI default (theme via `runCommand`); `systemd-boot` aspect `mkForce`s GRUB off; no host imports it |
 | `desktop-apps.nix` | homeManager | `desktop-apps` | GUI apps every workstation gets (browsers, spotify, obsidian, discord, …) |
 | `display-manager.nix` | nixos | `display-manager` | ly |
@@ -471,7 +471,7 @@ Notes on specific features:
         menu's clock (`display`). Long text elides at a line limit. Words
         follow GNOME's HIG: header capitals for titles (the notifications our scripts send too), buttons, pills and menu
         items ("Collapse All", "In Use"), sentence case for subtitles, states,
-        placeholders and bind descriptions; no text ends in a full stop, our own notifications' bodies too. Numbers take a space before % and
+        placeholders and bind descriptions; "…" only where more input follows (a placeholder that acts), never on a settings item ("Network Settings"); no text ends in a full stop, our own notifications' bodies too. Numbers take a space before % and
         units ("76 %", "2 h 40 min"), degrees none ("5°"); a track's time is
         m:ss; a date is in the locale's order with the day unpadded ("Friday
         20 November").
@@ -854,8 +854,7 @@ nix fmt                  # formatter = nixfmt-tree
   out, a duration or font that is not a Theme token, an icon path outside
   `Symbols`, a shadow on anything but a `Card`, anything turned by hand
   rather than an `ExpanderArrow`'s `pointing`, one inline component name
-  in two files or shadowing one in `common/`, `flatMap`, and text ending in a
-  full stop.
+  in two files or shadowing one in `common/`, `flatMap`, text ending in a full stop, and an ellipsis on a settings item.
   What a file does on purpose is listed in the script with why.
 - `checks.<system>.notification-markup` (Linux) — `qmltestrunner` over
   `tests/tst_markup.qml`: what the notification body filter
@@ -1166,7 +1165,7 @@ back in a hyprsunset started again; a backlight's slider and the centre's own le
 the player that played last and a track length it drops; an output picked; PipeWire gone and back. Areas
 are clicked by name: the probe adds an area's `objectName` (or its parent's)
 to its label, and the centre names its pills, menu arrows, rows and actions
-(`pill:wifi`, `menu:vpn`, `row:Pixel_7128`, `action:Network Settings…`). `design.sh` brings every panel, the bar, popups of
+(`pill:wifi`, `menu:vpn`, `row:Pixel_7128`, `action:Network Settings`). `design.sh` brings every panel, the bar, popups of
 every kind, a tray menu, the control centre with each of its menus (a
 headset, a player and a backlight in), the OSD and an In Use pill
 on screen, on a scaled monitor too, for the census; `cursors.sh` sweeps the

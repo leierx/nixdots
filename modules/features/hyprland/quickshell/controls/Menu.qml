@@ -81,7 +81,7 @@ Rectangle {
   readonly property var toggle: Controls.toggles.find(toggle => toggle.key === key) ?? null
   readonly property string glyph: toggle?.glyph ?? (key === "input" ? Microphone.glyph : Volume.glyph)
   readonly property bool on: toggle?.on ?? true
-  readonly property var footer: key === "wifi" || key === "vpn" ? ["Network Settings…"] : key === "bluetooth" ? ["Bluetooth Settings…"] : []
+  readonly property var footer: key === "wifi" || key === "vpn" ? ["Network Settings"] : key === "bluetooth" ? ["Bluetooth Settings"] : []
   // Said in place of a list with nothing in it.
   readonly property string empty: {
     if (key === "wifi") return !Net.wifiOn ? "Wi-Fi is off" : "Looking for networks…";
@@ -102,7 +102,7 @@ Rectangle {
   }
 
   function act(name: string): void {
-    if (name === "Network Settings…") Net.settings([]);
+    if (name === "Network Settings") Net.settings([]);
     else BluetoothDevices.settings();
   }
 

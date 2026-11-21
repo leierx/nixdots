@@ -197,7 +197,7 @@ qst case "Bluetooth off says so in its menu, and Bluetooth Settings opens bluetu
 open bluetooth
 press pill:bluetooth
 qst wait '(.controls.bluetooth.on | not)'
-press "action:Bluetooth Settings…"
+press "action:Bluetooth Settings"
 qst wait '.panel == ""'
 qst actions | grep -q 'systemd-run.*bluetui' || { qst actions; echo "bluetui was not opened"; exit 1; }
 
