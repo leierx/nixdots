@@ -16,7 +16,7 @@ Overlay {
   readonly property var tiles: [
     { title: "Lock", letter: "L", command: ["loginctl", "lock-session"], glyph: Symbols.lockOutline },
     { title: "Suspend", letter: "S", command: ["systemctl", "suspend"], glyph: Symbols.suspendOutline },
-    { title: "Log Out", letter: "Q", command: ["hyprctl", "dispatch", "hl.dsp.exit()"], glyph: Symbols.logOutOutline, confirm: true },
+    { title: "Log Out", letter: "O", command: ["hyprctl", "dispatch", "hl.dsp.exit()"], glyph: Symbols.logOutOutline, confirm: true },
     { title: "Restart", letter: "R", command: ["systemctl", "reboot"], glyph: Symbols.restartOutline, confirm: true },
     { title: "Power Off", letter: "P", command: ["systemctl", "poweroff"], glyph: Symbols.powerOffOutline, confirm: true, destructive: true },
   ]
@@ -179,19 +179,11 @@ Overlay {
 
                 Text {
                   Layout.alignment: Qt.AlignHCenter
-                  text: tile.armed ? `${tile.modelData.title}?` : tile.modelData.title
+                  text: Theme.accessKey(tile.armed ? `${tile.modelData.title}?` : tile.modelData.title, tile.modelData.letter)
+                  textFormat: Text.StyledText
                   color: Theme.fg
                   font: Theme.heading
                 }
-              }
-
-              Keycap {
-                anchors {
-                  top: parent.top
-                  right: parent.right
-                  margins: 12
-                }
-                text: tile.modelData.letter
               }
             }
           }

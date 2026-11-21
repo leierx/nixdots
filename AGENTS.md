@@ -427,7 +427,7 @@ Notes on specific features:
         up for what expands in place, right to down for what opens a menu
         under it; a level to drag a `Slider` (its range reaching past 1 while the level does, with a tick at 100 %, held still for a drag, which Escape puts back where it began); a scroll bar a `ScrollBar` (Qt's
         `ScrollIndicator`, 4 px, fading out unless `held`); a switch a
-        `Switch`; a key a `Keycap`; a text field a `TextField`; a row of a
+        `Switch`; a key a `Keycap`; a key that acts on a label underlined in it (`Theme.accessKey`); a text field a `TextField`; a row of a
         panel's list a `ListRow`; a press's feedback a `Pop`; an icon a
         `Glyph` of a `Symbols` path (an app's or tray item's an `IconImage`);
         anything floating a `Card` in an `Overlay` or a layer of its own, and
@@ -503,7 +503,8 @@ Notes on specific features:
         centred panels (launcher, shortcuts) dim the screen behind; popovers
         off the bar don't.
       - Exceptions: the bar is all black; the power menu has its own
-        backdrop and 28 px tiles; a launcher mode may carry an `accent`
+        backdrop and 28 px tiles, and takes its keys without Alt, as nothing
+        in it takes text; a launcher mode may carry an `accent`
         (nixpkgs' two blues); hyprlock follows its own config; `LayoutDiagram`
         draws outputs and their labels to scale. Kept against the HIG on
         purpose: the monitors mode's placeholder names what it lists
@@ -577,7 +578,7 @@ Notes on specific features:
         into one row, a submap's binds under the bind that enters it, media
         keys left out; in up to three balanced columns, shrunk whole only when
         none fits.
-      - `power/` (SUPER+X or the bar's logo): five tiles with their letters,
+      - `power/` (SUPER+X or the bar's logo): five tiles, each one's key underlined in its label (`Theme.accessKey`, the HIG's access keys, pressed without Alt),
         Reload Hyprland and, on UEFI, Restart to Firmware; ending the session
         or the machine takes a second press within 5 s. Every action is a
         command, so `qst actions` shows what it would have done.

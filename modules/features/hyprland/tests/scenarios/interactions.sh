@@ -51,3 +51,11 @@ qst actions | grep -q poweroff && { echo "a press after moving powered off"; exi
 qst key p
 qst wait '.panel == ""'
 qst actions | grep -q 'systemctl poweroff' || { echo "two presses did not power off"; exit 1; }
+
+qst case "the power menu's keys are the letters underlined in its tiles: O twice logs out"
+qst ipc panels open power > /dev/null
+qst wait '.panel == "power"'
+qst key o
+qst key o
+for _ in $(seq 20); do qst actions | grep -q 'hl.dsp.exit()' && break; sleep 0.1; done # sleep: the action reaches the fake hyprctl, outside the probe
+qst actions | grep -q 'hl.dsp.exit()' || { qst actions; echo "O twice did not log out"; exit 1; }

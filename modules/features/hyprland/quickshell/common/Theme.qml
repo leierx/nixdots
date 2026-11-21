@@ -78,6 +78,12 @@ Singleton {
   readonly property int tap: 100
   readonly property int settle: 400
 
+  // A label with its access key underlined, as the HIG marks one; the labels are the shell's own, so nothing needs escaping.
+  function accessKey(label: string, key: string): string {
+    const at = label.toUpperCase().indexOf(key.toUpperCase());
+    return at < 0 ? label : `${label.slice(0, at)}<u>${label[at]}</u>${label.slice(at + 1)}`;
+  }
+
   // A number and its unit kept together by a narrow no-break space, as the HIG writes them ("76 %", "1 Gb/s").
   function unit(value: var, unit: string): string {
     return `${value}\u202f${unit}`;
