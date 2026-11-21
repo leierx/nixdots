@@ -27,7 +27,7 @@ qst pointer 900 600
 qst stays '.trays[0].shown' 0.4
 qst wait '.trays[0].shown | not' 2
 
-qst case "past 18 em the strip scrolls sideways under the wheel, and stops at its ends"
+qst case "past 12 em the strip scrolls sideways under the wheel, and stops at its ends"
 qst tray add crowd 30
 qst wait '(.tray | length) == 30' 10
 reveal

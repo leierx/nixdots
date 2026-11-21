@@ -6,7 +6,7 @@ import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import qs.common
 
-// The tray on the bar itself, left of the status button: hidden until the pointer reaches the bar's right end, a strip that scrolls sideways past 18 em, and lingering a moment after the pointer leaves so a near miss still finds it.
+// The tray on the bar itself, left of the status button: hidden until the pointer reaches the bar's right end, a strip that scrolls sideways past 12 em, and lingering a moment after the pointer leaves so a near miss still finds it.
 Item {
   id: root
 
@@ -25,7 +25,7 @@ Item {
   readonly property var items: TrayOrder.items.filter(item => item.status !== Status.Passive)
   readonly property bool menuOpen: menuItem !== null && Panels.active === menuPanel
   readonly property bool revealed: items.length > 0 && (wanted || linger.running || menuOpen)
-  readonly property real most: Math.round(18 * Theme.em)
+  readonly property real most: Math.round(12 * Theme.em)
   readonly property real cell: Theme.barItemHeight
   readonly property real offset: cells.contentX
   readonly property bool scrolls: cells.contentWidth > cells.width + 0.5

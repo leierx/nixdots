@@ -228,7 +228,7 @@ is, never wider.
 | Launcher | 48 em, 68 with a preview | ours |
 | Shortcuts | columns of 24 em | ours |
 | Tray menu | at least 15 em | gs `.popup-menu` |
-| Tray strip | at most 18 em | ours |
+| Tray strip | at most 12 em | ours |
 
 ## Type, symbols and motion
 
@@ -298,7 +298,7 @@ underlined in their labels (`Theme.accessKey`).
 - The media card's text sits over its album art, blurred, darkened and held
   to 3:1 by the census.
 - The tray (GNOME has none) is on the bar itself: hidden until the pointer
-  reaches the bar's right end, a strip up to 18 em that the wheel scrolls
+  reaches the bar's right end, a strip up to 12 em that the wheel scrolls
   sideways, lingering 600 ms after the pointer leaves so a near miss still finds
   it, not a popover under the bar.
 - The monitors mode's placeholder names what it lists ("Monitor layout…").

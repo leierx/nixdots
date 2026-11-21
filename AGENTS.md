@@ -504,7 +504,7 @@ Notes on specific features:
         Quickshell sorts by category and id): hidden until the pointer reaches
         the bar's right end (`BarWindow`'s zone, the status button and the room
         left of it, short of the clock, and the buttons' parent, as hover
-        reaches ancestors and not siblings beneath), a strip up to 18 em that
+        reaches ancestors and not siblings beneath), a strip up to 12 em that
         the wheel scrolls sideways with its ends fading, lingering 600 ms after
         the pointer leaves and while its menu is open. `TrayMenu` is Shell's
         popup menu dropping flush from the bar under its icon, the panel
@@ -1088,7 +1088,7 @@ line says why after `# sleep: `. `hotplug.sh` covers unplugging, disabling and
 replugging under every panel, a tray menu and popups, every monitor going,
 bursts and mode changes; `notifications.sh` the history: three per app once
 their popups go, the five-popup limit, stack tags replacing in place, and Do
-Not Disturb with transient and critical notifications, and what the bell counts, and a flood's sounds and repeats, and a picture sent as a bare path; `workspaces.sh` windows opened while the shell starts; `tray.sh` the tray on the bar: hidden until the bar's right end, lingering after a near miss, scrolling past 18 em, and its menus flush under the bar walked by the keys (submenus, Return, Escape, a disabled row), closed by a second right click or another panel; `osd.sh` what shows and what must not
+Not Disturb with transient and critical notifications, and what the bell counts, and a flood's sounds and repeats, and a picture sent as a bare path; `workspaces.sh` windows opened while the shell starts; `tray.sh` the tray on the bar: hidden until the bar's right end, lingering after a near miss, scrolling past 12 em, and its menus flush under the bar walked by the keys (submenus, Return, Escape, a disabled row), closed by a second right click or another panel; `osd.sh` what shows and what must not
 (the shell starting, PipeWire restarting, a switch's new level, an unplugged
 default, the control centre open, the microphone's level and mute, backlights coming and going, the media keys at a
 level's end, Caps Lock both ways, its monitor going); `privacy.sh` microphones
