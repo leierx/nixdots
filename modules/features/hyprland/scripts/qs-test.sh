@@ -1237,13 +1237,13 @@ changed_scenarios() {
       modules/features/hyprland/tests/scenarios/*.sh) picked+=("$(basename "$path" .sh)") ;;
       modules/features/hyprland/tests/networkmanager.py | modules/features/hyprland/tests/upower.py) picked+=(controls chaos) ;;
       modules/features/hyprland/tests/bluez.py | modules/features/hyprland/tests/mpris.py) picked+=(controls chaos cursors design) ;;
-      modules/features/hyprland/tests/tray.qml | modules/features/hyprland/tests/trays.qml) picked+=(cursors design hotplug chaos) ;;
+      modules/features/hyprland/tests/tray.qml | modules/features/hyprland/tests/trays.qml) picked+=(tray cursors design hotplug chaos) ;;
       modules/features/hyprland/scripts/camera-users.c) picked+=(privacy design) ;;
       modules/features/hyprland/scripts/backlight-watch.sh) picked+=(osd controls design) ;;
       modules/features/hyprland/quickshell/*/*)
         dir=${path#modules/features/hyprland/quickshell/}
         case ${dir%%/*} in
-          bar) picked+=(hotplug workspaces cursors design controls chaos interactions idle notifications) ;;
+          bar) picked+=(tray hotplug workspaces cursors design controls chaos interactions idle notifications) ;;
           center) picked+=(notifications history motion cursors design hotplug chaos interactions idle failures) ;;
           controls) picked+=(controls cursors design chaos osd privacy interactions notifications) ;;
           idle) picked+=(idle chaos) ;;

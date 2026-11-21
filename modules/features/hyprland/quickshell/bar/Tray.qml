@@ -15,6 +15,9 @@ Item {
   // The overflow cell it opened from, which keeps the menu open while the pointer rests on it.
   property var menuIcon: null
   property point menuAnchor
+  // Opened from the keyboard, so it starts on its first row.
+  property bool menuByKeys: false
+  property var openMenu: null
   // A name per screen, so a menu on one monitor closes one open on another; set once, so it outlives the screen.
   property string overflowPanel: ""
   property real overflowX: 0
@@ -34,7 +37,7 @@ Item {
   }
 
   // A click on an icon in the overflow, whose menu then opens over it.
-  function press(item: SystemTrayItem, icon: Item, button: int, x: real, y: real): void {
+  function press(item: SystemTrayItem, icon: Item, button: int, x: real, y: real, keys: bool): void {
     const opensMenu = item.hasMenu && (button === Qt.RightButton || (button === Qt.LeftButton && item.onlyMenu));
     if (opensMenu && root.menuItem === item) {
       root.menuItem = null;
@@ -42,6 +45,7 @@ Item {
       // Every window here starts at the screen's corner.
       root.menuAnchor = icon.mapToItem(null, x, y);
       root.menuIcon = icon;
+      root.menuByKeys = keys;
       root.menuItem = item;
     } else {
       Panels.close();
@@ -72,7 +76,8 @@ Item {
       anchorX: root.overflowX
       top: root.Window.height
       items: root.items
-      onPressed: (item, cell, button, x, y) => root.press(item, cell, button, x, y)
+      menu: root.openMenu
+      onPressed: (item, cell, button, x, y, keys) => root.press(item, cell, button, x, y, keys)
     }
   }
 
@@ -81,8 +86,14 @@ Item {
     model: Panels.active === root.overflowPanel && root.menuItem !== null ? [root.menuItem] : []
 
     TrayMenu {
+      id: trayMenu
+
       required property SystemTrayItem modelData
 
+      Component.onCompleted: root.openMenu = trayMenu
+      Component.onDestruction: if (root.openMenu === trayMenu) root.openMenu = null
+      keyed: root.menuByKeys
+      pickFirst: root.menuByKeys
       screen: root.screen
       name: root.overflowPanel
       // Null for a moment once its item has gone.

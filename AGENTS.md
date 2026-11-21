@@ -514,13 +514,19 @@ Notes on specific features:
         dismisses a notification, Left and Right step a slider, and otherwise
         the arrows step through the Tab order (`Card`). A `FocusRing` shows
         where once keys have moved it (`Panels.keyboard`), and a card whose
-        control with the keyboard goes takes the keyboard back. The tray's
-        menu is the one place still without keys (TODO.md).
+        control with the keyboard goes takes the keyboard back. The tray's overflow takes the arrows (up
+        and down by a row), Return and Space as a left click, and Menu or
+        Shift+F10 as a right click; its menu takes no keyboard of its own (the
+        overflow under it would read that as a click elsewhere), so the
+        overflow passes its keys on: Up, Down, Home and End pick a row, Right
+        or Return opens a submenu on its first row, Left shuts it, Return
+        runs a row, Escape goes back to the icon. A menu the keys drive stays
+        without the pointer until the pointer comes back to it.
       - Behaviour: the pointer rule under the conventions above, and nothing
         shows only under the pointer (the HIG's rule): an action is there to
         see, or reached another way too. Escape and a
-        click away close every panel; a right click only ever opens a menu (the tray's), never dismisses or mutes;
-        the tray's menu takes no keyboard, as GTK's doesn't. The wheel steps in
+        click away close every panel; a right click only ever opens a menu (the tray's), never dismisses or mutes.
+        The wheel steps in
         notches (`WheelSteps`), and only the center's list glides. Only the
         centred panels (launcher, shortcuts) dim the screen behind; popovers
         off the bar don't.
@@ -623,8 +629,8 @@ Notes on specific features:
         the VPN, the link in use, Bluetooth, a muted microphone, the volume
         and a laptop's battery; the wheel steps the volume. The tray folds every item behind one chevron in the order they
         came (`TrayOrder`, since Quickshell sorts by category and id);
-        `TrayMenu` is libadwaita's popover menu, cascading as GTK's does,
-        taking no keyboard and closing as the pointer leaves it.
+        `TrayMenu` is libadwaita's popover menu, cascading as GTK's does and
+        closing as the pointer leaves it, unless the keys drive it.
       - `weather/`: MET Norway's forecast for the time zone's city
         (`/etc/localtime` placed by `zone.tab`, no lookup of the address),
         fetched every half hour and at once when the clock shows a suspend
@@ -1070,8 +1076,7 @@ what `qst backlight` appends.
   a warp (`hl.dsp.cursor.move`) moves the cursor but may not hover.
 - Pointer coordinates are layout coordinates; screenshot pixels are those ×
   the output's scale (the shell draws at `QT_SCALE_FACTOR` 1.2 within them).
-- Tray menus take no keyboard and close on a click elsewhere or on their icon,
-  not on Escape.
+- Tray menus close on a click elsewhere, on their icon, or on Escape.
 - `notify-send -A` waits for the action; background it.
 - A shot shows the cursor a surface asked for only once the pointer has
   moved over it after it mapped (a tray menu just opened): move it again
@@ -1126,7 +1131,7 @@ the `osd` showing (with its screen), `osdShown` (shows so far) and
 `camera` names or null while unused), `status` (each bar's status button: its glyphs by name, `Microphone`, `bell`, `dnd`, `vpn`, `network` and so on, and the battery's percentage or null), `controls` (the open
 menu, the pills by key with their state, and each backend: `network`, `vpns`,
 `vpnAsking`, `bluetooth`, `night`, `media`), `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: whether its chevron
-shows, how many icons wait behind it and their ids in the overflow's order), `held` (what Clear holds back for its Undo), `focused` (the control the keyboard is on, by label) and `ring`, `tooltip` (the one shown, and its screen), `sliders` (every slider by name, its value and range), `results` (the launcher's first ten by title), `center` (the center's groups in view, each one's lines in its order), `field`
+shows, how many icons wait behind it and their ids in the overflow's order), `trayMenu` (its open submenus by label, the row the keys are on and whether they drive it), `trayFocus` (the overflow icon with the keyboard, by place), `held` (what Clear holds back for its Undo), `focused` (the control the keyboard is on, by label) and `ring`, `tooltip` (the one shown, and its screen), `sliders` (every slider by name, its value and range), `results` (the launcher's first ten by title), `center` (the center's groups in view, each one's lines in its order), `field`
 (the text field up, the launcher's search) and `problems`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.
@@ -1190,7 +1195,7 @@ line says why after `# sleep: `. `hotplug.sh` covers unplugging, disabling and
 replugging under every panel, a tray menu and popups, every monitor going,
 bursts and mode changes; `notifications.sh` the history: three per app once
 their popups go, the five-popup limit, stack tags replacing in place, and Do
-Not Disturb with transient and critical notifications, and what the bell counts, and a flood's sounds and repeats, and a picture sent as a bare path; `workspaces.sh` windows opened while the shell starts; `osd.sh` what shows and what must not
+Not Disturb with transient and critical notifications, and what the bell counts, and a flood's sounds and repeats, and a picture sent as a bare path; `workspaces.sh` windows opened while the shell starts; `tray.sh` the overflow and its menus from the keyboard: opening, walking, submenus, Return, Escape back to the icon, a right-clicked menu taking keys, and the pointer taking it back; `osd.sh` what shows and what must not
 (the shell starting, PipeWire restarting, a switch's new level, an unplugged
 default, the control centre open, the microphone's level and mute, backlights coming and going, the media keys at a
 level's end, Caps Lock both ways, its monitor going); `privacy.sh` microphones
@@ -1240,7 +1245,9 @@ outputs, 40 apps recording, damaged state files, and the tray and the
 inputs: 30 tray items behind the chevron (a 640x480 screen too), the
 overflow keeping their order as items come and go, 60 items churning under the open
 overflow and a menu opened from it, 200 items scrolling in it and its monitor
-going; 40 microphones real and virtual with 30 more outputs, the default
+going, keys hammered at a menu its app rebuilds every second on a 640x480
+screen, the item whose menu the keys hold leaving, and 200 items walked by
+the keyboard under churn; 40 microphones real and virtual with 30 more outputs, the default
 input switched by 30 clicks and 50 `wpctl`s, inputs coming and going and the
 default one destroyed under the open input menu, mute and level hammered, both levels and the input's mute hammered with the OSD showing each change,
 and PipeWire restarting under it; 300 networks with hostile names (direction

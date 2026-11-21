@@ -22,6 +22,12 @@ PanelWindow {
   property list<Item> cards: []
   // A moment's delay, so passing over rows opens nothing.
   property var pending: null
+  // The keyboard's row in the deepest open card; the keys come from the overflow, which keeps the keyboard.
+  property int row: -1
+  // Keys have driven it since the pointer was last on it, so it stays without the pointer.
+  property bool keyed: false
+  // The next card to open takes its first row once its entries come.
+  property bool pickFirst: false
   readonly property int padding: 6
 
   // The pointer gone from it, or the app's menu gone: the overflow under it stays.
@@ -74,7 +80,79 @@ PanelWindow {
 
   function apply(level: int, label: string): void {
     root.pending = null;
+    const closed = root.path[level] ?? "";
+    const deeper = level + (label ? 1 : 0) > root.path.length;
     root.path = [...root.path.slice(0, level), ...(label ? [label] : [])];
+    // The keyboard stays on the row whose submenu just shut, or starts afresh in one just opened.
+    if (deeper) root.row = -1;
+    else if (closed && !label) root.row = (root.level(level)?.entries ?? []).findIndex(entry => entry.hasChildren && entry.text === closed);
+  }
+
+  function selectable(entry: var): bool {
+    return !!entry && !entry.isSeparator && entry.enabled;
+  }
+
+  // The next row the keyboard can land on, going round.
+  function step(entries: var, from: int, by: int): int {
+    const start = from < 0 && by < 0 ? entries.length : from;
+    for (let n = 1; n <= entries.length; n++) {
+      const at = (((start + by * n) % entries.length) + entries.length) % entries.length;
+      if (root.selectable(entries[at])) return at;
+    }
+    return -1;
+  }
+
+  // The keys the overflow passes on while the menu is up; false for one it should keep.
+  function key(event: var): bool {
+    const depth = root.path.length;
+    const entries = root.level(depth)?.entries ?? [];
+    const entry = entries[root.row] ?? null;
+    root.keyed = true;
+    switch (event.key) {
+    case Qt.Key_Down:
+    case Qt.Key_Up:
+      root.row = root.step(entries, Math.min(root.row, entries.length), event.key === Qt.Key_Down ? 1 : -1);
+      return true;
+    case Qt.Key_Home:
+      root.row = root.step(entries, -1, 1);
+      return true;
+    case Qt.Key_End:
+      root.row = root.step(entries, -1, -1);
+      return true;
+    case Qt.Key_Right:
+    case Qt.Key_Return:
+    case Qt.Key_Enter:
+    case Qt.Key_Space:
+      if (!root.selectable(entry)) return true;
+      if (entry.hasChildren) {
+        root.pickFirst = true;
+        root.apply(depth, entry.text);
+        const opened = root.level(depth + 1)?.entries ?? [];
+        if (opened.length > 0) {
+          root.pickFirst = false;
+          root.row = root.step(opened, -1, 1);
+        }
+      } else if (event.key !== Qt.Key_Right) {
+        entry.triggered();
+        Panels.close();
+      }
+      return true;
+    case Qt.Key_Left:
+      if (depth > 0) root.apply(depth - 1, "");
+      return true;
+    case Qt.Key_Escape:
+    case Qt.Key_Menu:
+      root.dismissed();
+      return true;
+    case Qt.Key_Tab:
+    case Qt.Key_Backtab:
+      return true;
+    }
+    if (event.key === Qt.Key_F10 && event.modifiers & Qt.ShiftModifier) {
+      root.dismissed();
+      return true;
+    }
+    return false;
   }
 
   // A card by depth, as var: Repeater.itemAt() says Item, which has none of a card's properties.
@@ -105,7 +183,7 @@ PanelWindow {
 
   WlrLayershell.layer: WlrLayer.Overlay
   WlrLayershell.namespace: "quickshell:menu"
-  // Like a GTK menu: the app keeps the keyboard, and the menu goes once the pointer leaves it.
+  // Taking the keyboard from the overflow would read to it as a click elsewhere, closing both: it passes its keys on instead.
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
   // Hyprland closes it with its monitor.
@@ -124,7 +202,7 @@ PanelWindow {
   }
 
   Timer {
-    running: !inside.hovered && !root.held
+    running: !inside.hovered && !root.held && !root.keyed
     interval: 100
     onTriggered: root.dismissed()
   }
@@ -135,6 +213,8 @@ PanelWindow {
 
     HoverHandler {
       id: inside
+
+      onHoveredChanged: if (hovered) root.keyed = false
     }
 
     Repeater {
@@ -196,6 +276,12 @@ PanelWindow {
         Component.onDestruction: root.cards = root.cards.filter(other => other !== card)
         // Later, as changing the levels from a binding they feed loops.
         onHandleChanged: if (handle === null && index > 0) Qt.callLater(root.prune)
+        onEntriesChanged: {
+          if (root.pickFirst && card.index === root.path.length && entries.length > 0) {
+            root.pickFirst = false;
+            root.row = root.step(entries, -1, 1);
+          }
+        }
 
         QsMenuOpener {
           id: opener
@@ -224,7 +310,9 @@ PanelWindow {
               id: entry
 
               required property QsMenuEntry modelData
+              required property int index
               readonly property bool opened: (modelData?.hasChildren ?? false) && root.path[card.index] === modelData.text
+              readonly property bool picked: root.keyed && card.index === root.path.length && root.row === index
               // Room for the arrows, which point right whichever side the submenu opens, as GTK's do.
               readonly property int arrowSpace: card.cascades ? 24 : 0
 
@@ -244,7 +332,11 @@ PanelWindow {
                 anchors.fill: parent
                 visible: !entry.modelData?.isSeparator
                 radius: Theme.smallRadius
-                color: (entryHover.hovered || entry.opened) && entry.modelData?.enabled ? Theme.hover : "transparent"
+                color: {
+                  if (!entry.modelData?.enabled) return "transparent";
+                  if (entry.picked) return Theme.selected;
+                  return entryHover.hovered || entry.opened ? Theme.hover : "transparent";
+                }
 
                 Row {
                   id: content
@@ -299,10 +391,9 @@ PanelWindow {
 
                   onHoveredChanged: {
                     if (!hovered || !entry.modelData || entry.modelData.isSeparator) return;
-                    if (!entry.modelData.enabled || !entry.modelData.hasChildren) {
-                      root.apply(card.index, "");
-                      return;
-                    }
+                    if (!entry.modelData.enabled || !entry.modelData.hasChildren) root.apply(card.index, "");
+                    root.row = entry.modelData.enabled ? entry.index : -1;
+                    if (!entry.modelData.enabled || !entry.modelData.hasChildren) return;
                     root.pending = { level: card.index, label: entry.modelData.text };
                     hoverDelay.restart();
                   }

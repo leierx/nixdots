@@ -169,6 +169,65 @@ qst stays '.panel == "tray-overflow:DP-2"' 1
 qst monitor remove DP-2
 qst wait '.panel == ""'
 
+qst case "keys hammered at a tray menu whose app rebuilds it every second, on a 640x480 screen"
+qst tray
+qst wait '.tray | length > 0'
+read -r x y < <(tray_button DP-1)
+qst click left "$x" "$y"
+qst wait '.panel == "tray-overflow:DP-1"'
+# Settings, then its one row: the app starts rebuilding the Networks submenu.
+qst key Right Menu End Up Right
+qst wait '.trayMenu.path == ["Settings"] and .trayMenu.selected == "Rebuild every second"'
+qst key Return
+qst wait '.panel == ""'
+qst output 640x480 1
+# DP-2 starts at 640 now, past the helper's split: the chevron, last on DP-1's bar.
+qst click left $((640 - 21)) 17
+qst wait '.panel == "tray-overflow:DP-1"'
+qst key Right Menu End Up Up Right
+qst wait '.trayMenu.path == ["Networks"]'
+for round in $(seq 8); do
+  qst key Down Down Up Right Left Right Down Left Left Right Up Up Down End Home Down Right Left
+done
+qst wait '.trayMenu != null and .panel == "tray-overflow:DP-1"'
+qst key Escape
+qst wait '.trayMenu == null and .panel == "tray-overflow:DP-1"'
+qst key Escape
+qst wait '.panel == ""'
+
+qst case "the item whose menu the keys hold leaves: the overflow keeps the keyboard, and Escape still closes it"
+qst tray add held
+qst tray add stay 5
+qst wait '(.tray | length) == 6' 10
+read -r x y < <(tray_button DP-1)
+qst click left "$x" "$y"
+qst wait '.panel == "tray-overflow:DP-1"'
+qst key Right Menu
+qst wait '.trayMenu.selected == "Open held"'
+qst tray remove held
+qst wait '.trayMenu == null and .panel == "tray-overflow:DP-1" and (.tray | length) == 5' 10
+qst key Escape
+qst wait '.panel == ""'
+
+qst case "two hundred tray items walked by the keyboard, under churn, then their monitor going"
+qst tray add swarm 200
+qst wait '(.tray | length) == 200' 20
+read -r x y < <(tray_button DP-2)
+qst focus DP-2
+qst click left "$x" "$y"
+qst wait '.panel == "tray-overflow:DP-2"'
+qst key Right
+qst key $(printf 'Down %.0s' $(seq 40))
+qst wait '.trayFocus == 198'
+for n in $(seq 10); do qst tray add "churn$n"; done
+qst key Up Up Left Menu
+qst wait '.trayMenu.selected == "Open swarm"' 10
+for n in $(seq 10); do qst tray remove "churn$n"; done
+qst key Down Down Up
+qst stays '.trayMenu != null and .panel == "tray-overflow:DP-2"' 1
+qst monitor remove DP-2
+qst wait '.panel == "" and .trayMenu == null'
+
 qst case "forty microphones, real and virtual, scroll in the control centre's input menu with the outputs"
 for n in $(seq 30); do
   qst x pw-cli create-node adapter "{ factory.name=support.null-audio-sink node.name=mic$n node.description=\"Mic $n\" media.class=Audio/Source object.linger=true audio.position=[MONO] }" > /dev/null
