@@ -23,9 +23,6 @@ Singleton {
   readonly property color messageButtonBg: overlay(0.15)
   readonly property color messageButtonHoverBg: overlay(0.3)
   readonly property color messageButtonActiveBg: overlay(0.2)
-  readonly property color messageSecond: Colors.shell_message_second_color
-  readonly property color messageLower: Colors.shell_message_lower_color
-  readonly property color subMenuBg: Colors.shell_submenu_bg_color
   readonly property color osdBg: Colors.shell_osd_bg_color
   readonly property color osdBorder: overlay(0.02)
   readonly property color tooltipBg: Qt.rgba(0, 0, 0, 0.9)
@@ -47,6 +44,8 @@ Singleton {
   readonly property color accentSegmentHoverBg: lighten(accentSegmentBg, 0.04)
   readonly property color segmentHoverBg: overlay(0.17)
   readonly property color segmentSeparator: overlay(0.25)
+  // A check box's edge off (Shell's .check-box).
+  readonly property color checkBorder: overlay(0.15)
   readonly property color headerIconBg: overlay(0.2)
   readonly property color destructiveBg: Colors.destructive_bg_color
   readonly property color destructiveHover: lighten(Colors.destructive_bg_color, 0.04)
@@ -68,7 +67,6 @@ Singleton {
   readonly property color menuActiveBg: overlay(0.16)
   // The user's pick over Shell's, which marks the keyboard as it marks hover.
   readonly property color selectedBg: overlay(0.15)
-  readonly property color cardHoverBg: overlay(0.13)
   readonly property color panelHoverBg: overlay(0.17)
   readonly property color panelActiveBg: overlay(0.28)
   readonly property color panelActiveHoverBg: overlay(0.32)
@@ -78,7 +76,6 @@ Singleton {
   readonly property color troughBg: overlay(0.1)
   readonly property color sliderKnob: "#e8e8e8"
   readonly property color scrollHandle: overlay(0.28)
-  readonly property color scrollHandleHover: overlay(0.47)
   // Ours, not Shell's lighter blue: the one accent.
   readonly property color focusRing: Colors.accent_bg_color
 
@@ -117,7 +114,6 @@ Singleton {
 
   readonly property int barHeight: 32
   readonly property int barItemHeight: 26
-  readonly property int symbolSize: 16
   readonly property int menuRowHeight: 36
   readonly property int buttonHeight: 34
   readonly property int iconButtonSize: 36
@@ -128,41 +124,13 @@ Singleton {
   readonly property int bannerTime: 200
   readonly property int quickTime: 100
   readonly property int panelButtonTime: 150
-  readonly property int menuExpandTime: 75
   readonly property int levelTime: 100
   readonly property int settle: 400
 
-  // Until each surface is remade on the tokens above.
-  readonly property color bg: Colors.view_bg_color
-  readonly property color panel: Colors.dark_5
-  readonly property color outline: overlay(0.07)
-  readonly property color border: overlay(0.15)
-  readonly property color card: Colors.card_bg_color
-  readonly property color cardHover: overlay(0.11)
-  readonly property color hover: overlay(0.07)
-  readonly property color selected: overlay(0.15)
-  readonly property color button: overlay(0.10)
-  readonly property color buttonHover: overlay(0.15)
-  readonly property color buttonChecked: overlay(0.25)
-  readonly property color trough: overlay(0.15)
-  readonly property color slider: Qt.tint(Colors.view_bg_color, overlay(0.8))
-  readonly property color shadow: Qt.rgba(0, 0, 0, 0.15)
-  readonly property color shadowTight: Qt.rgba(0, 0, 0, 0.1)
-  readonly property color tooltip: Qt.rgba(0, 0, 0.024, 0.8)
+  // The exceptions' own (STYLE.md): the power menu's backdrop and clock, and the black the screens fade to before the lock.
   readonly property color backdrop: Qt.rgba(0, 0, 0, 0.88)
-  readonly property color idle: Colors.dark_5
-  readonly property font search: Qt.font({ family: "Adwaita Sans", pointSize: 19 })
-  readonly property font temperature: Qt.font({ family: "Adwaita Sans", pointSize: 38, weight: Font.Light })
   readonly property font display: Qt.font({ family: "Adwaita Sans", pointSize: 64, weight: Font.Bold })
-  readonly property int smallRadius: 6
-  readonly property int buttonRadius: 9
-  readonly property int windowRadius: 15
-  readonly property int gap: 10
-  readonly property int fade: 150
-  readonly property int move: 200
-  readonly property int open: 240
-  readonly property int close: 140
-  readonly property int tap: 100
+  readonly property color idle: Colors.dark_5
 
   // A label with its access key underlined, as the HIG marks one; the labels are the shell's own, so nothing needs escaping.
   function accessKey(label: string, key: string): string {

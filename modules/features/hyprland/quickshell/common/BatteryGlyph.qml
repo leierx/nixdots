@@ -57,7 +57,7 @@ Item {
       visible: root.charging
       path: Symbols.bolt
       size: Math.round(root.size * 0.62)
-      color: Theme.panel
+      color: Theme.panelBg
     }
   }
 }

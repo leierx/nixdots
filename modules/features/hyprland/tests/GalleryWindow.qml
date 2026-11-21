@@ -464,7 +464,7 @@ Overlay {
           title: "Surfaces and symbols"
 
           Repeater {
-            model: ["panelBg", "popoverBg", "cardBg", "messageBg", "osdBg", "toastBg", "subMenuBg"]
+            model: ["panelBg", "popoverBg", "cardBg", "messageBg", "osdBg", "toastBg"]
 
             Labelled {
               required property string modelData

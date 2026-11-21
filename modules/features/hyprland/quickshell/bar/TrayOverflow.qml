@@ -34,11 +34,11 @@ Overlay {
   Card {
     id: box
 
-    x: Math.max(Theme.gap, Math.min(root.anchorX - width / 2, root.width - width - Theme.gap))
-    y: root.top + Theme.gap
+    x: Math.max(Theme.rise, Math.min(root.anchorX - width / 2, root.width - width - Theme.rise))
+    y: root.top + Theme.rise
     width: grid.implicitWidth + 2 * Theme.padding
     height: cells.height + 2 * Theme.padding
-    radius: Theme.cardRadius
+    radius: Theme.popoverRadius
     focus: true
 
     Item {
@@ -56,7 +56,7 @@ Overlay {
       x: Theme.padding
       y: Theme.padding
       width: grid.implicitWidth
-      height: Math.min(contentHeight, Math.max(36, root.height - root.top - 2 * Theme.gap - 2 * Theme.padding))
+      height: Math.min(contentHeight, Math.max(36, root.height - root.top - 2 * Theme.rise - 2 * Theme.padding))
       contentHeight: grid.implicitHeight
       interactive: contentHeight > height
       boundsBehavior: Flickable.StopAtBounds
@@ -89,8 +89,8 @@ Overlay {
 
             width: 36
             height: 36
-            radius: Theme.smallRadius
-            color: area.containsMouse ? Theme.hover : "transparent"
+            radius: Theme.menuItemRadius
+            color: area.containsMouse ? Theme.menuHoverBg : "transparent"
             activeFocusOnTab: true
             onActiveFocusChanged: {
               if (!activeFocus) return;
@@ -121,7 +121,7 @@ Overlay {
 
             Behavior on color {
               ColorAnimation {
-                duration: Theme.fade
+                duration: Theme.quickTime
               }
             }
 

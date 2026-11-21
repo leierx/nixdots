@@ -70,9 +70,6 @@
     shell_outer_borders_color = "#343439";
     shell_card_bg_color = "#39393e";
     shell_message_bg_color = "#46464c";
-    shell_message_second_color = "#37373c";
-    shell_message_lower_color = "#2f2f34";
-    shell_submenu_bg_color = "#48484e";
 
     accent_blue = "#3584e4";
     accent_teal = "#2190a4";

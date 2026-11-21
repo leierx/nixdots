@@ -71,9 +71,9 @@ Overlay {
     readonly property bool armed: root.armed === surface.action.title
     readonly property bool hovered: area.containsMouse
 
-    color: surface.armed || surface.current && surface.action.destructive ? Theme.destructiveBg : Qt.tint(Theme.bg, surface.current ? Theme.buttonChecked : surface.hovered ? Theme.buttonHover : Theme.hover)
+    color: surface.armed || surface.current && surface.action.destructive ? Theme.destructiveBg : Qt.tint(Theme.popoverBg, surface.current ? Theme.buttonCheckedBg : surface.hovered ? Theme.buttonHoverBg : Theme.buttonBg)
     border.width: 1
-    border.color: Theme.outline
+    border.color: Theme.popoverBorder
 
     MouseArea {
       id: area
@@ -103,7 +103,7 @@ Overlay {
 
     Behavior on opacity {
       NumberAnimation {
-        duration: Theme.fade
+        duration: Theme.quickTime
         easing.type: Easing.OutCubic
       }
     }
@@ -219,7 +219,7 @@ Overlay {
               action: extra.modelData
               implicitWidth: extraRow.implicitWidth + 28
               implicitHeight: 38
-              radius: Theme.buttonRadius
+              radius: Theme.baseRadius
 
               RowLayout {
                 id: extraRow

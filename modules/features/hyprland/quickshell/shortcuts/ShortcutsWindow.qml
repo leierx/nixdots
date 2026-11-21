@@ -19,12 +19,12 @@ Overlay {
       const columns = root.arrange(count);
       const width = columns.length * (root.columnWidth + 32) + 16;
       const height = Math.max(...columns.map(column => column.size)) * root.rowHeight + 120;
-      const fit = Math.min(1, (root.width - 2 * Theme.gap) / width, (root.height - 2 * Theme.gap) / height);
+      const fit = Math.min(1, (root.width - 2 * Theme.rise) / width, (root.height - 2 * Theme.rise) / height);
       if (!best || fit > best.fit + 0.001) best = { columns, fit };
     }
     return best.columns;
   }
-  readonly property real fit: Math.min(1, (width - 2 * Theme.gap) / (content.implicitWidth + 48), (height - 2 * Theme.gap) / (content.implicitHeight + 48))
+  readonly property real fit: Math.min(1, (width - 2 * Theme.rise) / (content.implicitWidth + 48), (height - 2 * Theme.rise) / (content.implicitHeight + 48))
 
   // A group's title counts as a row and a half.
   function arrange(count: int): var {

@@ -96,8 +96,8 @@ MouseArea {
 
     target: root.target
     property: "x"
-    duration: Theme.move
-    easing.type: Easing.OutCubic
+    duration: Theme.popupTime
+    easing.type: Easing.OutQuad
     onFinished: root.finish()
   }
 
@@ -107,7 +107,7 @@ MouseArea {
     target: root.target
     property: "x"
     to: 0
-    duration: Theme.move
-    easing.type: Easing.OutCubic
+    duration: Theme.popupTime
+    easing.type: Easing.OutQuad
   }
 }

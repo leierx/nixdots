@@ -13,8 +13,8 @@ findings() {
   for file in $files; do
     grep -nP '"#[0-9a-fA-F]{3,8}"|Qt\.(rgba|hsla|hsva|lighter|darker)\(|Qt\.tint\((?!Theme\.)' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a colour of its own rather than Theme's\tcolour|" || true
     grep -nP '\bradius: [0-9.]*[1-9][0-9.]*\s*$' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a radius typed out rather than Theme's or height / 2\tradius|" || true
-    awk -v file="$file" '/ColorAnimation \{/ { inside = 1 } inside && /duration: [0-9]/ { printf "%s:%d: a colour fading over its own time rather than Theme.fade\tfade\n", file, NR } inside && /\}/ { inside = 0 }' "$file"
-    grep -nP '\bduration: [0-9]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a duration typed out rather than Theme's fade, move, open, close, tap or settle\tmotion|" || true
+    awk -v file="$file" '/ColorAnimation \{/ { inside = 1 } inside && /duration: [0-9]/ { printf "%s:%d: a colour fading over its own time rather than a Theme duration\tfade\n", file, NR } inside && /\}/ { inside = 0 }' "$file"
+    grep -nP '\bduration: [0-9]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a duration typed out rather than one of Theme's (popupTime, bannerTime, quickTime, levelTime, panelButtonTime, settle)\tmotion|" || true
     grep -nP 'pointSize|pixelSize|Qt\.font\(|font\.(family|weight)' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a font of its own rather than Theme's\tfont|" || true
     grep -nP '"[mM][0-9]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: an icon path rather than one of Symbols', which the build writes\ticon|" || true
     [ "$file" = common/Card.qml ] || grep -nP '^\s*Shadow \{' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a shadow on something that is not a Card\tshadow|" || true

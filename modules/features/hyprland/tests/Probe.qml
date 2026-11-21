@@ -49,7 +49,7 @@ Scope {
       const color = Theme[name];
       if (color === null || typeof color !== "object" || color.hslLightness === undefined) continue;
       allowed.add(key(color));
-      if (color.a < 1) for (const base of [Theme.bg, Theme.panel]) allowed.add(key(Qt.tint(base, color)));
+      if (color.a < 1) for (const base of [Theme.popoverBg, Theme.panelBg, Theme.cardBg, Theme.messageBg]) allowed.add(key(Qt.tint(base, color)));
     }
     allowedColors = allowed;
   }
@@ -109,11 +109,11 @@ Scope {
     return Qt.rgba(top.r * top.a + bottom.r * (1 - top.a), top.g * top.a + bottom.g * (1 - top.a), top.b * top.a + bottom.b * (1 - top.a), 1);
   }
 
-  // What lies behind an item: its window's colour, or the view background where the window is see-through, under its filled ancestors.
+  // What lies behind an item: its window's colour, or the panel's black where the window is see-through, under its filled ancestors.
   function behind(entry: var, item: var): color {
     const fills = [];
     for (let at = item.parent; at; at = at.parent) if (isRect(at) && at.color.a > 0) fills.unshift(at);
-    let color = entry.window.color.a > 0.99 ? entry.window.color : Theme.bg;
+    let color = entry.window.color.a > 0.99 ? entry.window.color : Theme.panelBg;
     for (const fill of fills) color = over(fill.color, color);
     return color;
   }
@@ -189,7 +189,7 @@ Scope {
           const radius = item.radius;
           const half = Math.min(item.width, item.height) / 2;
           const inherited = item.parent && isRect(item.parent) && item.parent.radius === radius;
-          const roles = [0, Theme.smallRadius, Theme.buttonRadius, Theme.windowRadius, Theme.keycapRadius, Theme.baseRadius, Theme.menuItemRadius, Theme.cardRadius, Theme.tileRadius, Theme.messageRadius, Theme.popoverRadius, Theme.toggleMenuRadius, Theme.dateMenuRadius, Theme.quickSettingsRadius];
+          const roles = [0, Theme.keycapRadius, Theme.baseRadius, Theme.menuItemRadius, Theme.cardRadius, Theme.tileRadius, Theme.messageRadius, Theme.popoverRadius, Theme.toggleMenuRadius, Theme.dateMenuRadius, Theme.quickSettingsRadius];
           if (!own && !inherited && !roles.includes(radius) && Math.abs(radius - half) > 0.6) problems.push(`${label(entry, item)} has a radius of ${radius}: neither Theme's nor half its size`);
           if (!own && item.color.a > 0 && !allowedColors.has(key(item.color))) problems.push(`${label(entry, item)} is coloured ${item.color}, which is not Theme's`);
           if (!own && item.border.width > 0 && !allowedColors.has(key(item.border.color))) problems.push(`${label(entry, item)} has a border coloured ${item.border.color}, which is not Theme's`);

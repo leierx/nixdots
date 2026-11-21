@@ -46,7 +46,7 @@ PanelWindow {
     radius: radio ? width / 2 : 4
     color: on ? Theme.accentBg : "transparent"
     border.width: on ? 0 : 2
-    border.color: Theme.border
+    border.color: Theme.checkBorder
 
     Rectangle {
       anchors.centerIn: parent
@@ -238,8 +238,8 @@ PanelWindow {
         }
         readonly property var parentCard: index > 0 ? root.level(index - 1) : null
         readonly property int direction: {
-          const way = parentCard?.direction ?? (root.anchor.x + width + Theme.gap <= root.width ? 1 : -1);
-          const fits = way > 0 ? x + 2 * width + Theme.gap <= root.width : x - width - Theme.gap >= 0;
+          const way = parentCard?.direction ?? (root.anchor.x + width + Theme.rise <= root.width ? 1 : -1);
+          const fits = way > 0 ? x + 2 * width + Theme.rise <= root.width : x - width - Theme.rise >= 0;
           return fits ? way : -way;
         }
         readonly property bool cascades: entries.some(entry => entry.hasChildren)
@@ -260,14 +260,14 @@ PanelWindow {
         }
 
         x: {
-          if (!parentCard) return root.anchor.x + width + Theme.gap <= root.width ? root.anchor.x : Math.max(Theme.gap, root.anchor.x - width);
+          if (!parentCard) return root.anchor.x + width + Theme.rise <= root.width ? root.anchor.x : Math.max(Theme.rise, root.anchor.x - width);
           const beside = parentCard.direction > 0 ? parentCard.x + parentCard.width - 4 : parentCard.x - width + 4;
-          return Math.max(Theme.gap, Math.min(beside, root.width - width - Theme.gap));
+          return Math.max(Theme.rise, Math.min(beside, root.width - width - Theme.rise));
         }
-        y: Math.max(Theme.gap, Math.min((parentCard ? parentCard.y + openerY - root.padding : root.anchor.y), root.height - height - Theme.gap))
+        y: Math.max(Theme.rise, Math.min((parentCard ? parentCard.y + openerY - root.padding : root.anchor.y), root.height - height - Theme.rise))
         width: Math.max(180, rows.implicitWidth) + root.padding * 2
         height: rows.implicitHeight + root.padding * 2
-        radius: Theme.cardRadius
+        radius: Theme.popoverRadius
 
         Component.onCompleted: {
           root.cards = [...root.cards, card];
@@ -318,24 +318,24 @@ PanelWindow {
 
               Layout.fillWidth: true
               implicitWidth: modelData?.isSeparator ? 0 : content.implicitWidth + 24 + arrowSpace
-              implicitHeight: modelData?.isSeparator ? 13 : 32
+              implicitHeight: modelData?.isSeparator ? 13 : Theme.menuRowHeight
 
               Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width
                 height: 1
                 visible: entry.modelData?.isSeparator ?? false
-                color: Theme.border
+                color: Theme.separator
               }
 
               Rectangle {
                 anchors.fill: parent
                 visible: !entry.modelData?.isSeparator
-                radius: Theme.smallRadius
+                radius: Theme.menuItemRadius
                 color: {
                   if (!entry.modelData?.enabled) return "transparent";
-                  if (entry.picked) return Theme.selected;
-                  return entryHover.hovered || entry.opened ? Theme.hover : "transparent";
+                  if (entry.picked) return Theme.selectedBg;
+                  return entryHover.hovered || entry.opened ? Theme.menuHoverBg : "transparent";
                 }
 
                 Row {

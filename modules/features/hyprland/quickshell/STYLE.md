@@ -40,8 +40,6 @@ popover, so they hold over any surface.
 | `popoverBorder` | `shell_outer_borders_color` `#343439` | gs `$outer_borders_color` (`lighten(bg, 5%)`) | A popover's 1 px edge |
 | `cardBg` | `shell_card_bg_color` `#39393e` | gs `$card_bg_color` (`lighten(bg, 7%)`) | Quick toggle menus, inset cards (weather, events) |
 | `messageBg` | `shell_message_bg_color` `#46464c` | gs `.message` `#54545a` | Notification cards and banners |
-| `messageSecond`, `messageLower` | `#37373c`, `#2f2f34` | gs `.message:second-in-stack`, `:lower-in-stack` | The cards stacked under a collapsed group |
-| `subMenuBg` | `shell_submenu_bg_color` `#48484e` | gs `$submenu_bg_color` (`lighten(bg, 13%)`) | A submenu opened in place |
 | `osdBg` | `shell_osd_bg_color` `#202025` | gs `$osd_bg_color` (`lighten(#222226, 5%)`) | The OSD pill |
 | `osdBorder` | fg 2 % | gs `$osd_outer_borders_color` | The OSD's edge |
 | `tooltipBg`, `tooltipBorder` | black 90 %, fg 10 % | gs `%tooltip` | Tooltips |
@@ -55,13 +53,12 @@ popover, so they hold over any surface.
 | `buttonCheckedBg`, `buttonCheckedHoverBg` | fg 18 %, 22 % | gs `%button:checked` (+8 %) | Held down while what it opens is open |
 | `buttonInsensitiveBg` | fg 5 % | gs `%button:insensitive` (−3 %) | Disabled |
 | `menuHoverBg`, `menuActiveBg` | fg 13 %, 16 % | gs `.popup-menu-item:hover`, `:active` | A row under the pointer or the keyboard, pressed |
-| `cardHoverBg` | fg 13 % | gs `%card:hover` | A clickable card under the pointer |
 | `panelHoverBg`, `panelActiveBg`, `panelActiveHoverBg` | fg 17 %, 28 %, 32 % | gs `panel_button()` | A bar item under the pointer, open, both |
 | `switchBg`, `switchHoverBg` | fg 15 %, 20 % | gs `.toggle-switch` | A switch off |
 | `switchKnob` | `#d7d7d8` | gs `.toggle-switch .handle` | Its knob off; white on |
 | `troughBg` | fg 10 % | gs `.slider`, `.osd-window .level` | A slider's and a level's trough |
 | `sliderKnob` | `#e8e8e8` | gs `.slider` `color` | A slider's knob; white under the pointer |
-| `scrollHandle`, `scrollHandleHover` | fg 28 %, 47 % | gs `StScrollBar` `#727275`, `#9b9b9d` over bg | A scroll bar |
+| `scrollHandle` | fg 28 % | gs `StScrollBar` `#727275`, `#9b9b9d` over bg | A scroll bar |
 | `focusRing` | `accentBg` | ours, not gs `focus_ring()` | The keyboard's 2 px ring |
 
 ## Type
@@ -110,7 +107,6 @@ Adwaita Sans at 11 pt, the type classes both name alike (gs `%title_1` …
 | `rise` | 6 | gs `.popup-menu-boxpointer -arrow-rise`: from the bar and the screen's edges |
 | `barHeight` | 32 | gs `#panel` 2.2 em |
 | `barItemHeight` | 26 | gs `.panel-button`: 32 less its 3 px transparent border |
-| `symbolSize` | 16 | gs `$base_icon_size` |
 | `menuRowHeight` | 36 | gs `%menuitem` (9 px above and below a line) |
 | `buttonHeight` | 34 | adw button |
 | `iconButtonSize` | 36 | gs `.quick-settings .icon-button` (10.5 px round a 16 px symbol) |
@@ -125,7 +121,6 @@ Adwaita Sans at 11 pt, the type classes both name alike (gs `%title_1` …
 | `quickTime` | 100 | `OutQuad` | gs `osdWindow.js` `FADE_TIME`, `%menuitem`, `.toggle-switch` | The OSD's fade, a row's or switch's colour |
 | `levelTime` | 100 | `OutQuad` | gs `osdWindow.js` `LEVEL_ANIMATION_TIME` | A level moving |
 | `panelButtonTime` | 150 | | gs `panel_button()` | A bar item's fill |
-| `menuExpandTime` | 75 | | gs `quickSettings.js` (`POPUP_ANIMATION_TIME / 2`) | A toggle's menu grows, then its content fades in (and back) |
 | `settle` | 400 | `OutCubic` | ours | What is slow on purpose |
 
 The OSD hides 1500 ms after its last change (gs `osdWindow.js` `HIDE_TIMEOUT`).
