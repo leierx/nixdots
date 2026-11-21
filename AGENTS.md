@@ -803,7 +803,7 @@ with nothing beside it. `--changed` maps changed files to scenarios
 | `osd.sh` | what shows and what must not |
 | `privacy.sh` | mics real and virtual, casts, cameras via PipeWire and `/dev` |
 | `tray.sh` | the tray strip, its menus and keys |
-| `workspaces.sh` | windows opened while the shell starts |
+| `workspaces.sh` | windows opened while the shell starts, the wheel spun hard |
 
 Behaviour that broke once gets a case; check it fails without the fix (a
 `git worktree` of `HEAD` with the new `tests/` copied in, `QS_TEST_REPO` set).
