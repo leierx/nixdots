@@ -17,7 +17,7 @@ Overlay {
 
   // Clear of the screen's edges, whatever its size and scale.
   readonly property int margin: Math.round(3 * Theme.em)
-  readonly property real cardWidth: Math.min(Math.round((previewing || mode.wide ? 68 : 48) * Theme.em), width - 2 * margin)
+  readonly property real cardWidth: Math.min(Math.round((previewing ? 68 : 48) * Theme.em), width - 2 * margin)
   readonly property int fieldHeight: 36 + 2 * Theme.padding
   readonly property int rows: Math.max(1, Math.min(8, Math.floor((height - 2 * margin - fieldHeight - 17) / (matches.rowHeight + matches.spacing))))
   readonly property int resultsHeight: rows * matches.rowHeight + (rows - 1) * matches.spacing + (previewing ? 16 : 8)

@@ -76,7 +76,8 @@ LauncherMode {
       readonly property var known: preview.row?.hyprland?.lastIpcObject?.size ?? null
       readonly property var size: {
         if (known?.[0] > 0 && known?.[1] > 0) return Qt.size(known[0], known[1]);
-        return capture.hasContent ? capture.sourceSize : null;
+        // Nothing selected or not yet captured: a 16:9 screen, the shape most previews have.
+        return capture.hasContent ? capture.sourceSize : Qt.size(16, 9);
       }
       // A tile squeezed below nothing (Hyprland past a few dozen on a workspace) exports a buffer Wayland rejects, which kills the shell.
       readonly property bool capturable: known === null || (known[0] > 0 && known[1] > 0)

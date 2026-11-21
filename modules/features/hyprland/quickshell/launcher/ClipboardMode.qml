@@ -20,7 +20,6 @@ LauncherMode {
   glyph: Symbols.clipboard
   placeholder: "Search clipboard…"
   nothing: "Nothing Copied Yet"
-  wide: true
   removable: true
   rows: root.entries.map(entry => {
     // "[[ binary data 140 KiB png 1920x1080 ]]"

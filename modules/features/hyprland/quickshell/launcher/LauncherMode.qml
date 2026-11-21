@@ -15,7 +15,6 @@ Scope {
   property string nothing: ""
   property var rows: []
   property bool removable: false
-  property bool wide: false
   property real split: 0.6
   property var fields: row => [[1.0, row.title, true], [0.8, row.subtitle]]
   property Component preview: null
