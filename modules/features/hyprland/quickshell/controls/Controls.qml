@@ -35,6 +35,7 @@ Singleton {
       list.push({ key: "bluetooth", title: "Bluetooth", subtitle: !BluetoothDevices.on ? "Off" : count === 1 ? BluetoothDevices.name(BluetoothDevices.connected[0]) : count > 1 ? `${count} connected` : "On", glyph: BluetoothDevices.on ? Symbols.bluetooth : Symbols.bluetoothOff, on: BluetoothDevices.on, menu: true });
     }
     if (NightLight.present) list.push({ key: "night", title: "Night Light", subtitle: NightLight.on ? `${NightLight.temperature} K` : "Off", glyph: Symbols.nightLight, on: NightLight.on, menu: true });
+    list.push({ key: "caffeine", title: "Caffeine", subtitle: Caffeine.active ? "On" : "Off", glyph: Symbols.cup, on: Caffeine.active, menu: false });
     return list;
   }
   function wiredState(device: var): string {
@@ -63,6 +64,7 @@ Singleton {
     else if (toggle.key === "vpn") Net.toggleVpns();
     else if (toggle.key === "bluetooth") BluetoothDevices.toggle();
     else if (toggle.key === "night") NightLight.toggle();
+    else if (toggle.key === "caffeine") Caffeine.toggle();
   }
 
 
@@ -108,6 +110,12 @@ Singleton {
     target: BluetoothDevices
     property: "scanning"
     value: root.open && root.menu === "bluetooth"
+  }
+
+  Binding {
+    target: Caffeine
+    property: "watched"
+    value: root.open
   }
 
   Binding {

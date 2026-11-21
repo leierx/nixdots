@@ -152,8 +152,7 @@ The OSD hides 1500 ms after its last change (gs `osdWindow.js` `HIDE_TIMEOUT`).
   quick settings 36.
 
 Taken from 51 as the user picked: the media card heads the center, Do Not
-Disturb is a switch in the center's footer, the forecast is in Adwaita's
-weather symbols, one accent everywhere (the nixpkgs mode lost its blues), no
+Disturb is a switch in the center's footer, one accent everywhere (the nixpkgs mode lost its blues), no
 press bounce, and the dim behind centred panels is 0.6.
 
 ## Pieces
@@ -217,10 +216,9 @@ feedback, as in GNOME.
   and buttons are `heading`; numbers that change are `numeric` or
   `numericHeading`.
 - Symbols: every path is a `Symbols` property, which the build writes from
-  gnome-shell 51's icons and adwaita-icon-theme 51 (`scripts/symbols.tsv`,
-  a line per symbol). Drawn at 16 px everywhere, 24 in a toggle menu's header,
-  32 in the OSD, the launcher's rows and the forecast, 64 on the power tiles
-  and the weather's now. App icons are Papirus-Dark's; tray items draw what
+  gnome-shell 51's icons, adwaita-icon-theme 51 and our own in `scripts/icons`
+  for what GNOME lacks (`scripts/symbols.tsv`, a line per symbol). Drawn at 16 px everywhere, 24 in a toggle menu's header,
+  32 in the OSD and the launcher's rows, 64 on the power tiles. App icons are Papirus-Dark's; tray items draw what
   they send.
 - Motion: the tokens above, each with its easing; keyboard selection never
   animates.
@@ -260,6 +258,13 @@ underlined in their labels (`Theme.accessKey`).
 - The bar is all black: Shell's panel, kept outside the overview.
 - The power menu keeps its own backdrop, 28 px tiles and clock (`display`),
   and takes its keys without Alt, as nothing in it takes text.
+- The workspaces are squares with a little rounding (`workspaceRadius`), not
+  Shell's pills: the user's call.
+- The forecast draws MET Norway's own colour icons, the service it comes from,
+  not Adwaita's weather symbols.
+- Caffeine is a quick toggle beside Night Light (GNOME has none), its cup a
+  symbol of our own in `scripts/icons`, with the cup in the status button
+  while it is on.
 - The workspaces are numbered (hyprsplit's), an occupied one told from an
   empty one by colour alone, as a mark would crowd 26 px items.
 - The focus ring is the accent, not Shell's lighter blue: one accent.

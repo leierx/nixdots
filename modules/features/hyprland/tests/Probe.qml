@@ -392,6 +392,7 @@ Scope {
         osdSettling: Osd.settling,
         brightness: Brightness.devices,
         caps: CapsLock.on,
+        caffeine: Caffeine.active,
         privacy: { mic: Privacy.mic, screen: Privacy.screenActive ? Privacy.screen : null, camera: Privacy.cameraActive ? Privacy.camera : null },
         controls: {
           menu: Controls.menu,

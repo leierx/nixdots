@@ -17,6 +17,7 @@ BarButton {
   readonly property var glyphs: {
     const glyphs = [
       ...Privacy.kinds.map(kind => ({ name: kind.name, path: kind.glyph, color: Theme.recording })),
+      Caffeine.active ? { name: "caffeine", path: Symbols.cup, color: Theme.fg } : null,
       Notifs.dnd ? { name: "dnd", path: Symbols.dnd, color: Theme.fg } : Notifs.unchecked > 0 ? { name: "bell", path: Symbols.bell, color: Theme.bell } : null,
       Net.vpns.some(vpn => vpn.active) ? { name: "vpn", path: Symbols.vpn, color: Theme.fg } : null,
       Net.glyph !== "" ? { name: "network", path: Net.glyph, color: Theme.fg } : null,

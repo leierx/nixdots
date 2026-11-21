@@ -504,6 +504,11 @@ Notes on specific features:
         came (`TrayOrder`, since Quickshell sorts by category and id);
         `TrayMenu` is libadwaita's popover menu, cascading as GTK's does and
         closing as the pointer leaves it, unless the keys drive it.
+      - Caffeine (the control centre's pill beside Night Light, `Caffeine`,
+        `qs ipc -c shell call caffeine toggle|set|active`) is the
+        `caffeine.service` user unit, `systemd-inhibit --what=idle` for as
+        long as it runs, so it outlives a shell restart; the status button
+        shows a cup while it is on.
       - `weather/`: MET Norway's forecast for the time zone's city
         (`/etc/localtime` placed by `zone.tab`, no lookup of the address),
         fetched every half hour and at once when the clock shows a suspend
@@ -549,7 +554,7 @@ Notes on specific features:
       - `controls/`: the control centre, GNOME's quick settings under the
         status button (SUPER+A): `Header`, `Levels` (output, input and each
         backlight), the `Pill`s the machine has (`Controls.toggles`: wired per
-        device, Wi-Fi, VPNs, Bluetooth, night light), a `Menu`
+        device, Wi-Fi, VPNs, Bluetooth, night light, Caffeine), a `Menu`
         under the row that opens it and `InUse` while something records. `ControlsPanel`
         stacks them, each menu in a slot of its own so one eases shut as the
         next opens, and scrolls past what the screen leaves under the bar. The

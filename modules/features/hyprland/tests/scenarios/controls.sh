@@ -50,12 +50,12 @@ qst click right "$x" "$y"
 qst stays '(.volume.muted | not) and .panel == ""' 0.5
 
 qst case "every pill the machine has, and only those"
-qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "bluetooth", "night"]' 10
+qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "bluetooth", "night", "caffeine"]' 10
 qst bluetooth adapter remove
-qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "night"]'
+qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "night", "caffeine"]'
 qst network device remove wlp5s0
 qst network device remove enp8s0
-qst wait '[.controls.toggles[].key] == ["vpn", "night"]'
+qst wait '[.controls.toggles[].key] == ["vpn", "night", "caffeine"]'
 
 qst case "without NetworkManager one dim pill says so, and the pills come back with it"
 open
@@ -69,7 +69,7 @@ QS_TEST_NETWORK=none QS_TEST_BLUETOOTH=none qst case "a machine with neither Net
 qst expect 'Could not find an available backend'
 qst expect 'DBusObjectManagerInterface for "org\.bluez"'
 open
-qst wait '[.controls.toggles[].key] == ["network", "night"]'
+qst wait '[.controls.toggles[].key] == ["network", "night", "caffeine"]'
 read -r x y < <(at pill:network)
 qst click left "$x" "$y"
 qst stays '.controls.toggles[0].unavailable and .panel == "controls:DP-1"' 0.5

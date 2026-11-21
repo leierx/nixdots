@@ -59,3 +59,4 @@ restart	system-reboot
 reload	view-refresh
 firmware	computer
 panDown	pan-down
+cup	cup

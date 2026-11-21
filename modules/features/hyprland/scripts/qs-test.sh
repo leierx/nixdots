@@ -1246,7 +1246,7 @@ changed_scenarios() {
         case ${dir%%/*} in
           bar) picked+=(tray hotplug workspaces cursors design controls chaos interactions idle notifications) ;;
           center) picked+=(notifications history motion cursors design hotplug chaos interactions idle failures) ;;
-          controls) picked+=(controls cursors design chaos osd privacy interactions notifications) ;;
+          controls) picked+=(controls caffeine cursors design chaos osd privacy interactions notifications) ;;
           idle) picked+=(idle chaos) ;;
           launcher) picked+=(launcher hotplug cursors design failures interactions chaos binds) ;;
           notifications) picked+=(notifications history cursors design chaos hotplug motion interactions controls failures) ;;

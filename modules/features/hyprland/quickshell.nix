@@ -77,7 +77,7 @@ in
           cp ${./scripts/symbols.mjs} symbols.mjs
           cp ${./scripts/symbols.tsv} symbols.tsv
           node symbols.mjs ${pkgs.svgo}/lib/svgo ${shellIcons} \
-            ${pkgs.unstable.adwaita-icon-theme}/share/icons/Adwaita/symbolic > $out
+            ${pkgs.unstable.adwaita-icon-theme}/share/icons/Adwaita/symbolic ${./scripts/icons} > $out
         '';
 
       # MET Norway's weather symbols, named by its symbol codes
@@ -217,6 +217,24 @@ in
           RestartSec = 1;
           Environment = [ "QT_SCALE_FACTOR=${builtins.toJSON config.quickshell.scale}" ];
         };
+      };
+
+      # The control centre's Caffeine: hypridle honours logind's idle inhibitors, and a unit outlives a shell restart.
+      systemd.user.services.caffeine = {
+        Unit = {
+          Description = "Keep the session from going idle";
+          PartOf = [ config.wayland.systemd.target ];
+          After = [ config.wayland.systemd.target ];
+        };
+        Service.ExecStart = lib.escapeShellArgs [
+          (lib.getExe' osConfig.systemd.package "systemd-inhibit")
+          "--what=idle"
+          "--who=Caffeine"
+          "--why=Turned on in the control centre"
+          "--mode=block"
+          (lib.getExe' pkgs.coreutils "sleep")
+          "infinity"
+        ];
       };
 
       # Hyprland reports no lock changes, so the Caps Lock key's release asks the shell to look.
