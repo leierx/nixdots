@@ -350,13 +350,18 @@ Singleton {
 
     property bool again: false
 
-    command: ["nmcli", "-t", "-f", "NAME,UUID,TYPE,ACTIVE,STATE", "connection", "show"]
+    // The name last: -t escapes only its separator, so a name holding a newline runs on into lines that start with no UUID.
+    command: ["nmcli", "-t", "-f", "UUID,TYPE,ACTIVE,STATE,NAME", "connection", "show"]
     stdout: StdioCollector {
       onStreamFinished: {
+        const records = [];
+        for (const line of text.replace(/\n$/, "").split("\n")) {
+          if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:/.test(line) || records.length === 0) records.push(line);
+          else records[records.length - 1] += `\n${line}`;
+        }
         const vpns = [];
-        for (const line of text.split("\n")) {
-          if (!line) continue;
-          const [name, uuid, type, active, state] = root.fields(line);
+        for (const record of records) {
+          const [uuid, type, active, state, name] = root.fields(record);
           if (type === "wireguard" || type === "vpn") vpns.push({ name, uuid, type, active: active === "yes", state });
         }
         // By name, so the list keeps still as they come and go.

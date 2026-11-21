@@ -2,6 +2,8 @@
 
 const limit = 100;
 const maxAge = 7 * 24 * 3600 * 1000;
+// A clock set back leaves records ahead of it, which would sort first until it caught up; a minute forgives a small step.
+const ahead = 60 * 1000;
 
 function valid(record) {
   const strings = ["appName", "appIcon", "desktopEntry", "summary", "body", "image"];
@@ -12,7 +14,7 @@ function valid(record) {
 
 // The newest within the limits, newest first, as saved.
 function current(records, now) {
-  return records.filter(record => now - record.time < maxAge).sort((a, b) => b.time - a.time).slice(0, limit);
+  return records.filter(record => now - record.time < maxAge && record.time - now < ahead).sort((a, b) => b.time - a.time).slice(0, limit);
 }
 
 // What a saved file still holds that can be shown, and why the rest could not be read; a damaged file is no error.
@@ -27,6 +29,7 @@ function parse(text, now) {
   return { records: current(saved.notifications.filter(valid), now), problem: "" };
 }
 
-function serialise(records, now) {
-  return JSON.stringify({ version: 1, notifications: current(records, now) });
+// Records as current() keeps them.
+function serialise(records) {
+  return JSON.stringify({ version: 1, notifications: records });
 }

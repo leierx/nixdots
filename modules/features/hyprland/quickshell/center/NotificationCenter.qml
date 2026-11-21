@@ -15,7 +15,7 @@ Overlay {
   id: root
 
   readonly property bool open: Panels.active === name
-  readonly property var apps: [...new Set(Notifs.shown.map(entry => Notifs.appKey(entry)))]
+  readonly property var apps: [...Notifs.byApp.keys()]
   readonly property int padding: Theme.padding
   // Beside the calendar the list keeps 24em, or the calendar steps aside, as on a small screen at a large scale, or one too short for it.
   readonly property real room: width - 2 * Theme.rise - 4 * padding - 1 - side.implicitWidth
@@ -161,7 +161,7 @@ Overlay {
               required property string modelData
 
               width: ListView.view.width
-              entries: Notifs.shown.filter(entry => Notifs.appKey(entry) === modelData)
+              entries: Notifs.byApp.get(modelData) ?? []
               onExpandedChanged: root.expandedGroups += expanded ? 1 : -1
               Component.onDestruction: if (expanded) root.expandedGroups--
 

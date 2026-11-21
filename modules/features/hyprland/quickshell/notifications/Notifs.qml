@@ -60,10 +60,14 @@ Singleton {
   }
 
   function clip(text, length) {
-    return text && text.length > length ? `${text.slice(0, length)}…` : text ?? "";
+    if (!text || text.length <= length) return text ?? "";
+    // Never between the halves of a surrogate pair, which would draw a box.
+    const end = /[\ud800-\udbff]/.test(text[length - 1]) ? length - 1 : length;
+    return `${text.slice(0, end)}…`;
   }
 
-  function admit(notification) {
+  // An update in place counts too, though it turns nothing away: past the limit it only keeps its place.
+  function admit(notification, merging) {
     const flood = root.flood;
     const second = Math.floor(Date.now() / 1000);
     if (second !== flood.second) {
@@ -76,6 +80,7 @@ Singleton {
       flood[kind]++;
       return true;
     }
+    if (merging) return false;
     const app = root.clip(notification.appName, root.maxApp) || "An app";
     const apps = Object.keys(flood.dropped);
     const key = app in flood.dropped || apps.length < 20 ? app : "others";
@@ -162,6 +167,16 @@ Singleton {
   // Cleared from the center, but dismissed only once its Undo has gone, as the HIG asks of what cannot be taken back.
   property var held: []
   readonly property var shown: entries.filter(entry => !held.includes(entry))
+  // Per app in the order shown, so each of the centre's groups takes its own without a pass over all.
+  readonly property var byApp: {
+    const groups = new Map();
+    for (const entry of shown) {
+      const key = appKey(entry);
+      if (groups.has(key)) groups.get(key).push(entry);
+      else groups.set(key, [entry]);
+    }
+    return groups;
+  }
 
   function hold() {
     held = entries.slice();
@@ -237,9 +252,10 @@ Singleton {
     if (critical) root.criticalSoundAt = now;
     else root.soundAt = now;
     const ours = Quickshell.shellPath(`notifications/sounds/${critical ? "critical.ogg" : "notification.oga"}`);
-    const file = hints["sound-file"]?.replace(/^file:\/\//, "");
+    // A path, never an option for pw-play.
+    const file = String(hints["sound-file"] ?? "").replace(/^file:\/\//, "");
     const name = hints["sound-name"] ?? "";
-    if (file) {
+    if (file.startsWith("/")) {
       Quickshell.execDetached(["pw-play", file]);
     } else if (/^[a-z0-9-]+$/.test(name)) {
       Quickshell.execDetached(["sh", "-c", 'IFS=:; for dir in ${XDG_DATA_HOME:-$HOME/.local/share}:${XDG_DATA_DIRS:-/usr/share}; do for ext in oga ogg wav; do [ -f "$dir/sounds/freedesktop/stereo/$1.$ext" ] && exec pw-play "$dir/sounds/freedesktop/stereo/$1.$ext"; done; done; exec pw-play "$2"', "sh", name, ours]);
@@ -385,8 +401,8 @@ Singleton {
         ?? (notification.lastGeneration ? root.entries.find(entry => entry.restored && entry.key === key) : null)
         ?? root.entries.find(entry => !entry.restored && now - entry.time.getTime() < root.repeatWindow && entry.key === key)
         ?? null;
-      // An update in place grows nothing, so only what would add a card counts.
-      if (!same && !notification.lastGeneration && !root.admit(notification)) {
+      const admitted = !!notification.lastGeneration || root.admit(notification, same !== null);
+      if (!same && !admitted) {
         notification.expire();
         return;
       }
@@ -414,7 +430,8 @@ Singleton {
         });
       }
       root.watch(entry);
-      root.present(entry, popup);
+      // Presenting one rebuilds the lists and walks every entry, which a client repeating itself would have done for nothing.
+      if (admitted) root.present(entry, popup);
     }
   }
 }

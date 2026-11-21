@@ -25,11 +25,12 @@ Singleton {
 
   function save(records: var): void {
     if (!root.loaded) return;
-    const text = Saved.serialise(records, Date.now());
+    const kept = Saved.current(records, Date.now());
+    const text = Saved.serialise(kept);
     if (text === root.written) return;
     root.written = text;
     file.setText(text);
-    prune.command = ["sh", "-c", 'mkdir -p "$1" && cd "$1" && shift && for file in *.png; do [ -e "$file" ] || continue; case " $* " in *" ${file%%-*} "*) ;; *) rm -f "$file" ;; esac; done', "sh", root.images, ...JSON.parse(text).notifications.map(record => record.uid)];
+    prune.command = ["sh", "-c", 'mkdir -p "$1" && cd "$1" && shift && for file in *.png; do [ -e "$file" ] || continue; case " $* " in *" ${file%%-*} "*) ;; *) rm -f "$file" ;; esac; done', "sh", root.images, ...kept.map(record => record.uid)];
     if (!prune.running) prune.running = true;
   }
 
@@ -47,10 +48,14 @@ Singleton {
     }
     onLoadFailed: error => {
       if (error !== FileViewError.FileNotFound) console.warn(`Reading ${file.path} failed: ${FileViewError.toString(error)}`);
-      else root.written = Saved.serialise([], Date.now());
+      else root.written = Saved.serialise([]);
       root.finish([]);
     }
-    onSaveFailed: error => console.warn(`Writing ${file.path} failed: ${FileViewError.toString(error)}`)
+    onSaveFailed: error => {
+      console.warn(`Writing ${file.path} failed: ${FileViewError.toString(error)}`);
+      // The file still holds what it did, so the next save tries again.
+      root.written = "";
+    }
   }
 
   // Also makes the directory the pictures are saved into.

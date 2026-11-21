@@ -55,7 +55,7 @@ LauncherMode {
       used.push(i);
     }
     used.sort((a, b) => boost[b] - boost[a]);
-    return { index, uses: JSON.stringify(uses), boost, recent: used.slice(0, root.limit).map(i => root.row(index, i)), queries: {} };
+    return { index, uses: JSON.stringify(uses), boost, recent: used.slice(0, root.limit).map(i => root.row(index, i)), queries: Object.create(null) };
   }
 
   name: "nixpkgs"
