@@ -1,9 +1,9 @@
 export QS_TEST_MONITORS="DP-1:1920x1080:1"
 
-# The tray lives on the bar, left of the status button: hidden until the pointer reaches the bar's right end.
+# The tray lives on the bar, left of the status button: three icons always, the rest as the pointer reaches the bar's right end.
 reveal() {
   qst pointer 1850 16
-  qst wait '.trays[0].shown'
+  qst wait '.trays[0].shown and .trays[0].more == 0'
   # Until the strip has finished sliding out, so its cells hold still.
   qst stays '.trays[0].shown' 0.3
 }
@@ -13,19 +13,21 @@ cell() {
   qst areas BarWindow | awk -F'\t' '$1 > 1000 && $1 < 1840 && $5 == "true" && $6 == "false" && $2 < 32' | sort -n | sed -n "${1}p" | awk -F'\t' '{ print $1, $2 }'
 }
 
-qst case "the tray hides until the pointer reaches the bar's right end, and lingers a moment after it leaves"
-qst tray
-qst wait '.tray | length > 0'
-qst stays '.trays[0].shown | not' 0.5
-# The left of the bar and the clock do not reveal it.
+qst case "three tray icons show always with a count of the rest, which come as the pointer reaches the bar's right end and linger a moment after it leaves; an empty tray is gone"
+qst tray add first 5
+qst wait '(.tray | length) == 5 and .trays[0].shown and .trays[0].more == 2 and (.trays[0].expanded | not)'
+# The left of the bar and the clock do not expand it.
 qst pointer 400 16
 qst pointer 960 16
-qst stays '.trays[0].shown | not' 0.5
+qst stays '.trays[0].more == 2' 0.5
 reveal
+qst wait '.trays[0].expanded'
 qst pointer 900 600
 # A near miss still finds it.
-qst stays '.trays[0].shown' 0.4
-qst wait '.trays[0].shown | not' 2
+qst stays '.trays[0].expanded' 0.4
+qst wait '(.trays[0].expanded | not) and .trays[0].more == 2' 2
+qst tray clear
+qst wait '(.tray | length) == 0 and (.trays[0].shown | not)'
 
 qst case "past 12 em the strip scrolls sideways under the wheel, and stops at its ends"
 qst tray add crowd 30
@@ -65,7 +67,7 @@ qst pointer 900 600
 qst stays '.trayMenu != null and .trays[0].shown' 1
 qst key Escape
 qst wait '.panel == "" and .trayMenu == null'
-qst wait '.trays[0].shown | not' 2
+qst wait '.trays[0].expanded | not' 2
 
 qst case "Return on a tray menu's row triggers it and closes the menu"
 qst tray

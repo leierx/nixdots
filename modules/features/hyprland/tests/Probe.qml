@@ -415,7 +415,7 @@ Scope {
         center: [].concat(...probe.windows().filter(entry => entry.type === "NotificationCenter").map(entry => entry.items.filter(({ item }) => "ordered" in item && "unfolded" in item).map(({ item }) => ({ app: item.newest ? Notifs.appKey(item.newest) : null, expanded: item.expanded, lines: item.ordered.map(e => ({ summary: e.summary, critical: e.critical })) })))),
         trays: probe.windows().filter(entry => entry.type === "BarWindow").map(entry => {
           const tray = entry.items.find(({ item }) => "menuPanel" in item && "menuAnchor" in item)?.item;
-          return { screen: entry.screen, shown: tray?.revealed ?? false, scrolls: tray?.scrolls ?? false, offset: Math.round(tray?.offset ?? 0), items: tray ? tray.items.map(item => item.id) : [] };
+          return { screen: entry.screen, shown: tray?.visible ?? false, expanded: tray?.expanded ?? false, more: tray?.more ?? 0, scrolls: tray?.scrolls ?? false, offset: Math.round(tray?.offset ?? 0), items: tray ? tray.items.map(item => item.id) : [] };
         }),
         // The tray menu up: its open submenus by label and the row the keyboard is on.
         trayMenu: (menu => menu ? { path: menu.path, keyed: menu.keyed, selected: menu.level(menu.path.length)?.entries[menu.row]?.text ?? null } : null)(probe.windows().find(entry => entry.type === "TrayMenu")?.window ?? null),

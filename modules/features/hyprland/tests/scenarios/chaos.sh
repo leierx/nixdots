@@ -633,3 +633,15 @@ wait
 qst stays 'true' 2
 qst ipc notifications clear > /dev/null
 qst wait '.notifications == 0'
+
+qst case "tray items crossing three as they come and go keep the count true, the tray collapsed and gone when empty"
+qst pointer 400 600
+for _ in 1 2 3; do
+  qst tray add churn 6
+  qst wait '(.tray | length) == 6 and .trays[0].more == 3 and (.trays[0].expanded | not)' 10
+  qst tray remove churn
+  qst wait '(.tray | length) == 0 and (.trays[0].shown | not)' 10
+done
+qst tray add churn 2
+qst wait '.trays[0].shown and .trays[0].more == 0 and (.trays[0].expanded | not)' 10
+qst stays '.trays[0].more == 0' 0.5

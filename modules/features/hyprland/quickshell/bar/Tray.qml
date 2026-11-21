@@ -6,7 +6,7 @@ import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import qs.common
 
-// The tray on the bar itself, left of the status button: hidden until the pointer reaches the bar's right end, a strip that scrolls sideways past 12 em, and lingering a moment after the pointer leaves so a near miss still finds it.
+// The tray on the bar itself, left of the status button, a quiet pill: its first three icons always, a count of the rest, and all of them as the pointer reaches the bar's right end, a strip that scrolls sideways past 12 em, lingering a moment after the pointer leaves so a near miss still finds it.
 Item {
   id: root
 
@@ -24,13 +24,19 @@ Item {
   // In the order they came.
   readonly property var items: TrayOrder.items.filter(item => item.status !== Status.Passive)
   readonly property bool menuOpen: menuItem !== null && Panels.active === menuPanel
-  readonly property bool revealed: items.length > 0 && (wanted || linger.running || menuOpen)
+  readonly property int always: 3
+  readonly property bool expanded: items.length > always && (wanted || linger.running || menuOpen)
+  // Waiting for the pointer, said as "+N" after the third.
+  readonly property int more: expanded ? 0 : Math.max(0, items.length - always)
   readonly property real most: Math.round(12 * Theme.em)
   readonly property real cell: Theme.barItemHeight
   readonly property real offset: cells.contentX
-  readonly property bool scrolls: cells.contentWidth > cells.width + 0.5
+  readonly property bool scrolls: expanded && cells.contentWidth > cells.width + 0.5
+  readonly property real strip: expanded ? Math.min(row.implicitWidth, most) : Math.min(row.implicitWidth, always * cell + (always - 1) * row.spacing)
 
-  implicitWidth: revealed ? Math.min(row.implicitWidth, most) + Theme.basePadding : 0
+  visible: items.length > 0
+  implicitWidth: items.length === 0 ? 0 : fill.width + Theme.basePadding
+  onExpandedChanged: if (!expanded) cells.contentX = 0
   implicitHeight: cell
   clip: true
   Component.onCompleted: menuPanel = `tray-menu:${screen.name}`
@@ -79,6 +85,7 @@ Item {
 
   // The wheel scrolls the strip sideways, a cell a notch.
   WheelHandler {
+    enabled: root.expanded
     acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
     onWheel: event => {
       const steps = notches.steps(event);
@@ -86,107 +93,128 @@ Item {
     }
   }
 
-  Flickable {
-    id: cells
+  // The pill behind the icons and the count: the bar button's rest shade (ours: GNOME has no tray), so the tray reads as one thing beside the status button.
+  ClippingRectangle {
+    id: fill
 
-    width: Math.min(row.implicitWidth, root.most)
+    width: root.strip + (root.more > 0 ? count.implicitWidth + Theme.basePadding : 0)
     height: root.cell
-    contentWidth: row.implicitWidth
-    interactive: contentWidth > width
-    flickableDirection: Flickable.HorizontalFlick
-    boundsBehavior: Flickable.StopAtBounds
-    clip: true
+    radius: height / 2
+    color: Theme.buttonBg
 
-    Row {
-      id: row
+    Flickable {
+      id: cells
 
-      spacing: 2
+      width: root.strip
+      height: root.cell
+      contentWidth: row.implicitWidth
+      interactive: root.scrolls
+      flickableDirection: Flickable.HorizontalFlick
+      boundsBehavior: Flickable.StopAtBounds
+      clip: true
 
-      Repeater {
-        model: ScriptModel {
-          values: root.items
-        }
+      Row {
+        id: row
 
-        Rectangle {
-          id: cell
+        spacing: 2
 
-          required property SystemTrayItem modelData
-          readonly property bool hovered: area.containsMouse
-          readonly property bool opened: root.menuOpen && root.menuItem === cell.modelData
+        Repeater {
+          model: ScriptModel {
+            values: root.items
+          }
 
-          width: root.cell
-          height: root.cell
-          radius: height / 2
-          color: cell.opened ? Theme.panelActiveBg : area.containsMouse ? Theme.panelHoverBg : "transparent"
+          Rectangle {
+            id: cell
 
-          Behavior on color {
-            ColorAnimation {
-              duration: Theme.panelButtonTime
+            required property SystemTrayItem modelData
+            readonly property bool hovered: area.containsMouse
+            readonly property bool opened: root.menuOpen && root.menuItem === cell.modelData
+
+            width: root.cell
+            height: root.cell
+            radius: height / 2
+            color: cell.opened ? Theme.panelActiveBg : area.containsMouse ? Theme.panelHoverBg : "transparent"
+
+            Behavior on color {
+              ColorAnimation {
+                duration: Theme.panelButtonTime
+              }
+            }
+
+            IconImage {
+              anchors.centerIn: parent
+              implicitSize: 16
+              source: cell.modelData.icon
+              backer.retainWhileLoading: true
+            }
+
+            MouseArea {
+              id: area
+
+              anchors.fill: parent
+              hoverEnabled: true
+              // Few tray icons do anything on a left click, so they keep the arrow.
+              cursorShape: Qt.ArrowCursor
+              acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+              onClicked: mouse => root.press(cell.modelData, cell, mouse.button)
+            }
+
+            TooltipArea {
+              text: cell.modelData.tooltipTitle || cell.modelData.title || cell.modelData.id
             }
           }
-
-          IconImage {
-            anchors.centerIn: parent
-            implicitSize: 16
-            source: cell.modelData.icon
-            backer.retainWhileLoading: true
-          }
-
-          MouseArea {
-            id: area
-
-            anchors.fill: parent
-            hoverEnabled: true
-            // Few tray icons do anything on a left click, so they keep the arrow.
-            cursorShape: Qt.ArrowCursor
-            acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-            onClicked: mouse => root.press(cell.modelData, cell, mouse.button)
-          }
-
-          TooltipArea {
-            text: cell.modelData.tooltipTitle || cell.modelData.title || cell.modelData.id
-          }
         }
       }
     }
-  }
 
-  // The ends fade where more lies beyond them.
-  Rectangle {
-    width: 14
-    height: root.cell
-    visible: cells.contentX > 0
-    color: "transparent"
-    gradient: Gradient {
-      orientation: Gradient.Horizontal
+    Text {
+      id: count
 
-      GradientStop {
-        position: 0
-        color: Theme.panelBg
-      }
-      GradientStop {
-        position: 1
-        color: "transparent"
+      x: root.strip
+      anchors.verticalCenter: parent.verticalCenter
+      visible: root.more > 0
+      text: `+${root.more}`
+      color: Theme.fgDim
+      font: Theme.caption
+    }
+
+    // The ends fade where more lies beyond them.
+    Rectangle {
+      width: 14
+      height: root.cell
+      visible: cells.contentX > 0
+      color: "transparent"
+      gradient: Gradient {
+        orientation: Gradient.Horizontal
+
+        GradientStop {
+          position: 0
+          color: Qt.tint(Theme.panelBg, Theme.buttonBg)
+        }
+        GradientStop {
+          position: 1
+          color: "transparent"
+        }
       }
     }
-  }
 
-  Rectangle {
-    x: cells.width - width
-    width: 14
-    height: root.cell
-    visible: cells.contentX < cells.contentWidth - cells.width - 1
-    color: "transparent"
-    gradient: Gradient {
-      orientation: Gradient.Horizontal
+    Rectangle {
+      x: cells.width - width
+      width: 14
+      height: root.cell
+      visible: root.scrolls && cells.contentX < cells.contentWidth - cells.width - 1
+      color: "transparent"
+      gradient: Gradient {
+        orientation: Gradient.Horizontal
 
-      GradientStop {
-        position: 0
-        color: "transparent"
-      }
-      GradientStop {
-        position: 1
-        color: Theme.panelBg
+        GradientStop {
+          position: 0
+          color: "transparent"
+        }
+        GradientStop {
+          position: 1
+          color: Qt.tint(Theme.panelBg, Theme.buttonBg)
+        }
       }
     }
   }
