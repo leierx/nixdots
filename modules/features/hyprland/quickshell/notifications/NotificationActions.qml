@@ -18,9 +18,11 @@ ColumnLayout {
   visible: actions.length > 0
   spacing: 6
 
+  // Shell's %notification_button: the foreground at 15 %, 30 % under the pointer, 20 % pressed.
   component ActionButton: Button {
     required property NotificationAction modelData
 
+    color: pressed ? Theme.messageButtonActiveBg : hovered ? Theme.messageButtonHoverBg : Theme.messageButtonBg
     Layout.fillWidth: true
     // Equal shares, whatever their labels.
     Layout.preferredWidth: 1
@@ -30,7 +32,7 @@ ColumnLayout {
 
   RowLayout {
     Layout.fillWidth: true
-    spacing: 6
+    spacing: Theme.basePadding
 
     Repeater {
       model: root.overflow ? root.actions.slice(0, 2) : root.actions
@@ -42,6 +44,7 @@ ColumnLayout {
       Layout.fillWidth: true
       Layout.preferredWidth: 1
       visible: root.overflow
+      color: pressed ? Theme.messageButtonActiveBg : hovered ? Theme.messageButtonHoverBg : Theme.messageButtonBg
       text: "More"
       expander: true
       pointing: root.moreOpen ? "up" : "down"

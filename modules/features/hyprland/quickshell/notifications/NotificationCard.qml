@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell.Widgets
 import qs.common
+import qs.nix
 
 Item {
   id: root
@@ -68,13 +69,16 @@ Item {
 
     width: root.width
     height: content.implicitHeight + 2 * Theme.padding - root.excess
-    border.color: root.entry.critical ? Theme.destructive : Theme.outline
+    radius: Theme.messageRadius
+    color: Theme.messageBg
+    border.color: root.entry.critical ? Theme.destructive : Theme.popoverBorder
+    shadow.spreadBy: 2
     opacity: 1 - x / width
 
     Behavior on height {
       NumberAnimation {
-        duration: Theme.move
-        easing.type: Easing.OutCubic
+        duration: Theme.popupTime
+        easing.type: Easing.OutQuad
       }
     }
 
@@ -106,18 +110,62 @@ Item {
           right: parent.right
           margins: Theme.padding
         }
-        spacing: 8
+        spacing: Theme.basePadding
+
+        // Shell's banner header: the app, the age, then expand and close.
+        RowLayout {
+          Layout.fillWidth: true
+          spacing: Theme.basePadding
+
+          IconImage {
+            id: appIcon
+
+            // One that is no picture leaves the name alone, as the body's icon gives way to the initial.
+            visible: root.entry.appIcon !== "" && appIcon.status === Image.Ready
+            implicitSize: 16
+            source: root.entry.appIcon
+          }
+
+          Text {
+            Layout.fillWidth: true
+            text: Notifs.clip(root.entry.notification.appName, Notifs.maxApp) || "An app"
+            textFormat: Text.PlainText
+            maximumLineCount: 1
+            elide: Text.ElideRight
+            color: Theme.fgDim
+            font: Theme.heading
+          }
+
+          NotificationAge {
+            entry: root.entry
+          }
+
+          ExpanderArrow {
+            visible: root.expandable
+            pointing: root.expanded ? "up" : "down"
+            color: Theme.fgDim
+          }
+
+          IconButton {
+            objectName: "popup:close"
+            small: true
+            flat: true
+            glyph: Symbols.close
+            tooltip: "Close"
+            onClicked: swipe.slideAway(false, root.entry.dismissal())
+          }
+        }
 
         RowLayout {
           Layout.fillWidth: true
-          spacing: 12
+          spacing: Theme.padding
 
           NotificationIcon {
             id: icon
 
             Layout.alignment: Qt.AlignTop
             entry: root.entry
-            radius: Theme.buttonRadius
+            size: 48
           }
 
           ColumnLayout {
@@ -132,7 +180,7 @@ Item {
               id: summaryRow
 
               Layout.fillWidth: true
-              visible: summary.text !== "" || root.expandable
+              visible: summary.text !== ""
               spacing: 6
 
               Text {
@@ -149,18 +197,6 @@ Item {
                 font: Theme.heading
               }
 
-              // Overhanging the line, so the arrow costs it no height.
-              Item {
-                Layout.alignment: Qt.AlignTop
-                visible: root.expandable
-                implicitWidth: 24
-                implicitHeight: line.height
-
-                ExpanderArrow {
-                  anchors.centerIn: parent
-                  pointing: root.expanded ? "up" : "down"
-                }
-              }
             }
 
             // Expanded, still short enough that a popup always fits on the screen.
@@ -179,9 +215,9 @@ Item {
         Rectangle {
           Layout.fillWidth: true
           visible: root.entry.progress !== undefined
-          implicitHeight: 8
+          implicitHeight: 4
           radius: height / 2
-          color: Theme.trough
+          color: Theme.troughBg
 
           Rectangle {
             width: parent.width * Math.max(0, Math.min(100, root.entry.progress ?? 0)) / 100

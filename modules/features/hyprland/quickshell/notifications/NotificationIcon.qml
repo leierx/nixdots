@@ -25,7 +25,7 @@ Item {
     anchors.fill: parent
     visible: !root.picture
     radius: root.radius
-    color: Theme.card
+    color: Theme.buttonBg
   }
 
   IconImage {

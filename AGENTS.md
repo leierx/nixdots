@@ -642,7 +642,12 @@ Notes on specific features:
         a second past its close so views slide it away whole. Popups stack on
         the monitor focused when each arrived, five at most, timing out under the pointer too (the center
         keeps them), held only out of sight or without a monitor; the
-        countdown bar is the entry's own. Over a fullscreen window only
+        countdown bar is the entry's own. A popup is GNOME's banner: a header
+        line (the app's icon and name, the age, expand and close), then the 48
+        px icon or picture, the summary, the body and the actions, arriving
+        with a fade and a growth from 90 % on an animation of its own (a
+        ListView transition cut short by the next arrival leaves its item
+        where it stopped). Over a fullscreen window only
         critical ones pop up. A stack tag (`x-canonical-private-synchronous`,
         `x-dunst-stack-tag`), an update by id or the same app, summary and
         body within 2 s update a card in place. A flood is turned away at the

@@ -77,7 +77,7 @@ Variants {
         margins: Theme.gap
         leftMargin: window.shadowRoom
       }
-      spacing: Theme.gap
+      spacing: Theme.padding
       interactive: false
       model: ScriptModel {
         values: Notifs.popups.filter(e => e.screen === window.screenName)
@@ -98,7 +98,33 @@ Variants {
         visible: fits
         entry: modelData
 
-        Component.onCompleted: window.cards = [...window.cards, card]
+        // Shell's banner arriving: a fade and a growth from 90 %, easing back past its size; its own, as a ListView transition cut short by the next arrival leaves its item where it stopped.
+        opacity: 0
+        scale: 0.9
+        Component.onCompleted: {
+          window.cards = [...window.cards, card];
+          arrive.start();
+        }
+
+        ParallelAnimation {
+          id: arrive
+
+          NumberAnimation {
+            target: card
+            property: "opacity"
+            to: 1
+            duration: Theme.bannerTime
+            easing.type: Easing.OutQuad
+          }
+
+          NumberAnimation {
+            target: card
+            property: "scale"
+            to: 1
+            duration: Theme.bannerTime
+            easing.type: Easing.OutBack
+          }
+        }
         Component.onDestruction: window.cards = window.cards.filter(other => other !== card)
 
         Binding {
@@ -108,35 +134,27 @@ Variants {
         }
       }
 
-      add: Transition {
-        NumberAnimation {
-          property: "x"
-          from: list.width
-          duration: Theme.move
-          easing.type: Easing.OutCubic
-        }
-      }
 
       remove: Transition {
         NumberAnimation {
           property: "x"
           to: list.width
-          duration: Theme.move
-          easing.type: Easing.InCubic
+          duration: Theme.bannerTime
+          easing.type: Easing.InQuad
         }
 
         NumberAnimation {
           property: "opacity"
           to: 0
-          duration: Theme.move
+          duration: Theme.bannerTime
         }
       }
 
       displaced: Transition {
         NumberAnimation {
           property: "y"
-          duration: Theme.move
-          easing.type: Easing.OutCubic
+          duration: Theme.popupTime
+          easing.type: Easing.OutQuad
         }
       }
     }

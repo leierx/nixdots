@@ -20,6 +20,9 @@ Singleton {
   readonly property color cardBg: Colors.shell_card_bg_color
   readonly property color messageBg: Colors.shell_message_bg_color
   readonly property color messageHoverBg: lighten(Colors.shell_message_bg_color, 0.04)
+  readonly property color messageButtonBg: overlay(0.15)
+  readonly property color messageButtonHoverBg: overlay(0.3)
+  readonly property color messageButtonActiveBg: overlay(0.2)
   readonly property color messageSecond: Colors.shell_message_second_color
   readonly property color messageLower: Colors.shell_message_lower_color
   readonly property color subMenuBg: Colors.shell_submenu_bg_color
