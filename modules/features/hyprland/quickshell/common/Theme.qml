@@ -93,6 +93,8 @@ Singleton {
   readonly property font numericHeading: Qt.font({ family: "Adwaita Sans", pointSize: 11, weight: Font.Bold, features: { "tnum": 1 } })
 
   readonly property int keycapRadius: 6
+  // The user's exception: a workspace is a square, a little rounded, never Shell's pill.
+  readonly property int workspaceRadius: 6
   readonly property int baseRadius: 8
   readonly property int menuItemRadius: 12
   readonly property int cardRadius: 12

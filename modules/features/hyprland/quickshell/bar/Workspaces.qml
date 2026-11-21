@@ -60,7 +60,7 @@ Item {
     onWheel: event => root.scroll(notches.steps(event))
   }
 
-  // Yours a bare number in a panel pill, filled while shown or under the pointer; another monitor's an outlined pill named after it (DP2-1).
+  // Yours a bare number in a square a little rounded, filled while shown or under the pointer; another monitor's outlined and named after it (DP2-1).
   component Workspace: Rectangle {
     id: button
 
@@ -78,7 +78,7 @@ Item {
     anchors.verticalCenter: parent?.verticalCenter
     width: Math.max(mine ? Theme.barItemHeight : 20, text.implicitWidth + 14)
     height: mine ? Theme.barItemHeight : 20
-    radius: height / 2
+    radius: Theme.workspaceRadius
     color: {
       if (filled) return bright;
       if (shown) return area.containsMouse ? Theme.panelActiveHoverBg : root.focused ? Theme.panelActiveBg : Theme.panelHoverBg;
