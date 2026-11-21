@@ -127,7 +127,8 @@ Item {
     readonly property real content: Math.max(row.implicitHeight, root.threeLines)
 
     width: root.width
-    height: root.expanded || !root.unfolded ? content + root.padding * 2 + root.inset : root.threeLines + root.padding * 2
+    // Three lines folded, whatever a narrow center wraps inside them.
+    height: root.expanded ? content + root.padding * 2 + root.inset : root.threeLines + root.padding * 2
     radius: Theme.messageRadius
     color: !root.expanded && hover.hovered ? Theme.messageHoverBg : Theme.messageBg
     // A lone critical notification is marked as its popup is; in a group, only its own box or line is.

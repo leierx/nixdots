@@ -25,8 +25,8 @@ Variants {
       right: true
       bottom: true
     }
-    // Narrower than GNOME Shell's 34em banners, with room on the left for their shadows.
-    implicitWidth: shadowRoom + Math.round(30 * Theme.em) + Theme.rise
+    // GNOME Shell's 34 em banners, with room on the left for their shadows.
+    implicitWidth: shadowRoom + Math.round(34 * Theme.em) + Theme.rise
     exclusiveZone: 0
     color: "transparent"
     // Stays mapped while empty, so the last popup still slides out.

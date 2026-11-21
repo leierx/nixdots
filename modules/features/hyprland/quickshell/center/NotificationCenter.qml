@@ -115,8 +115,8 @@ Overlay {
 
       ColumnLayout {
         Layout.alignment: Qt.AlignTop
-        // Wider than GNOME Shell's 29em message list, which read long and narrow beside the calendar; narrower where the screen is.
-        Layout.preferredWidth: Math.min(Math.round(40 * Theme.em), root.besides ? root.room : root.width - 2 * Theme.rise - 2 * root.padding)
+        // A banner's 34 em, so a popup and its card here match; narrower where the screen is.
+        Layout.preferredWidth: Math.min(Math.round(34 * Theme.em), root.besides ? root.room : root.width - 2 * Theme.rise - 2 * root.padding)
         spacing: root.padding
 
         Item {

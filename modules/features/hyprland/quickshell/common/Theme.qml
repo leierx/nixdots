@@ -120,7 +120,7 @@ Singleton {
   readonly property int buttonHeight: 34
   readonly property int iconButtonSize: 36
   readonly property int toggleHeight: 48
-  readonly property int toggleWidth: 176
+  readonly property int toggleWidth: Math.round(12 * em)
 
   readonly property int popupTime: 150
   readonly property int bannerTime: 200

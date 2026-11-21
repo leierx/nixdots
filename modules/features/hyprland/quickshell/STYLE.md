@@ -124,7 +124,7 @@ Adwaita Sans at 11 pt, the type classes both name alike (gs `%title_1` …
 | `menuRowHeight` | 36 | gs `%menuitem` (9 px above and below a line) |
 | `buttonHeight` | 34 | adw button |
 | `iconButtonSize` | 36 | gs `.quick-settings .icon-button` (10.5 px round a 16 px symbol) |
-| `toggleHeight`, `toggleWidth` | 48, 176 | gs `.quick-toggle` (3.273 em, 12 em) |
+| `toggleHeight`, `toggleWidth` | 48, 12 em (176) | gs `.quick-toggle` (3.273 em, 12 em) |
 
 ## Motion
 
@@ -212,6 +212,24 @@ feedback, as in GNOME.
 | Banner (popup) | Header line (app icon and name, age, expand, close), the 48 px icon or picture, summary, body, actions | Top right, under the status area | 30 em, radius 16, `messageBg` | Fade and growth from 90 % (`OutBack`) over `bannerTime` |
 | OSD | Symbol, a 160 px level (white, red past 100 %), the number; or a symbol and a word | Bottom centre, 4 em up | 56 px pill on `osdBg` | `quickTime` fade, gone 1.5 s after the last change |
 
+## Panel sizes
+
+Every width is a number of em of the body font (`Theme.em`, 14.67 px at
+scale 1), fixed per kind of panel, as GNOME sizes its own, so the shell's scale
+grows them all alike; every height is the content's, capped at the screen less
+`rise` on each side, and what is left over scrolls. Narrower where the screen
+is, never wider.
+
+| Panel | Width | Source |
+| --- | --- | --- |
+| Control centre | two 12 em toggles, 12 px between, 18 px padding (27.3 em) | gs `.quick-toggle`, `.quick-settings` |
+| Center | the list 34 em, the calendar beside it where 24 em is left | a banner's width, the user's pick over gs `.message-list` 29 em |
+| Banner (popup) | 34 em | gs `.notification-banner` |
+| Launcher | 48 em, 68 with a preview | ours |
+| Shortcuts | columns of 24 em | ours |
+| Tray menu | at least 15 em | gs `.popup-menu` |
+| Tray strip | at most 18 em | ours |
+
 ## Type, symbols and motion
 
 - Type: the classes above only, and text elides at a line limit. Bar items
@@ -264,6 +282,9 @@ underlined in their labels (`Theme.accessKey`).
   Shell's pills: the user's call.
 - The forecast draws MET Norway's own colour icons, the service it comes from,
   not Adwaita's weather symbols.
+- The weather card is the sky it forecasts as a gradient (`Theme.skies`: day,
+  night, cloud, rain, snow, storm), and the media card keeps its album art's
+  colour, blurred and darkened: the user asked for colour on both.
 - Caffeine is a quick toggle beside Night Light (GNOME has none), with a cup
   in the status button while it is on.
 - The symbols are Material Design Icons, filled, not Adwaita's (an outlined
