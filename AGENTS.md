@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Technical reference for agents. User-facing quickstart: [README.md](./README.md).
-Shell design standard: [`quickshell/STYLE.md`](./modules/features/hyprland/quickshell/STYLE.md).
+Shell design standard: [`quickshell/STYLE.md`](./modules/features/hyprland/quickshell/STYLE.md); a new widget starts at its "Start here" table.
 
 ## What this is
 
@@ -499,7 +499,7 @@ pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `ClickAway`,
   three balanced columns, shrunk only when none fits.
 - `tooltip/`: the tooltip layer per screen (overlay, no input), drawn only while
   `Tooltips` shows one there.
-- `power/` (SUPER+X): five tiles with access keys (pressed without Alt), Reload
+- `power/` (SUPER+X): five tiles, each key a keycap on it (pressed without Alt), Reload
   Hyprland, Restart to Firmware on UEFI; ending the session or machine takes a
   second press within 5 s.
 - `bar/`: per screen. Workspaces led by the distro's logo (`LOGO=` from

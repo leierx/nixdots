@@ -1,217 +1,244 @@
 # The shell's style
 
-GNOME 51 on the darker palette: desktop surfaces (bar, popovers, quick
-settings, banners, OSD, the date menu) follow **gnome-shell 51**; anything
-app-like inside a panel (rows, switches, entries) follows **libadwaita 1.10**.
-Only the exceptions at the end depart from it, each with its reason. Values are
-`Theme`'s; nothing else in the QML names a colour, font, radius, size or
-duration.
+GNOME 51 on the darker palette. Desktop surfaces (bar, popovers, quick
+settings, banners, OSD, date menu) follow **gnome-shell 51**; app-like content
+in a panel (rows, switches, entries) follows **libadwaita 1.10**. Values are
+`Theme`'s; nothing else names a colour, font, radius, size or duration.
+hyprlock, hyprtoolkit and the idle fade follow their own configs.
 
-Sources, all from the 51 tarballs (`nix build --inputs-from .
-nixpkgs-unstable#gnome-shell.src`, `#libadwaita.src`):
+Every rule is tagged: `gs` (gnome-shell), `adw` (libadwaita), or **ours**
+with why. **ours** is the user's call; never trade it back for GNOME's value.
 
-- `gs:` gnome-shell `data/theme/gnome-shell-sass/` (`_common.scss`,
-  `_colors.scss`, `_drawing.scss`, `widgets/*.scss`), checked against the
-  shipped `gnome-shell-dark.css`; `js/ui/*.js` for motion. St's `st-mix()` is
-  Sass's `mix()`, `st-lighten()` adds HSL lightness (`src/st/st-theme-node.c`).
-- `adw:` libadwaita `src/stylesheet/` (`_colors.scss`, `_common.scss`,
-  `widgets/*.scss`).
+Sources, from the 51 tarballs (`nix build --inputs-from .
+nixpkgs-unstable#gnome-shell.src`, `#libadwaita.src`): `gs` is
+`data/theme/gnome-shell-sass/` (checked against `gnome-shell-dark.css`) and
+`js/ui/*.js` for motion; `adw` is `src/stylesheet/`. St's `st-mix()` is Sass
+`mix()`, `st-lighten()` adds HSL lightness. 1 em = the 11 pt body = 14.67 px;
+`to_em(px)` is px ÷ 16 × 1.091 em.
 
-Shell's 1 em is the 11 pt body, 14.67 px; `to_em(px)` is px ÷ 16 × 1.091 em,
-so a Shell length in `to_em` is that many px at the default font.
+## Start here: a new piece
+
+| You need | Use | Size, tokens |
+| --- | --- | --- |
+| Something that floats | `Card` | `popoverBg`, 1 px `popoverBorder`, the only shadow |
+| A panel of its own | `Overlay` + `Card`, through `Panels` | width in em (Panel sizes), height to content, capped at the screen |
+| A row in a list or menu | `ListRow` | 36 px, radius 12, 16 px symbol in its own column |
+| An action | `Button` | 34 px, radius 8 or `pill`, bold |
+| An action that is only a symbol | `IconButton` | 36 px circle (28 `small`), 16 px symbol, always a `tooltip` |
+| On or off | `Switch` | 46 × 26 |
+| A level | `Slider` | 4 px trough, 16 px knob |
+| Text in | `TextField` | 8 px, or `search`: a pill led by a symbol |
+| A key | `Keycap` | 26 px, radius 6 |
+| Nothing to show, a panel | `EmptyState` | dim 64 px symbol (or none) over title-3, centred |
+| Nothing to show, a menu | `EmptyLine` | one dim line where the first row would be |
+| Something to undo | `Toast` | pill, bold raised button, round close, 5 s |
+| A symbol | `Glyph` + `Symbols.<name>` | 16 px; 32 and 64 only where Symbols (below) says |
+| A tooltip | `TooltipArea` in the owner | half a second after the pointer rests |
+| Anything else | a new token in `Theme`, a row here | |
+
+Then:
+
+1. Draft it on a design board first; the user picks.
+2. Build from the pieces above; a new value is a `Theme` token with its row
+   and tag here.
+3. A gallery entry if it is a piece (`tests/GalleryWindow.qml`), every state.
+4. `qst lint` clean (colours, fonts, radii, durations, symbol sizes, shadows,
+   tooltips, cursors).
+5. Probe fields for what a test must see; a scenario; chaos cases (floods,
+   hostile names, hotplug under it, 1024x600, 4K at scale 2).
+
+A piece's look comes from `hovered` and `pressed` bound to its own mouse area,
+so the gallery can hold a state. Nothing that takes hover lies over that area:
+Qt hovers one item and its ancestors only.
 
 ## Colours
 
-The palette rule (`modules/theme/palette.nix`, `depth`): an opaque surface is
-upstream's less 28 per channel (`#36363a` becomes `#1a1a1e`), for the whole
-desktop (GTK, the terminal, hyprlock, hyprtoolkit and the shell alike); accents, text and translucent colours are
-upstream's. libadwaita 1.10's dark surfaces equal 1.9's, so nothing outside the
-shell changed. Shell mixes its states into opaque colours per surface; `Theme`
-gives them as the foreground at the alpha that lands on the same colour over the
-popover, so they hold over any surface.
+The palette (`modules/theme/palette.nix`, `depth`): an opaque surface is
+upstream's less 28 per channel (`#36363a` → `#1a1a1e`), the whole desktop
+alike (**ours**: darker than GNOME). Accents, text, translucent colours are
+upstream's. Shell mixes states into opaque colours per surface; `Theme` gives
+them as the foreground at the alpha that lands on the same colour over the
+popover, so they hold on any surface.
 
 | Theme | Value | Source | Role |
 | --- | --- | --- | --- |
-| `fg` | `#ffffff` | gs `$fg_color` | Text and symbols |
-| `fgDim` | fg 55 % | gs `$card_insensitive_fg_color` (about 55 % over a card; 50 % over the popover would fall under 3:1 on cards), adw `--dim-opacity` | Secondary text: subtitles, ages, other months, the empty-state line |
+| `fg` | `#ffffff` | gs `$fg_color` | Text, symbols |
+| `fgDim` | fg 55 % | gs `$card_insensitive_fg_color` (50 % falls under 3:1 on cards), adw `--dim-opacity` | Subtitles, ages, other months, empty states |
 | `fgFaint` | fg 16 % | ours | Empty workspaces |
 | `fgStrong` | fg 80 % | ours | Text over album art, occupied workspaces |
-| `placeholder` | fg 70 % | gs `%entry StLabel.hint-text` | A text field's placeholder |
-| `panelBg` | `dark_5` `#000000` | gs `$panel_bg_color` | The bar |
-| `popoverBg` | `shell_bg_color` `#1a1a1e` | gs `$bg_color` `#36363a` | Popovers, quick settings, the date menu, centred panels |
-| `popoverBorder` | `shell_outer_borders_color` `#26262b` | gs `$outer_borders_color` (`lighten(bg, 5%)`) | A popover's 1 px edge |
-| `cardBg` | `shell_card_bg_color` `#2b2b30` | gs `$card_bg_color` (`lighten(bg, 7%)`) | Quick toggle menus, inset cards (weather, events) |
-| `messageBg` | `shell_message_bg_color` `#38383e` | gs `.message` `#54545a` | Notification cards and banners |
-| `messageHoverBg` | message + 4 % lightness | gs `%card:hover` | A notification card under the pointer |
-| `messageButtonBg`, `messageButtonHoverBg`, `messageButtonActiveBg` | fg 15 %, 30 %, 20 % | gs `%notification_button` | A notification's actions |
-| `toastBg` | `#343437` | adw `$toast_bg_color` `#505053`, less 28 | The Undo toast |
-| `osdBg` | `shell_osd_bg_color` `#121217` | gs `$osd_bg_color` (`lighten(#222226, 5%)`) | The OSD pill |
-| `osdBorder` | fg 2 % | gs `$osd_outer_borders_color` | The OSD's edge |
+| `placeholder` | fg 70 % | gs `%entry .hint-text` | A field's placeholder |
+| `panelBg` | `#000000` | gs `$panel_bg_color` | The bar (**ours**: all black, Shell's outside the overview) |
+| `popoverBg` | `#1a1a1e` | gs `$bg_color` | Popovers, quick settings, date menu, centred panels, notifications |
+| `popoverBorder` | `#26262b` | gs `$outer_borders_color` | A popover's 1 px edge; the center's cards |
+| `cardBg` | `#2b2b30` | gs `$card_bg_color` | Toggle menus, inset cards (weather, events) |
+| `messageBg` | `popoverBg` | **ours**: gs `.message` (card + 5 %) stood out against the darker desktop; `cardBg` the fallback | Notification cards and banners |
+| `messageHoverBg` | message + 4 % lightness | gs `%card:hover` | A notification under the pointer |
+| `popupBorder` | fg 22 % | **ours**: a popup stands out from what is behind it | A banner's edge (the center's cards keep `popoverBorder`) |
+| `messageButtonBg`, `…HoverBg`, `…ActiveBg` | fg 15, 30, 20 % | gs `%notification_button` | A notification's actions |
+| `toastBg` | `#343437` | adw `$toast_bg_color` less 28 | The toast |
+| `osdBg`, `osdBorder` | `#121217`, fg 2 % | gs `$osd_bg_color`, `$osd_outer_borders_color` | The OSD |
 | `tooltipBg`, `tooltipBorder` | black 90 %, fg 10 % | gs `%tooltip` | Tooltips |
-| `separator` | fg 10 % | gs `.popup-separator-menu-item-separator` | Dividers |
-| `shadowColor` | black 20 % | gs `$shadow_color` | Popover and banner shadows |
-| `accentBg`, `accentFg` | `#3584e4`, `#ffffff` | adw `--accent-bg-color` | The one accent |
-| `accentHover`, `accentActive` | accent + 4 %, + 9 % lightness | gs `%default_button` | An accent fill under the pointer, pressed |
-| `destructiveHover`, `destructiveActive` | destructive + 4 %, + 9 % | as the accent's | A destructive button |
-| `accentSegmentBg`, `accentSegmentHoverBg`, `segmentHoverBg` | accent mixed 15 % white (+ 4 %), fg 17 % | gs `.quick-toggle-menu-button` | A quick toggle's menu segment, on and off |
-| `accentSeparator`, `segmentSeparator` | accent mixed 30 % white, fg 25 % | gs `.quick-toggle-separator` | The rule before it |
-| `headerIconBg` | fg 20 % | gs `.quick-toggle-menu .header .icon` | A toggle menu's icon disc off |
-| `checkBorder` | fg 15 % | gs `.check-box StIcon` | A check box off (the tray's menus) |
+| `separator` | fg 10 % | gs `.popup-separator-menu-item` | Dividers |
+| `shadowColor` | black 20 % | gs `$shadow_color` | Card shadows |
+| `accentBg`, `accentFg` | `#3584e4`, `#ffffff` | adw `--accent-bg-color` | The one accent (**ours**: no light blue anywhere) |
+| `accentHover`, `accentActive` | + 4 %, + 9 % lightness | gs `%default_button` | Accent under the pointer, pressed |
+| `destructiveBg`, `…Hover`, `…Active`, `destructive` | adw red, + 4 %, + 9 % | adw, as the accent's | What cannot be taken back; critical outlines |
+| `accentSeparator`, `segmentSeparator` | accent mixed 30 % white, fg 25 % | gs `.quick-toggle-separator` | The rule before a toggle's menu segment |
+| `headerIconBg` | fg 20 % | gs `.quick-toggle-menu .header .icon` | A toggle menu's disc off |
+| `checkBorder` | fg 15 % | gs `.check-box` | A check box off (tray menus) |
 | `keycapBg`, `keycapShade` | fg 10 %, `card_shade_color` | adw `.keycap` | A key |
-| `buttonBg` | fg 9 % | gs `%button` (`mix(fg, bg, 9%)`) | A button at rest |
-| `buttonHoverBg` | fg 13 % | gs `%button:hover` (+4 %) | Under the pointer |
-| `buttonActiveBg` | fg 19 % | gs `%button:active` (+9 %) | Pressed |
-| `buttonCheckedBg`, `buttonCheckedHoverBg` | fg 18 %, 22 % | gs `%button:checked` (+8 %) | Held down while what it opens is open |
-| `menuHoverBg`, `menuActiveBg` | fg 13 %, 16 % | gs `.popup-menu-item:hover`, `:active` | A row under the pointer or the keyboard, pressed |
-| `selectedBg` | fg 15 % | the user's pick (Shell marks it as hover) | A row the keyboard is on |
-| `panelHoverBg`, `panelActiveBg`, `panelActiveHoverBg` | fg 17 %, 28 %, 32 % | gs `panel_button()` | A bar item under the pointer, open, both |
-| `switchBg`, `switchHoverBg` | fg 15 %, 20 % | gs `.toggle-switch` | A switch off |
-| `switchKnob` | `#d7d7d8` | gs `.toggle-switch .handle` | Its knob off; white on |
-| `troughBg` | fg 10 % | gs `.slider`, `.osd-window .level` | A slider's and a level's trough |
-| `sliderKnob` | `#e8e8e8` | gs `.slider` `color` | A slider's knob; white under the pointer |
-| `scrollHandle` | fg 28 % | gs `StScrollBar` `#727275`, `#9b9b9d` over bg | A scroll bar |
-| `focusRing` | `accentBg` | ours, not gs `focus_ring()` | The keyboard's 2 px ring |
-| `backdrop`, `idle` | black 88 %, `dark_5` | ours | The power menu's backdrop; what the screens fade to before the lock |
+| `buttonBg`, `buttonHoverBg`, `buttonActiveBg` | fg 9, 13, 19 % | gs `%button` (+4, +9 %) | A button at rest, hovered, pressed |
+| `buttonCheckedBg`, `…HoverBg` | fg 18, 22 % | gs `%button:checked` | Held while what it opens is open |
+| `menuHoverBg`, `menuActiveBg` | fg 13, 16 % | gs `.popup-menu-item` | A row hovered, pressed |
+| `selectedBg` | fg 15 % | **ours**: Shell marks it as hover | The keyboard's row |
+| `panelHoverBg`, `panelActiveBg`, `panelActiveHoverBg` | fg 17, 28, 32 % | gs `panel_button()` | A bar item hovered, open, both |
+| `switchBg`, `switchHoverBg`, `switchKnob` | fg 15, 20 %, `#d7d7d8` | gs `.toggle-switch` | A switch off (white knob on) |
+| `troughBg`, `sliderKnob` | fg 10 %, `#e8e8e8` | gs `.slider`, `.level` | Trough; knob (white hovered) |
+| `scrollHandle` | fg 28 % | gs `StScrollBar` | A scroll bar |
+| `focusRing` | `accentBg` | **ours**: one accent, not gs `focus_ring()`'s lighter blue | The keyboard's 2 px ring |
+| `recording`, `bell`, `inUse`, `warning`, `success` | palette red, yellow, orange… | ours | Status glyphs |
+| `backdrop`, `idle` | black 88 %, `#000000` | ours | Power menu backdrop; the idle fade |
+| `skies` | gradients per sky | **ours**: colour on the weather card | Weather card: day, night, cloud, rain, snow, storm |
 
 ## Type
 
-Adwaita Sans at 11 pt, the type classes both name alike (gs `%title_1` …
-`%caption`, adw `.title-1` … `.caption`), and nothing else.
+Adwaita Sans 11 pt; only these classes (gs `%title_1` … `%caption`, adw
+`.title-1` … `.caption`). Text elides at a line limit.
 
 | Theme | Size, weight | Use |
 | --- | --- | --- |
-| `title1` | 20 pt, 800 | |
-| `title2` | 15 pt, 800 | |
-| `title3` | 15 pt, 700 | |
-| `title4` | 13 pt, 700 | |
+| `title1`, `title2` | 20 pt 800, 15 pt 800 | |
+| `title3` | 15 pt, 700 | Empty states |
+| `title4` | 13 pt, 700 | Toggle menu headers (**ours**: gs title-3, too heavy beside a 16 px symbol) |
 | `largeTitle` | 24 pt, 300 | gs `%large_title` |
-| `heading` | 11 pt, 700 | Row and card titles, toggle titles, buttons, the bar (gs `#panel` is bold) |
+| `heading` | 11 pt, 700 | Row, card and toggle titles, buttons, the bar (gs `#panel` is bold) |
 | `body` | 11 pt, 400 | Everything else |
-| `captionHeading` | 9 pt, 700 | Badges |
-| `caption` | 9 pt, 400 | Toggle subtitles, ages |
+| `captionHeading`, `caption` | 9 pt 700, 9 pt 400 | Badges; toggle subtitles, ages |
 | `monospace` | Adwaita Mono 11 pt | Code only: attributes, versions, paths, clipboard text |
-| `numeric`, `numericHeading` | 11 pt, tabular figures | Numbers that change in place (gs `%numeric`) |
-| `display` | 64 pt, 700 | ours | The power menu's clock only |
+| `numeric`, `numericHeading` | 11 pt, tabular | Numbers that change in place (gs `%numeric`) |
+| `display` | 64 pt, 700 | **ours**: the power menu's clock only |
 
 ## Radii
 
 | Theme | px | Source | Use |
 | --- | --- | --- | --- |
 | `keycapRadius` | 6 | adw `.keycap` | Keys |
-| `baseRadius` | 8 | gs `$base_border_radius`, `%button`, `%notification_button` | Buttons that are not pills, keycaps, notification actions |
+| `workspaceRadius` | 6 | **ours**: squares, not Shell's pills | Workspaces |
+| `baseRadius` | 8 | gs `$base_border_radius`, `%button` | Buttons that are not pills, notification actions, the toast's button (adw has 9) |
 | `menuItemRadius` | 12 | gs `$menuitem_border_radius` | Every row in a popover or panel |
 | `cardRadius` | 12 | gs `%card_common` | Inset cards |
-| `tileRadius` | 16 | gs `%tile` | Launcher rows and tiles (`.list-search-result`) |
+| `tileRadius` | 16 | gs `%tile` | Launcher rows and tiles |
 | `messageRadius` | 16 | gs `.message` | Notification cards and banners |
-| `popoverRadius` | 20 | gs `.popup-menu-content` (`$modal_radius × 1.25`) | Popover menus, the tray's |
-| `toggleMenuRadius` | 24 | gs `.quick-toggle-menu` | A quick toggle's menu |
+| `popoverRadius` | 20 | gs `.popup-menu-content` | Popover menus, the tray's |
+| `toggleMenuRadius` | 24 | gs `.quick-toggle-menu` | A toggle's menu |
 | `dateMenuRadius` | 30 | gs `.datemenu-popover` | The center |
-| `quickSettingsRadius` | 36 | gs `.quick-settings` (`$modal_radius × 2.25`) | The control centre |
-| `height / 2` | pill | gs `$forced_circular_radius` | Toggles, icon buttons, the search entry, bar items, the OSD, tooltips |
+| `quickSettingsRadius` | 36 | gs `.quick-settings` | The control centre |
+| `height / 2` | pill | gs `$forced_circular_radius` | Toggles, icon buttons, search entry, bar items, OSD, tooltips, toast |
 
-## Sizes and spacing
+## Sizes
 
 | Theme | px | Source |
 | --- | --- | --- |
 | `em` | 14.67 | gs `stage` at 11 pt |
-| `basePadding` | 6 | gs `$base_padding`: a popover's padding, spacing in a row |
+| `basePadding` | 6 | gs `$base_padding`: popover padding, spacing in a row |
 | `baseMargin` | 4 | gs `$base_margin` |
-| `padding` | 12 | gs `$base_padding × 2`: a menu row's side padding, a card's |
+| `padding` | 12 | gs `$base_padding × 2`: row sides, card padding |
 | `quickSettingsPadding` | 18 | gs `.quick-settings` |
-| `rise` | 6 | gs `.popup-menu-boxpointer -arrow-rise`: from the bar and the screen's edges |
-| `barHeight` | 32 | gs `#panel` 2.2 em |
-| `barItemHeight` | 26 | gs `.panel-button`: 32 less its 3 px transparent border |
-| `menuRowHeight` | 36 | gs `%menuitem` (9 px above and below a line) |
+| `rise` | 6 | gs `-arrow-rise`: from the bar and the screen's edges |
+| `barHeight`, `barItemHeight` | 32, 26 | gs `#panel` 2.2 em, `.panel-button` less its 3 px border |
+| `menuRowHeight` | 36 | gs `%menuitem` |
 | `buttonHeight` | 34 | adw button |
-| `iconButtonSize` | 36 | gs `.quick-settings .icon-button` (10.5 px round a 16 px symbol) |
-| `toggleHeight`, `toggleWidth` | 48, 12 em (176) | gs `.quick-toggle` (3.273 em, 12 em) |
+| `iconButtonSize` | 36 | gs `.quick-settings .icon-button` |
+| `toggleHeight`, `toggleWidth` | 48, 12 em | gs `.quick-toggle` |
 
 ## Motion
 
 | Theme | ms | Easing | Source | Use |
 | --- | --- | --- | --- | --- |
-| `popupTime` | 150 | `OutQuad` | gs `boxpointer.js` `POPUP_ANIMATION_TIME` | A popover fades in sliding `rise` (6 px) from what opened it, and back the same way |
-| `bannerTime` | 200 | `OutQuad` fade, `OutBack` scale 0.9 → 1 | gs `messageTray.js` `ANIMATION_TIME` | A banner showing and hiding |
-| `quickTime` | 100 | `OutQuad` | gs `osdWindow.js` `FADE_TIME`, `%menuitem`, `.toggle-switch` | The OSD's fade, a row's or switch's colour |
-| `levelTime` | 100 | `OutQuad` | gs `osdWindow.js` `LEVEL_ANIMATION_TIME` | A level moving |
+| `popupTime` | 150 | `OutQuad` | gs `boxpointer.js` | A popover fades in sliding `rise` from what opened it, and back |
+| `bannerTime` | 200 | `OutQuad` fade, `OutBack` scale 0.9 → 1 | gs `messageTray.js` | A banner showing, hiding |
+| `quickTime` | 100 | `OutQuad` | gs `osdWindow.js`, `%menuitem`, `.toggle-switch` | OSD fade, a row's or switch's colour |
+| `levelTime` | 100 | `OutQuad` | gs `osdWindow.js` | A level moving |
 | `panelButtonTime` | 150 | | gs `panel_button()` | A bar item's fill |
 | `settle` | 400 | `OutCubic` | ours | What is slow on purpose |
 
-The OSD hides 1500 ms after its last change (gs `osdWindow.js` `HIDE_TIMEOUT`).
-
-Kept from 51 by the user's pick: the media card heads the center, Do Not
-Disturb is a switch in the center's footer, no press bounce, a 0.6 dim behind centred panels.
+The OSD hides 1500 ms after its last change (gs `HIDE_TIMEOUT`). Keyboard
+selection never animates. No press bounce (gs dropped it): the pressed colour
+is the feedback.
 
 ## Pieces
 
-All in `common/`; `qst gallery` shows each in every state, and `design.sh`
-holds it to the census. A piece's look comes from `hovered` and `pressed`
-properties bound to its own mouse area, so the gallery can hold a state. Nothing
-that takes hover lies over that area: Qt hovers one item and its ancestors only.
+All in `common/`; `qst gallery` shows each in every state, `design.sh` holds it
+to the census.
 
-- `Button`: Shell's `%button`. 8 px, or `pill` (toggles' kin: Clear, Sign
-  In). `flat` on a surface of its own (the media controls, an action that is
-  secondary); `suggested` the one action a menu row asks for (Connect);
-  `destructive` what cannot be taken back; `checked` while what it opens is
-  open; `glyph` before the text, `expander` for an `ExpanderArrow` after it.
-  Bold, 34 px. Disabled is the whole at 50 %, libadwaita's.
-- `IconButton`: Shell's `.icon-button`, a circle round a 16 px symbol: 36 px,
-  or `small` (28 px) beside a slider and in a row or a banner's header. It
-  always has a `tooltip`; the lint fails one without.
-- `BarButton` (`bar/`): Shell's `.panel-button`, a bold pill 26 px tall inside
-  the bar's 32, filled only under the pointer or while open.
-- `Switch`: Shell's `.toggle-switch`. In a row, the row takes the keyboard;
-  alone, `focusable`.
-- `Slider`: Shell's barLevel: 4 px trough, the accent up to 100 % and red past
-  it after a 1 px gap, a 1 px mark at 100 % while below it, a 16 px knob. Its
-  range reaches past 1 while the level does and holds still for a drag,
-  which Escape puts back.
-- `TextField`: Shell's `%entry` (8 px) for a password or a name; `search` for
-  a search: a pill led by the search symbol. The launcher draws its own field
-  in the same shape, led by the mode's symbol.
-- `ListRow`: Shell's `.popup-menu-item`: 36 px, 12 px radius, its 16 px symbol
-  in a column of its own. The keyboard's row takes `selectedBg`, never a ring.
-- `ExpanderArrow`: MDI's `chevron-down`, turned by `pointing` and never by
-  hand: down to up for what expands in place, right to down for what opens a
-  menu under it.
-- `Keycap`: libadwaita's `.keycap`.
-- `Card`: what floats, and the only thing with a shadow: the popover surface,
-  its 1 px edge and Shell's 0 2 4 shadow (`shadow.spreadBy: 2` for a banner,
-  `shadow.visible: false` for the OSD, which Shell draws flat).
-- `Toast`: libadwaita's toast, for what can be taken back (Clear's Undo).
-- `EmptyLine`: what an empty list says, in the dim colour, where its first row
-  would be. No status pages.
-- `ScrollBar`, `FocusRing`, `Glyph`, `TooltipArea` (with the `tooltip/` layer):
-  the scroll handle, the keyboard's 2 px ring, a `Symbols` path, a tooltip.
-
-Not a piece: a press has no motion of its own; the pressed colour is the
-feedback, as in GNOME.
+- `Button`: gs `%button`. 8 px or `pill` (Clear, Sign In); `flat` on a surface
+  of its own (media controls, secondary actions); `suggested` the one action
+  a row asks for; `destructive` what cannot be undone; `checked` while what it
+  opens is open; `glyph` before the text, `expander` after. Bold, 34 px.
+  Disabled: the whole at 50 % (adw).
+- `IconButton`: gs `.icon-button`. 36 px circle, `small` 28 beside a slider or
+  in a row or banner header. Always a `tooltip` (lint fails one without).
+- `BarButton` (`bar/`): gs `.panel-button`, bold pill 26 px in the bar's 32,
+  filled only hovered or open.
+- `Switch`: gs `.toggle-switch`. In a row the row takes the keyboard; alone,
+  `focusable`.
+- `Slider`: gs barLevel. 4 px trough, accent to 100 %, red past it after a 1 px
+  gap, a 1 px mark at 100 % while below, 16 px knob. Range reaches past 1 while
+  the level does, holds still for a drag; Escape puts it back.
+- `TextField`: gs `%entry` (8 px) for a password or name; `search` a pill led
+  by the search symbol. The launcher draws its own in that shape, led by the
+  mode's symbol.
+- `ListRow`: gs `.popup-menu-item`. 36 px, radius 12, 16 px symbol column. The
+  keyboard's row is `selectedBg`, never a ring.
+- `ExpanderArrow`: MDI `chevron-down`, turned by `pointing`, never by hand:
+  down→up expands in place, right→down opens a menu under it.
+- `Keycap`: adw `.keycap`.
+- `Card`: what floats, the only thing with a shadow: popover surface, 1 px edge,
+  gs 0 2 4 shadow (`shadow.spreadBy: 2` for a banner, `shadow.visible: false`
+  for the OSD, flat in gs).
+- `EmptyState`: gs `.message-list-placeholder`, a dim symbol over title-3 in the
+  middle of the room the list takes; the bell at 64 px (**ours**: gs 96). The
+  center has the bell; the launcher no symbol (**ours**: its search already shows
+  the mode's).
+- `EmptyLine`: one dim line where the first row would be, for menus (**ours**
+  over gs `.bt-menu-placeholder`: the toggle and header already show the
+  symbol twice).
+- `Toast`: adw toast. Pill, bold text, a raised button, a round flat close;
+  for what can be taken back (Clear's Undo).
+- `ScrollBar`, `FocusRing`, `Glyph`, `TooltipArea` (with `tooltip/`): the
+  scroll handle, the keyboard's 2 px ring, a `Symbols` path, a tooltip whose
+  `HoverHandler` sits on its owner.
 
 ## Surfaces
 
 | Surface | Anatomy | Place | Size | Motion |
 | --- | --- | --- | --- | --- |
-| Bar | Workspaces led by the distro's logo (it does nothing), the clock, the tray left of the status button, then the status button | Top, edge to edge, black | 32 px; items 26 px pills | Fills over `panelButtonTime` |
-| Popover off the bar (control centre, center) | A `Card` | `rise` below the bar, centred on its button, `rise` from the screen's edges | Control centre 400 px (two 176 px toggles, 18 px padding, radius 36); center radius 30; menus radius 20 with 6 px padding | Fade with a `rise` slide over `popupTime`, both ways |
-| Tray menu | Shell's popup menu, cascading | Flush under the bar, from its icon's left edge | At least 15 em, radius 20, 6 px padding | Opens at once, goes as the pointer leaves |
-| Toggle menu | Header (42 px disc round a 24 px icon, title-3), rows, a separator, settings rows | Under the toggle row that opens it, in the control centre | Radius 24 on `cardBg` | Height then fade |
-| Centred panel (launcher, shortcuts, gallery) | A `Card` over a 0.6 dim | Centre of the focused screen | Widths in em | Opens in place |
-| Banner (popup) | Header line (app icon and name, age, expand, close), the 48 px icon or picture, summary, body, actions | Top right, under the status area | 30 em, radius 16, `messageBg` | Fade and growth from 90 % (`OutBack`) over `bannerTime` |
-| OSD | Symbol, a 160 px level (white, red past 100 %), the number; or a symbol and a word | Bottom centre, 4 em up | 56 px pill on `osdBg` | `quickTime` fade, gone 1.5 s after the last change |
+| Bar | Distro logo (does nothing), workspaces (**ours**: numbered squares, occupied by colour alone, a mark would crowd 26 px), clock, tray, status button | Top, edge to edge, black | 32 px; items 26 px pills | Fills over `panelButtonTime` |
+| Tray (**ours**: GNOME has none) | Strip on the bar left of the status button, hidden until the pointer reaches the bar's right end, wheel scrolls it sideways, lingers 600 ms | Bar | At most 12 em | |
+| Tray menu | gs popup menu, cascading | Flush under the bar from its icon's left edge | At least 15 em, radius 20, 6 px padding | Opens at once, goes as the pointer leaves |
+| Popover off the bar (control centre, center) | A `Card` | `rise` below the bar, centred on its button, `rise` from screen edges | See Panel sizes | Fade + `rise` slide over `popupTime` |
+| Quick toggle | Pill, symbol, title, subtitle; a menu segment after a 1 px rule in the pill's own colour, lighter only hovered (**ours**: gs lightens it always) | Control centre grid | 48 px × 12 em | |
+| Toggle menu | Header (16 px symbol in a 32 px disc, title-4; **ours**: gs 24 in 42 and title-3 outweighed the rows in MDI's filled symbols), rows, separator, settings rows | Under the toggle row | Radius 24 on `cardBg` | Height then fade |
+| Caffeine (**ours**: GNOME has none) | A toggle beside Night Light; a cup in the status button while on | Control centre | | |
+| Centred panel (launcher, shortcuts, gallery) | A `Card` over a 0.6 dim (gs) | Centre of the focused screen | Widths in em | Opens in place |
+| Banner (popup) | Header line (app icon and name, age, expand, close), 48 px icon or picture, summary, body, actions | Top right, under the status area | 34 em, radius 16, `messageBg`, `popupBorder` edge | Fade and growth from 90 % over `bannerTime` |
+| Center | Media card (gs place), groups per app, calendar, weather; Do Not Disturb switch and Clear in the footer (gs) | Under the clock | See Panel sizes | |
+| Media card | Album art in colour, blurred and darkened, text held to 3:1 (**ours**: the user asked for colour) | Heads the center's list | | |
+| Weather card | MET Norway's own colour icons (**ours**: the service's, not Adwaita's), the sky as a gradient (`skies`) | Beside the calendar | | |
+| OSD | Symbol, 160 px level (white, red past 100 %), number; or symbol and a word | Bottom centre, 4 em up | 56 px pill on `osdBg` | `quickTime` fade, gone 1.5 s after the last change |
+| Power menu (**ours** throughout) | Own backdrop, `display` clock, five 148 px tiles radius 28 with 64 px symbols, each key a `Keycap` 12 px in from the top-right corner (GNOME's end-session dialog shows none), pressed without Alt | Full screen | | Backdrop fades over `quickTime` |
 
 ## Panel sizes
 
-Every width is a number of em of the body font (`Theme.em`, 14.67 px at
-scale 1), fixed per kind of panel, as GNOME sizes its own, so the shell's scale
-grows them all alike; every height is the content's, capped at the screen less
-`rise` on each side, and what is left over scrolls. Narrower where the screen
-is, never wider.
+Widths in em of the body font, fixed per kind, so the shell's scale grows them
+alike; heights the content's, capped at the screen less `rise` each side, the
+rest scrolls. Narrower where the screen is, never wider.
 
 | Panel | Width | Source |
 | --- | --- | --- |
-| Control centre | two 12 em toggles, 12 px between, 18 px padding (27.3 em) | gs `.quick-toggle`, `.quick-settings` |
-| Center | the list 34 em, the calendar beside it where 24 em is left | a banner's width, the user's pick over gs `.message-list` 29 em |
-| Banner (popup) | 34 em | gs `.notification-banner` |
+| Control centre | two 12 em toggles, 12 px gap, 18 px padding (27.3 em) | gs `.quick-toggle`, `.quick-settings` |
+| Center | list 34 em, calendar beside it where 24 em is left | a banner's width (**ours** over gs `.message-list` 29 em) |
+| Banner | 34 em | gs `.notification-banner` |
 | Launcher | 48 em, 68 with a preview | ours |
 | Shortcuts | columns of 24 em | ours |
 | Tray menu | at least 15 em | gs `.popup-menu` |
@@ -219,82 +246,36 @@ is, never wider.
 
 ## Symbols
 
-Every path is a `Symbols` property, written by the build from Material Design
-Icons 7.4 (`scripts/symbols.tsv`, one line per symbol, a 24 px grid). Drawn at
-16 px, 24 in a toggle menu's header, 32 in the OSD and the launcher's rows, 64
-on the power tiles. App icons are Papirus-Dark's; tray items draw what they
-send. Text elides at a line limit; keyboard selection never animates.
+Material Design Icons 7.4, filled (**ours**: not Adwaita's outlined bell and
+sideways return). Every path is a `Symbols` property, written by the build from
+`scripts/symbols.tsv` (one line per symbol, 24 px grid). 16 px everywhere; 32
+in the OSD and launcher rows; 64 on the power tiles and in an `EmptyState`.
+App icons are Papirus-Dark's; tray items draw what they send.
 
 ## Writing
 
-GNOME's HIG: header capitals for titles, buttons, pills, menu items and our
-notifications' summaries ("Collapse All", "In Use"); sentence case for
-subtitles, states, placeholders and bind descriptions. "…" only where more
-input follows, never on a settings item ("Network Settings"). An estimate says
-about ("About 2 h 40 min left"). No text ends in a full stop. A narrow no-break
-space (`Theme.unit`) before % and units ("76 %", "1 Gb/s"), none before
-degrees ("5°"). A track's time is m:ss; a date is in the locale's order with
-the day unpadded. An empty search says "No results". Access keys are
-underlined in their labels (`Theme.accessKey`).
+GNOME's HIG: header capitals for titles, buttons, pills, menu items, empty
+states and our notifications' summaries ("Collapse All", "No Results");
+sentence case for subtitles, states, placeholders, menu empty lines and bind
+descriptions. "…" only where more input follows, never on a settings item;
+the monitors mode's placeholder names what it lists ("Monitor layout…", ours).
+An estimate says about ("About 2 h 40 min left"). No full stops. A narrow
+no-break space (`Theme.unit`) before % and units ("76 %", "1 Gb/s"), none
+before degrees ("5°"). Track time m:ss; dates in the locale's order, day
+unpadded.
 
 ## Behaviour
 
-- The pointer is a hand where a click does something, an arrow where it does
-  nothing or only dismisses, a closed hand while dragging; a disabled area
-  names both. Nothing shows only under the pointer.
-- One click does one action, and a row's click does the obvious thing. A
-  right click only ever opens a menu.
+- Pointer: a hand where a click acts, an arrow where it does nothing or only
+  dismisses, a closed hand while dragging; a disabled area names both. Nothing
+  shows only under the pointer.
+- One click, one action; a row's click does the obvious thing. A right click
+  only opens a menu.
 - Escape and a click away close every panel; Escape in a submenu goes back.
-- The keyboard reaches every control: Tab and the arrows move, Return and
-  Space act, a `FocusRing` shows where once keys have moved it.
+- The keyboard reaches every control: Tab and arrows move, Return and Space
+  act, a `FocusRing` shows once keys have moved it.
 - The wheel steps in notches (`WheelSteps`); only the center's list glides.
-- Only the centred panels dim what is behind them.
-- Every icon-only control has a tooltip, half a second after the pointer
-  rests.
-- A critical notification is marked one way: a 1 px red outline on its own
-  card or box, never its group; a collapsed group leads with its critical
-  lines, each after a red dot.
-
-## Exceptions
-
-- The bar is all black: Shell's panel, kept outside the overview.
-- The power menu keeps its own backdrop, 28 px tiles and clock (`display`),
-  and takes its keys without Alt, as nothing in it takes text.
-- The workspaces are squares with a little rounding (`workspaceRadius`), not
-  Shell's pills: the user's call.
-- The forecast draws MET Norway's own colour icons, the service it comes from,
-  not Adwaita's weather symbols.
-- The weather card is the sky it forecasts as a gradient (`Theme.skies`: day,
-  night, cloud, rain, snow, storm), and the media card keeps its album art's
-  colour, blurred and darkened: the user asked for colour on both.
-- Caffeine is a quick toggle beside Night Light (GNOME has none), with a cup
-  in the status button while it is on.
-- The symbols are Material Design Icons, filled, not Adwaita's (an outlined
-  bell, a sideways return): the user's call.
-- The workspaces are numbered (hyprsplit's), an occupied one told from an
-  empty one by colour alone, as a mark would crowd 26 px items.
-- The focus ring is the accent, not Shell's lighter blue: one accent.
-- The keyboard's row is `selectedBg` (15 %), apart from Shell's hover.
-- A toggle menu's header icon is 24 px, Shell's, the one symbol between 16
-  and 32.
-- The media card's text sits over its album art, blurred, darkened and held
-  to 3:1 by the census.
-- The tray (GNOME has none) is on the bar itself: hidden until the pointer
-  reaches the bar's right end, a strip up to 12 em that the wheel scrolls
-  sideways, lingering 600 ms after the pointer leaves so a near miss still finds
-  it, not a popover under the bar.
-- The monitors mode's placeholder names what it lists ("Monitor layout…").
-- hyprlock, hyprtoolkit and the idle fade follow their own configs.
-
-## A new piece or surface
-
-1. Draft it first: options shot in the test session for the user to pick.
-2. Build it from the pieces above and Theme's tokens; a new value goes in
-   Theme with its source here.
-3. Give it a gallery entry if it is a piece, in every state.
-4. `qst lint` clean: no literal colours, fonts, radii or durations, symbols
-   from `Symbols` at their sizes, a shadow only on a `Card`, a tooltip on an
-   `IconButton`.
-5. Probe fields for what a test must see, and a scenario for its behaviour.
-6. Chaos cases: floods, hostile names, hotplug under it, a 1024x600 screen,
-   4K at scale 2.
+- Only centred panels dim what is behind them.
+- Every icon-only control has a tooltip.
+- A critical notification: a 1 px red edge on its own card or box, never its
+  group's; a collapsed group leads with its critical lines, each after a red dot.
