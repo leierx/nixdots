@@ -706,7 +706,7 @@ Notes on specific features:
     card, with Open (also a click on the card) and Show in Folder
     (`xdg-open` on the file or its folder), waited on in the background.
     Both are transient and silent (`suppress-sound`), so they leave nothing
-    in the history, and a copy goes after 3 s. Escape in slurp sends
+    in the history, and both take the popups' own timeout. Escape in slurp sends
     nothing; a failure sends a critical "Screenshot failed" with why.
   - Binds reference configured packages (`config.programs.wezterm.package`,
     `config.programs.quickshell.package`, …) rather than `pkgs.*`.
