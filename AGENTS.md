@@ -436,8 +436,10 @@ Notes on specific features:
         faint (occupied workspaces, text on album art). The one accent is
         `accentBg`, never a light blue: on and checked, today, sliders, ticks,
         focus rings, progress and links. Red is `destructive` for text and
-        outlines, `destructiveBg` for fills and `criticalCard` for a critical
-        card in a list. An outline that says "off" or "someone else's" is 1 px
+        outlines and `destructiveBg` for fills. A critical notification is
+        marked one way: a 1 px `destructive` outline on its own popup, card or
+        box, never on its group, and a collapsed group leads with its critical
+        lines, each after an 8 px `destructive` dot. An outline that says "off" or "someone else's" is 1 px
         `fgDim`.
       - States: the foreground at 0 (flat) or 10 % at rest, 7 % for a row or
         15 % for a button under the pointer, 15 % selected and 25 % pressed or
@@ -450,7 +452,7 @@ Notes on specific features:
         pictures; `cardRadius` (12) popovers off a bar item and cards on a
         panel; `windowRadius` (15) panels and popups.
       - Borders and dividers: what floats has a 1 px `Theme.outline` and the
-        shadow (`Card`), a critical popup's outline `destructive`; a focus ring
+        shadow (`Card`), a critical notification's outline `destructive`; a focus ring
         is 2 px `accentBg`. A divider is 1 px `Theme.border` inside its
         container's padding, and only between two panes or between a list and
         its actions; everything else is parted by spacing.
@@ -1076,7 +1078,7 @@ the `osd` showing (with its screen), `osdShown` (shows so far) and
 `camera` names or null while unused), `status` (each bar's status button: its glyphs by name, `Microphone`, `bell`, `dnd`, `vpn`, `network` and so on, and the battery's percentage or null), `controls` (the open
 menu, the pills by key with their state, and each backend: `network`, `vpns`,
 `vpnAsking`, `bluetooth`, `night`, `media`), `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: whether its chevron
-shows, how many icons wait behind it and their ids in the overflow's order), `field`
+shows, how many icons wait behind it and their ids in the overflow's order), `center` (the center's groups in view, each one's lines in its order), `field`
 (the text field up, the launcher's search) and `problems`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.

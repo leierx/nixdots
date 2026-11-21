@@ -399,6 +399,8 @@ Scope {
         tray: SystemTray.items.values.filter(item => item.status !== Status.Passive).map(item => item.id),
         // Each bar's status button, what it shows by name, and its tray: how many icons wait behind the chevron.
         status: probe.windows().filter(entry => entry.type === "BarWindow").map(entry => ({ screen: entry.screen, glyphs: entry.items.find(({ item }) => "glyphs" in item && "panel" in item)?.item.glyphs.map(glyph => glyph.name) ?? [], battery: Power.present ? Power.percent : null })),
+        // The center's groups as drawn, top to bottom: each one's lines in its order, and whether expanded.
+        center: [].concat(...probe.windows().filter(entry => entry.type === "NotificationCenter").map(entry => entry.items.filter(({ item }) => "ordered" in item && "unfolded" in item).map(({ item }) => ({ app: item.newest ? Notifs.appKey(item.newest) : null, expanded: item.expanded, lines: item.ordered.map(e => ({ summary: e.summary, critical: e.critical })) })))),
         trays: probe.windows().filter(entry => entry.type === "BarWindow").map(entry => {
           const tray = entry.items.find(({ item }) => "overflowPanel" in item && "menuAnchor" in item)?.item;
           return { screen: entry.screen, shown: tray?.visible ?? false, hidden: tray ? tray.items.length : 0, items: tray ? tray.items.map(item => item.id) : [] };

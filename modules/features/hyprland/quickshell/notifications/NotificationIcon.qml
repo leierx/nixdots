@@ -25,7 +25,7 @@ Item {
     anchors.fill: parent
     visible: !root.picture
     radius: root.radius
-    color: root.entry?.critical ? Theme.destructiveBg : Theme.card
+    color: Theme.card
   }
 
   IconImage {

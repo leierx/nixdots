@@ -115,9 +115,10 @@ Item {
     radius: Theme.buttonRadius
     color: {
       if (!root.boxed) return "transparent";
-      if (root.entry.critical) return hover.hovered ? Theme.criticalCardHover : Theme.criticalCard;
       return hover.hovered ? Theme.cardHover : Theme.card;
     }
+    border.width: root.boxed && root.entry.critical ? 1 : 0
+    border.color: Theme.destructive
     clip: true
 
     Behavior on color {
@@ -147,6 +148,16 @@ Item {
         visible: !root.expanded && !(root.single && root.entry.body === "")
         Layout.fillWidth: true
         spacing: 8
+
+        // A collapsed group's critical line, as its outline marks it once expanded.
+        Rectangle {
+          visible: !root.single && root.entry.critical
+          Layout.alignment: Qt.AlignVCenter
+          implicitWidth: 8
+          implicitHeight: 8
+          radius: height / 2
+          color: Theme.destructive
+        }
 
         Text {
           visible: !root.single

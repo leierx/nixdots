@@ -34,9 +34,6 @@ Singleton {
   readonly property color border: overlay(0.15)
   readonly property color card: Colors.card_bg_color
   readonly property color cardHover: overlay(0.11)
-  // A critical notification in the center, marked by its fill rather than an outline.
-  readonly property color criticalCard: Qt.rgba(Colors.destructive_bg_color.r, Colors.destructive_bg_color.g, Colors.destructive_bg_color.b, 0.16)
-  readonly property color criticalCardHover: Qt.rgba(Colors.destructive_bg_color.r, Colors.destructive_bg_color.g, Colors.destructive_bg_color.b, 0.24)
   readonly property color hover: overlay(0.07)
   readonly property color selected: overlay(0.15)
   readonly property color button: overlay(0.10)

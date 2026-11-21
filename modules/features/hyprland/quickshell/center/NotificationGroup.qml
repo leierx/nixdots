@@ -21,7 +21,8 @@ Item {
 
   readonly property NotifEntry newest: shown[0] ?? null
   readonly property bool single: shown.length === 1
-  readonly property bool critical: shown.some(e => e.critical)
+  // Critical ones first, so one is never hidden below the collapsed lines.
+  readonly property var ordered: [...shown.filter(e => e.critical), ...shown.filter(e => !e.critical)]
   readonly property bool expandable: expanded || unfolded || !single || newest.buttons.length > 0 || newest.progress !== undefined || title.truncated || (root.first?.truncated ?? false)
   readonly property int iconSize: 32
   readonly property int padding: 8
@@ -127,10 +128,11 @@ Item {
     height: root.expanded || !root.unfolded ? content + root.padding * 2 + root.inset : root.threeLines + root.padding * 2
     radius: Theme.cardRadius
     color: {
-      const hovered = !root.expanded && hover.hovered;
-      if (root.critical) return hovered ? Theme.criticalCardHover : Theme.criticalCard;
-      return hovered ? Theme.cardHover : Theme.card;
+      return !root.expanded && hover.hovered ? Theme.cardHover : Theme.card;
     }
+    // A lone critical notification is marked as its popup is; in a group, only its own box or line is.
+    border.width: root.single && root.newest?.critical ? 1 : 0
+    border.color: Theme.destructive
     clip: true
 
     Behavior on height {
@@ -245,7 +247,7 @@ Item {
           onItemAdded: Qt.callLater(root.findFirst)
           onItemRemoved: Qt.callLater(root.findFirst)
           model: ScriptModel {
-            values: root.unfolded ? root.shown : root.shown.slice(0, root.rows)
+            values: root.unfolded ? root.ordered : root.ordered.slice(0, root.rows)
           }
 
           NotificationItem {

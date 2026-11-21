@@ -86,3 +86,11 @@ qst flood 30 --apps 30 --app Urgent --urgency 2 &
 wait
 qst wait '.notifications == 60'
 qst stays '(.history | map(.uid) | unique | length) == 60' 0.5
+
+qst case "a group leads with its critical notification however old, and keeps the rest newest first"
+notify-send -a Mail -u critical "disk almost full"
+notify-send -a Mail "second"
+notify-send -a Mail "third"
+qst wait '.notifications == 3'
+qst ipc panels open center > /dev/null
+qst wait '(.center | map(select(.app == "Mail")) | .[0].lines | map(.summary)) == ["disk almost full", "third", "second"]'

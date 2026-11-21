@@ -437,3 +437,20 @@ shows=$(($(qst state .osdShown) - before))
 for _ in $(seq 20); do wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; done
 qst wait '.osd.kind == "volume" and .osd.muted == false and .volume.muted == false'
 qst stays '.panel == "controls:DP-1"' 1
+
+qst case "criticals arriving among twelve apps under the open center always lead their groups"
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center"'
+for round in 1 2 3; do
+  sleep 1 # sleep: past 30 a second the flood guard turns them away
+  for app in $(seq 12); do
+    notify-send -a "App $app" "note $round" &
+    [ $(((app + round) % 3)) -ne 0 ] || notify-send -a "App $app" -u critical "alarm $round" &
+  done
+  wait
+done
+# Each app keeps its newest three; the list makes delegates only for the groups in view.
+qst wait '.notifications == 36 and (.center | length) > 0' 10
+qst stays '.center | all(.lines | map(.critical) | . == (sort | reverse))' 1
+qst ipc notifications clear > /dev/null
+qst wait '.notifications == 0'
