@@ -68,11 +68,11 @@ popover, so they hold on any surface.
 | `fgStrong` | fg 80 % | ours | Text over album art, occupied workspaces |
 | `placeholder` | fg 70 % | gs `%entry .hint-text` | A field's placeholder |
 | `panelBg` | `#000000` | gs `$panel_bg_color` | The bar (**ours**: all black, Shell's outside the overview) |
-| `popoverBg` | `#1a1a1e` | gs `$bg_color` | Popovers, quick settings, date menu, centred panels, notifications |
+| `popoverBg` | `#1a1a1e` | gs `$bg_color` | Popovers, quick settings, date menu, centred panels, popups |
 | `popoverBorder` | `#26262b` | gs `$outer_borders_color` | A popover's 1 px edge; the center's cards |
 | `cardBg` | `#2b2b30` | gs `$card_bg_color` | Toggle menus, inset cards (weather, events) |
-| `messageBg` | `popoverBg` | **ours**: gs `.message` (card + 5 %) stood out against the darker desktop; `cardBg` the fallback | Notification cards and banners |
-| `messageHoverBg` | message + 4 % lightness | gs `%card:hover` | A notification under the pointer |
+| `messageBg`, `messageHoverBg` | `cardBg`, + 4 % lightness | **ours**: gs `.message` (card + 5 %) stood out against the darker desktop, and the popover's own colour vanished on the popover; gs `%card:hover` | The center's cards |
+| `bannerBg`, `bannerHoverBg` | `popoverBg`, + 4 % lightness | **ours**: a popup is the popover, as every floating surface | Popups |
 | `popupBorder` | fg 22 % | **ours**: a popup stands out from what is behind it | A banner's edge (the center's cards keep `popoverBorder`) |
 | `messageButtonBg`, `…HoverBg`, `…ActiveBg` | fg 15, 30, 20 % | gs `%notification_button` | A notification's actions |
 | `toastBg` | `#343437` | adw `$toast_bg_color` less 28 | The toast |
@@ -111,11 +111,11 @@ Adwaita Sans 11 pt; only these classes (gs `%title_1` … `%caption`, adw
 | `title3` | 15 pt, 700 | Empty states |
 | `title4` | 13 pt, 700 | Toggle menu headers (**ours**: gs title-3, too heavy beside a 16 px symbol) |
 | `largeTitle` | 24 pt, 300 | gs `%large_title` |
-| `heading` | 11 pt, 700 | Row, card and toggle titles, buttons, the bar (gs `#panel` is bold) |
+| `heading` | 11 pt, 700 | Row, card and toggle titles, buttons |
 | `body` | 11 pt, 400 | Everything else |
 | `captionHeading`, `caption` | 9 pt 700, 9 pt 400 | Badges; toggle subtitles, ages |
 | `monospace` | Adwaita Mono 11 pt | Code only: attributes, versions, paths, clipboard text |
-| `numeric`, `numericHeading` | 11 pt, tabular | Numbers that change in place (gs `%numeric`) |
+| `numeric`, `numericHeading` | 11 pt, tabular | Numbers that change in place (gs `%numeric`); `numeric` on the bar (**ours**: regular, gs `#panel` bold read heavy) |
 | `display` | 64 pt, 700 | **ours**: the power menu's clock only |
 
 ## Radii
@@ -203,7 +203,7 @@ to the census.
 - `EmptyLine`: one dim line where the first row would be, for menus (**ours**
   over gs `.bt-menu-placeholder`: the toggle and header already show the
   symbol twice).
-- `Toast`: adw toast. Pill, bold text, a raised button, a round flat close;
+- `Toast`: adw toast. Pill, its text 18 px in (adw 12 padding + 6 margin), a raised bold button, a round flat close;
   for what can be taken back (Clear's Undo).
 - `ScrollBar`, `FocusRing`, `Glyph`, `TooltipArea` (with `tooltip/`): the
   scroll handle, the keyboard's 2 px ring, a `Symbols` path, a tooltip whose
@@ -213,16 +213,16 @@ to the census.
 
 | Surface | Anatomy | Place | Size | Motion |
 | --- | --- | --- | --- | --- |
-| Bar | Distro logo (does nothing), workspaces (**ours**: numbered squares, occupied by colour alone, a mark would crowd 26 px), clock, tray, status button | Top, edge to edge, black | 32 px; items 26 px pills | Fills over `panelButtonTime` |
+| Bar | Distro logo at 26 px (does nothing), workspaces (**ours**: numbered squares, occupied by colour alone, a mark would crowd 26 px), clock, tray, status button (at least three symbols wide, an easy target; ours) | Top, edge to edge, black | 32 px; items 26 px pills, regular weight | Fills over `panelButtonTime`; a new status symbol fades in as the others slide aside over `popupTime` |
 | Tray (**ours**: GNOME has none) | Strip on the bar left of the status button, hidden until the pointer reaches the bar's right end, wheel scrolls it sideways, lingers 600 ms | Bar | At most 12 em | |
 | Tray menu | gs popup menu, cascading | Flush under the bar from its icon's left edge | At least 15 em, radius 20, 6 px padding | Opens at once, goes as the pointer leaves |
 | Popover off the bar (control centre, center) | A `Card` | `rise` below the bar, centred on its button, `rise` from screen edges | See Panel sizes | Fade + `rise` slide over `popupTime` |
 | Quick toggle | Pill, symbol, title, subtitle; a menu segment after a 1 px rule in the pill's own colour, lighter only hovered (**ours**: gs lightens it always) | Control centre grid | 48 px × 12 em | |
-| Toggle menu | Header (16 px symbol in a 32 px disc, title-4; **ours**: gs 24 in 42 and title-3 outweighed the rows in MDI's filled symbols), rows, separator, settings rows | Under the toggle row | Radius 24 on `cardBg` | Height then fade |
+| Toggle menu | Header (16 px symbol in a 32 px disc, title-4; **ours**: gs 24 in 42 and title-3 outweighed the rows in MDI's filled symbols), rows, separator, settings rows | Under the toggle row | Radius 24 on `cardBg` | Height then fade; another menu of the same row swaps in place as the slot eases to its height (ours: two slots of one row slid past each other) |
 | Caffeine (**ours**: GNOME has none) | A toggle beside Night Light; a cup in the status button while on | Control centre | | |
 | Centred panel (launcher, shortcuts, gallery) | A `Card` over a 0.6 dim (gs) | Centre of the focused screen | Widths in em | Opens in place |
-| Banner (popup) | Header line (app icon and name, age, expand, close), 48 px icon or picture, summary, body, actions | Top right, under the status area | 34 em, radius 16, `messageBg`, `popupBorder` edge | Fade and growth from 90 % over `bannerTime` |
-| Center | Media card (gs place), groups per app, calendar, weather; Do Not Disturb switch and Clear in the footer (gs) | Under the clock | See Panel sizes | |
+| Banner (popup) | Header line (app name, age, expand, close; no app icon, **ours**: the body shows it, whole or as the picture's badge), 48 px icon or picture, summary, body, actions | Top right, under the status area | 34 em, radius 16, `bannerBg`, `popupBorder` edge | Fade and growth from 90 % over `bannerTime` |
+| Center | Media card (gs place), groups per app on `messageBg`, each header age, expand, close (gs `MessageHeader`), a lone one folding without its text moving, calendar, weather; Do Not Disturb switch and Clear in the footer (gs) | Under the clock | See Panel sizes | |
 | Media card | Album art in colour, blurred and darkened, text held to 3:1 (**ours**: the user asked for colour) | Heads the center's list | | |
 | Weather card | MET Norway's own colour icons (**ours**: the service's, not Adwaita's), the sky as a gradient (`skies`) | Beside the calendar | | |
 | OSD | Symbol, 160 px level (white, red past 100 %), number; or symbol and a word | Bottom centre, 4 em up | 56 px pill on `osdBg` | `quickTime` fade, gone 1.5 s after the last change |
