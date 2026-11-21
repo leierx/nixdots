@@ -13,16 +13,6 @@ Rectangle {
   readonly property var day: Weather.hours.slice(0, 24).map(hour => hour.temperature)
   readonly property int padding: Theme.padding
 
-  // MET's SVGs drawn at the size shown, so they stay sharp.
-  component WeatherIcon: Image {
-    property int size: 32
-
-    width: size
-    height: size
-    sourceSize: Qt.size(size, size)
-    fillMode: Image.PreserveAspectFit
-  }
-
   implicitHeight: content.implicitHeight + 2 * padding
   radius: Theme.cardRadius
   color: Theme.cardBg
@@ -42,9 +32,9 @@ Rectangle {
       Layout.fillWidth: true
       spacing: 10
 
-      WeatherIcon {
-        size: 76
-        source: root.now?.icon ?? ""
+      Glyph {
+        path: root.now?.icon ?? ""
+        size: 64
       }
 
       ColumnLayout {
@@ -124,10 +114,10 @@ Rectangle {
             font: Theme.caption
           }
 
-          WeatherIcon {
+          Glyph {
             Layout.alignment: Qt.AlignHCenter
-            size: 30
-            source: hour.modelData.icon
+            path: hour.modelData.icon
+            size: 32
           }
 
           Text {

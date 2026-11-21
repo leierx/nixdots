@@ -279,17 +279,17 @@ build() {
     }"
 }
 
-# nix/ and the weather icons exist only in the built copy.
+# nix/ and MET's legend exist only in the built copy.
 sync_source() {
   local keep=$T/keep
   rm -rf "$keep" && mkdir -p "$keep"
   mv "$T/shell/nix" "$keep/nix"
-  mv "$T/shell/weather/icons" "$keep/icons"
+  mv "$T/shell/weather/met" "$keep/met"
   rm -rf "$T/shell"
   cp -r "$src" "$T/shell"
   chmod -R u+w "$T/shell"
   mv "$keep/nix" "$T/shell/nix"
-  mv "$keep/icons" "$T/shell/weather/icons"
+  mv "$keep/met" "$T/shell/weather/met"
   install_probe
 }
 

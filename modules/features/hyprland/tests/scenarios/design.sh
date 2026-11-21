@@ -29,7 +29,7 @@ done
 
 qst case "the control centre with each of its menus, a tray menu, the OSD and an In Use pill"
 qst bluetooth add 11:22:33:44:55:01 "WH-1000XM4" audio-headset ok paired connected 70
-qst player add spotify Spotify Playing "$QS_TEST_DIR/shell/weather/icons/clearsky_day.svg"
+qst player add spotify Spotify Playing "$QS_TEST_REPO/modules/features/hyprland/tests/tray-icon.svg"
 qst backlight intel_backlight 600 1000
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1" and .controls.media != null'
@@ -69,7 +69,7 @@ for monitor in DP-1 DP-2; do
 done
 
 qst case "the center with a player, notifications and the weather"
-qst player add spotify Spotify Playing "$QS_TEST_DIR/shell/weather/icons/clearsky_day.svg"
+qst player add spotify Spotify Playing "$QS_TEST_REPO/modules/features/hyprland/tests/tray-icon.svg"
 notify-send -a Chat "Lunch at noon" "Meet at the usual place"
 qst wait '.notifications == 1'
 qst ipc panels open center > /dev/null
