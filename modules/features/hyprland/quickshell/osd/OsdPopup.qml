@@ -62,59 +62,73 @@ Scope {
 
     readonly property real value: root.level?.level ?? 0
     readonly property bool dim: root.level?.muted ?? false
+    readonly property color tone: dim ? Theme.fgDim : Theme.fg
 
-    implicitWidth: 52
-    implicitHeight: 236
-    radius: width / 2
+    implicitWidth: row.implicitWidth + 40
+    implicitHeight: 52
+    radius: height / 2
 
-    Text {
-      anchors.horizontalCenter: parent.horizontalCenter
-      y: 14
-      text: Math.round(slider.value * 100)
-      color: slider.dim ? Theme.fgDim : Theme.fg
+    // As wide for 5 as for 130, so the pill holds still while the number changes.
+    TextMetrics {
+      id: widest
+
       font: Theme.captionHeading
+      text: "100"
     }
 
-    Rectangle {
-      anchors.horizontalCenter: parent.horizontalCenter
-      y: 38
-      width: 8
-      height: parent.height - 38 - 50
-      radius: width / 2
-      color: Theme.trough
+    Row {
+      id: row
+
+      anchors.centerIn: parent
+      spacing: 14
+
+      Glyph {
+        anchors.verticalCenter: parent.verticalCenter
+        path: root.glyphOf(root.level)
+        size: 22
+        color: slider.tone
+      }
 
       Rectangle {
-        anchors.bottom: parent.bottom
-        width: parent.width
-        height: Math.max(parent.width, parent.height * Math.min(slider.value, 1))
-        radius: parent.radius
-        color: slider.dim ? Theme.fgDim : Theme.fg
-        visible: slider.value > 0
+        anchors.verticalCenter: parent.verticalCenter
+        width: 200
+        height: 8
+        radius: height / 2
+        color: Theme.trough
 
-        Behavior on height {
-          NumberAnimation {
-            duration: Theme.move
+        Rectangle {
+          width: Math.max(parent.height, parent.width * Math.min(slider.value, 1))
+          height: parent.height
+          radius: parent.radius
+          color: slider.tone
+          visible: slider.value > 0
+
+          Behavior on width {
+            NumberAnimation {
+              duration: Theme.move
+            }
           }
+        }
+
+        // Past 100 %, the share over it at the end.
+        Rectangle {
+          anchors.right: parent.right
+          visible: slider.value > 1
+          width: parent.width * Math.min(slider.value - 1, 1) / Math.max(slider.value, 1)
+          height: parent.height
+          radius: parent.radius
+          color: Theme.warning
         }
       }
 
-      // Past 100 %, the share over it from the top.
-      Rectangle {
-        visible: slider.value > 1
-        width: parent.width
-        height: parent.height * Math.min(slider.value - 1, 1) / Math.max(slider.value, 1)
-        radius: parent.radius
-        color: Theme.warning
+      Text {
+        anchors.verticalCenter: parent.verticalCenter
+        width: widest.width
+        horizontalAlignment: Text.AlignRight
+        text: Math.round(slider.value * 100)
+        color: slider.tone
+        font: Theme.captionHeading
       }
-    }
-
-    Glyph {
-      anchors.horizontalCenter: parent.horizontalCenter
-      anchors.bottom: parent.bottom
-      anchors.bottomMargin: 15
-      path: root.glyphOf(root.level)
-      size: 22
-      color: slider.dim ? Theme.fgDim : Theme.fg
     }
   }
 
@@ -193,22 +207,23 @@ Scope {
 
       required property ShellScreen modelData
 
-      // Levels by the right edge, words at the bottom as GNOME Shell shows them.
+      // Levels and words in one place, 4em up from the bottom as GNOME Shell shows them; each its own window, so one fades out as the other fades in.
       OsdWindow {
         id: side
 
         modelData: output.modelData
         levels: true
-        anchors.right: true
-        // Room for the shadow, and 18 px off the edge.
-        implicitWidth: slider.implicitWidth + 64 + 18
-        implicitHeight: slider.implicitHeight + 64
+        anchors.bottom: true
+        // Room for the shadow.
+        implicitWidth: slider.implicitWidth + 64
+        implicitHeight: slider.implicitHeight + 32 + 4 * Theme.em
 
         Meter {
           id: slider
 
-          anchors.centerIn: parent
-          anchors.horizontalCenterOffset: -9
+          anchors.horizontalCenter: parent.horizontalCenter
+          anchors.bottom: parent.bottom
+          anchors.bottomMargin: 4 * Theme.em
           opacity: side.fade
         }
       }
@@ -219,7 +234,7 @@ Scope {
         modelData: output.modelData
         levels: false
         anchors.bottom: true
-        // Room for the shadow, and GNOME Shell's 4em off the edge.
+        // Room for the shadow.
         implicitWidth: tag.implicitWidth + 64
         implicitHeight: tag.implicitHeight + 32 + 4 * Theme.em
 
