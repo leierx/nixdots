@@ -69,6 +69,10 @@ Item {
   }
 
   implicitHeight: box.height
+  activeFocusOnTab: boxed
+  Keys.onReturnPressed: swipe.tapped()
+  Keys.onSpacePressed: swipe.tapped()
+  Keys.onDeletePressed: swipe.slideAway(false, root.entry.dismissal())
 
   FontMetrics {
     id: heading
@@ -285,5 +289,10 @@ Item {
         onInvoked: action => root.entry.invoke(action)
       }
     }
+  }
+
+  FocusRing {
+    corner: Theme.buttonRadius
+    on: root.activeFocus
   }
 }

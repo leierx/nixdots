@@ -193,6 +193,9 @@ Rectangle {
           radius: height / 2
           color: Theme.fg
           opacity: playArea.enabled ? 1 : 0.5
+          activeFocusOnTab: playArea.enabled
+          Keys.onReturnPressed: Media.player?.togglePlaying()
+          Keys.onSpacePressed: Media.player?.togglePlaying()
           scale: playArea.pressed ? 0.92 : playArea.containsMouse ? 1.06 : 1
 
           Behavior on scale {
@@ -222,6 +225,11 @@ Rectangle {
 
           TooltipArea {
             text: card.playing ? "Pause" : "Play"
+          }
+
+          FocusRing {
+            corner: height / 2
+            on: parent.activeFocus
           }
         }
 

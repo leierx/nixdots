@@ -360,3 +360,25 @@ qst wait '.volume.percent == 40'
 qst stays '.panel == "controls:DP-1" and .volume.percent == 40' 0.6
 qst key Escape
 qst wait '.panel == ""'
+
+qst case "the keyboard reaches every control in the centre: Tab and the arrows move a ring, Space toggles a pill, Return opens its menu, the arrows step a slider"
+open
+qst stays '.ring == false' 0.3
+qst key Tab
+qst wait '.focused == "ControlsPanel/IconButton:header:screenshot" and .ring'
+qst key Down Down Down Down
+qst wait '.focused == "ControlsPanel/Slider:slider:output"'
+qst key Right Right
+qst wait '.volume.percent == 75'
+qst key Left
+qst wait '.volume.percent == 70'
+# On to the first pill, Wired, past the output's arrow and the input's mute, slider and arrow.
+qst key Tab Tab Tab Tab Tab
+qst wait '.focused == "ControlsPanel/Pill"'
+qst key space
+qst wait '.controls.toggles[0].on == false'
+qst key Tab
+qst key Return
+qst wait '.controls.menu == "wifi"'
+qst key Escape
+qst wait '.panel == ""'

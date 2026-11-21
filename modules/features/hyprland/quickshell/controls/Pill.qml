@@ -16,6 +16,9 @@ Rectangle {
 
   height: 48
   radius: height / 2
+  activeFocusOnTab: !toggle.unavailable
+  Keys.onSpacePressed: Controls.flip(pill.toggle)
+  Keys.onReturnPressed: pill.toggle.menu ? Controls.show(pill.toggle.key) : Controls.flip(pill.toggle)
   opacity: toggle.unavailable ? 0.5 : 1
   color: toggle.on ? Theme.accentBg : Theme.button
 
@@ -229,5 +232,10 @@ Rectangle {
     TooltipArea {
       text: ({ wifi: "Wi-Fi Networks", vpn: "VPN Connections", bluetooth: "Bluetooth Devices", night: "Night Light Strength" })[pill.toggle.key] ?? `${pill.toggle.title} Menu`
     }
+  }
+
+  FocusRing {
+    corner: pill.radius
+    on: pill.activeFocus
   }
 }

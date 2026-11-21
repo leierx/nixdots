@@ -146,3 +146,23 @@ press action:Clear
 qst wait '.held == 2'
 qst ipc panels close > /dev/null
 qst wait '.notifications == 0 and .held == 0 and .panel == ""'
+
+qst case "the keyboard reaches the center's cards: Return expands a group, Delete dismisses what it is on"
+notify-send -a Chat "alone"
+notify-send -a Mail "one"
+notify-send -a Mail "two"
+qst wait '.notifications == 3'
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center"'
+qst key Tab
+qst wait '.focused != null and .ring'
+for _ in $(seq 6); do
+  [ "$(qst state '.focused')" = '"NotificationCenter/NotificationGroup"' ] && break
+  qst key Tab
+done
+qst wait '.focused == "NotificationCenter/NotificationGroup"'
+qst key Return
+# Mail is newest, so its group comes first.
+qst wait '.center | map(select(.app == "Mail"))[0].expanded'
+qst key Delete
+qst wait '.notifications == 1 and .history[0].app == "Chat"'

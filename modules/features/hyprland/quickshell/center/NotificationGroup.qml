@@ -64,6 +64,10 @@ Item {
   property NotificationItem first: null
 
   implicitHeight: card.height
+  activeFocusOnTab: true
+  Keys.onReturnPressed: swipe.tapped()
+  Keys.onSpacePressed: swipe.tapped()
+  Keys.onDeletePressed: root.slideAway(false)
 
   function findFirst(): void {
     first = items.itemAt(0);
@@ -279,5 +283,10 @@ Item {
         }
       }
     }
+  }
+
+  FocusRing {
+    corner: Theme.cardRadius
+    on: root.activeFocus
   }
 }

@@ -543,3 +543,19 @@ qst pointer $((x + 1)) $((y + 1))
 qst wait '.tooltip.text == "Lock" and .tooltip.screen == "DP-2"'
 qst monitor remove DP-2
 qst wait '.tooltip == null' 5
+
+qst case "hundreds of keys through the centre while networks come and go under it keep the focus inside, and Escape still closes"
+qst ipc panels open controls:DP-1 > /dev/null
+qst ipc controls menu wifi > /dev/null
+qst wait '.panel == "controls:DP-1" and .controls.menu == "wifi"'
+qst network wifi many 40 Churn > /dev/null
+for round in $(seq 10); do
+  qst key Tab Tab Down Down Down Up Tab shift+Tab Down Down
+  [ $((round % 3)) -ne 0 ] || qst network wifi clear > /dev/null
+  [ $((round % 3)) -ne 1 ] || qst network wifi many 30 "Round$round" > /dev/null
+done
+qst wait '.panel == "controls:DP-1"'
+qst key Tab
+qst wait '.focused != null and (.focused | startswith("ControlsPanel/"))'
+qst key Escape
+qst wait '.panel == ""'

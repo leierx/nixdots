@@ -19,6 +19,9 @@ Item {
   signal stepped(int notches)
 
   implicitHeight: 26
+  activeFocusOnTab: enabled
+  Keys.onLeftPressed: slider.stepped(-1)
+  Keys.onRightPressed: slider.stepped(1)
 
   Keys.onEscapePressed: event => {
     if (!drag.pressed || slider.cancelled) {
@@ -102,5 +105,10 @@ Item {
 
   WheelSteps {
     id: notches
+  }
+
+  FocusRing {
+    corner: slider.height / 2
+    on: slider.activeFocus
   }
 }

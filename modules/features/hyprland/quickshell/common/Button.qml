@@ -91,5 +91,14 @@ Rectangle {
     text: root.tooltip
   }
 
+  activeFocusOnTab: true
+  Keys.onReturnPressed: root.clicked(Qt.LeftButton)
+  Keys.onSpacePressed: root.clicked(Qt.LeftButton)
+
+  FocusRing {
+    corner: root.radius
+    on: root.activeFocus
+  }
+
   Accessible.name: root.tooltip || label.text
 }

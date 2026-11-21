@@ -374,6 +374,9 @@ Scope {
         })),
         notifications: Notifs.entries.length,
         held: Notifs.held.length,
+        // What the keyboard is on in a window that has it, by label, and whether its ring shows.
+        focused: (() => { let found = null; for (const entry of probe.windows()) for (const { item } of entry.items) if (item.activeFocus && "activeFocusOnTab" in item && item.activeFocusOnTab) found = probe.label(entry, item); return found; })(),
+        ring: Panels.keyboard,
         tooltip: Tooltips.shown ? { text: Tooltips.text, screen: Tooltips.screen } : null,
         tooltipPending: Tooltips.pending ? Tooltips.pendingText : null,
         history: Notifs.entries.map(e => ({ uid: e.uid, app: Notifs.appKey(e), summary: e.summary ?? null, popup: e.popup, checked: e.checked, restored: e.restored ?? false, image: e.image || null, kept: Object.keys(e.kept ?? {}) })),

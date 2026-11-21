@@ -18,6 +18,9 @@ Rectangle {
 
   implicitHeight: 36
   radius: Theme.smallRadius
+  activeFocusOnTab: acts
+  Keys.onReturnPressed: root.clicked()
+  Keys.onSpacePressed: root.clicked()
   color: area.containsMouse && area.enabled && acts ? Theme.hover : "transparent"
 
   Behavior on color {
@@ -35,6 +38,11 @@ Rectangle {
     enabled: root.enabled
     cursorShape: enabled && root.acts ? Qt.PointingHandCursor : Qt.ArrowCursor
     onClicked: root.clicked()
+  }
+
+  FocusRing {
+    corner: root.radius
+    on: root.activeFocus
   }
 
   Glyph {

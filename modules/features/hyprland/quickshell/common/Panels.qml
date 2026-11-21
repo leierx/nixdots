@@ -5,6 +5,10 @@ import Quickshell.Io
 
 Singleton {
   property string active: ""
+  // Keys have moved the focus in the open panel, so its focus ring shows.
+  property bool keyboard: false
+
+  onActiveChanged: keyboard = false
 
   // With no monitor on, a panel would open on Hyprland's FALLBACK, unseen and holding the keyboard.
   function open(name) {
