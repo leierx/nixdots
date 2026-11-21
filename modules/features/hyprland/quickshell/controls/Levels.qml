@@ -19,7 +19,9 @@ Column {
     property bool mutes: false
     property bool muted: false
     property real value: 0
+    property real maximum: 1
     property string opens: ""
+    readonly property real span: track.span
 
     signal moved(real value)
     signal stepped(int notches)
@@ -40,11 +42,14 @@ Column {
     }
 
     Slider {
+      id: track
+
       objectName: `slider:${level.name}`
       anchors.verticalCenter: parent.verticalCenter
       width: parent.width - lead.width - arrow.width - 2 * parent.spacing
       enabled: level.enabled
       value: level.value
+      maximum: level.maximum
       dim: level.muted
       onMoved: value => level.moved(value)
       onStepped: notches => level.stepped(notches)
@@ -100,8 +105,9 @@ Column {
     mutes: true
     muted: Volume.muted
     value: Volume.volume
+    maximum: Volume.volume
     opens: "output"
-    onMoved: value => Volume.setVolume(value)
+    onMoved: value => Volume.setVolume(value, span)
     onStepped: notches => Volume.step(notches)
     onMuteClicked: Volume.toggleMute()
   }
@@ -117,8 +123,9 @@ Column {
     mutes: true
     muted: Microphone.muted
     value: Microphone.volume
+    maximum: Microphone.volume
     opens: "input"
-    onMoved: value => Microphone.setVolume(value)
+    onMoved: value => Microphone.setVolume(value, span)
     onStepped: notches => Microphone.step(notches)
     onMuteClicked: Microphone.toggleMute()
   }

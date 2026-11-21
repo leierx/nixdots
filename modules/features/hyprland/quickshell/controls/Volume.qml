@@ -30,9 +30,9 @@ Singleton {
     return silenced ? Symbols.volumeOff : level <= 0.001 ? Symbols.volumeMute : level < 0.5 ? Symbols.volumeDown : Symbols.volumeUp;
   }
 
-  // Up to 100 %, or as far past it as something else set it, so turning it up never turns it down.
-  function setVolume(value: real): void {
-    const clamped = Math.max(0, Math.min(Math.max(1, root.volume), value));
+  // Up to 100 %, or as far past it as something else set it or a slider's range began, so turning it up never turns it down.
+  function setVolume(value: real, reach: real): void {
+    const clamped = Math.max(0, Math.min(Math.max(1, root.volume, reach), value));
     if (fake) fake = Object.assign({}, fake, { volume: clamped, muted: false });
     else if (sink?.audio) {
       sink.audio.volume = clamped;
@@ -42,7 +42,7 @@ Singleton {
 
   // Five percent a notch, onto the five percent marks.
   function step(notches: int): void {
-    setVolume(Math.round((root.volume + notches * 0.05) * 20) / 20);
+    setVolume(Math.round((root.volume + notches * 0.05) * 20) / 20, 1);
   }
 
   function toggleMute(): void {

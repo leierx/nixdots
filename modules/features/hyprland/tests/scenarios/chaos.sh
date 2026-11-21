@@ -454,3 +454,17 @@ qst wait '.notifications == 36 and (.center | length) > 0' 10
 qst stays '.center | all(.lines | map(.critical) | . == (sort | reverse))' 1
 qst ipc notifications clear > /dev/null
 qst wait '.notifications == 0'
+
+qst case "the output's slider past 100 % dragged across while another app sets it further keeps one range per drag"
+wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.5
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1" and (.sliders | map(select(.name == "slider:output"))[0].span * 100 | round) == 150'
+read -r x y < <(named slider:output)
+qst drag $((x - 140)) "$y" 280 0 600 &
+for level in 1.6 1.8 2.0; do wpctl set-volume @DEFAULT_AUDIO_SINK@ "$level"; done
+wait
+# The drag ended at the far end of the range it began with, then the last level from outside stands or the drag's does.
+qst wait '.volume.percent <= 200 and .volume.percent >= 100'
+wpctl set-volume @DEFAULT_AUDIO_SINK@ 2.0
+qst wait '.volume.percent == 200 and (.sliders | map(select(.name == "slider:output"))[0].span * 100 | round) == 200'
+qst stays '.panel == "controls:DP-1"' 0.5

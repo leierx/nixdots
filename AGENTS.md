@@ -423,7 +423,7 @@ Notes on specific features:
         16 px in a row); every chevron an `ExpanderArrow`, turned by its
         `pointing` (`down`, `up`, `left`, `right`) and never by hand: down to
         up for what expands in place, right to down for what opens a menu
-        under it; a level to drag a `Slider`; a scroll bar a `ScrollBar` (Qt's
+        under it; a level to drag a `Slider` (its range reaching past 1 while the level does, with a tick at 100 %, held still for a drag); a scroll bar a `ScrollBar` (Qt's
         `ScrollIndicator`, 4 px, fading out unless `held`); a switch a
         `Switch`; a key a `Keycap`; a text field a `TextField`; a row of a
         panel's list a `ListRow`; a press's feedback a `Pop`; an icon a
@@ -1092,7 +1092,7 @@ the `osd` showing (with its screen), `osdShown` (shows so far) and
 `camera` names or null while unused), `status` (each bar's status button: its glyphs by name, `Microphone`, `bell`, `dnd`, `vpn`, `network` and so on, and the battery's percentage or null), `controls` (the open
 menu, the pills by key with their state, and each backend: `network`, `vpns`,
 `vpnAsking`, `bluetooth`, `night`, `media`), `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: whether its chevron
-shows, how many icons wait behind it and their ids in the overflow's order), `center` (the center's groups in view, each one's lines in its order), `field`
+shows, how many icons wait behind it and their ids in the overflow's order), `sliders` (every slider by name, its value and range), `center` (the center's groups in view, each one's lines in its order), `field`
 (the text field up, the launcher's search) and `problems`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.

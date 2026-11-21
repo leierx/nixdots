@@ -336,3 +336,13 @@ dbus-send --session --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpr
 qst wait '.controls.media.title == "Kid A"'
 qst stays '.controls.media.length == 284' 1
 [ -n "$(at slider:media)" ]
+
+qst case "past 100 % the output's slider reaches as far as the level, marks 100 %, and a click sets a share of that range"
+wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.3
+qst wait '.volume.percent == 130'
+open
+qst wait '(.sliders | map(select(.name == "slider:output"))[0].span * 100 | round) == 130'
+read -r x y < <(at slider:output)
+qst click left "$x" "$y"
+qst wait '.volume.percent == 65'
+qst stays '.volume.percent == 65' 0.5

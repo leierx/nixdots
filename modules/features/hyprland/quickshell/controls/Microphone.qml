@@ -27,15 +27,15 @@ Singleton {
   readonly property var devices: inputs.map((node, i) => ({ name: Names.clean(node.description || node.nickname || node.name), current: node === source, index: i }))
 
   // Up to 100 %, or as far past it as something else set it, as the output's.
-  function setVolume(value: real): void {
+  function setVolume(value: real, reach: real): void {
     if (!source?.audio) return;
-    const clamped = Math.max(0, Math.min(Math.max(1, root.volume), value));
+    const clamped = Math.max(0, Math.min(Math.max(1, root.volume, reach), value));
     source.audio.volume = clamped;
     if (clamped > 0) source.audio.muted = false;
   }
 
   function step(notches: int): void {
-    setVolume(Math.round((root.volume + notches * 0.05) * 20) / 20);
+    setVolume(Math.round((root.volume + notches * 0.05) * 20) / 20, 1);
   }
 
   function toggleMute(): void {

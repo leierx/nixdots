@@ -4,7 +4,13 @@ Item {
   id: slider
 
   property real value: 0
+  // The top of the range: past 1 while the level is beyond 100 %, which is marked then.
+  property real maximum: 1
   property bool dim: false
+  // The range as a drag began, so the slider does not rescale under it.
+  property real heldMaximum: 1
+  readonly property real span: drag.pressed ? heldMaximum : Math.max(1, maximum)
+  readonly property real fraction: Math.max(0, Math.min(1, value / span))
 
   signal moved(real value)
   signal stepped(int notches)
@@ -19,7 +25,7 @@ Item {
     color: Theme.trough
 
     Rectangle {
-      width: parent.width * Math.max(0, Math.min(1, slider.value))
+      width: parent.width * slider.fraction
       height: parent.height
       radius: parent.radius
       color: slider.dim ? Theme.fgDim : Theme.accentBg
@@ -32,8 +38,19 @@ Item {
     }
   }
 
+  // 100 %, while the range goes past it.
   Rectangle {
-    x: Math.max(0, Math.min(1, slider.value)) * (slider.width - width)
+    visible: slider.span > 1
+    x: (slider.width - 16) / slider.span + 8 - width / 2
+    anchors.verticalCenter: parent.verticalCenter
+    width: 2
+    height: 14
+    radius: width / 2
+    color: Theme.fgDim
+  }
+
+  Rectangle {
+    x: slider.fraction * (slider.width - width)
     anchors.verticalCenter: parent.verticalCenter
     width: 16
     height: 16
@@ -55,9 +72,12 @@ Item {
     // Set from the slider, which reads its own; a disabled ancestor leaves it reading true.
     enabled: slider.enabled
     cursorShape: !enabled ? Qt.ArrowCursor : pressed ? Qt.ClosedHandCursor : Qt.PointingHandCursor
-    onPressed: mouse => slider.moved(Math.max(0, Math.min(1, mouse.x / width)))
+    onPressed: mouse => {
+      slider.heldMaximum = Math.max(1, slider.maximum);
+      slider.moved(Math.max(0, Math.min(1, mouse.x / width)) * slider.heldMaximum);
+    }
     onPositionChanged: mouse => {
-      if (pressed) slider.moved(Math.max(0, Math.min(1, mouse.x / width)));
+      if (pressed) slider.moved(Math.max(0, Math.min(1, mouse.x / width)) * slider.span);
     }
     onWheel: event => {
       const steps = notches.steps(event);
