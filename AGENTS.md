@@ -395,6 +395,9 @@ Notes on specific features:
         raises the limit.
       - Quickshell reads an MPRIS player the moment its bus name appears; one
         that fills in its properties after that is never read.
+      - Firefox drops `mpris:length` from a new track's metadata while it
+        plays (YouTube's next video) and sends it again only on a pause, so
+        `Media.length` keeps the one last sent for the track.
       - hyprsunset's `temperature` getter keeps the last temperature through
         `identity`, so the shell keeps whether night light is on itself.
       - Bluetooth pairing without an agent pairs only what wants no code, and
@@ -622,7 +625,8 @@ Notes on specific features:
         (pairs, trusts and connects in one click; no agent, so a device
         wanting a PIN is sent to bluetui), `Volume`, `Microphone` (a virtual
         source is set through `wpctl`), `NightLight` (hyprsunset, kept in the
-        state dir and put back when hyprsunset restarts), `Media`, `Power`
+        state dir and put back when hyprsunset restarts), `Media` (the
+        player, and its track's length), `Power`
         (UPower's display device) and `Privacy`: a capture stream linked from
         a microphone while audio flows (meters and passive filters left
         out), a video source a program made (the portal's screen casts), and
@@ -988,7 +992,7 @@ and nothing paired unless `QS_TEST_BLUETOOTH=none`. `nmcli` in the session is
 the real one but for `connection up`: libnm will not register its secret agent
 with a NetworkManager not run by root, so a wrapper asks the fake and waits as
 nmcli does, saying "Secrets were required" for a profile set to want them.
-MPRIS players (`tests/mpris.py`, seeking with `SetPosition`, a cover with `player add`'s ART) sit on the session bus, one mock each, named
+MPRIS players (`tests/mpris.py`, seeking with `SetPosition`, a cover with `player add`'s ART, a new track's length dropped until a pause as Firefox drops it) sit on the session bus, one mock each, named
 by `QS_MPRIS_NAME` as it starts, since Quickshell reads a player the moment its
 name appears. hyprsunset runs in the session as it does in the user's.
 
@@ -1156,7 +1160,7 @@ hardware switch, a captive portal's Sign in; VPNs down and up, wanting a
 password and failing; a headset paired, trusted and connected in one click
 and a keyboard wanting a PIN; night light kept through a restart and put
 back in a hyprsunset started again; a backlight's slider with no OSD over it;
-the player that played last; an output picked; PipeWire gone and back. Areas
+the player that played last and a track length it drops; an output picked; PipeWire gone and back. Areas
 are clicked by name: the probe adds an area's `objectName` (or its parent's)
 to its label, and the centre names its pills, menu arrows, rows and actions
 (`pill:wifi`, `menu:vpn`, `row:Pixel_7128`, `action:Network Settings…`). `design.sh` brings every panel, the bar, popups of
@@ -1191,7 +1195,7 @@ input switched by 30 clicks and 50 `wpctl`s, inputs coming and going and the
 default one destroyed under the open input menu, mute and level hammered,
 and PipeWire restarting under it; 300 networks with hostile names (direction
 overrides, newlines, zero-width marks, a kilobyte long, markup) and the filter,
-1000 outputs with the one in use first, 50 VPNs and 100 Bluetooth devices,
+1000 outputs with the one in use first, 50 VPNs and 100 Bluetooth devices, a player skipping and pausing faster than the card draws,
 NetworkManager restarting while a password is typed, the centre's monitor
 unplugged under an open menu, every pill hammered faster than its service
 answers, a 1024x600 screen at 1.2 with a password row scrolled into view, and

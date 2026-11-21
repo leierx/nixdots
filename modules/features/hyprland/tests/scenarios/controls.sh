@@ -316,3 +316,12 @@ qst wait '.controls.media.position >= 96 and .controls.media.position < 110 and 
 read -r x y < <(at slider:media)
 qst click left "$x" "$y"
 qst wait '.controls.media.position > 115 and .controls.media.position < 140'
+
+qst case "a length the player drops from a new track's metadata as it plays stays on the card, as Firefox drops it on YouTube"
+qst player add spotify Spotify
+open
+qst wait '.controls.media.length == 251'
+dbus-send --session --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.Next > /dev/null
+qst wait '.controls.media.title == "Kid A"'
+qst stays '.controls.media.length == 284' 1
+[ -n "$(at slider:media)" ]

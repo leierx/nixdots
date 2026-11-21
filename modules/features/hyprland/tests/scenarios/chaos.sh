@@ -401,3 +401,19 @@ for menu in wifi output input bluetooth vpn night; do
   qst ipc controls menu "$menu" > /dev/null
   qst stays ".controls.menu == \"$menu\" and .panel == \"controls:DP-1\"" 0.6
 done
+
+qst case "a player skipping and pausing faster than the card draws keeps the length of the track it lands on, and the card moves on when it quits"
+for n in 1 2 3 4 5; do qst player add "p$n" "Player $n" Paused; done
+qst player add spotify Spotify
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1" and .controls.media.identity == "Spotify"'
+call() { dbus-send --session --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 "org.mpris.MediaPlayer2.Player.$1" > /dev/null; }
+# Forty tracks on, a pause or play every second one: the last pause sent the third track's length, the last two skips dropped theirs.
+for i in $(seq 40); do
+  call Next
+  [ $((i % 2)) -eq 1 ] || call PlayPause
+done
+qst wait '.controls.media.title == "Kid A" and .controls.media.playing'
+qst stays '.controls.media.length == 284' 1
+qst player remove spotify
+qst wait '.controls.media.identity == "Player 1" and .controls.media.length == 251'

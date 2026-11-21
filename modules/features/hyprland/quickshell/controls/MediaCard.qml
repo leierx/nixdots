@@ -18,7 +18,7 @@ Rectangle {
 
   readonly property bool art: cover.status === Image.Ready
   readonly property bool playing: Media.player?.isPlaying ?? false
-  readonly property real length: (Media.player?.lengthSupported ?? false) ? Media.player.length : 0
+  readonly property real length: Media.length
 
   implicitHeight: info.implicitHeight + 2 * Theme.padding
   radius: Theme.cardRadius

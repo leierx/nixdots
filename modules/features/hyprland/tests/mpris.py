@@ -1,6 +1,7 @@
 """An MPRIS player for qs-test, loaded into a mock that owns org.mpris.MediaPlayer2.NAME.
 
 Its buttons work: play, pause, next and previous move through a short list of tracks.
+A new track's length comes once and then goes from its metadata until a pause sends it again, as Firefox does on YouTube.
 qs-test starts one per player (`qst player add NAME`, the name in QS_MPRIS_NAME) and drives it through the mock.
 """
 
@@ -23,11 +24,11 @@ PATH = "/org/mpris/MediaPlayer2"
 player = {"tracks": [], "index": 0, "art": ""}
 
 
-def metadata(index):
-    title, artist, length = player["tracks"][index]
+def metadata(index, length=True):
+    title, artist, seconds = player["tracks"][index]
     return dbus.Dictionary({
         "mpris:trackid": dbus.ObjectPath(f"/org/qstest/track/{index}"),
-        "mpris:length": dbus.Int64(length * 1000000),
+        **({"mpris:length": dbus.Int64(seconds * 1000000)} if length else {}),
         "xesam:title": dbus.String(title),
         "xesam:artist": dbus.Array([dbus.String(artist)], signature="s"),
         **({"mpris:artUrl": dbus.String(player["art"])} if player["art"] else {}),
@@ -42,10 +43,13 @@ def changed(mock, props):
 def go(mock, step):
     player["index"] = (player["index"] + step) % len(player["tracks"])
     changed(mock, {"Metadata": metadata(player["index"]), "Position": dbus.Int64(0)})
+    changed(mock, {"Metadata": metadata(player["index"], length=False)})
 
 
 def status(mock, value):
     changed(mock, {"PlaybackStatus": dbus.String(value)})
+    if value == "Paused":
+        changed(mock, {"Metadata": metadata(player["index"])})
 
 
 def load(mock, parameters):
