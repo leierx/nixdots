@@ -44,6 +44,8 @@ Singleton {
   // libadwaita's window shadow: a wide soft one and a tight one.
   readonly property color shadow: Qt.rgba(0, 0, 0, 0.15)
   readonly property color shadowTight: Qt.rgba(0, 0, 0, 0.1)
+  // libadwaita's tooltip, the window's shade at 80 %.
+  readonly property color tooltip: Qt.rgba(0, 0, 0.024, 0.8)
   readonly property color backdrop: Qt.rgba(0, 0, 0, 0.88)
   // What the screens fade to before the lock.
   readonly property color idle: Colors.dark_5

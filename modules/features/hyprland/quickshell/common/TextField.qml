@@ -63,5 +63,9 @@ Rectangle {
       cursorShape: Qt.PointingHandCursor
       onClicked: root.revealed = !root.revealed
     }
+
+    TooltipArea {
+      text: root.revealed ? "Hide Password" : "Show Password"
+    }
   }
 }

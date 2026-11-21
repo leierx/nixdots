@@ -55,6 +55,7 @@ Item {
 
     expander: true
     checked: Panels.active === root.overflowPanel
+    tooltip: "Hidden Icons"
     onClicked: {
       root.menuItem = null;
       root.overflowX = more.mapToItem(null, more.width / 2, 0).x;

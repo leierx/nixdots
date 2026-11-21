@@ -6,7 +6,7 @@ Rectangle {
   property alias text: label.text
   property alias font: label.font
   property alias acceptedButtons: area.acceptedButtons
-  // A Material Symbols path, before the text.
+  // A Symbols path, before the text.
   property string glyph: ""
   property int glyphSize: 16
   property color foreground: Theme.fg
@@ -17,6 +17,8 @@ Rectangle {
   property bool expander: false
   property string pointing: "down"
   property real padding: 17
+  // What an icon alone does, shown as the pointer rests on it and read out as its name.
+  property string tooltip: ""
 
   readonly property bool hovered: area.containsMouse
   readonly property var parts: [glyph !== "" ? glyphSize : -1, label.text !== "" ? label.implicitWidth : -1, expander ? arrow.width : -1].filter(width => width >= 0)
@@ -81,6 +83,13 @@ Rectangle {
     // A disabled ancestor leaves its own reading true.
     enabled: root.enabled
     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+    onPressed: Tooltips.cancel(root)
     onClicked: mouse => root.clicked(mouse.button)
   }
+
+  TooltipArea {
+    text: root.tooltip
+  }
+
+  Accessible.name: root.tooltip || label.text
 }

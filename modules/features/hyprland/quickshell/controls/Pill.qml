@@ -225,5 +225,9 @@ Rectangle {
       cursorShape: Qt.PointingHandCursor
       onClicked: Controls.show(pill.toggle.key)
     }
+
+    TooltipArea {
+      text: ({ wifi: "Wi-Fi Networks", vpn: "VPN Connections", bluetooth: "Bluetooth Devices", night: "Night Light Strength" })[pill.toggle.key] ?? `${pill.toggle.title} Menu`
+    }
   }
 }

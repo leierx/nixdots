@@ -428,7 +428,7 @@ Notes on specific features:
         under it; a level to drag a `Slider` (its range reaching past 1 while the level does, with a tick at 100 %, held still for a drag, which Escape puts back where it began); a scroll bar a `ScrollBar` (Qt's
         `ScrollIndicator`, 4 px, fading out unless `held`); a switch a
         `Switch`; a key a `Keycap`; a key that acts on a label underlined in it (`Theme.accessKey`); a text field a `TextField`; a row of a
-        panel's list a `ListRow`; a press's feedback a `Pop`; what can be taken back a `Toast` (a pill with its button, five seconds, gone with its panel); an icon a
+        panel's list a `ListRow`; a press's feedback a `Pop`; a tooltip a `TooltipArea`; what can be taken back a `Toast` (a pill with its button, five seconds, gone with its panel); an icon a
         `Glyph` of a `Symbols` path (an app's or tray item's an `IconImage`);
         anything floating a `Card` in an `Overlay` or a layer of its own, and
         only a `Card` casts the shadow.
@@ -496,8 +496,16 @@ Notes on specific features:
         (400 ms, `OutCubic`) what is slow on purpose (a battery filling, album
         art washing in, the logo's turn, a pill's ripple, a scroll bar
         fading). Keyboard selection never animates.
-      - Hints and empty states: there are no tooltips, as every icon-only
-        button is one GNOME uses the same way. A list that can be empty says
+      - Hints and empty states: every control that is an icon alone has a
+        tooltip, as the HIG asks, and so does every other control in its
+        container (the bar's clock and workspaces too): a `Button`'s
+        `tooltip`, or a `TooltipArea` in a control of its own, short and in
+        header capitals ("Quick Settings", "Previous Month"), which is its
+        accessible name too. `Tooltips` shows one at a time, half a second
+        after the pointer rests (GTK's), under its control or above it without
+        room, in libadwaita's `Theme.tooltip`, and lets it go on leaving,
+        pressing, a panel opening or closing, or its control going. The lint
+        fails an `IconButton` without one. A list that can be empty says
         so in one dim `body` line where its first row would be ("No results",
         "Looking for networks…"); the center's is its bell and title.
       - Behaviour: the pointer rule under the conventions above, and nothing
@@ -586,6 +594,10 @@ Notes on specific features:
         into one row, a submap's binds under the bind that enters it, media
         keys left out; in up to three balanced columns, shrunk whole only when
         none fits.
+      - `tooltip/`: the tooltip's layer, `quickshell:tooltip` on the overlay layer of
+        each screen, taking no input and drawn only while `Tooltips` shows one
+        there; placed in window coordinates, which are the screen's for the bar
+        and every panel, the only places with tooltips.
       - `power/` (SUPER+X or the bar's logo): five tiles, each one's key underlined in its label (`Theme.accessKey`, the HIG's access keys, pressed without Alt),
         Reload Hyprland and, on UEFI, Restart to Firmware; ending the session
         or the machine takes a second press within 5 s. Every action is a
@@ -980,7 +992,7 @@ qst player add spotify Spotify Playing [ART]   # an MPRIS player (tests/mpris.py
 qst sync                       # copy edited QML in, restart qs, print its warnings; non-zero if it fails to load
 qst problems                   # warnings and errors, less tests/known-warnings and this case's `expect`s
 qst census                     # what the probe finds wrong on screen now (see below)
-qst areas [REGEX]              # mouse areas and hovered items on screen by label (WINDOW/Type), in layout coordinates: x, y, label, enabled, clicks, hand
+qst areas [REGEX]              # mouse areas and hovered items (tooltips' aside) on screen by label (WINDOW/Type), in layout coordinates: x, y, label, enabled, clicks, hand
 qst cursor 960 21 [hand]       # the cursor Qt sets there, and the item behind it when that changed; fails if not the one given
 qst cursors [WINDOW]           # every enabled area there that takes a click and asks for a hand gets one (BarWindow, LauncherWindow, …)
 qst motion start               # record every visible item each frame; `motion stop` prints what moved, failing on a jump
@@ -1106,7 +1118,7 @@ the `osd` showing (with its screen), `osdShown` (shows so far) and
 `camera` names or null while unused), `status` (each bar's status button: its glyphs by name, `Microphone`, `bell`, `dnd`, `vpn`, `network` and so on, and the battery's percentage or null), `controls` (the open
 menu, the pills by key with their state, and each backend: `network`, `vpns`,
 `vpnAsking`, `bluetooth`, `night`, `media`), `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: whether its chevron
-shows, how many icons wait behind it and their ids in the overflow's order), `held` (what Clear holds back for its Undo), `sliders` (every slider by name, its value and range), `results` (the launcher's first ten by title), `center` (the center's groups in view, each one's lines in its order), `field`
+shows, how many icons wait behind it and their ids in the overflow's order), `held` (what Clear holds back for its Undo), `tooltip` (the one shown, and its screen), `sliders` (every slider by name, its value and range), `results` (the launcher's first ten by title), `center` (the center's groups in view, each one's lines in its order), `field`
 (the text field up, the launcher's search) and `problems`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.

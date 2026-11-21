@@ -517,3 +517,29 @@ qst wait '.held > 0'
 qst ipc panels close > /dev/null
 qst ipc panels open center > /dev/null
 qst wait '.held == 0 and .notifications == 0 and .panel == "center"'
+
+qst case "the pointer swept over every button in the centre faster than the delay shows only the last one's tooltip, and the centre or its monitor going takes it away"
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+mapfile -t spots < <(qst areas 'ControlsPanel' | awk -F'\t' 'index($3, "header:") || index($3, "mute:") || index($3, "slider:") { print $1, $2 }')
+for _ in 1 2 3; do
+  for spot in "${spots[@]}"; do
+    read -r x y <<< "$spot"
+    qst pointer "$x" "$y"
+  done
+done
+qst stays '.tooltip == null or .tooltip.text == "Unmute" or .tooltip.text == "Mute" or .tooltip.text == "Power Menu" or .tooltip.text == "Lock" or .tooltip.text == "Take Screenshot"' 0.2
+read -r x y <<< "${spots[0]}"
+qst pointer "$x" "$y"
+qst pointer $((x + 1)) $((y + 1))
+qst wait '.tooltip != null and .tooltip.screen == "DP-1"'
+qst ipc panels close > /dev/null
+qst wait '.tooltip == null and .panel == ""'
+qst ipc panels open controls:DP-2 > /dev/null
+qst wait '.panel == "controls:DP-2"'
+read -r x y _ < <(qst areas 'ControlsPanel' | awk -F'\t' '$1 > 1920 && index($3, "header:lock")')
+qst pointer "$x" "$y"
+qst pointer $((x + 1)) $((y + 1))
+qst wait '.tooltip.text == "Lock" and .tooltip.screen == "DP-2"'
+qst monitor remove DP-2
+qst wait '.tooltip == null' 5

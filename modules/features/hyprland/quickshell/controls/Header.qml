@@ -56,18 +56,21 @@ Item {
     IconButton {
       objectName: "header:screenshot"
       glyph: Symbols.screenshot
+      tooltip: "Take Screenshot"
       onClicked: Controls.screenshot()
     }
 
     IconButton {
       objectName: "header:lock"
       glyph: Symbols.lock
+      tooltip: "Lock"
       onClicked: Controls.lock()
     }
 
     IconButton {
       objectName: "header:power"
       glyph: Symbols.power
+      tooltip: "Power Menu"
       onClicked: Controls.powerMenu()
     }
   }

@@ -84,6 +84,7 @@ ColumnLayout {
 
     Arrow {
       pointing: "left"
+      tooltip: "Previous Month"
       onClicked: root.shift(-1)
     }
 
@@ -97,6 +98,7 @@ ColumnLayout {
 
     Arrow {
       pointing: "right"
+      tooltip: "Next Month"
       onClicked: root.shift(1)
     }
   }

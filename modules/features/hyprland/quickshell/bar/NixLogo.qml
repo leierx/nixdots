@@ -4,6 +4,7 @@ import qs.common
 BarButton {
   // A third of a turn, after which its two blues are where they were, once each time the pointer arrives; one under way finishes.
   onHoveredChanged: if (hovered && !spin.running) spin.start()
+  tooltip: "Power Menu"
   onClicked: Panels.toggle("power")
 
   Image {

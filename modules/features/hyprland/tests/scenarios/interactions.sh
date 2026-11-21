@@ -59,3 +59,39 @@ qst key o
 qst key o
 for _ in $(seq 20); do qst actions | grep -q 'hl.dsp.exit()' && break; sleep 0.1; done # sleep: the action reaches the fake hyprctl, outside the probe
 qst actions | grep -q 'hl.dsp.exit()' || { qst actions; echo "O twice did not log out"; exit 1; }
+
+qst case "a tooltip shows half a second after the pointer rests on an icon button, under it, and goes as the pointer leaves or presses"
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+read -r x y _ < <(qst areas 'ControlsPanel' | grep 'header:lock')
+qst pointer "$x" "$y"
+qst pointer $((x + 1)) $((y + 1))
+qst stays '.tooltip == null' 0.3
+qst wait '.tooltip.text == "Lock" and .tooltip.screen == "DP-1" and (.layers | index("DP-1 quickshell:tooltip")) != null'
+qst pointer 900 600
+qst wait '.tooltip == null and (.layers | index("DP-1 quickshell:tooltip") | not)'
+read -r x y _ < <(qst areas 'ControlsPanel' | grep 'mute:output')
+qst pointer "$x" "$y"
+qst pointer $((x + 1)) $((y + 1))
+qst wait '.tooltip.text == "Mute"'
+qst click
+qst wait '.tooltip == null and .volume.muted'
+qst stays '.tooltip == null' 0.8
+
+qst case "every control on the bar names itself in a tooltip"
+qst tray > /dev/null
+qst wait '.trays[0].shown'
+hover() {
+  qst pointer "$1" 17
+  qst pointer $(($1 + 1)) 18
+  qst wait ".tooltip.text == \"$2\""
+  qst pointer 900 600
+  qst wait '.tooltip == null'
+}
+read -r last _ < <(qst areas 'BarWindow' | awk -F'\t' '$6 == "true" { x = $1 } END { print x }')
+read -r status _ < <(qst areas 'BarWindow' | awk -F'\t' -v last="$last" '$6 == "true" && $1 < last { x = $1 } END { print x }')
+hover 21 "Power Menu"
+hover 53 "Workspace 1"
+hover 960 "Notifications and Calendar"
+hover "$status" "Quick Settings"
+hover "$last" "Hidden Icons"

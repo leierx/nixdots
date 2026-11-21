@@ -90,6 +90,10 @@ Overlay {
               acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
               onClicked: mouse => root.pressed(cell.modelData, cell, mouse.button, mouse.x, mouse.y)
             }
+
+            TooltipArea {
+              text: cell.modelData.tooltipTitle || cell.modelData.title || cell.modelData.id
+            }
           }
         }
       }

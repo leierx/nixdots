@@ -121,6 +121,10 @@ Item {
         root.go(button.target);
       }
     }
+
+    TooltipArea {
+      text: `Workspace ${button.label}`
+    }
   }
 
   Row {

@@ -34,6 +34,7 @@ BarButton {
 
   implicitWidth: icons.implicitWidth + 20
   checked: Panels.active === root.panel
+  tooltip: "Quick Settings"
   onClicked: Panels.toggle(root.panel)
 
   Row {

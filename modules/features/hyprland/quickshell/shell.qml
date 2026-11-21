@@ -10,6 +10,7 @@ import qs.notifications
 import qs.osd
 import qs.power
 import qs.shortcuts
+import qs.tooltip
 
 ShellRoot {
   ClickAway {}
@@ -29,4 +30,6 @@ ShellRoot {
   OsdPopup {}
 
   Idle {}
+
+  Tooltip {}
 }

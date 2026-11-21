@@ -182,6 +182,7 @@ Rectangle {
           enabled: Media.player?.canGoPrevious ?? false
           opacity: enabled ? 1 : 0.5
           glyph: Symbols.previous
+          tooltip: "Previous Track"
           onClicked: Media.player?.previous()
         }
 
@@ -218,6 +219,10 @@ Rectangle {
             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
             onClicked: Media.player?.togglePlaying()
           }
+
+          TooltipArea {
+            text: card.playing ? "Pause" : "Play"
+          }
         }
 
         IconButton {
@@ -226,6 +231,7 @@ Rectangle {
           enabled: Media.player?.canGoNext ?? false
           opacity: enabled ? 1 : 0.5
           glyph: Symbols.next
+          tooltip: "Next Track"
           onClicked: Media.player?.next()
         }
       }

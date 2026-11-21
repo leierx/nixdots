@@ -20,6 +20,7 @@ findings() {
     [ "$file" = common/Card.qml ] || grep -nP '^\s*Shadow \{' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a shadow on something that is not a Card\tshadow|" || true
     [ "$file" = common/ExpanderArrow.qml ] || grep -nP '^\s*rotation:' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: something turned by hand rather than an ExpanderArrow's pointing\tturn|" || true
     grep -nP '\.flatMap\(|\.flat\(' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: Qt's JavaScript has no flatMap or flat\tjs|" || true
+    awk -v file="$file" '/^\s*IconButton \{/ { inside = 1; depth = 0; found = 0; start = NR } inside { depth += gsub(/\{/, "{"); depth -= gsub(/\}/, "}"); if (/^\s*tooltip:/) found = 1; if (depth == 0) { if (!found) printf "%s:%d: an icon-only button with no tooltip, which the HIG asks of each\ttooltip\n", file, start; inside = 0 } }' "$file"
     awk -v file="$file" '/^\s*Glyph \{/ { inside = 1 } inside && /^\s*size: [0-9]+\s*$/ && $2 !~ /^(16|32|64|128)$/ { printf "%s:%d: a symbol at %s px, where Adwaita draws at 16, 32, 64 or 128\ticon\n", file, NR, $2 } inside && /^\s*\}/ { inside = 0 }' "$file"
     grep -nP 'glyphSize: (?!(16|32|64|128)\s*$)[0-9]+' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a symbol at a size Adwaita's do not draw at\ticon|" || true
     grep -nP '^(?!\s*//).*["`][^"`]*[A-Za-z)]\.["`]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: text ending in a full stop, which the HIG leaves off\twords|" || true

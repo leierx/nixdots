@@ -210,7 +210,8 @@ Scope {
     const found = [];
     for (const entry of windows()) {
       for (const { item } of entry.items) {
-        const hovers = Array.from(item.data ?? []).some(child => child && "cursorShape" in child && "hovered" in child && "point" in child && !("width" in child));
+        // A tooltip's hover is no place to click, and would only double its control.
+        const hovers = !("owner" in item && "shown" in item) && Array.from(item.data ?? []).some(child => child && "cursorShape" in child && "hovered" in child && "point" in child && !("width" in child));
         if (!(isMouseArea(item) || hovers) || item.width < 2 || item.height < 2) continue;
         const middle = item.mapToItem(null, item.width / 2, item.height / 2);
         // Rows a list has scrolled away are not under any pointer.
@@ -373,6 +374,8 @@ Scope {
         })),
         notifications: Notifs.entries.length,
         held: Notifs.held.length,
+        tooltip: Tooltips.shown ? { text: Tooltips.text, screen: Tooltips.screen } : null,
+        tooltipPending: Tooltips.pending ? Tooltips.pendingText : null,
         history: Notifs.entries.map(e => ({ uid: e.uid, app: Notifs.appKey(e), summary: e.summary ?? null, popup: e.popup, checked: e.checked, restored: e.restored ?? false, image: e.image || null, kept: Object.keys(e.kept ?? {}) })),
         historyFile: Quickshell.statePath("notification-history.json"),
         historyImages: History.images,

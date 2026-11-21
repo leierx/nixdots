@@ -38,6 +38,7 @@ Column {
       enabled: level.mutes && level.enabled
       checked: level.muted
       glyph: level.glyph
+      tooltip: level.mutes ? (level.muted ? "Unmute" : "Mute") : ""
       onClicked: level.muteClicked()
     }
 
@@ -65,6 +66,7 @@ Column {
       expander: true
       checked: level.opens !== "" && root.menu === level.opens
       pointing: checked ? "down" : "right"
+      tooltip: ({ output: "Sound Output", input: "Sound Input" })[level.opens] ?? ""
       onClicked: Controls.show(level.opens)
     }
   }

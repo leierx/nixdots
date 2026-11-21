@@ -33,6 +33,7 @@ Item {
     flat: true
     glyph: Symbols.close
     glyphSize: 16
+    tooltip: "Dismiss"
     anchors {
       right: parent.right
       rightMargin: -4
