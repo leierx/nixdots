@@ -90,8 +90,16 @@ hover() {
 }
 read -r last _ < <(qst areas 'BarWindow' | awk -F'\t' '$6 == "true" { x = $1 } END { print x }')
 read -r status _ < <(qst areas 'BarWindow' | awk -F'\t' -v last="$last" '$6 == "true" && $1 < last { x = $1 } END { print x }')
-hover 21 "Power Menu"
-hover 53 "Workspace 1"
+read -r first _ < <(qst areas 'BarWindow' | awk -F'\t' '$6 == "true"' | sort -n | head -1)
+hover "$first" "Workspace 1"
 hover 960 "Notifications and Calendar"
 hover "$status" "Quick Settings"
 hover "$last" "Hidden Icons"
+
+qst case "the distro's logo does nothing: an arrow, no tooltip, and a click opens nothing"
+qst pointer 20 16
+qst pointer 21 17
+qst cursor 21 17 arrow
+qst stays '.tooltip == null and .tooltipPending == null' 1
+qst click left 21 17
+qst stays '.panel == ""' 0.5

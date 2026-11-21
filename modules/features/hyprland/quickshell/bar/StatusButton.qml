@@ -33,7 +33,7 @@ BarButton {
     loader.active = Panels.active === panel;
   }
 
-  implicitWidth: icons.implicitWidth + 20
+  implicitWidth: icons.implicitWidth + 2 * Theme.padding
   checked: Panels.active === root.panel
   tooltip: "Quick Settings"
   onClicked: Panels.toggle(root.panel)
@@ -42,7 +42,7 @@ BarButton {
     id: icons
 
     anchors.centerIn: parent
-    spacing: 6
+    spacing: Theme.basePadding
 
     Repeater {
       model: root.glyphs
@@ -71,7 +71,7 @@ BarButton {
         anchors.verticalCenter: parent.verticalCenter
         text: Power.percent
         color: Theme.fg
-        font: Theme.captionHeading
+        font: Theme.numericHeading
       }
     }
   }

@@ -11,15 +11,16 @@ PanelWindow {
   property string screenName: ""
   // Hyprland.monitorFor() is not reactive: it stays null if the output appears before the monitor.
   readonly property HyprlandMonitor monitor: Hyprland.monitors.values.find(m => m.name === screenName) ?? null
-  readonly property int inset: 8
+  // Shell's panel buttons sit in their 3 px transparent border.
+  readonly property int inset: (Theme.barHeight - Theme.barItemHeight) / 2
 
   anchors {
     top: true
     left: true
     right: true
   }
-  implicitHeight: 34
-  color: Theme.panel
+  implicitHeight: Theme.barHeight
+  color: Theme.panelBg
   Component.onCompleted: screenName = screen?.name ?? ""
 
   WlrLayershell.namespace: "quickshell:bar"
@@ -30,20 +31,11 @@ PanelWindow {
     onPressed: Panels.close()
   }
 
-  Row {
-    x: root.inset
+  Workspaces {
+    x: Theme.padding
+    height: root.height
     anchors.verticalCenter: parent.verticalCenter
-    spacing: 6
-
-    NixLogo {
-      anchors.verticalCenter: parent.verticalCenter
-    }
-
-    Workspaces {
-      height: root.height
-      anchors.verticalCenter: parent.verticalCenter
-      monitor: root.monitor
-    }
+    monitor: root.monitor
   }
 
   Clock {
@@ -58,7 +50,7 @@ PanelWindow {
       rightMargin: root.inset
       verticalCenter: parent.verticalCenter
     }
-    spacing: 2
+    spacing: 0
 
     StatusButton {
       anchors.verticalCenter: parent.verticalCenter

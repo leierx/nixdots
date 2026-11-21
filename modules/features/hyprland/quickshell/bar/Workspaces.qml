@@ -3,12 +3,16 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
+import Quickshell.Widgets
 import qs.common
 
 Item {
   id: root
 
   required property HyprlandMonitor monitor
+  // The distro's logo as os-release names it (NixOS nix-snowflake, Fedora fedora-logo-icon).
+  property string logo: ""
   // Not monitor.focused: Quickshell binds it only on monitors added after it started.
   readonly property bool focused: monitor !== null && Hyprland.focusedMonitor === monitor
   readonly property var own: {
@@ -41,6 +45,12 @@ Item {
   implicitWidth: row.implicitWidth
   implicitHeight: row.implicitHeight
 
+  FileView {
+    path: "/etc/os-release"
+    blockLoading: true
+    onLoaded: root.logo = /^LOGO=["']?([^"'\n]+)/m.exec(text())?.[1] ?? "distributor-logo"
+  }
+
   WheelSteps {
     id: notches
   }
@@ -50,7 +60,7 @@ Item {
     onWheel: event => root.scroll(notches.steps(event))
   }
 
-  // Yours a bare number, a squircle under it only while shown (faintly) or under the pointer; another monitor's an outlined pill named after it (DP2-1).
+  // Yours a bare number in a panel pill, filled while shown or under the pointer; another monitor's an outlined pill named after it (DP2-1).
   component Workspace: Rectangle {
     id: button
 
@@ -66,13 +76,13 @@ Item {
     readonly property color bright: root.focused ? Theme.fg : Theme.fgDim
 
     anchors.verticalCenter: parent?.verticalCenter
-    width: Math.max(mine ? 26 : 20, text.implicitWidth + 14)
-    height: mine ? 26 : 20
-    radius: mine ? Theme.smallRadius : height / 2
+    width: Math.max(mine ? Theme.barItemHeight : 20, text.implicitWidth + 14)
+    height: mine ? Theme.barItemHeight : 20
+    radius: height / 2
     color: {
       if (filled) return bright;
-      if (shown) return area.containsMouse ? Theme.buttonChecked : root.focused ? Theme.buttonHover : Theme.button;
-      if (area.containsMouse) return Theme.buttonHover;
+      if (shown) return area.containsMouse ? Theme.panelActiveHoverBg : root.focused ? Theme.panelActiveBg : Theme.panelHoverBg;
+      if (area.containsMouse) return Theme.panelHoverBg;
       return "transparent";
     }
     border.width: mine ? 0 : 1
@@ -80,14 +90,8 @@ Item {
 
     Behavior on color {
       ColorAnimation {
-        duration: Theme.fade
+        duration: Theme.panelButtonTime
       }
-    }
-
-    Pop {
-      id: tap
-
-      target: button
     }
 
     Text {
@@ -96,14 +100,14 @@ Item {
       anchors.centerIn: parent
       text: button.label
       color: {
-        if (button.filled) return Theme.panel;
+        if (button.filled) return Theme.panelBg;
         if (button.urgent) return Theme.destructive;
         if (area.containsMouse) return Theme.fg;
         if (button.shown) return button.bright;
         if (button.occupied) return root.focused ? Theme.fgStrong : Theme.fgDim;
         return Theme.fgFaint;
       }
-      font: Theme.captionHeading
+      font: button.mine ? Theme.numericHeading : Theme.captionHeading
     }
 
     // As tall as the bar and across the gaps either side.
@@ -116,10 +120,7 @@ Item {
       hoverEnabled: true
       cursorShape: Qt.PointingHandCursor
       // On press, which feels quicker than a click.
-      onPressed: {
-        tap.restart();
-        root.go(button.target);
-      }
+      onPressed: root.go(button.target)
     }
 
     TooltipArea {
@@ -131,7 +132,14 @@ Item {
     id: row
 
     anchors.verticalCenter: parent.verticalCenter
-    spacing: 8
+    spacing: Theme.basePadding
+
+    // It does nothing: no button, no hover.
+    IconImage {
+      anchors.verticalCenter: parent.verticalCenter
+      implicitSize: 16
+      source: root.logo === "" ? "" : Quickshell.iconPath(root.logo, "distributor-logo")
+    }
 
     Row {
       anchors.verticalCenter: parent.verticalCenter

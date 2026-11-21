@@ -1,11 +1,14 @@
 import QtQuick
 import qs.common
 
+// Shell's .panel-button: a bold pill inset 3 px, filled only under the pointer or while what it opens is open.
 Button {
-  implicitHeight: 26
-  // A pill, or a circle round an icon alone.
-  radius: height / 2
-  padding: text === "" ? 4 : 12
-  flat: true
-  font: Theme.caption
+  implicitHeight: Theme.barItemHeight
+  pill: true
+  padding: text === "" ? Theme.basePadding : Theme.padding
+  font: Theme.numericHeading
+  color: {
+    if (checked || pressed) return hovered ? Theme.panelActiveHoverBg : Theme.panelActiveBg;
+    return hovered ? Theme.panelHoverBg : "transparent";
+  }
 }

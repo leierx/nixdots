@@ -494,7 +494,7 @@ Notes on specific features:
         `Theme.close` (140 ms, `InCubic`) a panel growing out of what opened
         it and back; `Theme.tap` (100 ms) the dip of a `Pop`; `Theme.settle`
         (400 ms, `OutCubic`) what is slow on purpose (a battery filling, album
-        art washing in, the logo's turn, a pill's ripple, a scroll bar
+        art washing in, a pill's ripple, a scroll bar
         fading). Keyboard selection never animates.
       - Hints and empty states: every control that is an icon alone has a
         tooltip, as the HIG asks, and so does every other control in its
@@ -612,11 +612,11 @@ Notes on specific features:
         each screen, taking no input and drawn only while `Tooltips` shows one
         there; placed in window coordinates, which are the screen's for the bar
         and every panel, the only places with tooltips.
-      - `power/` (SUPER+X or the bar's logo): five tiles, each one's key underlined in its label (`Theme.accessKey`, the HIG's access keys, pressed without Alt),
+      - `power/` (SUPER+X or the control centre's header): five tiles, each one's key underlined in its label (`Theme.accessKey`, the HIG's access keys, pressed without Alt),
         Reload Hyprland and, on UEFI, Restart to Firmware; ending the session
         or the machine takes a second press within 5 s. Every action is a
         command, so `qst actions` shows what it would have done.
-      - `bar/`: per screen, the logo and workspaces, the clock (opening the
+      - `bar/`: per screen, Shell's panel (32 px, bold 11 pt items in pills filled at 17, 28 and 32 %): the workspaces led by the distro's logo (`LOGO=` from `/etc/os-release` drawn from the icon theme, `distributor-logo` failing that), which does nothing, the clock (opening the
         center) and the status button (opening the control centre) with the
         tray's chevron last. Workspaces are hyprsplit's `1 … n` for the
         monitor, then any other monitor's still on it, named after that
