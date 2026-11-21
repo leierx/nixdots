@@ -107,7 +107,7 @@ Item {
         if (button.occupied) return root.focused ? Theme.fgStrong : Theme.fgDim;
         return Theme.fgFaint;
       }
-      font: button.mine ? Theme.numeric : Theme.caption
+      font: button.mine ? Theme.numericHeading : Theme.captionHeading
     }
 
     // As tall as the bar and across the gaps either side.
