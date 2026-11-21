@@ -96,12 +96,12 @@ qst wait '.panel == "windows"'
 for _ in $(seq 45); do qst key Down; done
 qst stays '.panel == "windows"' 1
 
-qst case "sixty outputs scroll in the control centre's output menu rather than running off the screen"
+qst case "sixty outputs scroll in the control centre's sound menu rather than running off the screen"
 for n in $(seq 60); do
   qst x pw-cli create-node adapter "{ factory.name=support.null-audio-sink node.name=chaos$n node.description=\"Output $n\" media.class=Audio/Sink object.linger=true audio.position=[FL FR] }" > /dev/null
 done
 qst ipc panels open controls:DP-1 > /dev/null
-qst ipc controls menu output > /dev/null
+qst ipc controls menu sound > /dev/null
 qst wait '.panel == "controls:DP-1"'
 qst stays '.panel == "controls:DP-1"' 1
 
@@ -228,7 +228,7 @@ qst pointer 900 600
 qst tray remove held
 qst wait '.trayMenu == null and .panel == "" and (.tray | length) == 5' 10
 
-qst case "forty microphones, real and virtual, scroll in the control centre's input menu with the outputs"
+qst case "forty microphones, real and virtual, scroll in the control centre's sound menu with the outputs"
 for n in $(seq 30); do
   qst x pw-cli create-node adapter "{ factory.name=support.null-audio-sink node.name=mic$n node.description=\"Mic $n\" media.class=Audio/Source object.linger=true audio.position=[MONO] }" > /dev/null
 done
@@ -240,7 +240,7 @@ for n in $(seq 30); do
 done
 qst wait '(.microphone.inputs | length) == 43' 10
 qst ipc panels open controls:DP-1 > /dev/null
-qst ipc controls menu input > /dev/null
+qst ipc controls menu sound > /dev/null
 qst wait '.panel == "controls:DP-1"'
 read -r _ ys < <(menu_rows)
 read -ra rows <<< "$ys"
@@ -252,12 +252,13 @@ qst stays '.panel == "controls:DP-1"' 1
 
 qst case "the default input switched as fast as clicks and wpctl go, the last pick holding"
 qst ipc panels open controls:DP-1 > /dev/null
-qst ipc controls menu input > /dev/null
+qst ipc controls menu sound > /dev/null
 qst wait '.panel == "controls:DP-1"'
-read -r x ys < <(menu_rows)
-read -ra rows <<< "$ys"
-# The one in use comes first, so each pick moves the list: the two rows under it, picked in turn, go round all three.
-for n in $(seq 0 29); do qst click left "$x" "${rows[$((1 + n % 2))]}"; done
+# The one in use comes first, so each pick moves the list: each row is found again by name.
+for n in $(seq 0 29); do
+  read -r x y < <(named "$([ $((n % 2)) -eq 0 ] && echo Headset || echo Microphone)")
+  qst click left "$x" "$y"
+done
 qst wait '.microphone.input != null' 10
 qst stays '.panel == "controls:DP-1" and (.microphone.inputs | length) == 3' 1
 qst x wpctl set-default "$(qst x pw-dump | jq '.[] | select(.info.props."node.name" == "test-headset-mic") | .id')"
@@ -268,11 +269,11 @@ last=$(tail -1 <<< "$ids")
 qst wait ".microphone.input == $(qst x pw-dump | jq ".[] | select(.id == $last) | .info.props.\"node.description\"")" 10
 qst stays '.panel == "controls:DP-1"' 1
 
-qst case "inputs coming and going under the open input menu, the default among them"
+qst case "inputs coming and going under the open sound menu, the default among them"
 qst x wpctl set-default "$(qst x pw-dump | jq '.[] | select(.info.props."node.name" == "test-headset-mic") | .id')"
 qst wait '.microphone.input == "Headset Microphone"'
 qst ipc panels open controls:DP-1 > /dev/null
-qst ipc controls menu input > /dev/null
+qst ipc controls menu sound > /dev/null
 qst wait '.panel == "controls:DP-1"'
 for _ in 1 2 3; do
   for n in $(seq 15); do
@@ -287,24 +288,21 @@ qst x pw-cli destroy test-headset-mic > /dev/null
 qst wait '.microphone.input == "Microphone" and .microphone.inputs == ["Microphone", "Noise Cancelling"]'
 qst stays '.panel == "controls:DP-1"' 1
 
-qst case "the microphone's mute and level hammered from the control centre"
+qst case "the microphone's mute hammered from the sound menu"
 qst ipc panels open controls:DP-1 > /dev/null
-qst wait '.panel == "controls:DP-1"'
-# A sound level is the y with three areas, its mute, its slider and its arrow (the header's buttons aside); the output's first, the input's second.
-read -r mx my < <(qst areas 'ControlsPanel' | grep -v ':header:' | awk -F'\t' '$2 > 40 { print $1, $2 }' | sort -n -k2 -k1 | awk '{ count[$2]++; if (!($2 in x)) x[$2] = $1 } END { for (y in count) if (count[y] == 3) print x[y], y }' | sort -n -k2 | sed -n 2p)
+qst ipc controls menu sound > /dev/null
+qst wait '.panel == "controls:DP-1" and .controls.menu == "sound"'
+read -r mx my < <(named mute:input)
 for _ in $(seq 20); do qst click left "$mx" "$my"; done
 qst wait '.microphone.muted | not'
 qst stays '.microphone.muted | not' 0.5
-qst pointer $((mx + 120)) "$my"
-qst wheel 30
-qst wait '.microphone.percent == 0'
-qst wheel -40
-qst wait '.microphone.percent == 100 and (.microphone.muted | not)'
-qst stays '.microphone.percent == 100 and .panel == "controls:DP-1"' 1
+qst click left "$mx" "$my"
+qst wait '.microphone.muted'
+qst stays '.microphone.muted and .panel == "controls:DP-1"' 1
 
-qst case "PipeWire restarting under the open input menu brings the inputs back"
+qst case "PipeWire restarting under the open sound menu brings the inputs back"
 qst ipc panels open controls:DP-1 > /dev/null
-qst ipc controls menu input > /dev/null
+qst ipc controls menu sound > /dev/null
 qst wait '.panel == "controls:DP-1"'
 qst pipewire restart
 qst wait '(.microphone.inputs | length) == 3 and .microphone.input == "Microphone"' 15
@@ -383,8 +381,8 @@ qst stays '.panel == "controls:DP-1" and .controls.menu == "wifi"' 1
 qst case "a thousand outputs: the one in use first, the rest behind a filter, and the centre still fits"
 qst ipc bar fakeOutputs 1000 > /dev/null
 qst ipc panels open controls:DP-1 > /dev/null
-qst ipc controls menu output > /dev/null
-qst wait '.panel == "controls:DP-1" and .controls.menu == "output" and .volume.output == "Output 601"'
+qst ipc controls menu sound > /dev/null
+qst wait '.panel == "controls:DP-1" and .controls.menu == "sound" and .volume.output == "Output 601"'
 first=$(qst areas 'ControlsPanel' | awk -F'\t' '$3 ~ /:row:/ { print $3; exit }')
 [[ $first == *":row:Output 601"* ]] || { echo "first row: $first"; exit 1; }
 qst stays '.panel == "controls:DP-1"' 1
@@ -477,22 +475,21 @@ qst stays '.controls.media.length == 284' 1
 qst player remove spotify
 qst wait '.controls.media.identity == "Player 1" and .controls.media.length == 251'
 
-qst case "both levels and the input's mute hammered from the open centre show the OSD at every change, ending on the last"
+qst case "the volume and the input's mute hammered from the open centre show the OSD at every change, ending on the last"
 qst ipc panels open controls:DP-1 > /dev/null
-qst wait '.panel == "controls:DP-1" and .osdSettling == false'
+qst ipc controls menu sound > /dev/null
+qst wait '.panel == "controls:DP-1" and .controls.menu == "sound" and .osdSettling == false'
 read -r ox oy < <(named slider:output)
-read -r ix iy < <(named slider:input)
 read -r mx my < <(named mute:input)
 before=$(qst state .osdShown)
-# Each round sets both levels somewhere new and mutes the input again, which its slider unmuted.
+# Each round sets the volume somewhere new and flips the input's mute.
 for i in $(seq 15); do
   qst click left $((ox - 100 + i * 12)) "$oy"
-  qst click left $((ix + 100 - i * 12)) "$iy"
   qst click left "$mx" "$my"
 done
 qst wait '.osd.kind == "microphone" and .osd.muted and .microphone.muted'
 shows=$(($(qst state .osdShown) - before))
-[ "$shows" -ge 30 ] || { echo "the OSD showed $shows times for 45 changes"; exit 1; }
+[ "$shows" -ge 20 ] || { echo "the OSD showed $shows times for 30 changes"; exit 1; }
 for _ in $(seq 20); do wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; done
 qst wait '.osd.kind == "volume" and .osd.muted == false and .volume.muted == false'
 qst stays '.panel == "controls:DP-1"' 1
@@ -528,25 +525,23 @@ wpctl set-volume @DEFAULT_AUDIO_SINK@ 2.0
 qst wait '.volume.percent == 200 and (.sliders | map(select(.name == "slider:output"))[0].span * 100 | round) == 200'
 qst stays '.panel == "controls:DP-1"' 0.5
 
-qst case "Escape pressed over and over through drags on both levels leaves each where its drag began"
+qst case "Escape pressed over and over through drags on the volume leaves it where each drag began"
 wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.4
-wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 0.7
 qst ipc panels open controls:DP-1 > /dev/null
-qst wait '.panel == "controls:DP-1" and .volume.percent == 40 and .microphone.percent == 70'
+qst wait '.panel == "controls:DP-1" and .volume.percent == 40'
 read -r ox oy < <(named slider:output)
-read -r ix iy < <(named slider:input)
 for _ in 1 2 3; do
   qst drag $((ox - 100)) "$oy" 200 0 900 &
   qst wait '.volume.percent != 40'
   qst key Escape
   wait
-  qst drag $((ix + 100)) "$iy" -200 0 900 &
-  qst wait '.microphone.percent != 70'
+  qst drag $((ox + 100)) "$oy" -200 0 900 &
+  qst wait '.volume.percent != 40'
   qst key Escape
   wait
 done
-qst wait '.volume.percent == 40 and .microphone.percent == 70'
-qst stays '.panel == "controls:DP-1" and .volume.percent == 40 and .microphone.percent == 70' 0.6
+qst wait '.volume.percent == 40'
+qst stays '.panel == "controls:DP-1" and .volume.percent == 40' 0.6
 
 qst case "words of garbage and slips typed as fast as keys go keep the launcher answering, and the last slip finds its app"
 qst key super+d

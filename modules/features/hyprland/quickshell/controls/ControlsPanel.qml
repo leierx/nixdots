@@ -28,7 +28,7 @@ Overlay {
 
   // What the card stacks, a menu slot under each row that opens one: menus of different rows ease shut and open apart, the same row's swap in one slot that eases to the new height; by id, so an open menu outlives every change around it.
   readonly property var sections: {
-    const list = [{ id: "header", kind: "header" }, { id: "levels", kind: "levels" }, { id: "menu:levels", kind: "menu", keys: ["output", "input"] }];
+    const list = [{ id: "header", kind: "header" }, { id: "levels", kind: "levels" }, { id: "menu:levels", kind: "menu", keys: ["sound"] }];
     for (let i = 0; i < Controls.toggles.length; i += 2) {
       const row = Controls.toggles.slice(i, i + 2);
       list.push({ id: `toggles:${i}`, kind: "toggles", items: row });

@@ -71,7 +71,7 @@ Column {
       expander: true
       checked: level.opens !== "" && root.menu === level.opens
       pointing: checked ? "down" : "right"
-      tooltip: ({ output: "Sound Output", input: "Sound Input" })[level.opens] ?? ""
+      tooltip: level.opens === "sound" ? "Sound" : ""
       onClicked: Controls.show(level.opens)
     }
   }
@@ -79,7 +79,7 @@ Column {
   spacing: Theme.basePadding
 
   Row {
-    visible: !Volume.present && !Microphone.present
+    visible: !Volume.present
     height: 28
     spacing: Theme.basePadding
     opacity: 0.5
@@ -113,28 +113,10 @@ Column {
     muted: Volume.muted
     value: Volume.volume
     maximum: Volume.volume
-    opens: "output"
+    opens: "sound"
     onMoved: value => Volume.setVolume(value, span)
     onStepped: notches => Volume.step(notches)
     onMuteClicked: Volume.toggleMute()
-  }
-
-  Level {
-    name: "input"
-    width: parent.width
-    visible: Microphone.present
-    // A virtual source has nothing to set; it stays in place, so nothing below moves.
-    enabled: Microphone.adjustable
-    opacity: Microphone.adjustable ? 1 : 0.5
-    glyph: Microphone.glyph
-    mutes: true
-    muted: Microphone.muted
-    value: Microphone.volume
-    maximum: Microphone.volume
-    opens: "input"
-    onMoved: value => Microphone.setVolume(value, span)
-    onStepped: notches => Microphone.step(notches)
-    onMuteClicked: Microphone.toggleMute()
   }
 
   Repeater {

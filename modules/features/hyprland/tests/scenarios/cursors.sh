@@ -52,12 +52,8 @@ qst case "a hand over everything clickable in the control centre's Bluetooth men
 controls bluetooth
 qst cursors ControlsPanel
 
-qst case "a hand over everything clickable in the control centre's output menu"
-controls output
-qst cursors ControlsPanel
-
-qst case "a hand over everything clickable in the control centre's input menu"
-controls input
+qst case "a hand over everything clickable in the control centre's sound menu"
+controls sound
 qst cursors ControlsPanel
 
 qst case "a hand over everything clickable in the control centre's night light menu"

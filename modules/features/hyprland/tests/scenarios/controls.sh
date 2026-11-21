@@ -244,17 +244,18 @@ qst wait '.brightness.intel_backlight.brightness < 600'
 qst wait '.osd.kind == "brightness" and .osd.level < 0.6'
 qst actions | grep -q 'brightnessctl --quiet --device intel_backlight set' || { qst actions; echo "brightnessctl was not run"; exit 1; }
 
-qst case "the centre's own levels and mute buttons show the OSD with the level they set"
+qst case "the centre's volume and the sound menu's microphone mute show the OSD with what they set"
 open
 qst wait '.osdSettling == false'
 read -r x y < <(at slider:output)
 qst click left $((x - 60)) "$y"
 qst wait '.osd.kind == "volume" and .osd.level < 0.6 and .osd.screen == "DP-1"'
+qst ipc controls menu sound > /dev/null
+qst wait '.controls.menu == "sound"'
 press mute:input
 qst wait '.osd.kind == "microphone" and .osd.muted'
-read -r x y < <(at slider:input)
-qst click left $((x - 60)) "$y"
-qst wait '.osd.kind == "microphone" and .osd.muted == false and .osd.level < 0.6'
+press mute:input
+qst wait '.osd.kind == "microphone" and .osd.muted == false'
 
 qst case "the player that played last gets the card; stopped, it goes"
 # alone: removing a playing player races Quickshell polling its position, and a loaded machine widens the race
@@ -275,11 +276,11 @@ qst wait '.controls.media == null'
 
 qst case "the sound menus: the output picked from the list, the one in use first"
 open
-qst ipc controls menu output > /dev/null
-qst wait '.controls.menu == "output"'
+qst ipc controls menu sound > /dev/null
+qst wait '.controls.menu == "sound"'
 press row:Headphones
 qst wait '.volume.output == "Headphones"'
-qst stays '.panel == "controls:DP-1" and .controls.menu == "output"' 0.5
+qst stays '.panel == "controls:DP-1" and .controls.menu == "sound"' 0.5
 
 qst case "PipeWire gone: one dim line where the sliders were, and back when it is"
 open
@@ -381,8 +382,8 @@ qst key Right Right
 qst wait '.volume.percent == 75'
 qst key Left
 qst wait '.volume.percent == 70'
-# On to the first pill, Wired, past the output's arrow and the input's mute, slider and arrow.
-qst key Tab Tab Tab Tab Tab
+# On to the first pill, Wired, past the volume's arrow.
+qst key Tab Tab
 qst wait '.focused == "ControlsPanel/Pill"'
 qst key space
 qst wait '.controls.toggles[0].on == false'

@@ -37,9 +37,14 @@ Rectangle {
       return { key: vpn.uuid, glyph: Symbols.vpn, title: Names.clean(vpn.name), toggle: vpn.active, note: busy === "up" || vpn.state === "activating" ? "Connecting…" : busy === "down" ? "Disconnecting…" : asking ? Net.vpnError || "Password needed" : "", bad: asking && Net.vpnError !== "", asking, target: vpn };
     });
     if (key === "bluetooth") return BluetoothDevices.devices.map(device => ({ key: device.address, glyph: BluetoothDevices.glyph(device), title: BluetoothDevices.name(device), current: device.connected, tick: false, note: BluetoothDevices.note(device), bad: (BluetoothDevices.failures[device.address] ?? "") !== "", battery: device.connected && device.batteryAvailable ? device.battery : -1, link: device.connected ? "connected" : device.paired ? "paired" : "", target: device }));
-    const backend = key === "output" ? Volume : Microphone;
-    const devices = backend.devices.map(device => ({ key: `${device.index}`, glyph: "", title: device.name, current: device.current, target: device.index }));
-    return [...devices.filter(device => device.current), ...devices.filter(device => !device.current)];
+    if (key === "sound") {
+      const devices = (backend, side) => backend.devices.map(device => ({ key: `${side}:${device.index}`, side, glyph: "", title: device.name, current: device.current, target: device.index }));
+      const first = list => [...list.filter(device => device.current), ...list.filter(device => !device.current)];
+      const inputs = Microphone.present ? first(devices(Microphone, "input")) : [];
+      // The microphone is its mute and its inputs under the outputs, as it is seldom touched (ours: no level of its own).
+      return [...first(devices(Volume, "output")), ...(inputs.length > 0 ? [{ key: "heading:input", heading: true, title: "Input" }] : []), ...inputs];
+    }
+    return [];
   }
 
   // Reads what Wi-Fi's rows are built from, cheaply, so any change to it is noticed without building them.
@@ -58,8 +63,8 @@ Rectangle {
       Net.toggleVpn(row.key);
     } else if (key === "bluetooth") {
       BluetoothDevices.choose(row.target);
-    } else if (!row.current) {
-      (key === "output" ? Volume : Microphone).choose(row.target);
+    } else if (row.side && !row.current) {
+      (row.side === "output" ? Volume : Microphone).choose(row.target);
     }
   }
 
@@ -77,18 +82,17 @@ Rectangle {
   property var settled: []
   readonly property real changes: key === "wifi" ? menuBox.touchWifi() : 0
   readonly property bool filtering: all.length > 20
-  readonly property var shown: filter.text === "" ? all : all.filter(row => row.asking || row.title.toLowerCase().includes(filter.text.toLowerCase()))
-  readonly property string title: ({ wifi: "Wi-Fi", vpn: "VPN", bluetooth: "Bluetooth", output: "Sound Output", input: "Sound Input", night: "Night Light" })[key] ?? key
+  readonly property var shown: filter.text === "" ? all : all.filter(row => row.asking || row.heading || row.title.toLowerCase().includes(filter.text.toLowerCase()))
+  readonly property string title: ({ wifi: "Wi-Fi", vpn: "VPN", bluetooth: "Bluetooth", sound: "Sound", night: "Night Light" })[key] ?? key
   readonly property var toggle: Controls.toggles.find(toggle => toggle.key === key) ?? null
-  readonly property string glyph: toggle?.glyph ?? (key === "input" ? Microphone.glyph : Volume.glyph)
+  readonly property string glyph: toggle?.glyph ?? Volume.glyph
   readonly property bool on: toggle?.on ?? true
   readonly property var footer: key === "wifi" || key === "vpn" ? ["Network Settings"] : key === "bluetooth" ? ["Bluetooth Settings"] : []
   // Said in place of a list with nothing in it.
   readonly property string empty: {
     if (key === "wifi") return !Net.wifiOn ? "Wi-Fi is off" : "Looking for networks…";
     if (key === "bluetooth") return !BluetoothDevices.on ? "Bluetooth is off" : "Looking for devices…";
-    if (key === "output") return "No outputs";
-    if (key === "input") return "No inputs";
+    if (key === "sound") return "No outputs";
     return "";
   }
   readonly property real chrome: heading.height + (filter.visible ? filter.height + Theme.basePadding : 0) + (foot.visible ? foot.height + 2 * Theme.basePadding + 1 : 0) + Theme.padding + Theme.basePadding
@@ -276,7 +280,8 @@ Rectangle {
           required property var modelData
           readonly property bool asking: modelData.asking ?? false
           readonly property string askAgain: asking ? (modelData.note ?? "") : ""
-          readonly property bool sound: menuBox.key === "output" || menuBox.key === "input"
+          readonly property bool sound: menuBox.key === "sound"
+          readonly property bool heading: modelData.heading ?? false
 
           width: ListView.view.width
           height: asking ? menuBox.askingHeight : menuBox.rowHeight
@@ -288,10 +293,46 @@ Rectangle {
           onAskAgainChanged: if (asking) password.input.forceActiveFocus()
           Component.onCompleted: if (asking) password.input.forceActiveFocus()
 
+          // Where the inputs begin, with the microphone's mute.
+          Item {
+            anchors.fill: parent
+            visible: row.heading
+
+            Rectangle {
+              x: Theme.padding
+              width: parent.width - 2 * Theme.padding
+              height: 1
+              color: Theme.separator
+            }
+
+            Text {
+              x: Theme.padding
+              anchors.verticalCenter: parent.verticalCenter
+              text: row.modelData.title
+              color: Theme.fgDim
+              font: Theme.captionHeading
+            }
+
+            IconButton {
+              objectName: "mute:input"
+              anchors.right: parent.right
+              anchors.rightMargin: Theme.basePadding
+              anchors.verticalCenter: parent.verticalCenter
+              small: true
+              flat: true
+              enabled: row.heading && Microphone.adjustable
+              checked: Microphone.muted
+              glyph: Microphone.glyph
+              tooltip: Microphone.muted ? "Unmute Microphone" : "Mute Microphone"
+              onClicked: Microphone.toggleMute()
+            }
+          }
+
           ListRow {
+            visible: !row.heading
             width: parent.width
             areaName: `row:${row.modelData.title}`
-            glyph: row.modelData.glyph
+            glyph: row.modelData.glyph ?? ""
             title: row.modelData.title
             strong: row.modelData.current === true
             // An asking row is filled already; a hover on top would sink its note below 3:1.
