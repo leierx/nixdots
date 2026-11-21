@@ -303,6 +303,10 @@ fprintd, NetworkManager), so it needs the NixOS half.
   fingerprint unlock (no input) clears it through `on_unlock_cmd`. hypridle is
   the one clock and input watcher; without a shell the lock just comes. Sleep
   and the power menu lock at once.
+- **hypridle is `pkgs.unstable.hypridle`** (0.1.8): 0.1.7's single inhibit counter
+  loses logind's idle inhibitor to a stray ScreenSaver `UnInhibit` and an app
+  disconnect, so Caffeine stopped keeping the lock off. Drop the pin when
+  nixpkgs moves to 26.11.
 - **Screenshots**: one `writeShellApplication` (`scripts/freeze-region.sh`,
   `copy|save`), ending in a transient, silent notification from "Screenshot"
   with the shot as picture (`file://`) and `accessories-screenshot` badge
@@ -510,8 +514,9 @@ pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `ClickAway`,
   those events and 300 ms after a burst. The status button shows what records
   (`Privacy`), bell or Do Not Disturb, VPN, link, Bluetooth, a muted mic,
   volume, battery, a cup while Caffeine is on; the wheel steps the volume. The
-  tray (`Tray`) is hidden until the pointer reaches `BarWindow`'s right-end zone,
-  which is the buttons' parent (hover reaches ancestors, not siblings beneath).
+  tray (`Tray`) shows its first three icons and "+N", and every icon while the
+  pointer is in `BarWindow`'s right-end zone, which is the buttons' parent (hover
+  reaches ancestors, not siblings beneath).
   `TrayMenu` (panel `tray-menu:SCREEN`) cascades as GTK's, takes the keyboard,
   closes as the pointer leaves unless keys drive it.
 - Caffeine (`controls/Caffeine.qml`, IPC `caffeine toggle|set|active`) is the
@@ -537,8 +542,10 @@ pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `ClickAway`,
   where there is room. Opening it checks all and puts popups away. Clear hides
   them with Undo in a `Toast` for 5 s; `Notifs` dismisses what it held when the
   toast goes or the center closes. Do Not Disturb is a switch in its footer.
-- `controls/` (SUPER+A): GNOME's quick settings: `Header`, `Levels`, the `Pill`s
-  the machine has (`Controls.toggles`), a `Menu` under the row that opens it,
+- `controls/` (SUPER+A): GNOME's quick settings: `Header`, `Levels` (the volume, its arrow
+  opening Sound: outputs, the microphone's mute, inputs; each backlight), the `Pill`s
+  the machine has (`Controls.toggles`), a `Menu` under the row that opens it (one slot
+  per row, so its menus swap in place),
   `InUse` while something records. Backends are singletons: `Net`
   (Quickshell.Networking for Wi-Fi and wired, `nmcli` for VPNs; a captive
   portal gets a card), `BluetoothDevices` (pair, trust, connect in one click; a
