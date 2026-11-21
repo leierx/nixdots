@@ -13,7 +13,7 @@ LauncherMode {
   title: "Applications"
   glyph: Symbols.search
   placeholder: "Search applications…"
-  nothing: "No applications"
+  nothing: "No Applications"
   fields: row => [
     [1.0, row.entry.name, true],
     [0.8, row.entry.genericName],

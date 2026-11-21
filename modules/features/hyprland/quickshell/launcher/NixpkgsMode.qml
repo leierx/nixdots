@@ -62,7 +62,7 @@ LauncherMode {
   title: "Run from nixpkgs"
   image: Quickshell.iconPath("nix-snowflake", "package-x-generic")
   placeholder: root.index.lines.length > 0 ? "Run a package from nixpkgs…" : "Fetching the package list…"
-  nothing: root.index.lines.length > 0 ? "Type a package name" : ""
+  nothing: root.index.lines.length > 0 ? "Type a Package Name" : ""
   fields: row => [[1.0, row.title], [0.5, row.subtitle]]
 
   find: query => {

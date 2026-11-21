@@ -184,10 +184,11 @@ Overlay {
       onTriggered: list.hovered = -1
     }
 
-    EmptyLine {
+    EmptyState {
       width: list.width
+      height: list.height
       visible: list.count === 0
-      text: list.query.trim() !== "" ? "No results" : list.mode.nothing
+      text: list.query.trim() !== "" ? "No Results" : list.mode.nothing
     }
 
     WheelSteps {

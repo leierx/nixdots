@@ -390,7 +390,7 @@ Overlay {
         }
 
         Section {
-          title: "ListRow, EmptyLine, Toast"
+          title: "ListRow, EmptyLine, EmptyState, Toast"
 
           Repeater {
             model: [
@@ -424,10 +424,25 @@ Overlay {
             }
           }
           Labelled {
-            label: "empty"
+            label: "empty menu"
             EmptyLine {
               width: 220
-              text: "No results"
+              text: "No outputs"
+            }
+          }
+          Labelled {
+            label: "empty panel"
+            EmptyState {
+              width: 300
+              glyph: Symbols.bell
+              text: "No Notifications"
+            }
+          }
+          Labelled {
+            label: "empty search"
+            EmptyState {
+              width: 300
+              text: "No Results"
             }
           }
           Labelled {

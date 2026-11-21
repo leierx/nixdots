@@ -122,7 +122,7 @@ Overlay {
         Item {
           Layout.fillWidth: true
           // As tall as the calendar and weather at least, so the panel keeps its shape, and no taller than the screen.
-          Layout.preferredHeight: Math.min(root.height - 2 * Theme.rise - 3 * root.padding - footer.implicitHeight, Math.max(side.implicitHeight - footer.implicitHeight - root.padding, list.contentHeight))
+          Layout.preferredHeight: Math.min(root.height - 2 * Theme.rise - 3 * root.padding - footer.implicitHeight, Math.max(side.implicitHeight - footer.implicitHeight - root.padding, list.contentHeight, Notifs.shown.length === 0 ? empty.y + empty.implicitHeight : 0))
 
           ListView {
             id: list
@@ -235,10 +235,14 @@ Overlay {
             easing.type: Easing.OutQuad
           }
 
-          EmptyLine {
+          EmptyState {
+            id: empty
+
             y: list.headerItem?.height ?? 0
             width: parent.width
+            height: parent.height - y
             visible: Notifs.shown.length === 0
+            glyph: Symbols.bell
             text: "No Notifications"
           }
         }

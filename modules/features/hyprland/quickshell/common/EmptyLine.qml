@@ -1,6 +1,6 @@
 import QtQuick
 
-// What an empty list says, one dim line where its first row would be ("No results").
+// What an empty menu says: one dim line where its first row would be, quiet, as the toggle and the header already show its symbol (ours over gs .bt-menu-placeholder).
 Item {
   property alias text: label.text
 

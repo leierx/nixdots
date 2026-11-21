@@ -19,7 +19,7 @@ LauncherMode {
   title: "Clipboard"
   glyph: Symbols.clipboard
   placeholder: "Search clipboard…"
-  nothing: "Nothing copied yet"
+  nothing: "Nothing Copied Yet"
   wide: true
   removable: true
   rows: root.entries.map(entry => {

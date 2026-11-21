@@ -65,7 +65,7 @@ LauncherMode {
   title: "Monitor layouts"
   glyph: Symbols.monitors
   placeholder: "Monitor layout…"
-  nothing: "No monitor layouts"
+  nothing: "No Monitor Layouts"
   split: 0.5
   preview: Preview {
     row: root.selected
