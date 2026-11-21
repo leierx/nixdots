@@ -126,3 +126,23 @@ for _ in $(seq 20); do [ "$(closes | wc -l)" -eq 3 ] && break; sleep 0.1; done #
 read -r x y < <(closes | head -1)
 qst click left "$x" "$y"
 qst wait '.notifications == 2 and (.history | map(.summary) | index("two") | not)'
+
+qst case "Clear in the center offers Undo for five seconds, which brings them back; left alone, or the center closed, they go"
+press() { read -r x y _ < <(qst areas 'NotificationCenter' | awk -F'\t' -v name=":$1" 'index($3, name) && $4 == "true" { print $1, $2; exit }'); [ -n "${x:-}" ] || { echo "no $1"; exit 1; }; qst click left "$x" "$y"; }
+for n in 1 2 3; do notify-send -a Chat "message $n"; done
+qst wait '.notifications == 3'
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center"'
+press action:Clear
+qst wait '.held == 3 and .panel == "center" and (.center | length) == 0'
+press action:Undo
+qst wait '.held == 0 and .notifications == 3 and (.center | length) == 1'
+press action:Clear
+qst wait '.held == 3'
+qst wait '.notifications == 0 and .held == 0' 8
+for n in 1 2; do notify-send -a Chat "again $n"; done
+qst wait '.notifications == 2'
+press action:Clear
+qst wait '.held == 2'
+qst ipc panels close > /dev/null
+qst wait '.notifications == 0 and .held == 0 and .panel == ""'

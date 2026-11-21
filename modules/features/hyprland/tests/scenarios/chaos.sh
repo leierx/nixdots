@@ -498,3 +498,22 @@ for word in qwxz zzzzzzzz fxfxfxfx aaaa firfeox thunderbrd gimpp fierfox; do
 done
 qst wait '.field == "fierfox" and (.results | index("Firefox")) != null'
 qst stays '.panel == "apps"' 0.5
+
+qst case "Clear and Undo hammered while notifications keep arriving and the center closes and opens: what Undo brings back is what Clear took"
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center"'
+press() { read -r x y _ < <(qst areas 'NotificationCenter' | awk -F'\t' -v name=":$1" 'index($3, name) && $4 == "true" { print $1, $2; exit }'); [ -n "${x:-}" ] && qst click left "$x" "$y"; }
+for n in $(seq 6); do notify-send -a "App $n" "first $n"; done
+qst wait '.notifications == 6'
+for round in $(seq 8); do
+  press action:Clear
+  notify-send -a Late "late $round" &
+  press action:Undo
+done
+wait
+qst wait '.held == 0 and (.history | map(select(.app != "Late")) | length) == 6'
+press action:Clear
+qst wait '.held > 0'
+qst ipc panels close > /dev/null
+qst ipc panels open center > /dev/null
+qst wait '.held == 0 and .notifications == 0 and .panel == "center"'

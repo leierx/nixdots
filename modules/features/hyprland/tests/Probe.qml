@@ -372,6 +372,7 @@ Scope {
           remaining: e.remaining ?? null
         })),
         notifications: Notifs.entries.length,
+        held: Notifs.held.length,
         history: Notifs.entries.map(e => ({ uid: e.uid, app: Notifs.appKey(e), summary: e.summary ?? null, popup: e.popup, checked: e.checked, restored: e.restored ?? false, image: e.image || null, kept: Object.keys(e.kept ?? {}) })),
         historyFile: Quickshell.statePath("notification-history.json"),
         historyImages: History.images,

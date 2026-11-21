@@ -428,7 +428,7 @@ Notes on specific features:
         under it; a level to drag a `Slider` (its range reaching past 1 while the level does, with a tick at 100 %, held still for a drag, which Escape puts back where it began); a scroll bar a `ScrollBar` (Qt's
         `ScrollIndicator`, 4 px, fading out unless `held`); a switch a
         `Switch`; a key a `Keycap`; a key that acts on a label underlined in it (`Theme.accessKey`); a text field a `TextField`; a row of a
-        panel's list a `ListRow`; a press's feedback a `Pop`; an icon a
+        panel's list a `ListRow`; a press's feedback a `Pop`; what can be taken back a `Toast` (a pill with its button, five seconds, gone with its panel); an icon a
         `Glyph` of a `Symbols` path (an app's or tray item's an `IconImage`);
         anything floating a `Card` in an `Overlay` or a layer of its own, and
         only a `Card` casts the shadow.
@@ -629,7 +629,10 @@ Notes on specific features:
         where the screen has room. Opening it checks every notification and
         puts the popups away. Each card's close button sits after its age
         without the pointer over it (a group's on its first line), and every
-        line keeps its room, so the ages line up. Its list glides on the wheel
+        line keeps its room, so the ages line up. Clear hides them and offers
+        Undo in a `Toast` for five seconds; `Notifs` dismisses what it held as
+        the toast goes or the center closes (the `notifications clear` IPC at
+        once). Its list glides on the wheel
         and flicks.
       - `controls/`: the control centre, GNOME's quick settings under the
         status button (SUPER+A): `Header`, `Levels` (output, input and each
@@ -1097,7 +1100,7 @@ the `osd` showing (with its screen), `osdShown` (shows so far) and
 `camera` names or null while unused), `status` (each bar's status button: its glyphs by name, `Microphone`, `bell`, `dnd`, `vpn`, `network` and so on, and the battery's percentage or null), `controls` (the open
 menu, the pills by key with their state, and each backend: `network`, `vpns`,
 `vpnAsking`, `bluetooth`, `night`, `media`), `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: whether its chevron
-shows, how many icons wait behind it and their ids in the overflow's order), `sliders` (every slider by name, its value and range), `results` (the launcher's first ten by title), `center` (the center's groups in view, each one's lines in its order), `field`
+shows, how many icons wait behind it and their ids in the overflow's order), `held` (what Clear holds back for its Undo), `sliders` (every slider by name, its value and range), `results` (the launcher's first ten by title), `center` (the center's groups in view, each one's lines in its order), `field`
 (the text field up, the launcher's search) and `problems`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.

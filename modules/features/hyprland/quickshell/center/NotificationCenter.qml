@@ -13,7 +13,7 @@ Overlay {
   id: root
 
   readonly property bool open: Panels.active === name
-  readonly property var apps: [...new Set(Notifs.entries.map(entry => Notifs.appKey(entry)))]
+  readonly property var apps: [...new Set(Notifs.shown.map(entry => Notifs.appKey(entry)))]
   readonly property int padding: Theme.padding
   // Beside the calendar the list keeps 24em, or the calendar steps aside, as on a small screen at a large scale, or one too short for it.
   readonly property real room: width - 2 * Theme.gap - 4 * padding - 1 - side.implicitWidth
@@ -28,6 +28,7 @@ Overlay {
 
   onOpenChanged: {
     if (open) Notifs.hidePopups();
+    else toast.dismiss();
     (open ? closing : opening).stop();
     // Closed before it moved, it has nothing to animate, and would never report itself hidden.
     if (!open && shown === 0) Qt.callLater(root.hideClosed);
@@ -146,7 +147,7 @@ Overlay {
               required property string modelData
 
               width: ListView.view.width
-              entries: Notifs.entries.filter(entry => Notifs.appKey(entry) === modelData)
+              entries: Notifs.shown.filter(entry => Notifs.appKey(entry) === modelData)
               onExpandedChanged: root.expandedGroups += expanded ? 1 : -1
               Component.onDestruction: if (expanded) root.expandedGroups--
 
@@ -222,7 +223,7 @@ Overlay {
 
           Column {
             anchors.centerIn: parent
-            visible: Notifs.entries.length === 0
+            visible: Notifs.shown.length === 0
             spacing: 12
 
             Glyph {
@@ -250,25 +251,38 @@ Overlay {
 
           Item {
             Layout.fillWidth: true
+
+            Toast {
+              id: toast
+
+              // Centred on the whole footer, over the buttons it hides.
+              x: (footer.width - width) / 2 - parent.x
+              anchors.verticalCenter: parent.verticalCenter
+              text: "Notifications cleared"
+              action: "Undo"
+              onActed: Notifs.unhold()
+              onExpired: Notifs.release()
+            }
           }
 
           Button {
             text: "Collapse All"
             font: Theme.body
-            opacity: root.expandedGroups > 0 ? 1 : 0
+            opacity: root.expandedGroups > 0 && !toast.shown ? 1 : 0
             enabled: opacity === 1
             onClicked: root.collapseAll()
           }
 
           Button {
+            objectName: "action:Clear"
             text: "Clear"
             font: Theme.body
             // Hidden without leaving the layout, so the footer keeps its height.
-            opacity: Notifs.entries.length > 0 ? 1 : 0
+            opacity: Notifs.shown.length > 0 && !toast.shown ? 1 : 0
             enabled: opacity === 1
             onClicked: {
-              Notifs.clear();
-              Panels.close();
+              Notifs.hold();
+              toast.show();
             }
           }
         }
