@@ -7,5 +7,5 @@ Button {
   radius: height / 2
   padding: text === "" ? 4 : 12
   flat: true
-  font: Theme.bar
+  font: Theme.caption
 }

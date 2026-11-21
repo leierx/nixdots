@@ -69,7 +69,7 @@ BarButton {
         anchors.verticalCenter: parent.verticalCenter
         text: Power.percent
         color: Theme.fg
-        font: Theme.barStrong
+        font: Theme.captionHeading
       }
     }
   }

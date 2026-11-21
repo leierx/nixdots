@@ -464,9 +464,9 @@ Notes on specific features:
         its button and kept on the screen. Panel widths are in em of the body
         font (`Theme.em`), after GNOME Shell's.
       - Type: `Theme`'s fonts only: `body`; `heading` for the titles of rows
-        and cards; `caption` for ages and states under a name;
-        `captionHeading`; `title4` for panel and menu titles; `title2`; `bar`
-        and `barStrong` (the bar's lettering, numbers and badges); and one each
+        and cards; `caption` for ages and states under a name, and the bar's
+        lettering; `captionHeading` for its numbers and badges; `title4` for
+        panel and menu titles; `title2`; and one each
         for the launcher's `search`, the weather's `temperature` and the power
         menu's clock (`display`). Long text elides at a line limit. Words
         follow GNOME's HIG: header capitals for titles (the notifications our scripts send too), buttons, pills and menu

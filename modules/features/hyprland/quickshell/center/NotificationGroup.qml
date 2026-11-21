@@ -189,7 +189,7 @@ Item {
             anchors.centerIn: parent
             text: root.shown.length
             color: Theme.bg
-            font: Theme.barStrong
+            font: Theme.captionHeading
           }
         }
       }

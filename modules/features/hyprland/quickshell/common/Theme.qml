@@ -54,9 +54,6 @@ Singleton {
   readonly property font captionHeading: Qt.font({ family: "Adwaita Sans", pointSize: 9, weight: Font.Bold })
   readonly property font title4: Qt.font({ family: "Adwaita Sans", pointSize: 13, weight: Font.Bold })
   readonly property font title2: Qt.font({ family: "Adwaita Sans", pointSize: 15, weight: Font.ExtraBold })
-  // The bar's lettering, a size below the body's, for its 26 px items.
-  readonly property font bar: Qt.font({ family: "Adwaita Sans", pointSize: 10, weight: Font.Medium })
-  readonly property font barStrong: Qt.font({ family: "Adwaita Sans", pointSize: 10, weight: Font.Bold })
   // One a piece: the launcher's search, the weather's temperature and the power menu's clock.
   readonly property font search: Qt.font({ family: "Adwaita Sans", pointSize: 19 })
   readonly property font temperature: Qt.font({ family: "Adwaita Sans", pointSize: 38, weight: Font.Light })
