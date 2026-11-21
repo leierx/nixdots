@@ -6,9 +6,10 @@
     description = "Named colour palettes, keyed by palette then by colour name";
   };
 
-  # libadwaita 1.9's dark style under its own names (doc/css-variables.md),
-  # plus ghostty's "Adwaita Dark" terminal colours; translucent ones are CSS #rrggbbaa.
-  # The opaque surfaces and the terminal background are libadwaita's less 14 per channel, so its steps survive
+  # libadwaita 1.10's dark style under its own names (doc/css-variables.md), GNOME Shell 51's
+  # surfaces under its Sass names with a shell_ prefix, and ghostty's "Adwaita Dark" terminal colours;
+  # translucent ones are CSS #rrggbbaa.
+  # The opaque surfaces and the terminal background are upstream's less 14 per channel, so their steps survive
   config.palettes.adwaita_darker = {
     accent_bg_color = "#3584e4";
     accent_fg_color = "#ffffff";
@@ -62,6 +63,16 @@
     popover_shade_color = "#00000640";
     shade_color = "#00000640";
     scrollbar_outline_color = "#00000cf2";
+
+    shell_bg_color = "#28282c";
+    shell_base_color = "#141418";
+    shell_osd_bg_color = "#202025";
+    shell_outer_borders_color = "#343439";
+    shell_card_bg_color = "#39393e";
+    shell_message_bg_color = "#46464c";
+    shell_message_second_color = "#37373c";
+    shell_message_lower_color = "#2f2f34";
+    shell_submenu_bg_color = "#48484e";
 
     accent_blue = "#3584e4";
     accent_teal = "#2190a4";
