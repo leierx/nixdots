@@ -14,21 +14,21 @@ Item {
     return Power.remaining > 0 ? `About ${Power.duration(Power.remaining)} left` : "On battery";
   }
 
-  implicitHeight: 34
+  implicitHeight: Theme.iconButtonSize
 
   Rectangle {
     anchors.verticalCenter: parent.verticalCenter
     visible: Power.present
-    width: charge.width + 24
-    height: 34
+    width: charge.width + 2 * Theme.padding
+    height: Theme.iconButtonSize
     radius: height / 2
-    color: Theme.card
+    color: Theme.buttonBg
 
     Row {
       id: charge
 
       anchors.centerIn: parent
-      spacing: 8
+      spacing: Theme.basePadding
 
       BatteryGlyph {
         anchors.verticalCenter: parent.verticalCenter
@@ -52,7 +52,7 @@ Item {
 
     anchors.right: parent.right
     anchors.verticalCenter: parent.verticalCenter
-    spacing: 8
+    spacing: Theme.padding
 
     IconButton {
       objectName: "header:screenshot"

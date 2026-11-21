@@ -67,7 +67,7 @@ Rectangle {
   required property string key
   // The most it may take; the list scrolls within.
   property real limit: 1e6
-  readonly property int rowHeight: 36
+  readonly property int rowHeight: Theme.menuRowHeight
   // A row asking for a password: its own row and the field under it.
   readonly property int askingHeight: 2 * rowHeight + 12
   // Wi-Fi's rows are built at most every 150 ms: three hundred networks each changing strength in a scan would otherwise rebuild them three hundred times.
@@ -91,7 +91,7 @@ Rectangle {
     if (key === "input") return "No inputs";
     return "";
   }
-  readonly property real chrome: heading.height + (filter.visible ? filter.height + 6 : 0) + (foot.visible ? foot.height + 13 : 0) + 2 * 6
+  readonly property real chrome: heading.height + (filter.visible ? filter.height + Theme.basePadding : 0) + (foot.visible ? foot.height + 2 * Theme.basePadding + 1 : 0) + Theme.padding + Theme.basePadding
 
   onChangesChanged: {
     if (settle.running) {
@@ -117,8 +117,8 @@ Rectangle {
 
   implicitHeight: chrome + (tint ? rowHeight : Math.max(list.contentHeight, rowHeight))
   height: Math.min(implicitHeight, Math.max(chrome + 4 * rowHeight + (all.some(row => row.asking) ? askingHeight : rowHeight), limit))
-  radius: Theme.cardRadius
-  color: Theme.card
+  radius: Theme.toggleMenuRadius
+  color: Theme.cardBg
 
   Timer {
     id: settle
@@ -135,53 +135,53 @@ Rectangle {
   }
 
   Column {
-    x: 6
-    y: 6
-    width: parent.width - 12
+    x: Theme.basePadding
+    y: Theme.padding
+    width: parent.width - 2 * Theme.basePadding
 
     Item {
       id: heading
 
       width: parent.width
-      height: 48
+      height: 42 + Theme.padding
 
+      // Shell's header icon: 24 px in a 42 px disc, the accent while on.
       Rectangle {
         id: chip
 
-        x: 4
-        anchors.verticalCenter: parent.verticalCenter
-        width: 36
-        height: 36
+        x: Theme.basePadding
+        width: 42
+        height: 42
         radius: height / 2
-        color: menuBox.on ? Theme.accentBg : Theme.button
+        color: menuBox.on ? Theme.accentBg : Theme.headerIconBg
 
         Behavior on color {
           ColorAnimation {
-            duration: Theme.fade
+            duration: Theme.quickTime
           }
         }
 
         Glyph {
           anchors.centerIn: parent
           path: menuBox.glyph
-          size: 16
+          size: 24
           color: menuBox.on ? Theme.accentFg : Theme.fg
         }
       }
 
       Text {
         anchors.left: chip.right
-        anchors.leftMargin: 12
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.leftMargin: Theme.padding
+        anchors.verticalCenter: chip.verticalCenter
         text: menuBox.title
         color: Theme.fg
-        font: Theme.title4
+        font: Theme.title3
       }
 
       Text {
         anchors.right: parent.right
-        anchors.rightMargin: 10
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.rightMargin: Theme.padding
+        anchors.verticalCenter: chip.verticalCenter
         visible: menuBox.filtering || menuBox.tint
         text: menuBox.tint ? `${NightLight.temperature} K` : `${menuBox.all.length}`
         color: Theme.fgDim
@@ -199,27 +199,25 @@ Rectangle {
 
     Item {
       width: 1
-      height: filter.visible ? 6 : 0
+      height: filter.visible ? Theme.basePadding : 0
     }
 
     Item {
       width: parent.width
       height: menuBox.height - menuBox.chrome
 
-      Text {
-        x: 40
+      EmptyLine {
+        x: 16 + Theme.basePadding
+        width: parent.width - x
         height: menuBox.rowHeight
-        verticalAlignment: Text.AlignVCenter
         visible: menuBox.shown.length === 0 && !menuBox.tint
-        text: menuBox.all.length === 0 ? menuBox.empty : "Nothing matches"
-        color: Theme.fgDim
-        font: Theme.body
+        text: menuBox.all.length === 0 ? menuBox.empty : "No results"
       }
 
       Slider {
         objectName: "slider:night"
-        x: 10
-        width: parent.width - 20
+        x: Theme.padding
+        width: parent.width - 2 * Theme.padding
         height: menuBox.rowHeight
         visible: menuBox.tint
         value: NightLight.strength
@@ -250,8 +248,8 @@ Rectangle {
             property: "opacity"
             from: 0
             to: 1
-            duration: Theme.move
-            easing.type: Easing.OutCubic
+            duration: Theme.popupTime
+            easing.type: Easing.OutQuad
           }
         }
 
@@ -259,16 +257,16 @@ Rectangle {
           NumberAnimation {
             property: "opacity"
             to: 0
-            duration: Theme.move
-            easing.type: Easing.OutCubic
+            duration: Theme.popupTime
+            easing.type: Easing.OutQuad
           }
         }
 
         displaced: Transition {
           NumberAnimation {
             property: "y"
-            duration: Theme.move
-            easing.type: Easing.OutCubic
+            duration: Theme.popupTime
+            easing.type: Easing.OutQuad
           }
         }
 
@@ -282,8 +280,8 @@ Rectangle {
 
           width: ListView.view.width
           height: asking ? menuBox.askingHeight : menuBox.rowHeight
-          radius: Theme.smallRadius
-          color: asking ? Theme.hover : "transparent"
+          radius: Theme.menuItemRadius
+          color: asking ? Theme.menuHoverBg : "transparent"
           onHeightChanged: if (asking) Qt.callLater(menuBox.reveal, row)
           onAskingChanged: if (asking) password.input.forceActiveFocus()
           // Asked again after a wrong one, the field takes the keyboard back for the next try.
@@ -296,7 +294,8 @@ Rectangle {
             glyph: row.modelData.glyph
             title: row.modelData.title
             strong: row.modelData.current === true
-            acts: !(row.sound && row.modelData.current)
+            // An asking row is filled already; a hover on top would sink its note below 3:1.
+            acts: !(row.sound && row.modelData.current) && !row.asking
             onClicked: menuBox.choose(menuBox.key, row.modelData)
 
             Text {
@@ -317,10 +316,10 @@ Rectangle {
               objectName: "sign-in"
               anchors.verticalCenter: parent.verticalCenter
               implicitHeight: 28
-              padding: 12
+              padding: Theme.padding
+              pill: true
               visible: (row.modelData.action ?? "") !== ""
               text: row.modelData.action ?? ""
-              font: Theme.caption
               onClicked: Net.signIn()
             }
 
@@ -367,17 +366,16 @@ Rectangle {
               anchors.verticalCenter: parent.verticalCenter
               visible: row.modelData.toggle !== undefined
               checked: row.modelData.toggle ?? false
-              scale: 0.85
               onClicked: menuBox.choose(menuBox.key, row.modelData)
             }
           }
 
           Row {
             visible: row.asking
-            x: 10
-            y: menuBox.rowHeight + 4
-            width: parent.width - 20
-            spacing: 8
+            x: Theme.padding
+            y: menuBox.rowHeight + Theme.baseMargin
+            width: parent.width - 2 * Theme.padding
+            spacing: Theme.basePadding
 
             TextField {
               id: password
@@ -393,7 +391,7 @@ Rectangle {
 
               implicitHeight: 36
               text: "Connect"
-              font: Theme.body
+              suggested: true
               enabled: password.text !== "" && (menuBox.key !== "wifi" || row.modelData.target !== null)
               onClicked: {
                 if (menuBox.key === "wifi") Net.submit(row.modelData.key, password.text);
@@ -407,19 +405,19 @@ Rectangle {
 
     Item {
       width: 1
-      height: foot.visible ? 6 : 0
+      height: foot.visible ? Theme.basePadding : 0
     }
 
     Rectangle {
       visible: foot.visible
       width: parent.width
       height: 1
-      color: Theme.border
+      color: Theme.separator
     }
 
     Item {
       width: 1
-      height: foot.visible ? 6 : 0
+      height: foot.visible ? Theme.basePadding : 0
     }
 
     Column {

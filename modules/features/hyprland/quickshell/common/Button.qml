@@ -28,6 +28,8 @@ Rectangle {
 
   readonly property bool filled: suggested || destructive
   readonly property color fillBg: suggested ? Theme.accentBg : Theme.destructiveBg
+  readonly property color fillHover: suggested ? Theme.accentHover : Theme.destructiveHover
+  readonly property color fillActive: suggested ? Theme.accentActive : Theme.destructiveActive
   property color foreground: filled ? Theme.accentFg : Theme.fg
   readonly property var parts: [glyph !== "" ? glyphSize : -1, label.text !== "" ? label.implicitWidth : -1, expander ? arrow.width : -1].filter(width => width >= 0)
   readonly property real contentWidth: parts.reduce((sum, width) => sum + width, 0) + Math.max(0, parts.length - 1) * row.spacing
@@ -41,8 +43,8 @@ Rectangle {
   opacity: enabled ? 1 : 0.5
   color: {
     if (filled) {
-      if (pressed || checked) return Theme.lighten(fillBg, 0.09);
-      return hovered ? Theme.lighten(fillBg, 0.04) : fillBg;
+      if (pressed || checked) return fillActive;
+      return hovered ? fillHover : fillBg;
     }
     if (flat) {
       if (pressed || checked) return Theme.buttonHoverBg;

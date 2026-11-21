@@ -49,21 +49,21 @@ Column {
         readonly property var window: inUse.windowOf(modelData.apps)
         readonly property var names: modelData.apps.map(app => DesktopEntries.heuristicLookup(app)?.name ?? app)
 
-        width: (inUse.width - 12) / 2
-        height: 48
+        width: (inUse.width - Theme.padding) / 2
+        height: Theme.toggleHeight
         radius: height / 2
-        color: area.containsMouse && area.enabled ? Theme.buttonHover : Theme.button
+        color: area.containsMouse && area.enabled ? Theme.buttonHoverBg : Theme.buttonBg
 
         Behavior on color {
           ColorAnimation {
-            duration: Theme.fade
+            duration: Theme.quickTime
           }
         }
 
         Glyph {
           id: chip
 
-          x: 14
+          x: 15
           anchors.verticalCenter: parent.verticalCenter
           path: use.modelData.glyph
           size: 16

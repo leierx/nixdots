@@ -14,7 +14,7 @@ Overlay {
   // The bar's height, which the popover drops below.
   required property real top
   // The most the card may take: what the screen leaves under the bar.
-  readonly property real available: height - top - 2 * Theme.gap
+  readonly property real available: height - top - 2 * Theme.rise
   readonly property bool open: Panels.active === name
   property real shown: 0
   // The open menu, held while the card fades out, as Controls shuts it at once.
@@ -84,8 +84,8 @@ Overlay {
     target: root
     property: "shown"
     to: 1
-    duration: Theme.open
-    easing.type: Easing.OutQuint
+    duration: Theme.popupTime
+    easing.type: Easing.OutQuad
   }
 
   NumberAnimation {
@@ -94,26 +94,23 @@ Overlay {
     target: root
     property: "shown"
     to: 0
-    duration: Theme.close
-    easing.type: Easing.InCubic
+    duration: Theme.popupTime
+    easing.type: Easing.OutQuad
   }
 
   Card {
     id: box
 
-    x: Math.max(Theme.gap, Math.min(root.anchorX - width / 2, root.width - width - Theme.gap))
-    y: root.top + Theme.gap
-    width: Math.min(Math.round(28 * Theme.em), root.width - 2 * Theme.gap)
-    height: Math.min(column.implicitHeight + 2 * Theme.padding, root.available)
-    radius: Theme.windowRadius
+    x: Math.max(Theme.rise, Math.min(root.anchorX - width / 2, root.width - width - Theme.rise))
+    y: root.top + Theme.rise
+    width: Math.min(2 * Theme.toggleWidth + Theme.padding + 2 * Theme.quickSettingsPadding, root.width - 2 * Theme.rise)
+    height: Math.min(column.implicitHeight + 2 * Theme.quickSettingsPadding, root.available)
+    radius: Theme.quickSettingsRadius
     focus: true
     opacity: root.shown
-    // Grown out of its button.
-    transform: Scale {
-      origin.x: root.anchorX - box.x
-      origin.y: -Theme.gap
-      xScale: 0.9 + 0.1 * root.shown
-      yScale: 0.9 + 0.1 * root.shown
+    // BoxPointer's: a fade and a slide down from the bar by its rise.
+    transform: Translate {
+      y: -Theme.rise * (1 - root.shown)
     }
 
     Flickable {
@@ -123,12 +120,12 @@ Overlay {
       QQC.ScrollIndicator.vertical: ScrollBar {
         parent: box
         x: box.width - width - 3
-        y: Theme.padding
+        y: Theme.quickSettingsPadding
         height: scroller.height
         held: true
       }
       anchors.fill: parent
-      anchors.margins: Theme.padding
+      anchors.margins: Theme.quickSettingsPadding
       contentHeight: column.implicitHeight
       interactive: contentHeight > height
       boundsBehavior: Flickable.StopAtBounds
@@ -160,13 +157,13 @@ Overlay {
 
             required property var modelData
             readonly property bool menu: modelData.kind === "menu"
-            readonly property real gap: modelData.kind === "header" ? 0 : 12
+            readonly property real gap: modelData.kind === "header" ? 0 : Theme.padding
             property real opened: !menu || root.menu === modelData.key ? 1 : 0
 
             Behavior on opened {
               NumberAnimation {
-                duration: Theme.move
-                easing.type: Easing.OutCubic
+                duration: Theme.popupTime
+                easing.type: Easing.OutQuad
               }
             }
 
@@ -216,7 +213,7 @@ Overlay {
 
               Menu {
                 key: section.modelData.key
-                limit: root.available - 2 * Theme.padding - column.fixed - section.gap
+                limit: root.available - 2 * Theme.quickSettingsPadding - column.fixed - section.gap
                 onWantsInView: item => root.reveal(item)
               }
             }
@@ -225,7 +222,7 @@ Overlay {
               id: toggleRow
 
               Row {
-                spacing: 12
+                spacing: Theme.padding
 
                 Repeater {
                   model: ScriptModel {
@@ -236,7 +233,7 @@ Overlay {
                   Pill {
                     required property var modelData
 
-                    width: (column.width - 12) / 2
+                    width: (column.width - Theme.padding) / 2
                     toggle: modelData
                     open: root.menu === modelData.key
                   }

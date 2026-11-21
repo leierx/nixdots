@@ -3,128 +3,41 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.common
 
-// GNOME's quick toggle: a pill, its arrow a segment of its own.
+// Shell's .quick-toggle: a pill, its menu arrow a segment of its own, a step lighter.
 Rectangle {
   id: pill
 
-
   required property var toggle
   property bool open: false
-  property color ink: toggle.on ? Theme.accentFg : Theme.fg
-  property color dimInk: toggle.on ? Theme.accentFg : Theme.fgDim
-  property color rule: toggle.on ? Theme.accentFg : Theme.border
+  readonly property bool on: toggle.on
+  readonly property color ink: on ? Theme.accentFg : Theme.fg
+  readonly property color segmentBg: on ? Theme.accentSegmentBg : Theme.buttonHoverBg
 
-  height: 48
+  implicitHeight: Theme.toggleHeight
+  height: Theme.toggleHeight
   radius: height / 2
   activeFocusOnTab: !toggle.unavailable
   Keys.onSpacePressed: Controls.flip(pill.toggle)
   Keys.onReturnPressed: pill.toggle.menu ? Controls.show(pill.toggle.key) : Controls.flip(pill.toggle)
   opacity: toggle.unavailable ? 0.5 : 1
-  color: toggle.on ? Theme.accentBg : Theme.button
+  color: {
+    if (on) return main.pressed ? Theme.accentActive : main.containsMouse ? Theme.accentHover : Theme.accentBg;
+    return main.pressed ? Theme.buttonActiveBg : main.containsMouse ? Theme.buttonHoverBg : Theme.buttonBg;
+  }
 
   Behavior on color {
     ColorAnimation {
-      duration: Theme.fade
-    }
-  }
-
-  Behavior on ink {
-    ColorAnimation {
-      duration: Theme.fade
-    }
-  }
-
-  Behavior on dimInk {
-    ColorAnimation {
-      duration: Theme.fade
-    }
-  }
-
-  Behavior on rule {
-    ColorAnimation {
-      duration: Theme.fade
-    }
-  }
-
-  Behavior on opacity {
-    NumberAnimation {
-      duration: Theme.fade
-    }
-  }
-
-  Rectangle {
-    anchors.fill: parent
-    radius: parent.radius
-    color: main.containsMouse && main.enabled ? Theme.hover : "transparent"
-
-    Behavior on color {
-      ColorAnimation {
-        duration: Theme.fade
-      }
-    }
-  }
-
-  // A flip's feedback: a ripple spreading from the click, and the symbol's Pop.
-  function pop(x: real): void {
-    ripple.from = Math.max(0, Math.min(pill.width - pill.height, x - pill.height / 2));
-    popping.restart();
-  }
-
-  Rectangle {
-    id: ripple
-
-    property real from: 0
-
-    height: parent.height
-    radius: height / 2
-    color: Theme.fg
-    opacity: 0
-  }
-
-  ParallelAnimation {
-    id: popping
-
-    NumberAnimation {
-      target: ripple
-      property: "x"
-      from: ripple.from
-      to: 0
-      duration: Theme.settle
-      easing.type: Easing.OutCubic
-    }
-
-    NumberAnimation {
-      target: ripple
-      property: "width"
-      from: pill.height
-      to: pill.width
-      duration: Theme.settle
-      easing.type: Easing.OutCubic
-    }
-
-    NumberAnimation {
-      target: ripple
-      property: "opacity"
-      from: 0.25
-      to: 0
-      duration: Theme.settle
-      easing.type: Easing.OutCubic
-    }
-
-    Pop {
-      target: symbol
+      duration: Theme.quickTime
     }
   }
 
   Row {
-    x: 14
+    x: 15
     anchors.verticalCenter: parent.verticalCenter
-    width: parent.width - x - (segment.visible ? segment.width : 14)
-    spacing: 10
+    width: parent.width - x - (segment.visible ? segment.width + 9 : Theme.padding)
+    spacing: 9
 
     Glyph {
-      id: symbol
-
       anchors.verticalCenter: parent.verticalCenter
       path: pill.toggle.glyph
       size: 16
@@ -133,7 +46,7 @@ Rectangle {
 
     Column {
       anchors.verticalCenter: parent.verticalCenter
-      width: parent.width - 30
+      width: parent.width - 25
 
       Text {
         width: parent.width
@@ -146,17 +59,11 @@ Rectangle {
 
       Text {
         width: parent.width
+        visible: text !== ""
         text: pill.toggle.subtitle
         textFormat: Text.PlainText
         elide: Text.ElideRight
-        color: pill.dimInk
-        opacity: pill.toggle.on ? 0.8 : 1
-
-        Behavior on opacity {
-          NumberAnimation {
-            duration: Theme.fade
-          }
-        }
+        color: pill.ink
         font: Theme.caption
       }
     }
@@ -171,10 +78,7 @@ Rectangle {
     hoverEnabled: true
     enabled: !pill.toggle.unavailable
     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-    onClicked: mouse => {
-      Controls.flip(pill.toggle);
-      pill.pop(mouse.x);
-    }
+    onClicked: Controls.flip(pill.toggle)
   }
 
   Item {
@@ -182,41 +86,33 @@ Rectangle {
 
     anchors.right: parent.right
     visible: pill.toggle.menu
-    width: 44
+    width: 38
     height: parent.height
-
-    Rectangle {
-      width: 1
-      height: parent.height - 20
-      anchors.verticalCenter: parent.verticalCenter
-      color: pill.rule
-      opacity: pill.toggle.on ? 0.3 : 1
-
-      Behavior on opacity {
-        NumberAnimation {
-          duration: Theme.fade
-        }
-      }
-    }
 
     Rectangle {
       anchors.fill: parent
       anchors.leftMargin: 1
       topRightRadius: pill.radius
       bottomRightRadius: pill.radius
-      color: side.containsMouse ? Theme.hover : "transparent"
+      color: side.containsMouse ? (pill.on ? Theme.accentSegmentHoverBg : Theme.segmentHoverBg) : pill.segmentBg
 
       Behavior on color {
         ColorAnimation {
-          duration: Theme.fade
+          duration: Theme.quickTime
         }
       }
     }
 
+    Rectangle {
+      width: 1
+      height: parent.height
+      color: pill.on ? Theme.accentSeparator : Theme.segmentSeparator
+    }
+
     ExpanderArrow {
       anchors.centerIn: parent
-      anchors.horizontalCenterOffset: -2
       pointing: pill.open ? "down" : "right"
+      color: pill.ink
     }
 
     MouseArea {

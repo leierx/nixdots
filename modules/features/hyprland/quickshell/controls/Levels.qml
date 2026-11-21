@@ -28,14 +28,17 @@ Column {
     signal stepped(int notches)
     signal muteClicked()
 
-    spacing: 8
+    spacing: Theme.basePadding
 
     IconButton {
       id: lead
 
       objectName: `mute:${level.name}`
       anchors.verticalCenter: parent.verticalCenter
+      small: true
       flat: true
+      // Only its click is off where nothing mutes: the symbol still names the level.
+      opacity: 1
       enabled: level.mutes && level.enabled
       checked: level.muted
       glyph: level.glyph
@@ -63,6 +66,7 @@ Column {
       anchors.verticalCenter: parent.verticalCenter
       opacity: level.opens !== "" ? 1 : 0
       enabled: level.opens !== ""
+      small: true
       flat: true
       expander: true
       checked: level.opens !== "" && root.menu === level.opens
@@ -72,17 +76,17 @@ Column {
     }
   }
 
-  spacing: 6
+  spacing: Theme.basePadding
 
   Row {
     visible: !Volume.present && !Microphone.present
-    height: 34
-    spacing: 8
+    height: 28
+    spacing: Theme.basePadding
     opacity: 0.5
 
     Item {
-      width: 34
-      height: 34
+      width: 28
+      height: 28
 
       Glyph {
         anchors.centerIn: parent
