@@ -19,8 +19,11 @@ Singleton {
   }
 
   function set(on: bool): void {
-    if (change.running) return;
     root.active = on;
+    if (change.running) {
+      change.again = true;
+      return;
+    }
     change.command = ["systemctl", "--user", on ? "start" : "stop", root.unit];
     change.running = true;
   }
@@ -48,12 +51,25 @@ Singleton {
   Component.onCompleted: refresh()
   onWatchedChanged: if (watched) refresh()
 
+  function settle(): void {
+    if (!change.again) {
+      root.refresh();
+      return;
+    }
+    change.again = false;
+    // After the exit handler, so the next run starts from a finished process.
+    Qt.callLater(() => root.set(root.active));
+  }
+
   Command {
     id: change
 
+    // Asked for while one ran: the state wanted last is set once it is done.
+    property bool again: false
+
     name: "Caffeine"
-    onDone: root.refresh()
-    onFailed: root.refresh()
+    onDone: root.settle()
+    onFailed: root.settle()
   }
 
   // is-active exits non-zero for any state but active, so this is a Process and not a Command.

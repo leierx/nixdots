@@ -34,12 +34,28 @@ Item {
     Hyprland.dispatch(`hl.dsp.focus({ workspace = ${JSON.stringify(target)} })`);
   }
 
+  // Where the wheel sent it last, until Hyprland says it is there: a fast scroll's notches come before its events.
+  property string heading: ""
+  onShownTargetChanged: if (shownTarget === heading) heading = ""
+
   // Stopping at the ends.
   function scroll(steps: int): void {
     if (steps === 0) return;
-    const at = targets.indexOf(shownTarget);
+    const from = heading !== "" ? heading : shownTarget;
+    const at = targets.indexOf(from);
     const next = Math.max(0, Math.min(targets.length - 1, (at < 0 ? 0 : at) - steps));
-    if (targets[next] !== shownTarget) go(targets[next]);
+    if (targets[next] === from) return;
+    heading = targets[next] === shownTarget ? "" : targets[next];
+    arrival.restart();
+    go(targets[next]);
+  }
+
+  // One Hyprland refuses never arrives.
+  Timer {
+    id: arrival
+
+    interval: 1000
+    onTriggered: root.heading = ""
   }
 
   implicitWidth: row.implicitWidth

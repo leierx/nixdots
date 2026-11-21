@@ -47,14 +47,6 @@ Rectangle {
     return [];
   }
 
-  // Reads what Wi-Fi's rows are built from, cheaply, so any change to it is noticed without building them.
-  function touchWifi(): real {
-    let seen = Net.asking.length + Net.askError.length + Object.keys(Net.failures).length + (Net.portal ? 1 : 0) + (Net.wifiOn ? 1 : 0);
-    for (const network of Net.networks) seen += network.name.length + network.signalStrength + network.state + network.security + (network.known ? 1 : 0) + (network.connected ? 1 : 0);
-    // Never the same twice, so even a change that adds up to the same sum is noticed.
-    return seen + Math.random();
-  }
-
   function choose(key: string, row: var): void {
     if (key === "wifi") {
       if (row.asking) Net.cancel();
@@ -75,17 +67,23 @@ Rectangle {
   readonly property int rowHeight: Theme.menuRowHeight
   // A row asking for a password: its own row and the field under it.
   readonly property int askingHeight: 2 * rowHeight + 12
-  // Wi-Fi's rows are built at most every 150 ms: three hundred networks each changing strength in a scan would otherwise rebuild them three hundred times.
   // Night light's menu is its strength rather than a list.
   readonly property bool tint: key === "night"
   readonly property var all: key === "wifi" ? settled : tint ? [] : menuBox.rows(key)
+  // Wi-Fi's rows, built every 150 ms while it is open: a binding would rebuild them for each of the hundreds of changes a scan makes.
   property var settled: []
-  readonly property real changes: key === "wifi" ? menuBox.touchWifi() : 0
-  readonly property bool filtering: all.length > 20
-  readonly property var shown: filter.text === "" ? all : all.filter(row => row.asking || row.heading || row.title.toLowerCase().includes(filter.text.toLowerCase()))
+  readonly property int count: all.filter(row => !row.heading).length
+  readonly property bool filtering: count > 20
+  readonly property var shown: {
+    if (filter.text === "") return all;
+    const text = filter.text.toLowerCase();
+    const kept = all.filter(row => row.asking || row.heading || row.title.toLowerCase().includes(text));
+    // A heading only over rows that matched.
+    return kept.filter((row, i) => !row.heading || (kept[i + 1] && !kept[i + 1].heading));
+  }
   readonly property string title: ({ wifi: "Wi-Fi", vpn: "VPN", bluetooth: "Bluetooth", sound: "Sound", night: "Night Light" })[key] ?? key
   readonly property var toggle: Controls.toggles.find(toggle => toggle.key === key) ?? null
-  readonly property string glyph: toggle?.glyph ?? Volume.glyph
+  readonly property string glyph: toggle?.glyph ?? (Volume.present ? Volume.glyph : Symbols.volumeOff)
   readonly property bool on: toggle?.on ?? true
   readonly property var footer: key === "wifi" || key === "vpn" ? ["Network Settings"] : key === "bluetooth" ? ["Bluetooth Settings"] : []
   // Said in place of a list with nothing in it.
@@ -96,15 +94,6 @@ Rectangle {
     return "";
   }
   readonly property real chrome: heading.height + (filter.visible ? filter.height + Theme.basePadding : 0) + (foot.visible ? foot.height + 2 * Theme.basePadding + 1 : 0) + Theme.padding + Theme.basePadding
-
-  onChangesChanged: {
-    if (settle.running) {
-      settle.again = true;
-    } else {
-      menuBox.settled = menuBox.rows("wifi");
-      settle.start();
-    }
-  }
 
   function act(name: string): void {
     if (name === "Network Settings") Net.settings([]);
@@ -125,17 +114,11 @@ Rectangle {
   color: Theme.cardBg
 
   Timer {
-    id: settle
-
-    property bool again: false
-
     interval: 150
-    onTriggered: {
-      if (!again) return;
-      again = false;
-      menuBox.settled = menuBox.rows("wifi");
-      restart();
-    }
+    repeat: true
+    running: menuBox.key === "wifi"
+    triggeredOnStart: true
+    onTriggered: menuBox.settled = menuBox.rows("wifi")
   }
 
   Column {
@@ -187,7 +170,7 @@ Rectangle {
         anchors.rightMargin: Theme.padding
         anchors.verticalCenter: chip.verticalCenter
         visible: menuBox.filtering || menuBox.tint
-        text: menuBox.tint ? `${NightLight.temperature} K` : `${menuBox.all.length}`
+        text: menuBox.tint ? `${NightLight.temperature} K` : `${menuBox.count}`
         color: Theme.fgDim
         font: Theme.caption
       }

@@ -107,7 +107,6 @@ PanelWindow {
     const depth = root.path.length;
     const entries = root.level(depth)?.entries ?? [];
     const entry = entries[root.row] ?? null;
-    root.keyed = true;
     switch (event.key) {
     case Qt.Key_Down:
     case Qt.Key_Up:
@@ -213,6 +212,7 @@ PanelWindow {
     focus: true
     Keys.onPressed: event => {
       event.accepted = root.key(event);
+      if (event.accepted) root.keyed = true;
     }
 
     HoverHandler {

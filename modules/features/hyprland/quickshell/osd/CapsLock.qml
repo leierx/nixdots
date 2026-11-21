@@ -31,12 +31,10 @@ Singleton {
     // Each keyboard has its own lock; the one in use is Hyprland's main one.
     const main = keyboards.find(keyboard => keyboard.main);
     const on = main ? main.capsLock : keyboards.some(keyboard => keyboard.capsLock);
-    if (root.known && on !== root.on) {
-      root.on = on;
-      root.toggled();
-    }
+    const changed = root.known && on !== root.on;
     root.on = on;
     root.known = true;
+    if (changed) root.toggled();
   }
 
   Component.onCompleted: query()

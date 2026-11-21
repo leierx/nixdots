@@ -39,6 +39,8 @@ Singleton {
     id: setter
 
     name: "Brightness"
+    // A drag runs one per step: a failure shows as the slider going back to the level backlight-watch hears.
+    quiet: true
     onDone: root.flush()
     onFailed: root.flush()
   }

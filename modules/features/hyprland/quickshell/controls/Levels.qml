@@ -22,6 +22,8 @@ Column {
     property real value: 0
     property real maximum: 1
     property string opens: ""
+    // Only its arrow takes input otherwise, as a microphone without an output still has its menu.
+    property bool live: true
     readonly property real span: track.span
 
     signal moved(real value)
@@ -39,7 +41,7 @@ Column {
       flat: true
       // Only its click is off where nothing mutes: the symbol still names the level.
       opacity: 1
-      enabled: level.mutes && level.enabled
+      enabled: level.mutes && level.enabled && level.live
       checked: level.muted
       glyph: level.glyph
       tooltip: level.mutes ? (level.muted ? "Unmute" : "Mute") : ""
@@ -52,7 +54,7 @@ Column {
       objectName: `slider:${level.name}`
       anchors.verticalCenter: parent.verticalCenter
       width: parent.width - lead.width - arrow.width - 2 * parent.spacing
-      enabled: level.enabled
+      enabled: level.enabled && level.live
       value: level.value
       maximum: level.maximum
       dim: level.muted
@@ -63,6 +65,7 @@ Column {
     IconButton {
       id: arrow
 
+      objectName: level.opens !== "" ? `menu:${level.opens}` : ""
       anchors.verticalCenter: parent.verticalCenter
       opacity: level.opens !== "" ? 1 : 0
       enabled: level.opens !== ""
@@ -79,7 +82,7 @@ Column {
   spacing: Theme.basePadding
 
   Row {
-    visible: !Volume.present
+    visible: !Volume.present && !Microphone.present
     height: 28
     spacing: Theme.basePadding
     opacity: 0.5
@@ -107,8 +110,9 @@ Column {
   Level {
     name: "output"
     width: parent.width
-    visible: Volume.present
-    glyph: Volume.glyph
+    visible: Volume.present || Microphone.present
+    live: Volume.present
+    glyph: Volume.present ? Volume.glyph : Symbols.volumeOff
     mutes: true
     muted: Volume.muted
     value: Volume.volume
