@@ -175,7 +175,7 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | `nix-index.nix` | HM | `nix-index` | small prebuilt DB + wrapped comma |
 | `nixpkgs.nix` | nixos | `nixpkgs`, `unstable-nixpkgs` | `allowUnfree`; overlay `pkgs.unstable`. Prefer default `pkgs` unless a package needs unstable |
 | `packages.nix` | nixos | `packages` | jq, fzf, fastfetch, tree, kubectl |
-| `pi-agent/` | HM | `pi-agent` (+ HM `piAgent.settings`) | below |
+| `pi-agent/` | HM | `pi-agent` (+ HM `piAgent.settings`, `piAgent.models`) | below |
 | `plymouth.nix` | nixos | `plymouth` | plymouth + quiet boot |
 | `podman.nix` | nixos | `podman` | docker compat, DNS on `podman0` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
@@ -237,7 +237,7 @@ committed `nvim-pack-lock.json`:
 `pkgs.unstable`). nixpkgs' wrapper prefixes ripgrep and fd; ours suffixes git
 and node, so a project shell's win. Writes into `~/.pi/agent` (pi ignores XDG):
 `settings.json` (defaults merged with `piAgent.settings`; both hosts pin
-provider, model, thinking level), `APPEND_SYSTEM.md`, the `commit-style`
+provider, model, thinking level `max`), `models.json` (`piAgent.models`; DeepSeek V4.1 Flash at its agentic evals' `top_p` 0.95, temperature 1), `APPEND_SYSTEM.md`, the `commit-style`
 skill, a `bell` extension (BEL on finish or prompt) and `tmux-session` (session
 file in pane option `@pi_session`). pi packages are pinned in `packages`,
 installed by pi with nixpkgs' `npm` into `~/.pi/agent/npm`. HM's

@@ -17,6 +17,15 @@
         '';
       };
 
+      options.piAgent.models = lib.mkOption {
+        type = lib.types.attrsOf lib.types.json;
+        default = { };
+        description = ''
+          Overrides for ~/.pi/agent/models.json, merged over the defaults
+          in pi-agent/default.nix; e.g. a custom provider or a model's sampling.
+        '';
+      };
+
       config.home = {
         packages = [
           # suffixed so a project shell's git and node win; nixpkgs' wrapper already prefixes rg and fd
@@ -65,6 +74,16 @@
                 "npm:@juicesharp/rpiv-todo@2.15.0"
               ];
             } config.piAgent.settings
+          );
+
+          ".pi/agent/models.json".source = (pkgs.formats.json { }).generate "pi-models.json" (
+            lib.recursiveUpdate {
+              # DeepSeek's agentic evals; its API ignores temperature in thinking mode, other hosts may not
+              providers.opencode-go.modelOverrides."deepseek-v4.1-flash".samplingParams = {
+                temperature = 1.0;
+                top_p = 0.95;
+              };
+            } config.piAgent.models
           );
 
           ".pi/agent/APPEND_SYSTEM.md".source = ./APPEND_SYSTEM.md;
