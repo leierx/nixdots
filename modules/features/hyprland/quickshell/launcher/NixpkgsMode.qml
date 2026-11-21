@@ -61,7 +61,6 @@ LauncherMode {
   name: "nixpkgs"
   title: "Run from nixpkgs"
   image: Quickshell.iconPath("nix-snowflake", "package-x-generic")
-  accent: [Theme.nixosLight, Theme.nixosDark]
   placeholder: root.index.lines.length > 0 ? "Run a package from nixpkgs…" : "Fetching the package list…"
   nothing: root.index.lines.length > 0 ? "Type a package name" : ""
   fields: row => [[1.0, row.title], [0.5, row.subtitle]]

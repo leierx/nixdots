@@ -135,8 +135,6 @@ Singleton {
   // Until each surface is remade on the tokens above.
   readonly property color bg: Colors.view_bg_color
   readonly property color panel: Colors.dark_5
-  readonly property color nixosLight: "#7ebae4"
-  readonly property color nixosDark: "#5277c3"
   readonly property color outline: overlay(0.07)
   readonly property color border: overlay(0.15)
   readonly property color card: Colors.card_bg_color

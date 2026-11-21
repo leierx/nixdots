@@ -68,7 +68,7 @@ Item {
           Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: output.modelData.enabled ? output.modelData.number : "off"
-            color: output.modelData.enabled ? Theme.bg : Theme.fgDim
+            color: output.modelData.enabled ? Theme.popoverBg : Theme.fgDim
             font.family: Theme.body.family
             font.weight: Font.Bold
             font.pixelSize: Math.min(22, Math.round(output.height * 0.4))
@@ -78,7 +78,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: text !== "" && output.height >= 60 && implicitWidth <= output.width - 8
             text: output.modelData.connector ?? ""
-            color: output.modelData.enabled ? Theme.bg : Theme.fgDim
+            color: output.modelData.enabled ? Theme.popoverBg : Theme.fgDim
             font: Theme.caption
           }
         }

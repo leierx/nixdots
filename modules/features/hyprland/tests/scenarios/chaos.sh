@@ -176,7 +176,11 @@ read -r x y < <(tray_button DP-1)
 qst click left "$x" "$y"
 qst wait '.panel == "tray-overflow:DP-1"'
 # Settings, then its one row: the app starts rebuilding the Networks submenu.
-qst key Right Menu End Up Right
+qst key Right Menu
+qst wait '.trayMenu.selected == "First item"'
+qst key End Up
+qst wait '.trayMenu.selected == "Settings"'
+qst key Right
 qst wait '.trayMenu.path == ["Settings"] and .trayMenu.selected == "Rebuild every second"'
 qst key Return
 qst wait '.panel == ""'
@@ -184,7 +188,11 @@ qst output 640x480 1
 # DP-2 starts at 640 now, past the helper's split: the chevron, last on DP-1's bar.
 qst click left $((640 - 21)) 17
 qst wait '.panel == "tray-overflow:DP-1"'
-qst key Right Menu End Up Up Right
+qst key Right Menu
+qst wait '.trayMenu.selected == "First item"'
+qst key End Up Up
+qst wait '.trayMenu.selected == "Networks"'
+qst key Right
 qst wait '.trayMenu.path == ["Networks"]'
 for round in $(seq 8); do
   qst key Down Down Up Right Left Right Down Left Left Right Up Up Down End Home Down Right Left

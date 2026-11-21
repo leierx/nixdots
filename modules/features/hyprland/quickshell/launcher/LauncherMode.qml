@@ -10,7 +10,6 @@ Scope {
   required property string title
   property string glyph: ""
   property string image: ""
-  property var accent: []
   property string placeholder: "Search…"
   // Said in place of the list while it has nothing and nothing is typed.
   property string nothing: ""

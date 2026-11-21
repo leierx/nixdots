@@ -528,12 +528,11 @@ Notes on specific features:
         click away close every panel; a right click only ever opens a menu (the tray's), never dismisses or mutes.
         The wheel steps in
         notches (`WheelSteps`), and only the center's list glides. Only the
-        centred panels (launcher, shortcuts) dim the screen behind; popovers
-        off the bar don't.
+        centred panels (launcher, shortcuts) dim the screen behind (Hyprland's
+        `dim_around`, 0.6); popovers off the bar don't.
       - Exceptions: the bar is all black; the power menu has its own
         backdrop and 28 px tiles, and takes its keys without Alt, as nothing
-        in it takes text; a launcher mode may carry an `accent`
-        (nixpkgs' two blues); hyprlock follows its own config; `LayoutDiagram`
+        in it takes text; hyprlock follows its own config; `LayoutDiagram`
         draws outputs and their labels to scale. Kept against the HIG on
         purpose: the monitors mode's placeholder names what it lists
         ("Monitor layout…") rather than an instruction, since a layout is
@@ -572,8 +571,10 @@ Notes on specific features:
         unique `key`, which keeps delegates as a search changes), the `fields`
         searched (`search.js`: every word as a substring, or in a loose field
         its letters in order, or else, from four letters, a word of the text
-        it begins with but for one slip, ranked below both), a `glyph` or `image`, an optional `accent`,
-        `preview` and own `find`. The card opens at full height and centred,
+        it begins with but for one slip, ranked below both), a `glyph` or `image`, an optional
+        `preview` and own `find`. The card opens at full height and centred, under
+        Shell's search entry (a pill led by the mode's symbol), its rows Shell's
+        search results (16 px tiles),
         so it holds still while typing; keys go round, the wheel stops at the
         ends. `apps` orders equal matches by `AppUsage` (frecency as one
         number per app, so nothing decays) and warms every icon at startup,

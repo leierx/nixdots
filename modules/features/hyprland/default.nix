@@ -103,6 +103,8 @@ in
             decoration = {
               rounding = 10;
               blur.enabled = false;
+              # behind the launcher and shortcuts (layer rules in rules.nix), darker than the 0.4 default
+              dim_around = 0.6;
 
               shadow = {
                 range = 40;

@@ -220,7 +220,7 @@ LauncherMode {
         Rectangle {
           implicitWidth: Math.max(20, number.implicitWidth + 10)
           implicitHeight: 20
-          radius: Theme.smallRadius
+          radius: Theme.baseRadius
           color: output.modelData.enabled ? Theme.fg : "transparent"
           border.width: output.modelData.enabled ? 0 : 1
           border.color: Theme.fgDim
@@ -231,7 +231,7 @@ LauncherMode {
             anchors.centerIn: parent
             visible: output.modelData.enabled
             text: output.modelData.number
-            color: Theme.bg
+            color: Theme.popoverBg
             font: Theme.captionHeading
           }
         }

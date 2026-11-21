@@ -92,7 +92,7 @@ LauncherMode {
         width: frame.size ? Math.round(frame.size.width * frame.ratio) : parent.width
         height: frame.size ? Math.round(frame.size.height * frame.ratio) : parent.height
         radius: Theme.cardRadius
-        color: Theme.card
+        color: Theme.cardBg
 
         // Drawn at up to twice the size shown and mipmapped, so a large window shrinks smoothly instead of aliasing.
         ScreencopyView {
@@ -124,7 +124,7 @@ LauncherMode {
         radius: shape.radius
         color: "transparent"
         border.width: 1
-        border.color: Theme.border
+        border.color: Theme.separator
       }
     }
 

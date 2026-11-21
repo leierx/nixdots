@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Shapes
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Widgets
@@ -19,7 +18,7 @@ Overlay {
   // Clear of the screen's edges, whatever its size and scale.
   readonly property int margin: Math.round(3 * Theme.em)
   readonly property real cardWidth: Math.min(Math.round((previewing || mode.wide ? 68 : 48) * Theme.em), width - 2 * margin)
-  readonly property int fieldHeight: 68
+  readonly property int fieldHeight: 36 + 2 * Theme.padding
   readonly property int rows: Math.max(1, Math.min(8, Math.floor((height - 2 * margin - fieldHeight - 17) / (matches.rowHeight + matches.spacing))))
   readonly property int resultsHeight: rows * matches.rowHeight + (rows - 1) * matches.spacing + (previewing ? 16 : 8)
 
@@ -52,7 +51,7 @@ Overlay {
     color: Theme.fg
     selectionColor: Theme.accentBg
     selectedTextColor: Theme.accentFg
-    font: Theme.search
+    font: Theme.body
     // The default cursor blinks; this one stays lit.
     cursorDelegate: Rectangle {
       width: 1
@@ -92,7 +91,7 @@ Overlay {
       anchors.verticalCenter: parent.verticalCenter
       x: field.leftPadding
       text: field.mode.placeholder
-      color: Theme.fgDim
+      color: Theme.placeholder
       font: field.font
       visible: field.text === ""
     }
@@ -185,16 +184,10 @@ Overlay {
       onTriggered: list.hovered = -1
     }
 
-    Text {
-      x: 54
-      width: list.width - x
-      height: list.rowHeight
-      verticalAlignment: Text.AlignVCenter
+    EmptyLine {
+      width: list.width
       visible: list.count === 0
       text: list.query.trim() !== "" ? "No results" : list.mode.nothing
-      elide: Text.ElideRight
-      color: Theme.fgDim
-      font: Theme.body
     }
 
     WheelSteps {
@@ -220,8 +213,8 @@ Overlay {
 
     implicitHeight: 38
     implicitWidth: Math.round(picture.implicitHeight * 16 / 9)
-    radius: Theme.smallRadius
-    color: Theme.card
+    radius: Theme.baseRadius
+    color: Theme.buttonBg
 
     Image {
       anchors.centerIn: parent
@@ -250,8 +243,9 @@ Overlay {
 
     width: ListView.view.width
     height: row.list.rowHeight
-    radius: Theme.smallRadius
-    color: row.current ? Theme.selected : row.index === row.list.hovered ? Theme.hover : "transparent"
+    // Shell's .list-search-result.
+    radius: Theme.tileRadius
+    color: row.current ? Theme.selectedBg : row.index === row.list.hovered ? Theme.menuHoverBg : "transparent"
 
     MouseArea {
       anchors.fill: parent
@@ -289,8 +283,8 @@ Overlay {
         visible: !!row.modelData.layout
         implicitWidth: 57
         implicitHeight: 32
-        radius: Theme.buttonRadius
-        color: Theme.button
+        radius: Theme.baseRadius
+        color: Theme.buttonBg
 
         LayoutDiagram {
           anchors.fill: parent
@@ -347,36 +341,47 @@ Overlay {
     // Full height from the start, so it holds still while typing.
     height: root.fieldHeight + rule.height + root.resultsHeight
 
-    RowLayout {
+    // Shell's search entry: a pill led by the mode's symbol, ringed while it has the keyboard.
+    Rectangle {
       id: field
 
       anchors {
         top: parent.top
         left: parent.left
         right: parent.right
-        leftMargin: 22
-        rightMargin: 22
+        margins: Theme.padding
       }
-      height: root.fieldHeight
-      spacing: 16
+      height: root.fieldHeight - 2 * Theme.padding
+      radius: height / 2
+      color: Theme.buttonBg
+      border.width: search.activeFocus ? 2 : 0
+      border.color: Theme.focusRing
 
-      Glyph {
-        visible: root.mode.image === ""
-        path: root.mode.glyph
-        size: 32
-      }
+      RowLayout {
+        anchors.fill: parent
+        anchors.leftMargin: 10
+        anchors.rightMargin: Theme.padding
+        spacing: Theme.basePadding
 
-      Image {
-        visible: root.mode.image !== ""
-        source: root.mode.image
-        sourceSize: Qt.size(28, 28)
-      }
+        Glyph {
+          visible: root.mode.image === ""
+          path: root.mode.glyph
+          size: 16
+          color: Theme.fgDim
+        }
 
-      SearchField {
-        id: search
+        Image {
+          visible: root.mode.image !== ""
+          source: root.mode.image
+          sourceSize: Qt.size(16, 16)
+        }
 
-        Layout.fillWidth: true
-        list: matches
+        SearchField {
+          id: search
+
+          Layout.fillWidth: true
+          list: matches
+        }
       }
     }
 
@@ -385,13 +390,14 @@ Overlay {
 
       anchors {
         top: field.bottom
+        topMargin: Theme.padding
         left: parent.left
         right: parent.right
         leftMargin: Theme.padding
         rightMargin: Theme.padding
       }
       height: root.previewing ? 1 : 0
-      color: Theme.border
+      color: Theme.separator
       visible: root.previewing
     }
 
@@ -428,7 +434,7 @@ Overlay {
         Layout.topMargin: Theme.padding
         Layout.bottomMargin: Theme.padding
         implicitWidth: 1
-        color: Theme.border
+        color: Theme.separator
       }
 
       // Its preview's own width would otherwise move the split with every row.
@@ -440,50 +446,6 @@ Overlay {
         Layout.fillHeight: true
         Layout.margins: 20
         sourceComponent: root.mode.preview
-      }
-    }
-
-    // Hyprland's active border: across at 30°, one colour to each side of a blend through the middle fifth.
-    Shape {
-      id: edge
-
-      readonly property real reach: (width * Math.cos(Math.PI / 6) + height * Math.sin(Math.PI / 6)) / 2
-
-      anchors.fill: parent
-      visible: root.mode.accent.length === 2
-      preferredRendererType: Shape.CurveRenderer
-
-      ShapePath {
-        strokeColor: "transparent"
-        fillRule: ShapePath.OddEvenFill
-        fillGradient: LinearGradient {
-          x1: edge.width / 2 - Math.cos(Math.PI / 6) * edge.reach
-          y1: edge.height / 2 + Math.sin(Math.PI / 6) * edge.reach
-          x2: edge.width / 2 + Math.cos(Math.PI / 6) * edge.reach
-          y2: edge.height / 2 - Math.sin(Math.PI / 6) * edge.reach
-
-          GradientStop {
-            position: 0.4
-            color: root.mode.accent[0] ?? "transparent"
-          }
-          GradientStop {
-            position: 0.6
-            color: root.mode.accent[1] ?? "transparent"
-          }
-        }
-
-        PathRectangle {
-          width: edge.width
-          height: edge.height
-          radius: box.radius
-        }
-        PathRectangle {
-          x: 2
-          y: 2
-          width: edge.width - 4
-          height: edge.height - 4
-          radius: box.radius - 2
-        }
       }
     }
   }
