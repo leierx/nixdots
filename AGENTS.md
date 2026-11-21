@@ -1,65 +1,58 @@
 # AGENTS.md
 
-Technical reference for agents working in this repo. The user-facing
-quickstart and external import guide is in [README.md](./README.md).
+Technical reference for agents. User-facing quickstart: [README.md](./README.md).
+Shell design standard: [`quickshell/STYLE.md`](./modules/features/hyprland/quickshell/STYLE.md).
 
 ## What this is
 
-One flake holding all of `leier`'s NixOS and home-manager configurations,
-written in the [dendritic pattern](https://github.com/mightyiam/dendritic):
-there is a single top-level `lib.evalModules` evaluation, and *every* module of
-every class is a value of it. There is no flake-parts dependency; the substrate
-is hand-rolled in `flake.nix`, `import-tree.nix` and `modules/flake/`.
+One flake holding all of `leier`'s NixOS and home-manager configurations, in
+the [dendritic pattern](https://github.com/mightyiam/dendritic): one top-level
+`lib.evalModules`, and every module of every class is a value of it. No
+flake-parts; the substrate is hand-rolled in `flake.nix`, `import-tree.nix` and
+`modules/flake/`.
 
 ## Non-negotiables
 
-- **A file is a feature.** One `.nix` file under `modules/features/` describes
-  every class it touches (`nixos`, `homeManager`). No side files per class.
+- **A file is a feature.** One `.nix` under `modules/features/` describes every
+  class it touches (`nixos`, `homeManager`). No side files per class.
 - **Share constants through the top-level configuration, never `specialArgs`.**
-  Data several features read lives in a declared top-level option (`identity`,
-  `palettes`, `hyprland.workspaces`) and is read as `root.config.<option>`.
-  This is the dendritic substitute for importing sibling files.
-- **Anything a host or an importer sets is an option of the feature's class
-  module.** Top-level values are global to every host and baked into the
-  exported aspects, so per-host or per-importer knobs are declared inside the
-  aspect itself (home-manager `piAgent.settings`, `neovim.outOfStorePath`,
-  `hyprmoncfg.profiles`) and
-  set from the host's own home aspect or the importer's config.
-- **Install through the module when one exists.** `programs.<x>.enable` (or
-  `services.<x>`) instead of a bare package, so binds and other features can
-  reference `config.programs.<x>.package`. Skip modules that would take over
-  mutable app state (firefox profiles, discord/obsidian settings).
-- **A feature delivers everything it relies on.** Any one aspect imported
-  alone must work: tools a program calls go on its own PATH (a wrapper or
-  `extraPackages`), commands in configs are store paths
-  (`lib.getExe config.programs.<x>.package`), fonts a config names are
-  installed by that feature, and paths come from `config` (`config.xdg.configHome`),
-  not from env vars another feature exports. Only the base OS (coreutils, curl,
-  tar, systemd) is assumed.
-- **`imports` in a host is the whole machine.** Host builders inject only the
-  hostname, platform and a `stateVersion` default; nothing else.
-- **No AI credit.** Commits, PRs and files in this repo never credit Claude
-  or any other agent: no `Co-Authored-By` trailer, no "Generated with" line,
-  whatever a tool's default attribution says.
-- **No comment is the best comment.** If one is needed, it's one line for the
-  operator: why it's done this way, never what the code does. Longer only for
-  a hard reason.
-- Don't add a flake-parts dependency or reintroduce `specialArgs` plumbing.
+  Data several features read is a declared top-level option (`identity`,
+  `palettes`, `hyprland.workspaces`), read as `root.config.<option>`.
+- **Anything a host or importer sets is an option of the feature's class
+  module.** Top-level values are global and baked into exported aspects, so
+  per-host knobs live in the aspect (`piAgent.settings`,
+  `neovim.outOfStorePath`, `hyprmoncfg.profiles`, `quickshell.scale`), set from
+  the host's home aspect or the importer.
+- **Install through the module when one exists** (`programs.<x>.enable`,
+  `services.<x>`), so others can read `config.programs.<x>.package`. Skip
+  modules that take over mutable app state (firefox profiles, discord/obsidian
+  settings).
+- **A feature delivers everything it relies on.** Any aspect imported alone
+  works: tools it calls are on its own PATH (wrapper or `extraPackages`),
+  commands are store paths (`lib.getExe config.programs.<x>.package`), fonts it
+  names it installs, paths come from `config` (`config.xdg.configHome`), not
+  env vars another feature exports. Only the base OS (coreutils, curl, tar,
+  systemd) is assumed.
+- **`imports` in a host is the whole machine.** Host builders inject only
+  hostname, platform and a `stateVersion` default.
+- **No AI credit.** No `Co-Authored-By`, no "Generated with", in commits, PRs or
+  files, whatever a tool's default says.
+- **No comment is the best comment.** If needed: one line, why, never what.
+- No flake-parts dependency, no `specialArgs` plumbing.
+- **Never hardcode the username.** Read `config.identity.username`.
 
 ## Repo map
 
 ```
 flake.nix                 entry point: evalModules { class = "flake"; ... }
 import-tree.nix           dir -> module that imports every .nix beneath it
-flake.lock                pinned inputs
-README.md                 brief user-facing doc
-AGENTS.md                 this file
-TODO.md                   a plain bullet list (no headings): upstream candidates, leads to chase, what is left open
+README.md, AGENTS.md      user doc, this file
+TODO.md                   plain bullets, no headings: upstream candidates, leads, what is left open
 
-modules/flake/            the substrate (see below)
+modules/flake/            the substrate
 modules/features/         one flat file per feature (+ hyprland/, moonshine/, neovim/, pi-agent/, tmux/)
 modules/profiles/         base.nix, workstation.nix
-modules/theme/            palette.nix, fonts, gtk, qt, cursor
+modules/theme/            palette, fonts, gtk, qt, cursor
 modules/hosts/            desktop/, thonkpad/
 ```
 
@@ -77,33 +70,26 @@ outputs =
   }).config.flake;
 ```
 
-One evaluation, class `"flake"`, `inputs` passed as a `specialArg`. Its
-`config.flake` is the flake's output attribute set. This is why every file is
-a module of the same configuration and may freely read `config`, `lib` and
-`inputs` at the top level.
+Every file is a module of this one configuration, so each may read `config`,
+`lib` and `inputs` at the top level.
 
 Inputs: `nixpkgs` (26.05), `nixpkgs-unstable`, `home-manager`, `disko`,
-`nix-index-database`, `hyprland` (pinned tag; its dev-only `pre-commit-hooks`
-is pruned with `follows = ""`), `hyprsplit` (its `nixpkgs` follows
-`hyprland/nixpkgs`, which is what it builds with anyway) and `moonshine`
-(tracks upstream `main`; its `nixpkgs` follows ours, though only its sources
-are used).
+`nix-index-database`, `hyprland` (pinned tag; dev-only `pre-commit-hooks`
+pruned with `follows = ""`), `hyprsplit` (`nixpkgs` follows
+`hyprland/nixpkgs`), `moonshine` (upstream `main`; `nixpkgs` follows ours, only
+its sources used).
 
 ### `import-tree.nix`
 
-Turns a directory into a module that `imports` every `.nix` file beneath it,
-recursively. Files and directories whose name starts with `.` or `_` are
-skipped — **`_`-prefixed paths are the escape hatch for non-module Nix code**
-(e.g. a library file that should not be imported as a module).
+A directory becomes a module importing every `.nix` beneath it. Names starting
+with `.` or `_` are skipped: `_` is the escape hatch for non-module Nix.
 
 ### Classes and tagging — `modules/flake/outputs.nix`
 
-`flake.modules.<class>.<aspect>` is the registry. The option type is
-`lazyAttrsOf (lazyAttrsOf deferredModule)`, so:
-
-- Multiple files assigning the *same* aspect merge (deferred modules combine).
-  This is how `modules/features/hyprland/*.nix` assemble one `homeManager.hyprland`.
-- `apply` wraps every module so it carries its class and origin:
+`flake.modules.<class>.<aspect>` is the registry, typed
+`lazyAttrsOf (lazyAttrsOf deferredModule)`: files assigning the same aspect
+merge (how `features/hyprland/*.nix` build one `homeManager.hyprland`). `apply`
+wraps each module:
 
 ```nix
 { ... }: {
@@ -114,1106 +100,740 @@ skipped — **`_`-prefixed paths are the escape hatch for non-module Nix code**
 }
 ```
 
-The `_class` tag makes loading a home-manager module into a NixOS
-configuration a plain type error instead of "undeclared option" noise. The
-`_file` tag gives readable error locations, and the `key` makes an aspect
-imported along two paths (a profile and a host) apply once.
+`_class` turns a wrong-class import into a type error, `_file` gives readable
+error locations, `key` applies an aspect imported along two paths once.
 
-The registry is exported verbatim as the flake output `modules`
-(hence Nix's harmless `unknown flake output 'modules'` warning), which is what
-makes `inputs.nixdots.modules.homeManager.<aspect>` work from another flake.
-The values a stored aspect reads from `root.config` are this flake's; an
-importer changes behaviour through the aspect's own options or `lib.mkForce`.
+The registry is exported as the flake output `modules` (Nix warns `unknown
+flake output 'modules'`; intended), so `inputs.nixdots.modules.homeManager.<aspect>`
+works elsewhere. Values an aspect reads from `root.config` are this flake's; an
+importer changes them through the aspect's options or `lib.mkForce`.
 
 ### Top-level options
 
 | Option | Type | Notes |
 | --- | --- | --- |
-| `identity` | `{ username, fullName, email }` | Primary user; read by `users`, `git`, `home-manager`, profiles. |
-| `palettes` | `attrsOf (attrsOf str)` | `adwaita_darker` (libadwaita 1.10's dark style under its own names: every named colour, translucent ones as CSS `#rrggbbaa`, the accent swatches and the GNOME palette, GNOME Shell 51's own opaque surfaces as `shell_*` by the same rule, plus ghostty's "Adwaita Dark" terminal colours; its opaque surfaces and the terminal background written as upstream has them and darkened together by one `depth`, 28 per channel (GNOME's look, darker, the whole desktop alike), so the steps between them survive: `view_bg_color` lands on `#010104` and the Shell's popover on `#1a1a1e`, after [Darkwaita](https://github.com/varunbpatil/Darkwaita)'s darker GNOME Shell; accents, text, translucent colours and the ANSI colours unchanged; quickshell, hyprland, hyprlock, hyprtoolkit, GTK, wezterm, tmux). |
-| `hyprland.workspaces` | positive int | Workspaces per monitor; read by hyprsplit's config, the binds and the quickshell bar. |
-| `nixosHosts.<name>` | submodule `{ system }` | Drives `flake.nixosConfigurations`. |
-| `systems` | `listOf str` | Option default `[ ]`; `per-system.nix` defines `[ "x86_64-linux" "aarch64-darwin" ]`. Drives `perSystem`. |
-| `perSystem` | `deferredModule` | Evaluated once per `systems` entry. |
+| `identity` | `{ username, fullName, email }` | Primary user; read by `users`, `git`, `home-manager`, profiles |
+| `palettes` | `attrsOf (attrsOf str)` | `adwaita_darker`: libadwaita 1.10's dark named colours (translucent ones as CSS `#rrggbbaa`), accents and GNOME palette, GNOME Shell 51's opaque surfaces as `shell_*`, ghostty's "Adwaita Dark" terminal colours. Opaque surfaces and the terminal background are upstream's less `depth` (28 per channel), after [Darkwaita](https://github.com/varunbpatil/Darkwaita): `view_bg_color` `#010104`, Shell's popover `#1a1a1e`. Accents, text, translucent and ANSI colours unchanged. Read by quickshell, hyprland, hyprlock, hyprtoolkit, GTK, wezterm, tmux |
+| `hyprland.workspaces` | positive int | Workspaces per monitor; hyprsplit, binds, the bar |
+| `nixosHosts.<name>` | submodule `{ system }` | Drives `flake.nixosConfigurations` |
+| `systems` | `listOf str` | Default `[ ]`; `per-system.nix` sets `[ "x86_64-linux" "aarch64-darwin" ]` |
+| `perSystem` | `deferredModule` | Evaluated once per `systems` entry |
 
-Flake outputs declared: `modules`, `nixosConfigurations`, `formatter`,
-`checks`, `devShells`, `packages`.
+Flake outputs: `modules`, `nixosConfigurations`, `formatter`, `checks`,
+`devShells`, `packages`.
 
 ### `perSystem` — `modules/flake/per-system.nix`
 
-Each system is a nested `evalModules` of class `"perSystem"` with
-`{ inputs, system, root }` as specialArgs (`root` is the top-level config).
-It supplies `pkgs = import inputs.nixpkgs { inherit system; config.allowUnfree = true; }`
-and options `packages`, `checks`, `devShells`, `formatter`. Results are
-collected across systems into the system-keyed flake outputs. Any top-level
-module may define `perSystem`; definitions merge.
+Per system, a nested `evalModules` of class `"perSystem"` with
+`{ inputs, system, root }` (`root` = top-level config), `pkgs` with
+`allowUnfree`, and options `packages`, `checks`, `devShells`, `formatter`,
+collected into system-keyed outputs. Any module may define `perSystem`;
+definitions merge. Don't redeclare `systems`.
 
 ### Host builders
 
-- **`nixos-hosts.nix`** — `nixosHosts.<name>` → `lib.nixosSystem`. Injected
-  defaults (all `mkDefault`, overridable): `networking.hostId` = first 8 chars
-  of `sha256(hostname)`, `networking.hostName`, `nixpkgs.hostPlatform` =
-  `host.system`, `system.stateVersion` = `lib.trivial.release`. Then imports
-  `config.flake.modules.nixos."nixosConfigurations/<name>" or { }`.
-- **`offline-installer.nix`** — for **every** entry in `nixosHosts`,
-  generates `nixosConfigurations.offlineInstaller-<host>`: a minimal
-  installation CD carrying that host's `toplevel` + disko
-  `destroyFormatMount` script in `isoImage.storeContents`, with substituters
-  and channels disabled, root autologin, keymap/locale/timezone/platform read
-  from the target host, and a `offline-installer` script (`set -euo pipefail`)
-  that runs disko — which lists the disks and asks for `yes` before wiping —
-  then `nixos-install --no-root-passwd --no-channel-copy`.
+- **`nixos-hosts.nix`**: `nixosHosts.<name>` → `lib.nixosSystem`. `mkDefault`s:
+  `networking.hostId` (first 8 chars of `sha256(hostname)`, so a rename changes
+  it), `networking.hostName`, `nixpkgs.hostPlatform`, `system.stateVersion` =
+  `lib.trivial.release` (don't bump without knowing the migrations). Imports
+  `flake.modules.nixos."nixosConfigurations/<name>"`.
+- **`offline-installer.nix`**: per host, `nixosConfigurations.offlineInstaller-<host>`:
+  an install CD carrying the host's `toplevel` and disko `destroyFormatMount`,
+  substituters and channels off, root autologin, keymap/locale/timezone from the
+  host, and `offline-installer` (disko asks `yes` before wiping, then
+  `nixos-install --no-root-passwd --no-channel-copy`).
 
-The aspect name convention is exact and load-bearing:
-`"nixosConfigurations/<hostname>"` is the host's NixOS aspect, and
-`"nixosConfigurations/<hostname>/home"` its home-manager aspect, which
-`home-manager.nix` imports for the user on the host whose
-`networking.hostName` matches.
+Aspect names are load-bearing: `"nixosConfigurations/<host>"` is the host's
+NixOS aspect, `"nixosConfigurations/<host>/home"` its home-manager aspect, which
+`home-manager.nix` imports on the host whose `networking.hostName` matches.
 
-## Modules layer
+## Features (`modules/features/`)
 
-### Features (`modules/features/`)
-
-One flat file per feature; a directory when it has parts. Every file exports
-`flake.modules.<class>.<aspect>`. Files that need shared values take
-`root@{ inputs, lib, ... }:` (or plain `root:`) and read `root.config.<option>`.
+Each file exports `flake.modules.<class>.<aspect>`; files needing shared values
+take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 
 | Feature | Classes | Aspect(s) | What it does |
 | --- | --- | --- | --- |
-| `bluetooth.nix` | homeManager | `bluetooth` | `bluetui` when the host enables `hardware.bluetooth` (via `osConfig`), the control centre's Bluetooth Settings |
-| `boot.nix` | nixos | `boot`, `systemd-boot` | GRUB-on-EFI default (theme via `runCommand`); `systemd-boot` aspect `mkForce`s GRUB off; no host imports it |
-| `desktop-apps.nix` | homeManager | `desktop-apps` | GUI apps every workstation gets (browsers, spotify, obsidian, discord, …) |
+| `bluetooth.nix` | HM | `bluetooth` | `bluetui` when the host has `hardware.bluetooth` (`osConfig`); the control centre's Bluetooth Settings |
+| `boot.nix` | nixos | `boot`, `systemd-boot` | GRUB on EFI (themed); `systemd-boot` `mkForce`s GRUB off, conflicts by design, unused |
+| `desktop-apps.nix` | HM | `desktop-apps` | GUI apps every workstation gets |
 | `display-manager.nix` | nixos | `display-manager` | ly |
-| `doas.nix` | nixos | `doas` | doas replaces sudo (via `doas-sudo-shim`), wheel `noPass` without `keepenv`, passing only `LANG`, `NIX_PATH` and `SUDO_UID`/`SUDO_GID`/`SUDO_USER` |
-| `documentation.nix` | nixos | `documentation` | disables NixOS manpages |
-| `gaming.nix` | nixos | `gaming` | Steam + proton-ge (Steam also sets 32-bit graphics) |
-| `git.nix` | nixos, homeManager | `git` | git on; user identity from `identity` |
-| `home-manager.nix` | nixos | `home-manager` | wires HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<hostname>/home` |
-| `hyprland/` | nixos, homeManager | `hyprland` (+ top-level `hyprland.workspaces`, HM option `hyprmoncfg.profiles`) | see below |
-| `incus.nix` | nixos | `incus` | incus + preseed bridge/profile/storage; no host imports it |
+| `doas.nix` | nixos | `doas` | doas replaces sudo (`doas-sudo-shim`); wheel `noPass`, no `keepenv`, passes only `LANG`, `NIX_PATH`, `SUDO_*` |
+| `documentation.nix` | nixos | `documentation` | NixOS manpages off |
+| `gaming.nix` | nixos | `gaming` | Steam + proton-ge |
+| `git.nix` | nixos, HM | `git` | git, identity from `identity` |
+| `home-manager.nix` | nixos | `home-manager` | HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<host>/home` |
+| `hyprland/` | nixos, HM | `hyprland` (+ `hyprland.workspaces`, HM `hyprmoncfg.profiles`, `quickshell.scale`) | below |
+| `incus.nix` | nixos | `incus` | incus + preseed; unused |
 | `journald.nix` | nixos | `journald` | 90-day retention |
-| `libvirt.nix` | nixos | `libvirt` | libvirtd + unprivileged QEMU/KVM with swtpm, virt-manager, trusted `br0` lab bridge; no host imports it |
-| `locale.nix` | nixos | `locale` | `no`/`nodeadkeys`, `en_DK.UTF-8`, Europe/Oslo, timesyncd; hyprland reads the xkb values via `osConfig` |
-| `moonshine/` | nixos | `moonshine` | [Moonshine](https://github.com/hgaiser/moonshine) from its own flake input, locked to upstream `main` (its NixOS module, which disables nixpkgs'; the package built against the system's nixpkgs, since its implicit Vulkan layer loads into every Vulkan app, and patched to TLS-handshake per connection with a timeout, since upstream handshakes in the accept loop and one stalled client hangs pairing and launches until a restart): a system service that gives each Moonlight stream its own headless compositor at the client's mode, leaving the desktop alone; one app, Steam `-gamepadui` in gamescope at the client's mode with the ferriscope WSI layer off (`DISABLE_FERRISCOPE_WSI`) and `--xwayland-count 2` (as on SteamOS; sharing Steam's Xwayland, a game loses X focus to the overlay, minimizes and never comes back), with the Deck UI, since Big Picture `-tenfoot` swaps the base layer across the two Xwaylands and froze the stream on the game; the user joins `input` (virtual pads without a seat) and `moonshine` (sleep-inhibit polkit rule); a desktop Steam is shut down first, since Steam is single-instance; app output goes to `journalctl --user -u moonshine-session`; the host sets `services.moonshine.openFirewall` and `uid` (the module needs it; the user's is allocated, not declared) |
-| `neovim/` | nixos, homeManager | `neovim` (+ HM option `neovim.outOfStorePath`) | see below |
-| `network.nix` | nixos | `network` | systemd-resolved with DNS-over-TLS to Quad9 and no plaintext fallback, NetworkManager (DHCP DNS ignored, stable MACs, wifi powersave off, no automatic wired profile), nftables, no ping, reverse-path filter `loose` (WireGuard full tunnels) |
-| `nix.nix` | nixos | `nix` | GC, `auto-optimise-store`, flakes, cache, no global registry; the `nixpkgs` registry entry and `NIX_PATH` come from nixpkgs' own `nixpkgs.flake.source` |
-| `nix-index.nix` | homeManager | `nix-index` | small prebuilt nix-index DB (`nix-index-database` input) + wrapped comma, no full-DB cache symlink |
-| `nixpkgs.nix` | nixos | `nixpkgs`, `unstable-nixpkgs` | `allowUnfree`; overlay exposing `pkgs.unstable` |
+| `libvirt.nix` | nixos | `libvirt` | unprivileged QEMU/KVM, swtpm, virt-manager, trusted `br0`; unused |
+| `locale.nix` | nixos | `locale` | `no`/`nodeadkeys`, `en_DK.UTF-8`, Europe/Oslo, timesyncd; hyprland reads xkb via `osConfig` |
+| `moonshine/` | nixos | `moonshine` | below |
+| `neovim/` | nixos, HM | `neovim` (+ HM `neovim.outOfStorePath`) | below |
+| `network.nix` | nixos | `network` | resolved with DNS-over-TLS to Quad9, no plaintext fallback; NetworkManager (DHCP DNS ignored, stable MACs, wifi powersave off, no auto wired profile); nftables; no ping; rp-filter `loose` (WireGuard full tunnels) |
+| `nix.nix` | nixos | `nix` | GC, `auto-optimise-store`, flakes, cache, no global registry; `nixpkgs` registry/`NIX_PATH` from `nixpkgs.flake.source` |
+| `nix-index.nix` | HM | `nix-index` | small prebuilt DB + wrapped comma |
+| `nixpkgs.nix` | nixos | `nixpkgs`, `unstable-nixpkgs` | `allowUnfree`; overlay `pkgs.unstable`. Prefer default `pkgs` unless a package needs unstable |
 | `packages.nix` | nixos | `packages` | jq, fzf, fastfetch, tree, kubectl |
-| `pi-agent/` | homeManager | `pi-agent` (+ HM option `piAgent.settings`) | [pi](https://pi.dev) from `nixpkgs-unstable`, plus its `~/.pi/agent` settings, `APPEND_SYSTEM.md` and skills |
-| `plymouth.nix` | nixos | `plymouth` | plymouth + quiet boot params |
-| `podman.nix` | nixos | `podman` | podman + docker compat, DNS on `podman0` |
+| `pi-agent/` | HM | `pi-agent` (+ HM `piAgent.settings`) | below |
+| `plymouth.nix` | nixos | `plymouth` | plymouth + quiet boot |
+| `podman.nix` | nixos | `podman` | docker compat, DNS on `podman0` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
-| `tmux/` | homeManager | `tmux` | tmux on built-ins, themed from `palettes.adwaita_darker`: a bare `tmux` attaching to the session `main` (a package wrapper), a vim keymap on `C-b` (prefix table reset, no arrows), `choose-tree` for jumping, a copy-mode selection on the clipboard (OSC 52) as it changes, `prefix e` opening the scrollback in nvim (only with `programs.neovim`), framed pane titles, rounded popups/menus, bells from background windows marked (pi rings one) and `prefix o` to jump; resurrect + continuum loaded last by `run-shell`, since home-manager's `plugins` load before `extraConfig`; a post-save-layout hook saves each pi pane as `pi --session <its @pi_session>`, so panes sharing a directory each get their own session back |
-| `users.nix` | nixos, homeManager | `users` | primary user, groups, hashed password, zsh (no global compinit; oh-my-zsh runs it) + starship, root locked |
-| `wezterm.nix` | homeManager | `wezterm` | wezterm with an "Adwaita Darker" scheme from `palettes.adwaita_darker`, Hack font, notifications only while its window is unfocused |
-| `xdg.nix` | homeManager | `xdg-user-dirs` | XDG user dirs (created; projects = HM default `~/Projects`) |
-| `zsh.nix` | homeManager | `zsh` | oh-my-zsh, autosuggestions, syntax highlight, 100k history, `programs.fzf` keybindings (Ctrl-R/Ctrl-T/Alt-C) |
+| `tmux/` | HM | `tmux` | below |
+| `users.nix` | nixos, HM | `users` | user, groups, hashed password, zsh + starship (oh-my-zsh runs compinit), root locked |
+| `wezterm.nix` | HM | `wezterm` | "Adwaita Darker" from the palette, Hack, notifications only while unfocused |
+| `xdg.nix` | HM | `xdg-user-dirs` | XDG user dirs, created |
+| `zsh.nix` | HM | `zsh` | oh-my-zsh, autosuggestions, highlighting, 100k history, fzf keys |
 
-Notes on specific features:
+### `moonshine/`
 
-- **`hyprland/`** is split across `default.nix` (nixos + HM base),
-  `bindings.nix`, `rules.nix`, `hypridle.nix`,
-  `hyprlock.nix`, `hyprmoncfg.nix`, `hyprtoolkit.nix`, `plugins.nix`, `quickshell.nix`, plus `assets/`, `scripts/`
-  and `quickshell/`. It uses the
-  pinned Hyprland input and its **Lua-based settings API** — binds and
-  events are built with `lib.generators.mkLuaInline` and `_args` rather than
-  the classic string config; `bindings.nix` has a `mkBind` helper (every bind
-  carries a `desc`, shown by `hyprctl binds` for keybind menus) and generates
-  the workspace, direction and XF86 media/brightness binds.
-  - `plugins.nix` declares `hyprland.workspaces` and loads the `hyprsplit` Lua
-    library as the local `hs`; workspace binds use `hs.dsp.focus` /
-    `hs.dsp.window.move`. hyprsplit numbers monitor *k*'s workspaces
-    `k*n+1 … (k+1)*n`, which the bar shows as `1 … n`.
-    *k* is the monitor id, which Hyprland reuses per connector name.
-  - Session daemons are home-manager user services bound to
-    `hyprland-session.target` through `wayland.systemd.target`, which Hyprland
-    ≥ 0.57 starts itself (home-manager's stop/start bounce is off; it only
-    imports the environment), so they never start under another compositor:
-    quickshell, cliphist (wiped
-    as it starts, so each session begins empty),
-    hyprmoncfgd, hypridle, hyprpolkitagent, hyprpaper (the wallpaper; a
-    config reload restarts it) and hyprsunset (the control centre's night
-    light, started with `--identity`, untinted). No nm-applet: the control
-    centre does its job.
-  - Monitors are laid out by [hyprmoncfg](https://github.com/crmne/hyprmoncfg)
-    (from `nixpkgs-unstable`, built against the pinned Hyprland so its hyprctl
-    matches). Profiles are declared only: the HM option `hyprmoncfg.profiles`
-    (outputs by EDID make/model/serial, workspace planning off because hyprsplit
-    owns workspaces) becomes `~/.config/hyprmoncfg/profiles`, one read-only store
-    directory, so the TUI cannot save a profile. SUPER+P applies one through the
-    quickshell launcher's `monitors` mode, which lists the profile the daemon
-    would apply on the next hotplug first, as `Recommended`.
-    A catch-all `monitor` rule (preferred, auto, scale 1) covers outputs no
-    profile places. `hyprland.lua` is read-only, so the module
-    appends hyprmoncfg's `dofile` include itself with `lib.mkAfter`; it must stay
-    the file's last line.
-  - The desktop components (the bar, the launcher's SUPER+D apps, SUPER+V
-    clipboard, SUPER+P monitor layouts and SUPER+Tab windows, SUPER+X power, SUPER+? keyboard
-    shortcuts, the notification
-    center from the bar's clock, the OSD, the control centre) are a [Quickshell](https://quickshell.org)
-    shell in `quickshell/`, wired by `quickshell.nix`: one `quickshell.service`
-    session daemon (restarted when the shell changes, via `X-Restart-Triggers`,
-    and a second after a crash, with no start limit, so a crash loop through a
-    burst of hotplugs never leaves the session without one).
-    Quickshell comes from `pkgs.unstable` (0.3.2), since 0.3.1 fixed crashes on
-    freed objects in a `ScriptModel`, which the notification lists hold. Each
-    component is its own directory owning its windows, widgets and sizes, and
-    `shell.qml` only instantiates them. `common/` holds what several share:
-    the pieces of the design standard (`quickshell/STYLE.md`), `Theme`, `Panels` (the one open panel by name: opening one
-    closes the others, and nothing opens while no monitor is on, where it would
-    land on `FALLBACK` holding the keyboard; IPC `panels open|close|toggle
-    <name>`: `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`,
-    `shortcuts`, `power`, and per screen `controls:DP-1` and
-    `tray-menu:DP-1`), `Overlay` (the full-screen layer a panel lives in:
-    a click off its `card`, or a window elsewhere taking the keyboard, closes
-    it; it holds the keyboard exclusively only until it has it, or a window
-    clicked on another monitor never got it), `ClickAway` (a layer under the
-    windows on every screen, taking input only while a panel is open, so a
-    click on bare desktop closes it), `Screens` (the screens less Hyprland's
-    `FALLBACK`, and the focused one), `Time`, `StateFile`, `Command` (a process
-    whose failure, even to start, becomes a notification, or only a log line
-    while `quiet`), `Detached` (a `systemd-run --user --scope` per app, since a
-    restart of the service kills its whole cgroup), `WheelSteps` (wheel events
-    as whole notches) and `WorkspaceOwners` (hyprsplit's numbering, as the bar
-    names a workspace).
-    - Conventions for the QML:
-      - Comments follow the repo rule strictly: none by default, no file
-        headers, one line saying why, never what. What a component does is
-        documented here, not in the QML.
-      - Colours, fonts, radii and spacing come from `Theme`; only `Theme`
-        reads `Colors`. A size that belongs to one component stays in it.
-      - Shared pieces live in `common/` and are extracted at about three
-        uses; a widget used in one file is an inline `component`, unless the
-        file does several jobs, which each get a file of their own.
-      - Bindings over imperative code: handlers only react to events, and
-        transient windows are created as they open (`LazyLoader`, `Variants`
-        keyed by what they show) so each open starts fresh instead of
-        resetting state by hand.
-      - Every panel goes through `Panels`; saved state through `StateFile`.
-      - Behaviour is checked against the source (Quickshell, Qt, Hyprland)
-        rather than guessed, and tested before it lands, in a Hyprland
-        of its own (see [Testing the Quickshell shell](#testing-the-quickshell-shell)).
-      - An inline component sees the file's ids before its own properties,
-        so it reads those through its own id (`list.results`, not
-        `results`).
-      - A `MouseArea` always sets a cursor, an arrow unless told otherwise,
-        and Qt takes the topmost item with one: a `MouseArea` laid over
-        others (to catch the wheel, say) or beside a parent's `HoverHandler`
-        needs `cursorShape: undefined`. Qt's `qt.quick.hover.cursor` logging
-        names the item that won.
-      - The pointer is a hand where a click does something (opens, expands,
-        picks, toggles), an arrow where it does nothing or only dismisses,
-        and a closed hand while dragging (`SwipeArea`'s cards, the volume
-        slider, the center's list). A disabled `MouseArea` still sets its
-        cursor, so one that can be disabled names both. The tray is the
-        exception: few of its icons do anything on a left click, so they keep
-        the arrow.
-    - Gotchas, each found the hard way:
-      - A `PopupWindow` lands off by its monitor's x times
-        `QT_SCALE_FACTOR` minus 1 (512 px at x 2560), right only on the monitor at 0: anything
-        floating is a layer of its own on the screen (`PanelWindow`, or an
-        `Overlay`), placed in that screen's coordinates.
-      - Qt's JavaScript lacks some of ES2019 and later, `Array.flatMap` among
-        them: `map` and spread instead.
-      - PipeWire's link state reads `Unlinked` and a node's `properties`
-        `{}` until a `PwObjectTracker` holds them.
-      - Quickshell types only the plain media classes: `Audio/Source/Virtual`,
-        `Stream/Input/Video` and the like are untyped (0), and an untyped
-        node has no `audio`, so no volume or mute; tell them by
-        `properties["media.class"]`.
-      - An IPC function named `show` is taken by `qs ipc`'s own subcommand.
-      - `systemctl is-active` exits non-zero for every state but active, so
-        it is a `Process` reading stdout, not a `Command`.
-      - A Hyprland bind dispatching `hl.dsp.global` runs again on release,
-        anything else in it too: a global gets a bind of its own.
-      - Hyprland reports no lock-key changes, and its `input.keyboard.key`
-        Lua event comes before the keyboard's new state.
-      - Hyprland's `screencast` event comes for any capture (grim, the
-        shell's own window previews, xdph's frames) and goes 500 ms after the
-        last frame, so it flaps with a still screen: it cannot tell a screen
-        is shared.
-      - A script killed by the shell leaves its pipeline's other processes
-        running until their next write: a long-running reader is a process
-        substitution the script kills on exit.
-      - qmllint is wrong about `Edges.Bottom` assigned to an `Edges` flags
-        property and about `PanelWindow`'s `margins` group; the first takes a
-        `// qmllint disable incompatible-type` pair, the second sizing the
-        window instead.
-      - An item sized from its `Row`'s implicit width, while a child's width
-        is clamped by the item's own, settles at zero without a warning: the
-        text simply vanishes. Size from the children's implicit widths
-        (`Button.contentWidth`).
-      - `visible` reads false under a hidden ancestor, so a size worked out
-        from a child's `visible` is wrong while the whole is hidden; test what
-        makes it visible (`text !== ""`) instead.
-      - `Theme`'s fonts are point sizes, so `font.pixelSize` reads -1; a
-        line's height is a `FontMetrics`' `height`.
-      - qmllint types `QsWindow.window` as a plain `QObject` ("Member
-        `height` not found"); Qt's attached `Window.height` is typed.
-      - Quickshell sorts `SystemTray.items` by category and id, not by when
-        they came (`TrayOrder` keeps that).
-      - A picture sent as a bare path (`notify-send -i /file`) reaches
-        Quickshell as a theme icon, `image://icon//file`; `Notifs.picture`
-        reads it as the file.
-      - A `Binding` with `when: !area.pressed` let its value through during a
-        drag: what a press must hold is set in `onPressed` (`Slider`'s range).
-      - Under a disabled ancestor a `MouseArea`'s own `enabled` still reads
-        true, so a cursor bound to it shows a hand: set it explicitly
-        (`Button`'s area takes the button's).
-      - `Pipewire.preferredDefaultAudioSource` refuses a node Quickshell
-        leaves untyped, a virtual source among them: `wpctl set-default`.
-      - A `ShellScreen` dangles while its monitor goes, and every binding
-        still reading it logs "attempted to use dangling screen object": a
-        window per screen takes its name once, in `Component.onCompleted`.
-      - Past a couple of dozen windows on a workspace Hyprland tiles some to
-        negative sizes, and capturing one makes Wayland kill the shell
-        (`wl_shm_pool` "Invalid stride"): no `ScreencopyView` of a window
-        Hyprland reports smaller than nothing.
-      - A `Singleton` is created on first use, so an `IpcHandler` in one
-        nothing has read yet does not exist, and `qs ipc` answers a missing
-        target with "Target not found." and exit status 0.
-      - Holding a value at the moment a state flips depends on which binding
-        updates first; derive it from what stays put instead (what a popup's
-        text loses on collapsing, from its line counts).
-      - Switching `Layout.alignment` snaps; to ease something across a
-        layout, animate a `Layout.topMargin` bound to a property with a
-        `Behavior` (the center's text when a card expands).
-      - A `Behavior` whose duration or easing follows the flag that drives its
-        value may start before they update, so it runs with the old ones (the
-        OSD faded out in its fade-in's 80 ms): two
-        `NumberAnimation`s started from the flag's change handler instead.
-      - Quickshell.Networking exports a type named `Network`, which shadows a
-        singleton of that name in any file importing the module: the shell's is
-        `Net`.
-      - Quickshell.Networking picks its backend once, as it is first used:
-        NetworkManager not running then leaves it without one until the shell
-        restarts. Restarting NetworkManager later is handled.
-      - Quickshell asks NetworkManager for every access point at once, and
-        the system bus allows 128 pending replies a connection: past about
-        128 networks in range the rest are missing (TODO.md). qs-test's bus
-        raises the limit.
-      - Quickshell reads an MPRIS player the moment its bus name appears; one
-        that fills in its properties after that is never read.
-      - Firefox drops `mpris:length` from a new track's metadata while it
-        plays (YouTube's next video) and sends it again only on a pause, so
-        `Media.length` keeps the one last sent for the track.
-      - hyprsunset's `temperature` getter keeps the last temperature through
-        `identity`, so the shell keeps whether night light is on itself.
-      - Bluetooth pairing without an agent pairs only what wants no code, and
-        a failed `pair()` shows only as `pairing` ending without `paired`.
-      - A `ScriptModel` with `objectProp` keeps a delegate whose key stays and
-        hands it the new value (`dataChanged`): lists rebuilt from bindings
-        keep their state (an open menu, a typed password) only through it.
-    - The design standard is `quickshell/STYLE.md`: GNOME 51 (gnome-shell for
-      desktop surfaces, libadwaita for app-like content) on the darker palette,
-      every `Theme` token with its upstream source, the pieces, the surfaces,
-      writing, behaviour, the exceptions with why, and the checklist for a new
-      piece. One way to do each thing. `qst gallery` shows every `common/`
-      piece in every state. `qs-design-lint` (in `qst lint` and the qmllint
-      check) fails what the source shows; the probe's census what only shows
-      on screen. It is designed at scale 1 (1920x1080); Hyprland's per-monitor
-      scale takes care of a dense screen, and the home-manager option
-      `quickshell.scale` (default 1, the desktop's 27" 1440p monitors 1.2)
-      enlarges the shell alone, as `QT_SCALE_FACTOR`, which apps and links the
-      shell opens get removed.
-    - The shell is written like any Hyprland rice, so it works on other
-      setups: the QML runs its tools by name from PATH (`cliphist`, `wl-copy`,
-      `pw-play`, `notify-send`, `xdg-open`, `systemd-run`, `hyprmoncfg`,
-      `wezterm`, `curl`, `nixpkgs-index`, `nixpkgs-run`, `hyprctl`, `systemctl`,
-      `wpctl`, `camera-users`, `backlight-watch`, `nmcli`, `nm-connection-editor`,
-      `brightnessctl`, `bluetui`) rather than store paths, an exception to the rule above;
-      `quickshell.nix` installs the ones no other feature does. The only Nix
-      in the QML is `palettes.adwaita_darker` as the `Colors` singleton (translucent
-      colours turned into Qt's `#aarrggbb`) and `hyprland.workspaces` as
-      `Hyprsplit.workspaces`, with Material Design Icons as `Symbols` (`scripts/symbols.mjs` over `scripts/symbols.tsv`), in a `qs.nix`
-      module added to the store copy, so it only runs from the built copy
-      (`programs.quickshell.configs.shell`), not the checkout. A new component
-      is a directory with a `Scope`, a line in `shell.qml`, an `IpcHandler`
-      if scripts drive more than its panel, and for a keybind a `GlobalShortcut` (Quickshell.Hyprland)
-      bound in `quickshell.nix` with `hl.dsp.global("quickshell:<name>")`,
-      which reaches the running shell without starting a `qs ipc` process.
-    - What each component is for, and what its code does not say; the
-      behaviour itself is in the QML and its scenarios.
-      - `launcher/`: one `LauncherWindow` and a `LauncherMode` per feature,
-        each opened by its own global shortcut (`quickshell:launcher-<name>`):
-        SUPER+D `apps`, SUPER+V `clipboard`, SUPER+P `monitors`, SUPER+Tab
-        `windows`, SUPER+N `nixpkgs`. A mode sets its `rows` (each with a
-        unique `key`, which keeps delegates as a search changes), the `fields`
-        searched (`search.js`: every word as a substring, or in a loose field
-        its letters in order, or else, from four letters, a word of the text
-        it begins with but for one slip, ranked below both), a `glyph` or `image`, an optional
-        `preview` and own `find`. The card opens at full height and centred, under
-        Shell's search entry (a pill led by the mode's symbol), its rows Shell's
-        search results (16 px tiles),
-        so it holds still while typing; keys go round, the wheel stops at the
-        ends. `apps` orders equal matches by `AppUsage` (frecency as one
-        number per app, so nothing decays) and warms every icon at startup,
-        since an icon Papirus lacks costs thousands of stats. `clipboard`
-        decodes counts and thumbnails once per clip into Quickshell's cache,
-        pruned to what cliphist lists, also at startup, after cliphist's wipe.
-        `monitors` draws each hyprmoncfg profile from its file
-        (`LayoutDiagram`), the recommended one first, and reloads a second
-        after a burst of hotplugs. `windows` lists wlr-foreign-toplevels, on
-        Hyprland in focus order with each one's workspace as the bar names
-        it, and previews them live (no `ScreencopyView` of a window Hyprland
-        squeezed below nothing). `nixpkgs` searches nixos-unstable's 130 000
-        packages from `nixpkgs-index`'s TSV in columns with its own loop and
-        memo, matching as typed only, since a slip pass would cost one over
-        every row on each key, and runs one with `nixpkgs-run`.
-      - `nixpkgs-run` builds `github:NixOS/nixpkgs/<rev>#<attr>` with a
-        progress card (`nixpkgs-progress.jq` over nix's internal-json log) under
-        Papirus' `nix-snowflake` (`-n`, as are its failures),
-        then runs the program in a transient `systemd-run --user` service
-        sandboxed by systemd alone: `ProtectSystem=strict`, `PrivateTmp`, a
-        writable tmpfs over `$HOME` and `$XDG_RUNTIME_DIR` (the user
-        manager's implied `PrivateUsers` keeps it off `/proc/<pid>/root`), only
-        PipeWire, X11 and the GTK, fontconfig and cursor settings bound back
-        in, and the nix daemon and both D-Bus buses out of reach. Wayland
-        comes through a socket of its own from `security-context`, so
-        Hyprland hides every protocol that could type into or capture other
-        windows; X11 apps still share Xwayland. A program with a desktop entry
-        runs on its own, anything else in wezterm, held open on a failure or a
-        run under 5 s.
-      - `shortcuts/` (SUPER+?): every Hyprland bind with a description, from
-        `hyprctl binds -j` on each open, numbered and directional binds folded
-        into one row, a submap's binds under the bind that enters it, media
-        keys left out; in up to three balanced columns, shrunk whole only when
-        none fits.
-      - `tooltip/`: the tooltip's layer, `quickshell:tooltip` on the overlay layer of
-        each screen, taking no input and drawn only while `Tooltips` shows one
-        there; placed in window coordinates, which are the screen's for the bar
-        and every panel, the only places with tooltips.
-      - `power/` (SUPER+X or the control centre's header): five tiles, each one's key underlined in its label (`Theme.accessKey`, the HIG's access keys, pressed without Alt),
-        Reload Hyprland and, on UEFI, Restart to Firmware; ending the session
-        or the machine takes a second press within 5 s. Every action is a
-        command, so `qst actions` shows what it would have done.
-      - `bar/`: per screen, Shell's panel (32 px, bold 11 pt items in pills filled at 17, 28 and 32 %): the workspaces led by the distro's logo (`LOGO=` from `/etc/os-release` drawn from the icon theme, `distributor-logo` failing that), which does nothing, the clock (opening the
-        center) and the status button (opening the control centre) with the tray left of it. Workspaces are hyprsplit's `1 … n` for the
-        monitor, then any other monitor's still on it, named after that
-        monitor (`DP2-1`) by `WorkspaceOwners`, which remembers connectors by
-        id across unplugs. Quickshell refreshes monitors only as one comes and
-        drops windows opened on a workspace it has not loaded, so `Bar.qml`
-        refreshes on those events and once more 300 ms after a burst. The
-        status button shows, left to right, what records (`Privacy`), the bell
-        while notifications wait unchecked or Do Not Disturb struck through,
-        the VPN, the link in use, Bluetooth, a muted microphone, the volume
-        and a laptop's battery; the wheel steps the volume. The tray is on the bar itself, left of the
-        status button, every item in the order it came (`TrayOrder`, since
-        Quickshell sorts by category and id): hidden until the pointer reaches
-        the bar's right end (`BarWindow`'s zone, the status button and the room
-        left of it, short of the clock, and the buttons' parent, as hover
-        reaches ancestors and not siblings beneath), a strip up to 12 em that
-        the wheel scrolls sideways with its ends fading, lingering 600 ms after
-        the pointer leaves and while its menu is open. `TrayMenu` is Shell's
-        popup menu dropping flush from the bar under its icon, the panel
-        `tray-menu:SCREEN`, cascading as GTK's does, taking the keyboard
-        (Up, Down, Home and End pick a row, Right or Return opens a submenu on
-        its first row, Left shuts it, Return runs a row, Escape closes it) and
-        closing as the pointer leaves it, unless the keys drive it.
-      - Caffeine (the control centre's pill beside Night Light, `Caffeine`,
-        `qs ipc -c shell call caffeine toggle|set|active`) is the
-        `caffeine.service` user unit, `systemd-inhibit --what=idle` for as
-        long as it runs, so it outlives a shell restart; the status button
-        shows a cup while it is on.
-      - `weather/`: MET Norway's forecast for the time zone's city
-        (`/etc/localtime` placed by `zone.tab`, no lookup of the address),
-        fetched every half hour and at once when the clock shows a suspend
-        skipped one; MET's icons are fetched into `weather/icons/` by
-        `quickshell.nix`.
-      - `notifications/`: the notification daemon and its popups. `Notifs`
-        keeps every notification as a `NotifEntry` until dismissed, holding it
-        a second past its close so views slide it away whole. Popups stack on
-        the monitor focused when each arrived, five at most, timing out under the pointer too (the center
-        keeps them), held only out of sight or without a monitor; the
-        countdown bar is the entry's own. A popup is GNOME's banner: a header
-        line (the app's icon and name, the age, expand and close), then the 48
-        px icon or picture, the summary, the body and the actions, arriving
-        with a fade and a growth from 90 % on an animation of its own (a
-        ListView transition cut short by the next arrival leaves its item
-        where it stopped). Over a fullscreen window only
-        critical ones pop up. A stack tag (`x-canonical-private-synchronous`,
-        `x-dunst-stack-tag`), an update by id or the same app, summary and
-        body within 2 s update a card in place. A flood is turned away at the
-        door past 30 a second (critical ones apart) and summed up in one card;
-        text is cut before anything lays it out, since a megabyte of it held
-        the shell for seconds; each app keeps its newest three and all 100.
-        Bodies keep only the markup the spec allows (`markup.js`). Sounds are
-        elementary OS's, played with `pw-play`, at most one each 300 ms.
-        `History` saves the list atomically to Quickshell's state dir (no
-        transient ones, 7 days at most, `history.js`) with copies of pictures
-        only the server held, drawn once off screen and grabbed into the cache
-        under a uid per entry. Scripts use `qs ipc -c shell call notifications
-        <toggleDnd|setDnd|dnd|count|clear|hidePopups>`.
-      - `center/`: the notification center under the clock, GNOME's date menu:
-        the `MediaCard` of the MPRIS player that played last heading the list
-        (where GNOME shows media), then notifications grouped per app (`NotificationGroup`), each card three lines tall so
-        the stack is even, the calendar (ISO weeks) and the weather beside it
-        where the screen has room. Opening it checks every notification and
-        puts the popups away. Each card's close button sits after its age
-        without the pointer over it (a group's on its first line), and every
-        line keeps its room, so the ages line up. Clear hides them and offers
-        Undo in a `Toast` for five seconds; `Notifs` dismisses what it held as
-        the toast goes or the center closes (the `notifications clear` IPC at
-        once). Its list glides on the wheel
-        and flicks. Do Not Disturb is a switch in its footer beside Clear, as
-        GNOME's, with no quick toggle.
-      - `controls/`: the control centre, GNOME's quick settings under the
-        status button (SUPER+A): `Header`, `Levels` (output, input and each
-        backlight), the `Pill`s the machine has (`Controls.toggles`: wired per
-        device, Wi-Fi, VPNs, Bluetooth, night light, Caffeine), a `Menu`
-        under the row that opens it and `InUse` while something records. `ControlsPanel`
-        stacks them, each menu in a slot of its own so one eases shut as the
-        next opens, and scrolls past what the screen leaves under the bar. The
-        backends are singletons: `Net` (Quickshell.Networking for Wi-Fi and
-        wired, `nmcli` for VPNs and whether NetworkManager runs; a captive
-        portal gets a card that goes when the portal does), `BluetoothDevices`
-        (pairs, trusts and connects in one click; no agent, so a device
-        wanting a PIN is sent to bluetui), `Volume`, `Microphone` (a virtual
-        source is set through `wpctl`), `NightLight` (hyprsunset, kept in the
-        state dir and put back when hyprsunset restarts), `Media` (the
-        player, and its track's length), `Power`
-        (UPower's display device) and `Privacy`: a capture stream linked from
-        a microphone while audio flows (meters and passive filters left
-        out), a video source a program made (the portal's screen casts), and
-        a camera through PipeWire or held open from `/dev/video*` for half a
-        second (`camera-users`). Names from devices and networks are made safe
-        for one line by `names.js`.
-  - `hyprtoolkit.nix` themes hyprtoolkit (`~/.config/hypr/hyprtoolkit.conf`),
-    which hyprpolkitagent ≥ 0.2 and hyprland-guiutils' dialogs (app not
-    responding, permissions) draw with, as libadwaita's dark style on the darker palette: window
-    background, buttons and borders as the foreground at 10 % and 15 % made
-    opaque, Adwaita Sans, Papirus-Dark, radii 9/12. The accent is `blue_5`,
-    since hyprtoolkit writes dark text on an accent lighter than OkLab 0.5.
-  - hyprlock talks to fprintd itself (`auth:fingerprint`, on when
-    `services.fprintd` is), so the NixOS half turns `fprintAuth` off for
-    hyprlock's PAM service.
-  - hyprlock's background is each screen's own screenshot, blurred (3
-    passes of 8) at brightness 0.6, with `contrast = 1` so brightness stays a
-    plain multiply; `dark_5` only without screencopy. The clock is Adwaita
-    Sans Bold at 64 pt over the date at 24 (centres 185 and 100), the field
-    at −100 and the fingerprint prompt at −170. Its `fadeIn` (600 ms) crossfades from the
-    screenshot to the blurred background, so the lock takes over from the
-    screen as it was without an edge; `fadeOut` is off, since it would fade
-    back to that screenshot and then cut to the desktop.
-  - Every lock (idle, sleep, the power menu's Lock) goes through
-    `loginctl lock-session`, so hypridle's `lock_cmd` is the only thing that
-    runs hyprlock: `lock` (in `hypridle.nix`), which never starts a second
-    one. It asks the shell how dark the idle dim is (`idle hold`, which also
-    keeps it still and deaf to `cancel`, since hyprlock's screenshot takes it
-    in) and, under a dim, starts hyprlock on a copy of its config in
-    `$XDG_RUNTIME_DIR` whose brightness is 0.6 ÷ (1 − darkness), so every lock
-    ends on the same picture, dimmed first or not, a lock mid-dim too. Once it
-    has the lock, hypridle's `on_lock_cmd` (`idle locked`) drops the dim under
-    it and keeps any from starting, so an unlock shows the plain desktop;
-    `on_unlock_cmd` and `lock` once hyprlock exits (`idle unlocked`) clear it
-    all, a hold that never got the lock too.
-  - An idle lock comes after the screens dim (`idle/`, the
-    `quickshell:idle` layer on every screen, black on the overlay layer and taking
-    no input) to the lock's own brightness (to 40 % black for 0.6, worked
-    out from hyprlock's settings), so the lock's fade-in only blurs:
-    hypridle's listener 10 s before its lock runs `qs ipc -c shell call idle
-    fade 10 0.4`, and the same listener's resume `cancel`, so any input
-    during the dim brings the screens back. An unlock with no key or mouse to resume the
-    listener (a fingerprint) clears it through hypridle's `on_unlock_cmd`. hypridle stays the one clock and
-    the one watcher of input, and without a shell the lock simply comes, at
-    0.6. Sleep and the power menu lock at once.
-  - The OSD (`osd/`) shows what just changed on the focused monitor, on the
-    overlay layer, for 1.5 s (fading over Shell's 100 ms), never taking a click, in
-    one place: a pill at the bottom centre, 4em up as GNOME Shell's. A level
-    shows its symbol, the level filling across (past 100 % the share over it
-    in red after a 3 px gap, as Shell's .level) and the number, for every change
-    of the output's or the input's level or mute and of brightness, wherever
-    it came from (the keys, the control centre, another app); a symbol and a
-    word show a new default output or input, and Caps Lock. `Osd` is the backend,
-    changes as they are made rather than states as they are found: each
-    `Watch` takes in the first value of what it watches, and any arriving
-    within 500 ms of its key (the node's name) or readiness changing, so the
-    shell starting, PipeWire coming back and a new output's own volume show
-    nothing; each `DeviceWatch` shows a default device only once it settles
-    (400 ms) and differs from the last one it knew, so an unplug that leaves
-    no default for a moment shows only where it lands. Brightness is `Brightness`, every
-    backlight from `backlight-watch` (`scripts/backlight-watch.sh`: `udevadm
-    monitor` on the backlight subsystem, since the kernel sends a change
-    uevent for every set however it is made, a line `name brightness max;`
-    per change), the one that changed showing; Caps Lock is `CapsLock`,
-    `hyprctl devices -j`'s main keyboard read when Hyprland's
-    `input.keyboard.key` Lua event sees the Caps Lock key (66) go up and
-    dispatches `quickshell:caps-lock` (`quickshell.nix`), since Hyprland
-    reports no lock changes, and read again 150 ms later. A second bind on the volume and
-    brightness keys dispatches `quickshell:osd-volume` /
-    `quickshell:osd-brightness` (`bindings.nix`), so a level at its end still
-    shows when the key changes nothing; a bind of its own, since Hyprland runs
-    a bind that dispatches a global again on release. `Osd.settling` says it is still
-    taking in, for tests.
-  - The screenshot binds call one `writeShellApplication` (`scripts/freeze-region.sh`,
-    `copy|save`) that carries its own runtime inputs, and end with a
-    notification from "Screenshot": the shot as its picture (a `file://` URI) and
-    Papirus' `accessories-screenshot` as the badge (`-n`). A copy says
-    "Screenshot Copied to Clipboard", its picture kept in
-    `$XDG_RUNTIME_DIR/screenshots` until the next copy, under the stack tag
-    `screenshot`, so a run of copies is one card. A save says "Screenshot
-    Saved" with the path (`~` for home), untagged, so each file keeps its own
-    card, with Open (also a click on the card) and Show in Folder
-    (`xdg-open` on the file or its folder), waited on in the background.
-    Both are transient and silent (`suppress-sound`), so they leave nothing
-    in the history, and both take the popups' own timeout. Escape in slurp sends
-    nothing; a failure sends a critical "Screenshot Failed" with why.
-  - Binds reference configured packages (`config.programs.wezterm.package`,
-    `config.programs.quickshell.package`, …) rather than `pkgs.*`.
-  - The HM half reads `osConfig` (compositor package, xkb layout, fprintd,
-    NetworkManager), so it requires the NixOS half.
-- **`neovim/`** ships a Lua config in-tree. `homeManager.neovim` symlinks
-  `xdg.configFile."nvim".source` to the module dir, or to the home-manager
-  option `neovim.outOfStorePath` (a checkout) for live editing. git (for
-  `vim.pack`), LSP servers, formatters, `gcc`, `tree-sitter`, `fzf` and, on
-  Linux, `wl-clipboard` (for `unnamedplus`) are
-  `programs.neovim.extraPackages`,
-  so they are on nvim's PATH only; ripgrep and fd come from `programs.ripgrep` /
-  `programs.fd` for the shell too. Per-server LSP overrides live in `after/lsp/`.
-  home-manager's own `init.lua` (providers off) is sideloaded through the
-  wrapper (`sideloadInitLua`), since the whole `~/.config/nvim` is the module's.
-  Neovim 0.12+ `vim.pack` is the plugin manager; `nvim-pack-lock.json` is
-  committed and pins every plugin:
-  - in a writable checkout, `vim.pack` reads and writes it in place;
-  - from the read-only store, `init.lua` points `vim.pack` at a copy in
-    `~/.local/share/nvim/nvim-pack-config/` and, whenever the committed
-    lockfile changes, reseeds that copy and runs
-    `vim.pack.update(nil, { target = "lockfile", force = true })`.
-  - To update plugins from a store install: `:lua vim.pack.update()`, then
-    copy `~/.local/share/nvim/nvim-pack-config/nvim-pack-lock.json` into
-    `modules/features/neovim/` and commit. Run `:TSUpdate` afterwards.
-- **`pi-agent/`** installs `pi-coding-agent` from `inputs.nixpkgs-unstable`
-  directly (not `pkgs.unstable`, which the mac lacks). nixpkgs' wrapper prefixes
-  ripgrep and fd onto pi's PATH; the feature's own wrapper suffixes git
-  (worktree isolation, the commit skill) and node (npm install scripts), so a
-  project shell's versions win. It writes `settings.json`, `APPEND_SYSTEM.md`,
-  the `commit-style` skill, a `bell` extension (BEL on a finished run or a
-  prompt, which tmux marks on a background window) and a `tmux-session`
-  extension (the session file in the pane option `@pi_session`) into `~/.pi/agent` (pi
-  ignores XDG), merging its
-  home-manager option `piAgent.settings` over the defaults; both hosts set it
-  to pin their provider, model and thinking level. pi packages
-  (`@tintinweb/pi-subagents`, `rpiv-ask-user-question`, `rpiv-todo`) are
-  pinned in `packages` and installed by pi itself with nixpkgs' `npm`
-  (`npmCommand`) into `~/.pi/agent/npm`. home-manager's own
-  `programs.pi-coding-agent` is not used: release-26.05 lacks it.
+[Moonshine](https://github.com/hgaiser/moonshine) from its flake (upstream
+`main`), via its NixOS module (which disables nixpkgs'). The package is built
+against our nixpkgs, since its implicit Vulkan layer loads into every Vulkan
+app, and patched to TLS-handshake per connection with a timeout (upstream
+handshakes in the accept loop; one stalled client hung pairing). Each Moonlight
+stream gets its own headless compositor at the client's mode. One app: Steam
+`-gamepadui` in gamescope, `DISABLE_FERRISCOPE_WSI`, `--xwayland-count 2` (on
+one Xwayland a game loses X focus to the overlay and never comes back), Deck UI
+(Big Picture `-tenfoot` froze the stream). User joins `input` (virtual pads) and
+`moonshine` (sleep-inhibit polkit rule). A desktop Steam is shut down first
+(single instance). Logs: `journalctl --user -u moonshine-session`. The host sets
+`services.moonshine.openFirewall` and `uid` (allocated, not declared;
+`hosts/desktop/streaming.nix`).
 
-### Profiles (`modules/profiles/`)
+### `tmux/`
 
-Profiles are ordinary aspects that import other aspects. A host chooses which
-to take.
+Built-ins only, themed from the palette. Bare `tmux` attaches to `main` (a
+wrapper). Vim keys on `C-b` (prefix table reset, no arrows), `choose-tree` to
+jump, copy-mode selection to the clipboard via OSC 52, `prefix e` opens
+scrollback in nvim (only with `programs.neovim`), framed pane titles, rounded
+popups, bells from background windows marked (pi rings one), `prefix o` jumps
+to one. resurrect + continuum load last via `run-shell` (HM `plugins` load
+before `extraConfig`). A post-save-layout hook saves each pi pane as
+`pi --session <@pi_session>`, so panes sharing a directory keep their own
+session.
 
-- `base` — nixos imports `boot doas documentation git home-manager journald
-  locale network neovim nix nixpkgs packages podman unstable-nixpkgs
-  users` and wires `homeManager.base`; `homeManager.base` imports `git
-  pi-agent tmux users xdg-user-dirs zsh`.
-- `workstation` — nixos imports `display-manager fonts gtk hyprland plymouth
-  sound`; `homeManager.workstation` imports `bluetooth cursor desktop-apps gtk
-  hyprland neovim qt wezterm`. Its NixOS half pulls in the HM half.
+### `neovim/`
 
-### Theme (`modules/theme/`)
+In-tree Lua config. `xdg.configFile."nvim".source` is the module dir, or
+`neovim.outOfStorePath` (a checkout) for live editing. git, LSP servers,
+formatters, `gcc`, `tree-sitter`, `fzf`, `wl-clipboard` (Linux) are
+`extraPackages` (nvim's PATH only); ripgrep and fd come from `programs.ripgrep`
+/ `programs.fd`. LSP overrides in `after/lsp/`. HM's own `init.lua` is
+sideloaded (`sideloadInitLua`). Plugins: `vim.pack` (0.12+), pinned by the
+committed `nvim-pack-lock.json`:
 
-`palette.nix` declares `palettes` and is the canonical example of a top-level
-value option. `fonts` is nixos; `gtk` is nixos + homeManager; `cursor` and
-`qt` are homeManager. `gtk` recolours apps with the palette's darker surfaces:
-GTK4 through libadwaita's `:root` variables (dark style only), GTK3 through
-adw-gtk3's `@define-color` names, both in the user `gtk.css`. Qt's adwaita-dark
-style keeps its own colours.
+- writable checkout: `vim.pack` uses it in place;
+- read-only store: `init.lua` points `vim.pack` at a copy in
+  `~/.local/share/nvim/nvim-pack-config/`, reseeding it and running
+  `vim.pack.update(nil, { target = "lockfile", force = true })` when the
+  committed lockfile changes.
+- To update from a store install: `:lua vim.pack.update()`, copy the lockfile
+  from that dir into `modules/features/neovim/`, commit, `:TSUpdate`.
 
-### Hosts (`modules/hosts/`)
+### `pi-agent/`
 
-Each host is a directory; `imports.nix` declares the host and its aspect
-list, sibling files contribute to the same
-`flake.modules.nixos."nixosConfigurations/<name>"` aspect, and `home.nix` /
-`monitors.nix` to `flake.modules.homeManager."nixosConfigurations/<name>/home"`.
+`pi-coding-agent` from `inputs.nixpkgs-unstable` directly (the mac lacks
+`pkgs.unstable`). nixpkgs' wrapper prefixes ripgrep and fd; ours suffixes git
+and node, so a project shell's win. Writes into `~/.pi/agent` (pi ignores XDG):
+`settings.json` (defaults merged with `piAgent.settings`; both hosts pin
+provider, model, thinking level), `APPEND_SYSTEM.md`, the `commit-style`
+skill, a `bell` extension (BEL on finish or prompt) and `tmux-session` (session
+file in pane option `@pi_session`). pi packages are pinned in `packages`,
+installed by pi with nixpkgs' `npm` into `~/.pi/agent/npm`. HM's
+`programs.pi-coding-agent` is not in release-26.05.
 
-Hardware settings (firmware, fstrim, fwupd, zram, microcode, graphics, bluetooth)
-stay in each host's `hardware.nix`, even when hosts repeat them: hardware is
-individual by nature, so it is not factored into a shared aspect.
+Sharp edges: `settings.json` is a read-only store link, so what pi would save
+itself (`theme`, `defaultProvider`, `defaultModel`, `defaultTools`,
+`packages`, `defaultProjectTrust`) fails and reverts; set it through
+`piAgent.settings`. pi themes cannot paint the background (no global token);
+it is wezterm's.
 
-Both hosts' `home.nix` carry the homelab tooling: `just`, `helm`, `virtctl`
-(`kubevirt`), `kubelogin` (`kubectl oidc-login`), `programs.gh` (also git's
-credential helper for github.com), `piAgent`
-settings, and an ssh `loft01` host (10.0.0.1) that forwards local 6443 to the
-k3s API.
+### `hyprland/`
 
-- **`thonkpad`** — imports `base workstation gaming`. Intel laptop:
-  microcode, firmware, bluetooth, graphics + `intel-media-driver`/`vpl-gpu-rt`, fstrim, fwupd, zram,
-  `thermald`, TLP battery thresholds, UPower (the bar's battery), disko, `treefmt`, mDNS and ephemeral UDP
-  ports open for Chromecast discovery.
-- **`desktop`** — imports `base workstation gaming moonshine`. AMD desktop:
-  microcode, firmware, RX 6700 XT graphics, fstrim, fwupd, zram, ZSA keyboard udev rules
-  (keymapp), disko, hyprmoncfg profiles `default` (both monitors), `left-only` and `right-only`,
-  nix-index, ssh hosts for github.com and rsync.net,
-  Hyprland startup apps pinned to monitors, host-specific app list, and the
-  shell a size up (`quickshell.scale = 1.2`) for its 27" 1440p monitors at
-  scale 1.
+Files: `default.nix` (nixos + HM base), `bindings.nix`, `rules.nix`,
+`hypridle.nix`, `hyprlock.nix`, `hyprmoncfg.nix`, `hyprtoolkit.nix`,
+`plugins.nix`, `quickshell.nix`, `assets/`, `scripts/`, `tests/`,
+`quickshell/`. The HM half reads `osConfig` (compositor package, xkb,
+fprintd, NetworkManager), so it needs the NixOS half.
 
-## External consumers
+- **Lua settings API** of the pinned Hyprland: binds and events via
+  `lib.generators.mkLuaInline` and `_args`. `bindings.nix`' `mkBind` gives every
+  bind a `desc` (shown by `hyprctl binds`, so SUPER+?) and generates workspace,
+  direction and XF86 binds. Binds reference configured packages
+  (`config.programs.wezterm.package`), not `pkgs.*`.
+- **hyprsplit** (`plugins.nix`): declares `hyprland.workspaces`, loads the Lua
+  library as `hs` (`hs.dsp.focus`, `hs.dsp.window.move`). Monitor *k*'s
+  workspaces are `k*n+1 … (k+1)*n`, shown as `1 … n`; *k* is the monitor id,
+  which Hyprland reuses per connector name.
+- **Session daemons** are HM user services on `hyprland-session.target` via
+  `wayland.systemd.target`, which Hyprland ≥ 0.57 starts itself (HM's bounce
+  off, environment import only): quickshell, cliphist (wiped at start), hyprmoncfgd,
+  hypridle, hyprpolkitagent, hyprpaper (a config reload restarts it),
+  hyprsunset (`--identity`, untinted; the control centre's night light). No
+  nm-applet. A service for another compositor needs its own target.
+- **Monitors**: [hyprmoncfg](https://github.com/crmne/hyprmoncfg) (unstable,
+  built against the pinned Hyprland). Profiles are declared only
+  (`hyprmoncfg.profiles`, outputs by EDID, workspace planning off) into one
+  read-only store dir, so the TUI cannot save. SUPER+P applies one through the
+  launcher's `monitors` mode. A catch-all `monitor` rule (preferred, auto, 1)
+  covers the rest. `hyprland.lua` is read-only, so the module appends
+  hyprmoncfg's `dofile` with `lib.mkAfter`; it must stay the last line.
+- **hyprtoolkit** (`hyprtoolkit.nix`, for hyprpolkitagent ≥ 0.2 and
+  hyprland-guiutils): libadwaita dark on the darker palette, fg at 10/15 %
+  made opaque, Adwaita Sans, Papirus-Dark, radii 9/12, accent `blue_5`
+  (hyprtoolkit writes dark text on an accent lighter than OkLab 0.5).
+- **hyprlock**: talks to fprintd itself (`auth:fingerprint` when
+  `services.fprintd`), so the NixOS half turns PAM `fprintAuth` off for it.
+  Background: each screen's screenshot blurred (3×8) at brightness 0.6,
+  `contrast = 1`; `dark_5` without screencopy. Clock Adwaita Sans Bold 64 pt,
+  date 24 pt, field at −100, fingerprint prompt at −170. `fadeIn` 600 ms
+  crossfades from the screenshot; `fadeOut` off (it fades back to the
+  screenshot, then cuts).
+- **Locking**: everything goes through `loginctl lock-session`; hypridle's
+  `lock_cmd` (`lock`, in `hypridle.nix`) is the only thing that runs hyprlock,
+  never twice. Under an idle dim it asks the shell its darkness (`idle hold`,
+  which also freezes the dim) and starts hyprlock on a copy of its config
+  (`$XDG_RUNTIME_DIR`) with brightness 0.6 ÷ (1 − darkness), so every lock ends
+  on the same picture. `on_lock_cmd` (`idle locked`) drops the dim and blocks
+  new ones; `on_unlock_cmd` and `lock` exiting (`idle unlocked`) clear all.
+- **Idle dim** (`quickshell/idle/`, layer `quickshell:idle`): 10 s before the
+  lock hypridle runs `qs ipc -c shell call idle fade 10 0.4` (0.4 black for
+  hyprlock's 0.6), its resume `cancel`, so input brings the screens back. A
+  fingerprint unlock (no input) clears it through `on_unlock_cmd`. hypridle is
+  the one clock and input watcher; without a shell the lock just comes. Sleep
+  and the power menu lock at once.
+- **Screenshots**: one `writeShellApplication` (`scripts/freeze-region.sh`,
+  `copy|save`), ending in a transient, silent notification from "Screenshot"
+  with the shot as picture (`file://`) and `accessories-screenshot` badge
+  (`-n`). Copies share stack tag `screenshot` (picture in
+  `$XDG_RUNTIME_DIR/screenshots` until the next); saves are untagged with Open
+  and Show in Folder. Escape in slurp sends nothing; a failure is a critical
+  "Screenshot Failed".
 
-The mac (a separate nix-darwin flake) imports `modules.homeManager.{wezterm,
-neovim, pi-agent}`. Keep those aspects platform-neutral (no
-Linux-only packages without a guard), and expose anything the mac must set as
-an option of the aspect.
+## The Quickshell shell (`hyprland/quickshell/`)
+
+[Quickshell](https://quickshell.org) 0.3.2 from `pkgs.unstable` (0.3.1 fixed
+crashes on freed objects in a `ScriptModel`). `quickshell.nix` runs it as
+`quickshell.service`: restarted when the shell changes (`X-Restart-Triggers`),
+1 s after a crash, no start limit (hotplug bursts), `MemoryMax=2G` without swap
+(it sits near 500 MiB). Quickshell's own guard also restarts a crashed
+instance in place and logs "Quickshell has crashed under pid N".
+
+Components: `bar/`, `center/`, `controls/`, `launcher/`, `notifications/`,
+`osd/`, `power/`, `shortcuts/`, `tooltip/`, `weather/`, `idle/`; `shell.qml`
+only instantiates them. `common/` holds what several share: the STYLE.md
+pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `ClickAway`,
+`Screens`, `Time`, `StateFile`, `Command`, `Detached`, `WheelSteps`,
+`WorkspaceOwners`, `Tooltips`.
+
+### Wiring
+
+- **`Panels`**: the one open panel by name; opening one closes the others;
+  nothing opens with no monitor on (it would land on `FALLBACK` holding the
+  keyboard). IPC `panels open|close|toggle <name>`: `apps`, `clipboard`,
+  `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`, `power`, `gallery` (qs-test
+  only), per screen `controls:DP-1`, `tray-menu:DP-1`.
+- **`Overlay`**: the full-screen layer a panel lives in; a click off its `card`
+  or a window elsewhere taking the keyboard closes it. Exclusive keyboard only
+  until it has it, or a window clicked on another monitor never got it.
+- **`ClickAway`**: a layer under the windows on every screen, taking input only
+  while a panel is open, so bare desktop closes it.
+- **`Screens`**: screens less Hyprland's `FALLBACK`, and the focused one.
+- **`Command`**: a process whose failure (even to start) becomes a
+  notification, or a log line while `quiet`. **`Detached`**: one
+  `systemd-run --user --scope` per app, since a service restart kills its
+  cgroup.
+- **Nix in the QML** is only the `qs.nix` module in the store copy: `Colors`
+  (the palette, translucent colours as Qt `#aarrggbb`), `Hyprsplit.workspaces`
+  and `Symbols` (MDI 7.4 from `@mdi/svg`, `scripts/symbols.mjs` over
+  `scripts/symbols.tsv`). So the shell runs from the built copy
+  (`programs.quickshell.configs.shell`), not the checkout.
+- **Tools by name from PATH** (`cliphist`, `wl-copy`, `pw-play`, `notify-send`,
+  `xdg-open`, `systemd-run`, `hyprmoncfg`, `wezterm`, `curl`, `nixpkgs-index`,
+  `nixpkgs-run`, `hyprctl`, `systemctl`, `wpctl`, `camera-users`,
+  `backlight-watch`, `nmcli`, `nm-connection-editor`, `brightnessctl`,
+  `bluetui`), so it works as any rice: an exception to store paths;
+  `quickshell.nix` installs those no other feature does.
+- **Scale**: designed at scale 1 (1920x1080). Hyprland's per-monitor scale
+  handles dense screens; HM `quickshell.scale` (default 1, the desktop 1.2)
+  sets `QT_SCALE_FACTOR` for the shell alone, removed for what it launches.
+- **A new component**: a directory with a `Scope`, a line in `shell.qml`, an
+  `IpcHandler` if scripts drive more than its panel, and for a keybind a
+  `GlobalShortcut` bound in `quickshell.nix` with
+  `hl.dsp.global("quickshell:<name>")` (no `qs ipc` process per press).
+
+### QML conventions
+
+- Comments: none by default, no headers, one line why. What a component does
+  lives here, not in QML.
+- Colours, fonts, radii, spacing, durations from `Theme`. A size one component
+  owns stays in it.
+- Shared pieces go to `common/` at about three uses; a widget used in one file
+  is an inline `component`, unless the file does several jobs.
+- Bindings over imperative code; handlers only react. Transient windows are
+  created as they open (`LazyLoader`, `Variants` keyed by what they show), so
+  each open starts fresh.
+- Every panel through `Panels`; saved state through `StateFile`.
+- Check behaviour against source (Quickshell, Qt, Hyprland), and test it in
+  qs-test before it lands.
+- An inline component sees the file's ids before its own properties: read
+  those through its own id (`list.results`).
+- Cursors: a `MouseArea` always sets one, an arrow unless told; Qt takes the
+  topmost. One laid over others (for the wheel) or beside a parent's
+  `HoverHandler` needs `cursorShape: undefined`. Hand where a click acts,
+  arrow where it does nothing or only dismisses, closed hand while dragging. A
+  disabled `MouseArea` still sets its cursor, so name both. Tray icons keep the
+  arrow (few act on a left click). `qt.quick.hover.cursor` logging names the
+  winner.
+- Hover: Qt 6 hovers one leaf item and its ancestors, never the siblings under
+  it, and a press marks a `MouseArea` hovered outside that tracking, so nothing
+  clears it. Never lay a hover-taking item over a `MouseArea` whose
+  `containsMouse` you read: `TooltipArea` puts its `HoverHandler` on its owner
+  for this.
+
+### Gotchas, each found the hard way
+
+- A `PopupWindow` lands off by its monitor's x × (`QT_SCALE_FACTOR` − 1) except
+  at x 0: anything floating is its own layer (`PanelWindow`/`Overlay`) in that
+  screen's coordinates.
+- Qt's JS lacks some ES2019+, `Array.flatMap` among it: `map` and spread.
+- PipeWire link state reads `Unlinked` and node `properties` `{}` until a
+  `PwObjectTracker` holds them.
+- Quickshell types only plain media classes; `Audio/Source/Virtual`,
+  `Stream/Input/Video` are untyped (0), with no `audio` (no volume, mute): use
+  `properties["media.class"]`. `preferredDefaultAudioSource` refuses them:
+  `wpctl set-default`.
+- An IPC function named `show` collides with `qs ipc`'s subcommand.
+- `systemctl is-active` exits non-zero for every state but active: a `Process`
+  reading stdout, not a `Command`.
+- A bind dispatching `hl.dsp.global` runs again on release, along with anything
+  else in it: a global gets a bind of its own.
+- Hyprland reports no lock-key changes; its `input.keyboard.key` event comes
+  before the keyboard's new state.
+- Hyprland's `screencast` event fires for any capture (grim, the shell's own
+  previews) and ends 500 ms after the last frame: it cannot tell a screen is
+  shared.
+- A script the shell kills leaves its pipeline running until the next write: a
+  long-running reader is a process substitution the script kills on exit.
+- qmllint is wrong about `Edges.Bottom` into an `Edges` property (disable pair
+  `incompatible-type`) and `PanelWindow`'s `margins` (size the window instead);
+  it types `QsWindow.window` as `QObject` (use `Window.height`).
+- An item sized from its `Row`'s implicit width while a child's width is
+  clamped by the item's settles at zero, silently: size from the children's
+  implicit widths (`Button.contentWidth`).
+- `visible` reads false under a hidden ancestor: test what makes it visible
+  (`text !== ""`).
+- `Theme`'s fonts are points, so `font.pixelSize` is −1: a line's height is a
+  `FontMetrics.height`.
+- Quickshell sorts `SystemTray.items` by category and id (`TrayOrder` keeps
+  arrival order).
+- `notify-send -i /file` arrives as `image://icon//file`; `Notifs.picture`
+  reads it as the file.
+- A `Binding` with `when: !area.pressed` leaks its value mid-drag: set what a
+  press holds in `onPressed` (`Slider`'s range).
+- Under a disabled ancestor a `MouseArea`'s `enabled` still reads true: set its
+  cursor explicitly.
+- A `ShellScreen` dangles while its monitor goes ("dangling screen object"): a
+  per-screen window takes its name once, in `Component.onCompleted`.
+- Past a couple of dozen windows on a workspace Hyprland tiles some to negative
+  sizes, and capturing one gets the shell killed (`wl_shm_pool` "Invalid
+  stride"): no `ScreencopyView` of those.
+- An item destroyed mid-`grabToImage` crashes Qt's render thread
+  (`QQuickItemGrabResult::render`): a copy goes only once its grab is back
+  (`NotificationPopups`).
+- A `Singleton` is created on first use, so an unread one's `IpcHandler` does
+  not exist, and `qs ipc` says "Target not found." with exit 0.
+- A value at the moment a state flips depends on binding order: derive it from
+  what stays put.
+- Switching `Layout.alignment` snaps: animate a `Layout.topMargin` bound to a
+  property with a `Behavior`.
+- A `Behavior` whose duration follows the flag driving its value may start with
+  the old duration: two `NumberAnimation`s from the flag's change handler.
+- `Quickshell.Networking` exports `Network`, shadowing a singleton of that
+  name: ours is `Net`. It picks its backend once, on first use (NetworkManager
+  down then = no backend until restart; restarts later are handled).
+- Quickshell asks NetworkManager for every access point at once and the system
+  bus allows 128 pending replies: past ~128 networks the rest are missing
+  (TODO.md; qs-test's bus raises the limit).
+- Quickshell reads an MPRIS player the moment its name appears; properties set
+  after are never read. Firefox drops `mpris:length` on a new track until a
+  pause, so `Media.length` keeps the last one sent.
+- hyprsunset's `temperature` getter keeps the last value through `identity`:
+  the shell tracks night light itself.
+- Bluetooth without an agent pairs only what needs no code; a failed `pair()`
+  shows only as `pairing` ending without `paired`.
+- A `ScriptModel` with `objectProp` keeps a delegate whose key stays: lists
+  rebuilt from bindings keep their state (an open menu, a typed password) only
+  through it.
+
+### Components: what the code does not say
+
+- `launcher/`: one `LauncherWindow`, a `LauncherMode` per feature, each its own
+  global shortcut (`quickshell:launcher-<name>`): SUPER+D `apps`, SUPER+V
+  `clipboard`, SUPER+P `monitors`, SUPER+Tab `windows`, SUPER+N `nixpkgs`. A
+  mode sets `rows` (unique `key`s keep delegates), `fields`, a `glyph` or
+  `image`, optional `preview` and `find`. `search.js`: each word a substring,
+  or a loose field's letters in order, or from four letters a word with one
+  slip, ranked below. The card opens full height so it holds still while
+  typing. `apps` ranks equal matches by `AppUsage` (frecency as one number, no
+  decay) and warms every icon at start (an icon Papirus lacks costs thousands
+  of stats). `clipboard` decodes each clip once into Quickshell's cache, pruned
+  to what cliphist lists. `monitors` lists the profile hyprmoncfgd would apply
+  next first (`Recommended`), reloading a second after hotplug bursts.
+  `windows` is wlr-foreign-toplevels in Hyprland focus order with live
+  previews. `nixpkgs` searches nixos-unstable's ~130 000 packages
+  (`nixpkgs-index` TSV, columns, own loop and memo, no slip pass: it would cost
+  a pass over every row per key).
+- `nixpkgs-run`: builds `github:NixOS/nixpkgs/<rev>#<attr>` with a progress card
+  (`nixpkgs-progress.jq` over nix's internal-json), then runs it in a transient
+  `systemd-run --user` service sandboxed by systemd: `ProtectSystem=strict`,
+  `PrivateTmp`, tmpfs over `$HOME` and `$XDG_RUNTIME_DIR`, only PipeWire, X11
+  and GTK/fontconfig/cursor settings bound back, no nix daemon or D-Bus.
+  Wayland through its own `security-context` socket, so Hyprland hides
+  protocols that type into or capture other windows (X11 apps still share
+  Xwayland). Desktop-entry programs run alone, others in wezterm, held open on
+  failure or a run under 5 s.
+- `shortcuts/` (SUPER+?): `hyprctl binds -j` per open; numbered and directional
+  binds folded, submap binds under the bind that enters, media keys out; up to
+  three balanced columns, shrunk only when none fits.
+- `tooltip/`: the tooltip layer per screen (overlay, no input), drawn only while
+  `Tooltips` shows one there.
+- `power/` (SUPER+X): five tiles with access keys (pressed without Alt), Reload
+  Hyprland, Restart to Firmware on UEFI; ending the session or machine takes a
+  second press within 5 s.
+- `bar/`: per screen. Workspaces led by the distro's logo (`LOGO=` from
+  `/etc/os-release`, else `distributor-logo`); other monitors' workspaces still
+  here are named after them (`DP2-1`, `WorkspaceOwners`, remembering connectors
+  across unplugs). Quickshell refreshes monitors only as one comes and drops
+  windows opened on a workspace it has not loaded, so `Bar.qml` refreshes on
+  those events and 300 ms after a burst. The status button shows what records
+  (`Privacy`), bell or Do Not Disturb, VPN, link, Bluetooth, a muted mic,
+  volume, battery, a cup while Caffeine is on; the wheel steps the volume. The
+  tray (`Tray`) is hidden until the pointer reaches `BarWindow`'s right-end zone,
+  which is the buttons' parent (hover reaches ancestors, not siblings beneath).
+  `TrayMenu` (panel `tray-menu:SCREEN`) cascades as GTK's, takes the keyboard,
+  closes as the pointer leaves unless keys drive it.
+- Caffeine (`controls/Caffeine.qml`, IPC `caffeine toggle|set|active`) is the
+  `caffeine.service` user unit (`systemd-inhibit --what=idle`), so it outlives
+  a shell restart.
+- `weather/`: MET Norway for the time zone's city (`/etc/localtime` via
+  `zone.tab`, no address lookup), every half hour and when a suspend skipped
+  one. MET's icons fetched by `quickshell.nix`.
+- `notifications/`: the daemon and popups. `Notifs` keeps each as a `NotifEntry`
+  until dismissed, a second past close so views slide it away. Popups go to the
+  monitor focused on arrival, five at most; over a fullscreen window only
+  critical ones. Same card updates in place for a stack tag
+  (`x-canonical-private-synchronous`, `x-dunst-stack-tag`), an id, or the same
+  app, summary and body within 2 s. Past 30 a second (critical apart) a flood is
+  turned away and summed in one card; text is cut before layout (a megabyte held
+  the shell for seconds); newest three per app, 100 in all. Body markup filtered
+  to the spec (`markup.js`). elementary OS sounds via `pw-play`, one per 300 ms.
+  `History` saves atomically to the state dir (no transient ones, 7 days,
+  `history.js`), with copies of pictures only the server held, grabbed off
+  screen once. IPC `notifications toggleDnd|setDnd|dnd|count|clear|hidePopups`.
+- `center/`: GNOME's date menu under the clock: the last-playing player's
+  `MediaCard`, notifications grouped per app, calendar (ISO weeks) and weather
+  where there is room. Opening it checks all and puts popups away. Clear hides
+  them with Undo in a `Toast` for 5 s; `Notifs` dismisses what it held when the
+  toast goes or the center closes. Do Not Disturb is a switch in its footer.
+- `controls/` (SUPER+A): GNOME's quick settings: `Header`, `Levels`, the `Pill`s
+  the machine has (`Controls.toggles`), a `Menu` under the row that opens it,
+  `InUse` while something records. Backends are singletons: `Net`
+  (Quickshell.Networking for Wi-Fi and wired, `nmcli` for VPNs; a captive
+  portal gets a card), `BluetoothDevices` (pair, trust, connect in one click; a
+  PIN device goes to bluetui), `Volume`, `Microphone`, `NightLight`
+  (hyprsunset, state kept and restored when hyprsunset restarts), `Media`,
+  `Power` (UPower display device), `Privacy` (a capture stream from a mic while
+  audio flows, meters and passive filters aside; a portal screen cast; a camera
+  via PipeWire or open on `/dev/video*` for half a second, `camera-users`).
+  `names.js` makes device and network names safe for one line.
+- `osd/`: what just changed, on the focused monitor, 1.5 s, bottom centre 4 em
+  up. `Osd` shows changes as made, not states as found: each `Watch` takes in
+  values arriving within 500 ms of its key or readiness changing (startup,
+  PipeWire restarts, a new output's own volume show nothing); each
+  `DeviceWatch` shows a new default only once settled (400 ms) and different.
+  Brightness from `backlight-watch` (`udevadm monitor` on backlight uevents,
+  `name brightness max;` per line). Caps Lock: Hyprland's `input.keyboard.key`
+  sees key 66 go up, dispatches `quickshell:caps-lock`, the shell reads
+  `hyprctl devices -j` then and 150 ms later. The volume and brightness keys
+  also dispatch `quickshell:osd-volume` / `osd-brightness` (own binds), so a
+  level at its end still shows.
 
 ## Build, check, format
 
 ```bash
 host=thonkpad
 
-sudo nixos-rebuild switch --flake ".#$host"
+nixos-rebuild switch --flake ".#$host" --sudo     # as the user: root cannot read the checkout
 nix build --no-link --print-out-paths ".#nixosConfigurations.$host.config.system.build.toplevel"
-
 nix build --no-link --print-out-paths ".#nixosConfigurations.offlineInstaller-$host.config.system.build.isoImage"
 
-nix flake check          # runs the checks below
-nix fmt                  # formatter = nixfmt-tree
+nix flake check          # the checks below; skips aarch64-darwin unless --all-systems
+nix fmt                  # nixfmt-tree; keep the tree clean
 ```
 
-`modules/flake/checks.nix` defines, via `perSystem`:
+Always `--no-link`; never leave a `result` link in the tree.
 
-- `checks.<system>.format` — runs `nixfmt --check` over every `.nix` in the
-  repo. Keep the tree `nixfmt`-clean.
-- `checks.<system>.eval` (Linux systems only) — instantiates
-  `system.config.system.build.toplevel.drvPath` for every NixOS host and
-  installer, forcing the whole derivation graph without building it (the
-  string context is discarded).
+Checks (`modules/flake/checks.nix`): `format` (`nixfmt --check` everywhere),
+`eval` (Linux: every host's and installer's `toplevel.drvPath`). From
+`quickshell.nix` (Linux):
 
-`modules/features/hyprland/quickshell.nix` adds:
+- `qmllint`: `qs-lint` (`scripts/qs-lint.sh`) over every host's built shell,
+  failing on any warning (`--json`, as text output drops some). It writes the
+  `qmldir`s Quickshell makes for `qs.*` and mends Quickshell's type info
+  (`_GlobalShortcuts`' missing `depends`, opaque stubs, unqualified
+  `FileView.adapter` / `Bluetooth.defaultAdapter`, `DBusMenuHandle`'s base), so
+  only `uncreatable-type` is off. Where qmllint is wrong:
+  `// qmllint disable <category>` … `enable`. Then `qs-design-lint`
+  (`scripts/qs-design-lint.sh`): non-Theme colours (literals, `Qt.rgba`, a
+  `Qt.tint` of anything but Theme), typed radii, non-token durations and fonts,
+  icon paths outside `Symbols`, symbols at sizes GNOME doesn't use (16, 24, 32,
+  64, 128), shadows off a `Card`, hand-turned arrows instead of
+  `ExpanderArrow.pointing`, an inline component name in two files or shadowing
+  `common/`, `flatMap`, text ending in a full stop, an ellipsis on a settings
+  item, a `MouseArea` naming no cursor, a plain space between number and unit.
+  Deliberate exceptions are listed in the script with why.
+- `notification-markup`, `notification-history`: `qmltestrunner` over
+  `tests/tst_markup.qml` and `tests/tst_history.qml`.
+- `qs-test`: builds the package, so shellcheck runs over `scripts/qs-test.sh`.
 
-- `checks.<system>.qmllint` (Linux) — `qs-lint` (`scripts/qs-lint.sh`) over
-  every host's built shell: qmllint from the Qt Quickshell was built with,
-  failing on any warning. It writes the `qmldir` files Quickshell makes for
-  `qs.*` imports itself, and mends Quickshell's type info in its copy
-  (a `depends Quickshell` `_GlobalShortcuts` lacks, opaque stubs that hide
-  core types, `FileView.adapter`'s and `Bluetooth.defaultAdapter`'s unqualified types, `DBusMenuHandle`'s
-  base), so only `uncreatable-type` (`PanelWindow`) is off. Output comes
-  from `--json`, since the text output drops some files' warnings while still
-  failing. Fix what it finds; where qmllint is wrong, a
-  `// qmllint disable <category>` … `enable` pair around the lines.
-  It then runs `qs-design-lint` (`scripts/qs-design-lint.sh`), the design
-  standards as far as the source shows them: a colour that is not Theme's
-  (a literal, `Qt.rgba`, a `Qt.tint` of anything but Theme), a radius typed
-  out, a duration or font that is not a Theme token, an icon path outside
-  `Symbols` or a symbol at a size GNOME does not draw at (16, 24, 32, 64, 128), a shadow on anything but a `Card`, anything turned by hand
-  rather than an `ExpanderArrow`'s `pointing`, one inline component name
-  in two files or shadowing one in `common/`, `flatMap`, text ending in a full stop, an ellipsis on a settings item, a
-  `MouseArea` that names no cursor, and a plain space between a number and
-  its unit.
-  What a file does on purpose is listed in the script with why.
-- `checks.<system>.notification-markup` (Linux) — `qmltestrunner` over
-  `tests/tst_markup.qml`: what the notification body filter
-  (`notifications/markup.js`) keeps, drops and escapes.
-- `checks.<system>.qs-test` (Linux) — builds the qs-test package, so
-  `writeShellApplication`'s shellcheck runs over `scripts/qs-test.sh`.
-- `checks.<system>.notification-history` (Linux) — `qmltestrunner` over
-  `tests/tst_history.qml`: the saved history read back, damaged files and
-  records dropped, and its limits.
+## External consumers
 
-`nix flake check` skips `aarch64-darwin` unless `--all-systems`.
-
-Agents always pass `--no-link` to `nix build`; never leave a `result` symlink
-in the tree.
+The mac (separate nix-darwin flake) imports
+`modules.homeManager.{wezterm,neovim,pi-agent}`. Keep them platform-neutral
+(guard Linux-only packages) and expose what the mac sets as aspect options.
 
 ## Testing the Quickshell shell
 
-Test the shell in a Hyprland of its own, never in the live session: the
-host's Hyprland and its config, built from the checkout, nested in a headless
-labwc, on its own D-Bus and its own `XDG_RUNTIME_DIR`. Nothing in it reaches
-the running Hyprland, so neither hyprmoncfgd nor the live shell needs pausing,
-and the user's screens, pointer, focus, notifications and tray are left alone.
+Never test in the live session. `qs-test` (`scripts/qs-test.sh`, flake package
+`qs-test`) runs the host's Hyprland and config, built from the checkout, nested
+in a headless labwc, with its own D-Bus (session and system), `XDG_RUNTIME_DIR`
+and PipeWire. Nothing reaches the live session.
 
-- labwc only lends Hyprland a GPU: Hyprland needs a parent Wayland (or DRM)
-  for its allocator, and binds `xdg_wm_base` 6, which headless labwc offers and
-  sway and cage (5) do not.
-- libseat is pointed at a seatd that does not exist, so Hyprland never asks
-  logind for the DRM device, and the `HYPRLAND_NO_SD_*` variables keep it off
-  the user's systemd environment and `hyprland-session.target`.
-- The config is the host's `hyprland.lua` with its `hyprland.start` handlers
-  and monitor rules dropped, plus the test's own monitors. Monitors are
-  Hyprland's headless outputs, ids from 0 as on the real machine, so
-  hyprsplit, `dim_around`, global shortcuts, workspaces, real windows and
-  hotplug all behave as they do in the session.
-- Input is `qs-input` (`scripts/qs-input.c`): one virtual pointer and keyboard
-  held for the whole session, fed over a socket. A device per call (wtype,
-  wlrctl) drops the seat's pointer or keyboard capability between calls, so
-  Qt rebinds and loses the first events: clicks and keys went missing. Its
-  keymap is the host's (`input:kb_layout`), so `super+shift+plus` is SUPER+?.
+- labwc lends Hyprland a GPU (Hyprland binds `xdg_wm_base` 6; sway and cage
+  offer 5). libseat points at a seatd that doesn't exist, so Hyprland never asks
+  logind for DRM; `HYPRLAND_NO_SD_*` keep it off the user's systemd.
+- Config: the host's `hyprland.lua` less `hyprland.start` handlers and monitor
+  rules, plus the test's headless monitors (ids from 0, as on the machine).
+- Input: `qs-input` (`scripts/qs-input.c`), one virtual pointer and keyboard for
+  the whole session over a socket (a device per call drops seat capabilities
+  and loses events), with the host's keymap (`super+shift+plus` is SUPER+?).
 
-`qs-test` (`scripts/qs-test.sh`, the flake package `qs-test`) is the whole
-session; agents set `QS_TEST_DIR` to a directory in their scratchpad, so each
-has its own:
+Build once, set `QS_TEST_DIR` to your scratchpad:
 
 ```bash
 export QS_TEST_DIR=<scratchpad>/qs-test
-qst() { nix run "path:$PWD#qs-test" -- "$@"; }   # or build it once and call the binary
+qst() { "$(nix build --no-link --print-out-paths "path:$PWD#qs-test")/bin/qs-test" "$@"; }
 
-qst up                         # the checkout's Hyprland config and shell (path:, so untracked files count) for this host
+qst up                         # the checkout's Hyprland config and shell for this host (path:, so untracked files count)
 qst ipc panels open apps       # qs ipc call, with a timeout
-qst gallery                    # every common/ piece in every state (tests/Gallery.qml), a panel of its own
+qst gallery                    # every common/ piece in every state (tests/Gallery.qml)
 qst key super+d                # through Hyprland's bind and the shell's global shortcut
 qst type fire
 qst key ctrl+n Down Return     # one key per argument
-qst pointer 960 21             # hover, in layout coordinates
-qst click                      # left, where the pointer is; or `qst click right 1889 20` (the tray)
-qst drag 1631 112 320 0 250    # press at x y, move dx dy over ms, release: a swipe
+qst pointer 960 21             # absolute motion, layout coordinates (a warp may not hover)
+qst click                      # left, where the pointer is; or `qst click right 1889 20`
+qst drag 1631 112 320 0 250    # press at x y, move dx dy over ms, release
 qst wheel 3                    # notches, positive down
-qst layers                     # the layer surfaces up: which panels are open, on which monitor
+qst layers                     # layer surfaces up, per monitor
 qst shot apps                  # numbered PNG in $QS_TEST_DIR/shots, path printed
 qst shot crop "360,330 600x260"
-qst shot dp2 DP-2              # one monitor
-qst monitor add DP-2 2560x1440 1.25   # hotplug; `monitor remove DP-2` unplugs
-qst monitor disable DP-2       # off as a hyprmoncfg profile turns it off; `monitor enable DP-2`
-qst monitors                   # Hyprland's, disabled ones too
-qst focus DP-2                 # focus a monitor, so the next panel or popup opens there
+qst shot dp2 DP-2              # one monitor (the whole layout renders at the highest scale)
+qst monitor add DP-2 2560x1440 1.25   # hotplug; `monitor remove|disable|enable DP-2`
+qst monitors                   # Hyprland's, disabled too
+qst focus DP-2
 qst output 2560x1440 1.5       # the first monitor's mode
-qst state                      # what the shell sees (JSON), with Hyprland's layers and monitors
-qst state '.popups | map(.screen)'    # through jq
-qst wait '.panel == ""'        # until it holds (5 s; `qst wait FILTER 10`), else fail printing the state
-qst stays '.panel == "apps"' 2 # fail if it stops holding within 2 s (1)
-qst reset                      # QS_TEST_MONITORS again with ids from 0, no windows, a fresh qs without state
-qst run                        # every case, on sessions side by side (-j N; by default half the cores, fewer if memory is short), longest first
-qst run chaos 'controls:VPN'   # a file, or its cases whose names match a regex
-qst run --changed --fail-fast  # only the scenarios the checkout's changes reach, stopping at the first failure
-qst run --failed               # the last run's failures first, then the rest
-qst run -j 1 osd               # in this session alone
-qst jobs [FILE[:REGEX]...]     # the jobs a run would take, in its order
-qst timings                    # the last run's slowest cases and where the time went ($QS_TEST_DIR/timings.tsv)
-qst key super+Return           # real windows, for workspaces and the window switcher
-qst flood 3000 --urgency 2     # notifications by the thousand over D-Bus (--apps N, --summary/--body LENGTH, --rate N)
-qst tray                       # a tray item (a yellow star) with nested submenus (tests/tray.qml); `qst tray log` shows what it was told
-qst tray add first 4           # four items under the app id `first` (tests/trays.qml), each with a short menu; `tray remove first`, `tray clear`
-qst x notify-send -a Discord loft01 hello   # anything else, inside the session (hyprctl talks to the test Hyprland)
-qst x wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.3   # the session's own PipeWire
+qst state                      # what the shell sees (JSON); `qst state '.popups | map(.screen)'`
+qst wait '.panel == ""'        # until it holds (5 s, or `qst wait FILTER 10`), else fail printing the state
+qst stays '.panel == "apps"' 2 # fail if it stops holding within 2 s
+qst reset                      # monitors from QS_TEST_MONITORS, no windows, fresh qs without state
+qst run                        # every case, sessions side by side (-j N), longest first
+qst run chaos 'controls:VPN'   # a file, or its cases matching a regex
+qst run --changed --fail-fast  # scenarios the checkout's changes reach
+qst run --failed               # last failures first
+qst jobs [FILE[:REGEX]...]     # what a run would take, in order
+qst timings                    # last run's slowest cases and phases
+qst flood 3000 --urgency 2     # notifications over D-Bus (--apps N, --summary/--body LENGTH, --rate N)
+qst tray                       # a tray item with nested submenus; `tray log`, `tray add first 4`, `tray remove first`, `tray clear`
+qst x notify-send -a Discord loft01 hello   # anything inside the session
 qst pipewire restart           # or stop, start
-qst backlight intel_backlight 40 [MAX]   # set a fake backlight and announce it, until the shell has it; `NAME remove` unplugs
-qst camera open zoom [video1]  # a process named zoom holding a fake camera open; `close zoom`, `add video1`, `remove video0`
-qst camera add video1 locked   # plugged in root's alone, as devtmpfs makes it; `unlock video1` is udev handing it on
-qst network wifi add Cafe 40 open # the session's NetworkManager (tests/networkmanager.py): wifi add SSID [STRENGTH] [SECURITY] [PASSWORD], wifi remove|strength|clear,
-                               # wifi many 300 [PREFIX], wifi json JSON, device add|remove NAME [wifi|ethernet], cable NAME on|off, profile wifi|ethernet|wireguard|vpn NAME [SSID PSK],
-                               # vpn NAME ok|fail|secrets, up NAME, connectivity none|portal|limited|full, switch on|off (the radio's hardware switch), delay MS, dump, stop|start|restart
-qst battery 15 discharging 1800   # the session's UPower battery: PERCENT [charging|discharging|full|pending [SECONDS]], or remove
-qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70   # BlueZ (tests/bluez.py): ADDRESS NAME [ICON] [ok|pin|fail] [paired] [connected] [BATTERY]; remove ADDRESS, adapter add|remove, stop|start
-qst player add spotify Spotify Playing [ART]   # an MPRIS player (tests/mpris.py), ART an image for its cover; status NAME Playing|Paused|Stopped, remove NAME, clear
-qst sync                       # copy edited QML in, restart qs, print its warnings; non-zero if it fails to load
-qst problems                   # warnings and errors, less tests/known-warnings and this case's `expect`s
-qst census                     # what the probe finds wrong on screen now (see below)
-qst areas [REGEX]              # mouse areas and hovered items (tooltips' aside) on screen by label (WINDOW/Type), in layout coordinates: x, y, label, enabled, clicks, hand
-qst cursor 960 21 [hand]       # the cursor Qt sets there, and the item behind it when that changed; fails if not the one given
-qst cursors [WINDOW]           # every enabled area there that takes a click and asks for a hand gets one (BarWindow, LauncherWindow, …)
-qst motion start               # record every visible item each frame; `motion stop` prints what moved, failing on a jump
-qst fail cliphist exit         # the shell's cliphist fails (or crash, missing, garbage) until `fail cliphist off` or a reset
+qst backlight intel_backlight 40 [MAX]      # fake backlight; `NAME remove`
+qst camera open zoom [video1]  # `close zoom`, `add video1 [locked]`, `unlock video1`, `remove video0`
+qst network wifi add Cafe 40 open # the fake NetworkManager: wifi add SSID [STRENGTH] [SECURITY] [PASSWORD], wifi remove|strength|clear,
+                               # wifi many 300 [PREFIX], wifi json JSON, device add|remove NAME [wifi|ethernet], cable NAME on|off,
+                               # profile wifi|ethernet|wireguard|vpn NAME [SSID PSK], vpn NAME ok|fail|secrets, up NAME,
+                               # connectivity none|portal|limited|full, switch on|off, delay MS, dump, stop|start|restart
+qst battery 15 discharging 1800             # PERCENT [charging|discharging|full|pending [SECONDS]], or remove
+qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70
+qst player add spotify Spotify Playing [ART]   # MPRIS; status NAME STATE, remove NAME, clear
+qst sync                       # copy edited QML in, restart qs, print warnings
+qst problems                   # warnings less tests/known-warnings and this case's expects
+qst census                     # what the probe finds wrong on screen
+qst areas [REGEX]              # mouse areas: x, y, label, enabled, clicks, hand
+qst cursor 960 21 [hand]       # the cursor Qt sets there
+qst cursors [WINDOW]           # every clickable area asks for a hand
+qst motion start               # record items per frame; `motion stop` fails on a jump
+qst fail cliphist exit         # or crash, missing, garbage; `fail cliphist off`
 qst expect [--may] 'hyprmoncfg'   # this case must (or may) log a warning matching it
 qst actions                    # what the session tried to run on the machine
-qst lint                       # the qmllint check, on the checkout
-qst down                       # kills everything the session started; deletes it and the test shell's state
+qst lint                       # the qmllint check on the checkout
+qst down                       # kill and delete the session(s) and the test shell's state
 ```
 
-The session reaches nothing real: it has its own D-Bus, system bus and runtime
-dir; `systemctl`, `loginctl`, `pw-play`, `xdg-open`, `nixpkgs-run`,
-`brightnessctl` (which sets the fake backlights, as the real one would reach
-the machine's) and `hyprmoncfg` are fakes that log to `qst actions` (`hyprmoncfg status` replays
-the live profiles); `systemd-run --scope` logs and runs the app in the test
-session, so the launcher's apps open there; `hyprctl` is the test Hyprland's,
-logging dispatches and reloads, with `hl.dsp.exit()` only logged; cliphist
-reads a copy of the database. The config dir is the user's, symlinked, except
-`hypr/` (the test's) and `hyprmoncfg/`; profiles to fake go in
-`$QS_TEST_DIR/cfg/hyprmoncfg/profiles`. qs runs at `QT_SCALE_FACTOR` 1, the
-standard, unless `QS_TEST_SCALE` says otherwise, and with `TZDIR`, which Qt
-needs on NixOS to find the time zone (the user's systemd session sets it, a
-shell may not). `bar fakeOutputs 1000` stands in a sound server with that
-many outputs, some named to break things; `realVolume` drops it.
+### The session's fakes
 
-The session's system bus is a `dbus-daemon` of its own
-(`DBUS_SYSTEM_BUS_ADDRESS` for everything in the session), so no test reaches
-the machine's NetworkManager, UPower or BlueZ. Each case gets fresh fakes,
-python-dbusmock templates run by `qs-dbusmock`: NetworkManager
-(`tests/networkmanager.py`, written for what the shell and nmcli use, as
-dbusmock's own is NetworkManager 0.9's: devices, networks in the air, saved
-profiles, activation through Activating, a wrong password failing with no
-secrets as NetworkManager's does, the radio, connectivity, WireGuard and VPN
-profiles; `network stop` and `start` keep its state) with the desktop's wired
-link and wg0 up and three networks in range unless `QS_TEST_NETWORK=none`;
-UPower (`tests/upower.py`) with a laptop battery at 76 % discharging, so the
-bar shows all it can on any host; BlueZ (`tests/bluez.py`) with an adapter
-and nothing paired unless `QS_TEST_BLUETOOTH=none`. `nmcli` in the session is
-the real one but for `connection up`: libnm will not register its secret agent
-with a NetworkManager not run by root, so a wrapper asks the fake and waits as
-nmcli does, saying "Secrets were required" for a profile set to want them.
-MPRIS players (`tests/mpris.py`, seeking with `SetPosition`, a cover with `player add`'s ART, a new track's length dropped until a pause as Firefox drops it) sit on the session bus, one mock each, named
-by `QS_MPRIS_NAME` as it starts, since Quickshell reads a player the moment its
-name appears. hyprsunset runs in the session as it does in the user's.
+- `systemctl`, `loginctl`, `pw-play`, `xdg-open`, `nixpkgs-run`, `brightnessctl`
+  and `hyprmoncfg` log to `qst actions` (`hyprmoncfg status` replays the live
+  profiles; fake profiles in `$QS_TEST_DIR/cfg/hyprmoncfg/profiles`).
+  `systemd-run --scope` logs and runs in the session. `hyprctl` is the test
+  Hyprland's, `hl.dsp.exit()` only logged. cliphist reads a copy of the DB.
+  `systemctl --user start|stop|is-active` keeps state in `$QS_TEST_DIR/units`.
+- Config dir: the user's, symlinked, except `hypr/` and `hyprmoncfg/`.
+- qs at `QT_SCALE_FACTOR` 1 unless `QS_TEST_SCALE`, with `TZDIR` (Qt needs it
+  on NixOS). `bar fakeOutputs 1000` fakes 1000 outputs; `realVolume` drops them.
+- System bus: python-dbusmock templates via `qs-dbusmock`, fresh per case:
+  NetworkManager (`tests/networkmanager.py`; wired + wg0 up, three networks,
+  unless `QS_TEST_NETWORK=none`), UPower (`tests/upower.py`; battery 76 %
+  discharging), BlueZ (`tests/bluez.py`; an adapter, unless
+  `QS_TEST_BLUETOOTH=none`). `nmcli` is real except `connection up`, which asks
+  the fake (libnm won't register an agent with a non-root NetworkManager).
+- MPRIS players (`tests/mpris.py`) on the session bus, one mock each, named
+  as they start.
+- PipeWire on `tests/pipewire.conf`, WirePlumber on `tests/wireplumber.conf`:
+  null outputs Speakers (default, 64 %), Headphones, HDMI / DisplayPort; test-tone
+  mics Microphone (default) and Headset Microphone; a virtual Noise Cancelling
+  source. A `pw-cli create-node` node gets no ports, so never becomes default; to
+  take the default away, destroy a test mic (`pw-cli destroy test-headset-mic`).
+- `backlight-watch` and `camera-users` are real, on `$QS_TEST_DIR/backlight` and
+  `$QS_TEST_DIR/dev`; `udevadm monitor` replays what `qst backlight` appends.
+  The brightness keys run the host's brightnessctl, which reaches the real
+  backlight: drive `quickshell:osd-brightness` and `qst backlight` instead.
+  The volume keys reach the session's PipeWire.
+- hyprsunset runs in the session.
 
-The session has its own sound server, a PipeWire on `tests/pipewire.conf`
-and a WirePlumber with no hardware, logind or portal (`tests/wireplumber.conf`),
-their state in the session and no system bus: null outputs Speakers (the
-default, at 64 %), Headphones and HDMI / DisplayPort, test-tone microphones
-Microphone (the default) and Headset Microphone (`audiotestsrc`, real
-`Audio/Source`s), and a virtual Noise Cancelling source. `wpctl`, `pw-record`,
-`pw-cli` and `pw-dump` in the session reach it; `reset` starts it afresh.
-WirePlumber gives a node made with `pw-cli create-node` no ports, so it lists
-but never becomes the default; to take the default away, destroy a test
-microphone (`pw-cli destroy test-headset-mic`) after making it the default.
-`systemctl --user start|stop|is-active` keeps each unit's state in
-`$QS_TEST_DIR/units`. `backlight-watch`
-and `camera-users` are the real ones, run on `$QS_TEST_DIR/backlight` and
-`$QS_TEST_DIR/dev` (one camera, `video0`), and `udevadm monitor` replays
-what `qst backlight` appends.
+### Session notes
 
-- `sync` copies over rather than rebuilds: the copy keeps the built `nix/`
-  and weather icons. It restarts rather than hot-reloads: a reload keeps
-  inline components' old types ("X is not a type") and only watches files the
-  last load used. A change to Hyprland's config needs `qst down` and `up`.
-- `qst pointer` is an absolute motion of the virtual pointer, as a tablet's:
-  a warp (`hl.dsp.cursor.move`) moves the cursor but may not hover.
-- Pointer coordinates are layout coordinates; screenshot pixels are those ×
-  the output's scale (the shell draws at `QT_SCALE_FACTOR` 1.2 within them).
-- Tray menus close on a click elsewhere, on their icon, or on Escape.
-- `notify-send -A` waits for the action; background it.
-- A shot shows the cursor a surface asked for only once the pointer has
-  moved over it after it mapped (a tray menu just opened): move it again
-  before shooting a cursor. A drag's cursor shows mid-drag: background a
-  slow `qst drag` and shoot while it runs.
-- Shots sometimes carry thin grey lines at fixed places across the
-  layout: capture artifacts of the headless outputs, not the shell.
-- Animation: `qst motion start` and `stop` around what moves. Frames for
-  the eye: background `qst x grim -s 0.25 <file>` shots about 35 ms apart, then
-  `md5sum` to see which frames settled.
-- Every window in the copy gets a `ProbeWindow` (`tests/ProbeWindow.qml`)
-  naming the file it is declared in (`BarWindow`, `LauncherWindow`, an
-  `Overlay`'s own file over `common/Overlay`) as it is copied in, since
-  Quickshell lists no windows and its scopes' children cannot be read from
-  JavaScript; the probe walks their items, and labels them `File/Type`.
-- One `qst` at a time per `QS_TEST_DIR`: two runs in one session restart
-  each other's qs and PipeWire, and leave a stale one holding its socket.
-  `run -j N` (N > 1) uses sessions of its own, `$QS_TEST_DIR/w1` … `wN`, built
-  once and brought up side by side, kept up for the next run and taken down
-  by `down`; each has its own runtime dir, buses, PipeWire, fakes, cliphist
-  copy and Quickshell state and cache dirs (keyed by its config path), its
-  nixpkgs list copied from the newest any shell has fetched.
-- A `fail`ed tool stays failing until `fail TOOL off`, a reset or the end
-  of `run`; `off` only undoes what `fail` did.
-- qs logs Qt's `qt.quick.hover.cursor` category in the session, which names
-  the item behind each cursor change; `cursor` and `cursors` read it.
-- Never `pgrep -f <pattern> | xargs kill`: the pattern is in the calling
-  shell's own command line. `qst down` finds the session's processes by its
-  runtime dir and D-Bus address in their environment.
-- Killing qs alone leaves the watchers it runs (`camera-users`,
-  `backlight-watch`) waiting on inotify for good, where systemd takes the
-  whole cgroup: `stop_qs` kills the process group `setsid` gave it.
-- Each `qst` is a `writeShellApplication`, which puts its own tools (the
-  real `nmcli` among them) ahead on PATH: `enter` moves the session's
-  `bin/` back in front every time, or the shell gets the real tools over the
-  fakes.
-- Quickshell keys its state and cache dirs by config path, so the test
-  shell's are its own; `qst down` deletes only those.
+- `sync` copies files and restarts qs (a hot reload keeps inline components'
+  old types). `reset` does not re-copy. A palette, `Symbols` or Hyprland config
+  change needs `down` and `up` (they live in the built `nix/`).
+- `run` copies the working tree per case: to test a commit while editing, use
+  a `git worktree` with `QS_TEST_REPO` pointing at it.
+- One `qst` at a time per `QS_TEST_DIR`. `run -j N` uses `$QS_TEST_DIR/w1…wN`,
+  kept up for the next run; `down` them, or leftover sessions exhaust
+  Xwayland's 33 displays and Hyprland dies with "CBackend::create() failed".
+- Each window in the copy gets a `ProbeWindow` (`tests/ProbeWindow.qml`) naming
+  its file; the probe labels items `File/Type`.
+- Never `pgrep -f <pattern> | xargs kill`: the pattern matches your own shell.
+  `down` finds processes by runtime dir and D-Bus address; `stop_qs` kills qs's
+  process group (its inotify watchers outlive it otherwise).
+- Each `qst` is a `writeShellApplication` whose PATH puts real tools ahead;
+  `enter` puts the session's `bin/` back in front.
+- Shots: the cursor a surface asked for shows only after the pointer moves over
+  it once mapped; thin grey lines are headless-output artifacts. Animation:
+  `qst motion`, or background `qst x grim -s 0.25` ~35 ms apart and `md5sum`.
+- `notify-send -A` waits: background it. Tray menus close on a click elsewhere,
+  their icon, or Escape.
+- Quickshell keys state and cache dirs by config path; `down` deletes only the
+  test shell's.
 
-### State and scenario tests
+### State and scenarios
 
-`qst state` is `tests/Probe.qml`, an IPC target `probe` that qs-test adds to
-the session's copy of the shell (never the built one): the open panel, the
-screens and the Hyprland monitor each resolves to, the focused monitor,
-workspaces with the label the bar gives them and their window count, windows, and every popup with
-the screen it is on, the notification `history` (app and summary, popped up, checked, `restored` from disk, its picture and the
-pictures `kept`, newest
-first), `dnd` and `unchecked`, the volume (percent, muted, output), the default `input` and the
-`microphone` (percent, muted, `adjustable`, the input, every input by name),
-the `osd` showing (with its screen), `osdShown` (shows so far) and
-`osdSettling`, `brightness`, `caps`, `privacy` (`mic` names, and `screen` and
-`camera` names or null while unused), `status` (each bar's status button: its glyphs by name, `Microphone`, `bell`, `dnd`, `vpn`, `network` and so on, and the battery's percentage or null), `controls` (the open
-menu, the pills by key with their state, and each backend: `network`, `vpns`,
-`vpnAsking`, `bluetooth`, `night`, `media`), `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: whether its tray is out,
-whether it scrolls and how far, and its items' ids in its order), `trayMenu` (its open submenus by label, the row the keys are on and whether they drive it), `held` (what Clear holds back for its Undo), `focused` (the control the keyboard is on, by label) and `ring`, `tooltip` (the one shown, and its screen), `sliders` (every slider by name, its value and range), `results` (the launcher's first ten by title), `center` (the center's groups in view, each one's lines in its order), `field`
-(the text field up, the launcher's search) and `problems`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
-(`hyprctl monitors all`). Something a test needs to see goes in the probe,
-read through the shell's own singletons rather than worked out again.
-`wait`, `stays` and `state` fail with "qs is not running" once qs has
-crashed, and `problems` says so too.
+`qst state` is `tests/Probe.qml` (IPC target `probe`, only in the session's
+copy): panel, screens and monitors, workspaces, windows, popups, notification
+history, DND, volume, microphone, OSD, brightness, caps, privacy, the status
+button's glyphs, controls and its backends, tray, tray menu, the focused
+control and `ring`, `hovered` (pieces lit by the pointer), tooltip, sliders,
+launcher `results`, `center`, `field`, `problems`, `layers`, `hypr`. A field a
+test needs goes in the probe, read through the shell's own singletons.
 
-Every snapshot also checks the shell as a whole, so each scenario checks it
-at every step. `problems` is the probe's census of every window: text with no
-room left (it vanished) or under 8 pt, text below 3:1 against what is behind
-it (Theme's faint colour and fading text aside), colours and radii that are
-not Theme's (or half the size), an image shown without a source or failing
-to load, a disabled mouse area still setting a hand, a card running off its
-window, text drawn over other text (where the glyphs are, cut by clipping
-ancestors), and a window that is not a layer surface. `invariants`
-(`tests/invariants.jq`): an open panel has its layer and a layer its panel ,
-nothing on `FALLBACK`, popups only on real screens and five at most, three per app past the popped up,
-unchecked within the count, the history within 100 and five popups, a
-probe answered within 2 s (a shell held up by a flood or a list rebuilt over
-and over is a frozen desktop; this one fails at once), and a countdown never
-going back up without popping up again. `wait` and `stays` fail on one that lasts 500 ms, since a
-transition passes through some for a frame or two, and on the countdown at once.
-What a type draws to its own scale is in the probe's `ownShapes`.
+Every snapshot also checks the whole shell:
 
-A case fails on any warning qs logs during it, less `tests/known-warnings`
-(a regex, a tab and why: the session's environment, and Qt's ShaderEffect
-warning on a scale change, quickshell#1530, until a fix lands) and what the case itself
-`expect`s, which must then come (once, though a restart in the case
-starts a new log); `pipewire stop` and `restart` expect
-PipeWire's own. It also fails where qs peaked past `QS_TEST_PEAK` MiB
-(1024; read from `VmHWM`, as every case starts a qs of its own). qs-test
-also fails a start where an `IpcHandler` target in the source is not
-registered.
+- `problems` (the census): text with no room or under 8 pt, contrast below 3:1
+  (Theme's faint colour and fading text aside), colours and radii not Theme's,
+  images without source or failing, a disabled area setting a hand, a card off
+  its window, text over text, a window that is not a layer surface.
+- `invariants` (`tests/invariants.jq`): an open panel has its layer and vice
+  versa, nothing on `FALLBACK`, popups only on real screens and five at most,
+  three per app past the popped up, history within 100, a probe answer within
+  2 s, a countdown never going back up.
 
-`tests/scenarios/*.sh` are regression tests, run by `qst run` in the session
-(`notify-send` and `hyprctl` reach the test's, `qst` is on PATH) under
-`set -euo pipefail`. Each `qst case "what should happen"` prints the case and
-resets; the file sets `QS_TEST_MONITORS` for its cases, and a job stops at its
-first failure with the case named and the state that failed. A job is a
-top-level `qst case` up to the next (or a top-level loop of them, kept
-whole), run after the file's lines before its first case: helpers go there,
-and no case may use what an earlier one set. `run` hands jobs to whichever
-session is free, longest first by the last time each took
-(`~/.local/state/qs-test/jobs.tsv`, with the last failures in `failed`),
-prints a line as each ends (a failure's last 15 lines and the path of its log,
-`tests/FILE.LINE.log` in its session) and then the 15 slowest cases with
-where the time went: reset (and its phases), waits, stays, the cases' own
-work and snapshots, from `timings.tsv`. `--changed` maps the files `git`
-sees changed to the scenarios that exercise them (`changed_scenarios` in
-`qs-test.sh`, the one map), and runs everything for a file it does not
-know. Reset brings PipeWire, the fakes and the monitors back side by side
-once qs has gone. A case that times something against the machine (frame
-by frame under `motion`, a launch against the clock, keys racing a panel
-opening, or a shell that needs over a second to answer the probe even
-alone) says `# alone: why` on a line inside it: its job runs with no other
-beside it, all of them before the rest, so it sees the machine a lone
-session saw; so does a job whose probe answer reached a second in the last
-run. Assert with `wait`
-and `stays`, never `sleep`: `run` refuses a scenario that sleeps unless the
-line says why after `# sleep: `. `hotplug.sh` covers unplugging, disabling and
-replugging under every panel, a tray menu and popups, every monitor going,
-bursts and mode changes; `notifications.sh` the history: three per app once
-their popups go, the five-popup limit, stack tags replacing in place, and Do
-Not Disturb with transient and critical notifications, and what the bell counts, and a flood's sounds and repeats, and a picture sent as a bare path; `workspaces.sh` windows opened while the shell starts; `tray.sh` the tray on the bar: hidden until the bar's right end, lingering after a near miss, scrolling past 12 em, and its menus flush under the bar walked by the keys (submenus, Return, Escape, a disabled row), closed by a second right click or another panel; `osd.sh` what shows and what must not
-(the shell starting, PipeWire restarting, a switch's new level, an unplugged
-default, the control centre open, the microphone's level and mute, backlights coming and going, the media keys at a
-level's end, Caps Lock both ways, its monitor going); `privacy.sh` microphones
-real and virtual, meters, sink monitors, PipeWire going and coming back,
-screen casts, cameras through PipeWire and held from `/dev` (a short probe,
-PipeWire's own hold, one plugged in later, one plugged in root's alone
-until udev hands it on, one unplugged in use);
-`controls.sh` is the control centre: the bar's button, SUPER+A,
-Escape, the wheel and a right click; the status button's glyphs (what
-records, the bell, Do Not Disturb, the battery); the header's screenshot,
-lock and power menu; an In use pill raising its app's window; a Bluetooth
-row's charge; which pills a machine gets
-(NetworkManager, BlueZ, devices gone); NetworkManager stopping and starting
-under it; Wi-Fi's saved, new (a wrong password, then the right one), given
-up (its profile gone), vanishing and open networks, the radio and its
-hardware switch, a captive portal's Sign In; VPNs down and up, wanting a
-password and failing; a headset paired, trusted and connected in one click
-and a keyboard wanting a PIN; night light kept through a restart and put
-back in a hyprsunset started again; a backlight's slider and the centre's own levels and mutes showing the OSD;
-the player that played last and a track length it drops; an output picked; PipeWire gone and back. Areas
-are clicked by name: the probe adds an area's `objectName` (or its parent's)
-to its label, and the centre names its pills, menu arrows, rows and actions
-(`pill:wifi`, `menu:vpn`, `row:Pixel_7128`, `action:Network Settings`). `design.sh` brings every panel, the bar, popups of
-every kind, a tray menu, the control centre with each of its menus (a
-headset, a player and a backlight in), the OSD and an In Use pill
-on screen, on a scaled monitor too, for the census; `cursors.sh` sweeps the
-bar and every panel and checks a closed hand mid-drag; `binds.sh` presses
-every bind that dispatches a global and checks each opens a panel of its
-own and closes it; `launcher.sh` types as the launcher opens on a fresh
-shell and times the open, and clicks a window on another monitor
-with it open, then the bare desktop there; `failures.sh` makes the shell's tools fail (`qst
-fail`); `motion.sh` expands and collapses a center group and fades the OSD
-under `qst motion`. `idle.sh` runs the idle dim on two monitors under
-`qst motion` to its depth, clicks the bar through it and cancels it, and
-plays the lock command's part: a hold mid-dim and at its end, a cancel it
-keeps out, nothing dimming while locked, and an unlock clearing a hold
-that never got the lock. `history.sh` restarts the shell over a history
-with a picture only the server held (sent by `gdbus`), clears it and finds
-the saved pictures gone, starts on a damaged file and keeps transient ones
-out; the probe's `historyFile` and `historyImages` are where it looks.
-`chaos.sh` is what a hostile or broken client throws: floods of critical
-notifications and of thousands of apps (`qst flood`, `qs-flood` over D-Bus
-at thousands a second, where notify-send manages a hundred), megabytes of
-text, icons that are no picture, panels toggled faster than they open, a
-hotplug storm under an open panel, a workspace of 40 windows (`foot`), 60
-outputs, 40 apps recording, damaged state files, and the tray and the
-inputs: 30 tray items in the strip short of the clock (a 640x480 screen too),
-the strip keeping their order as items come and go, 60 items churning under
-it and a menu opened from it, 200 items scrolled by a hammered wheel and their
-monitor going under a menu, keys hammered at a menu its app rebuilds every
-second on a 640x480 screen, and the item whose menu the keys hold leaving; 40 microphones real and virtual with 30 more outputs, the default
-input switched by 30 clicks and 50 `wpctl`s, inputs coming and going and the
-default one destroyed under the open input menu, mute and level hammered, both levels and the input's mute hammered with the OSD showing each change,
-and PipeWire restarting under it; 300 networks with hostile names (direction
-overrides, newlines, zero-width marks, a kilobyte long, markup) and the filter,
-1000 outputs with the one in use first, 50 VPNs and 100 Bluetooth devices, a player skipping and pausing faster than the card draws,
-NetworkManager restarting while a password is typed, the centre's monitor
-unplugged under an open menu, every pill hammered faster than its service
-answers, a 1024x600 screen at 1.2 with a password row scrolled into view, and
-a 4K monitor at scale 2 with the shell at 1.2. `interactions.sh`
-holds fixes that had no case: a long popup's two clicks, the wheel over a
-level past 100 %, a picked clip's scope, every panel on a 1024x600 screen
-and Power Off's second press. Behaviour that broke once gets a case; check that
-the case fails without the fix (a `git worktree` of `HEAD` with the new
-`tests/` copied in, run with `QS_TEST_REPO` pointing at it).
+`wait`/`stays` fail on a problem lasting 500 ms (a transition passes through
+some), and at once on the countdown. A case fails on any warning qs logs, less
+`tests/known-warnings` (regex, tab, why) and its own `expect`s; on qs peaking
+past `QS_TEST_PEAK` MiB (1024, `VmHWM`); on an `IpcHandler` in the source that
+isn't registered.
+
+`tests/scenarios/*.sh` run under `set -euo pipefail` with `qst` on PATH. Each
+`qst case "what should happen"` resets; a file sets `QS_TEST_MONITORS`; lines
+before the first case are shared helpers; no case may use what an earlier one
+set. Assert with `wait`/`stays`, never `sleep` (`run` refuses one without
+`# sleep: why`). A case timing against the machine says `# alone: why` and runs
+with nothing beside it. `--changed` maps changed files to scenarios
+(`changed_scenarios` in `qs-test.sh`), all for an unknown file.
+
+| Scenario | Covers |
+| --- | --- |
+| `binds.sh` | every global bind opens its own panel and closes it |
+| `caffeine.sh` | Caffeine's unit, pill and status cup |
+| `chaos.sh` | hostile and broken clients: floods, megabytes of text, bad icons, panel and hotplug storms, 40-window workspaces, 60 outputs, damaged state, 200 tray items, 300 hostile network names, 1000 outputs, 50 VPNs, 100 BT devices, small and 4K screens |
+| `controls.sh` | the control centre: open/close paths, status glyphs, header, every pill and menu against the fakes, services stopping under it |
+| `cursors.sh` | the bar and every panel's cursors, a closed hand mid-drag |
+| `design.sh` | every surface on screen, scaled too, for the census |
+| `failures.sh` | the shell's tools failing (`qst fail`) |
+| `history.sh` | saved history across restarts, kept pictures, damaged files |
+| `hotplug.sh` | unplug, disable, replug under every panel, menus and popups |
+| `idle.sh` | the idle dim under `motion`, clicks through it, the lock command's holds |
+| `interactions.sh` | fixes that had no case: popups, wheel past 100 %, clip scope, 1024x600, power keys, hover after a panel closes |
+| `launcher.sh` | typing as it opens, open time, clicks on another monitor |
+| `motion.sh` | center groups expanding, the OSD fading |
+| `notifications.sh` | per-app limits, five popups, stack tags, DND, the bell, flood sounds, bare-path pictures |
+| `osd.sh` | what shows and what must not |
+| `privacy.sh` | mics real and virtual, casts, cameras via PipeWire and `/dev` |
+| `tray.sh` | the tray strip, its menus and keys |
+| `workspaces.sh` | windows opened while the shell starts |
+
+Behaviour that broke once gets a case; check it fails without the fix (a
+`git worktree` of `HEAD` with the new `tests/` copied in, `QS_TEST_REPO` set).
 
 What Hyprland does that tests run into:
 
-- With no monitor on, Hyprland puts up a headless `FALLBACK` output; Quickshell
-  lists it, so the probe's `screens` holds it.
-- Removing any monitor focuses the first one.
-- A connector gets back the id it last had unless another monitor holds it,
-  and otherwise the lowest free one, which it keeps from then on; after
-  `FALLBACK` held 0, a monitor plugged back in takes 1 for good. `reset` holds
-  ids with fresh placeholder outputs to give the test's back 0, 1, ….
-- A monitor rule without `disabled = false` leaves a disabled monitor off,
-  so qs-test writes it in every rule.
-- Going to and from no output at all, Qt moves windows to a placeholder screen
-  for a moment, and each warns "Layershell screen does not correspond to a
-  real screen"; `problems` drops those only right after Qt's "creating
-  placeholder screen".
-- In jq a pipe binds loosest: `(.popups | map(.screen)) == [...]`, not
-  `.popups | map(.screen) == [...]`.
-- `qst shot` of the whole layout renders at the highest monitor scale, so
-  pixel offsets differ from layout ones; shoot one monitor (`qst shot NAME
-  DP-1`) to crop.
-- The brightness keys run the host's brightnessctl, which reaches the real
-  backlight from the test session too: drive the shell's
-  `quickshell:osd-brightness` global and `qst backlight` instead. The volume
-  keys' wpctl reaches the session's own PipeWire, so those may be pressed.
+- With no monitor on, Hyprland adds a headless `FALLBACK`; Quickshell lists it.
+- Removing any monitor focuses the first.
+- A connector gets back its last id unless taken, else the lowest free one,
+  kept from then on; `reset` holds ids with placeholders to give 0, 1, … back.
+- A monitor rule without `disabled = false` leaves a disabled monitor off;
+  qs-test writes it in every rule.
+- Going to and from no output, Qt warns "Layershell screen does not correspond
+  to a real screen"; `problems` drops those right after "creating placeholder
+  screen".
+- In jq a pipe binds loosest: `(.popups | map(.screen)) == [...]`.
 
 ## Sharp edges
 
-- **pi's `settings.json` is a read-only store symlink.** Anything pi would
-  normally save itself (`theme`, `defaultProvider`, `defaultModel`,
-  `defaultTools`, `packages`, `defaultProjectTrust`) fails to write and reverts
-  on restart; set those through the home-manager option `piAgent.settings`
-  instead. pi's own files (`auth.json`, `sessions/`, `npm/`) are unaffected.
-- **pi themes cannot paint the screen background.** The theme format has no
-  global background token; only the per-box `*Bg` tokens exist. The backdrop is
-  the terminal's, i.e. wezterm's Adwaita Darker background.
-- **Formatters/checks are per-system.** A new `perSystem` definition merges;
-  don't redeclare `systems`.
-- **`stateVersion`** defaults to the nixpkgs release (NixOS and home-manager);
-  do not bump it without understanding the migration implications.
-- **`networking.hostId`** is derived from the hostname hash. Renaming a host
-  changes it.
-- **The hyprland HM module depends on `osConfig`.** Importing only
-  `modules.homeManager.hyprland` without the NixOS half will fail.
-- **Hyprland session services only run under Hyprland.** `wayland.systemd.target`
-  is `hyprland-session.target` for the whole user; a service meant for another
-  compositor needs its own target.
-- **`boot` and `systemd-boot` conflict by design** — `systemd-boot`
-  `mkForce`s GRUB off; a host would add it on top of `base` (none does now).
-- **The `modules` flake output is not a standard output.** Nix warns about it;
-  it is intentional and required for external imports.
-- **`skinke.net` resolves through the `wg0` NetworkManager profile, which this
-  flake does not own.** The profile carries `ipv4.dns 10.0.0.1` and the route-only
-  domain `~skinke.net`, so those names go to loft01's resolver instead of the
-  public one. It is hand-made in `/etc/NetworkManager/system-connections`:
-  `nmcli connection modify` only edits the keyfile, so a change needs
-  `nmcli connection up wg0` (or `nmcli device reapply wg0`) to reach
-  systemd-resolved. With the tunnel down, the global `~.` silently answers from
-  public DNS.
-- **Two nixpkgs channels.** Default `pkgs` comes from `nixpkgs`;
-  `pkgs.unstable` comes from the `unstable-nixpkgs` overlay. Prefer the
-  default unless a package needs unstable.
-- **Never hardcode the username.** Read `config.identity.username`.
+- **`skinke.net` resolves through the `wg0` NetworkManager profile**, which
+  this flake does not own: `ipv4.dns 10.0.0.1` and route-only `~skinke.net`,
+  hand-made in `/etc/NetworkManager/system-connections`. `nmcli connection
+  modify` only edits the keyfile: `nmcli connection up wg0` (or
+  `nmcli device reapply wg0`) to reach resolved. Tunnel down, `~.` answers from
+  public DNS silently.
+- **Hosts**: each is a directory; `imports.nix` declares it and its aspects,
+  siblings add to `"nixosConfigurations/<name>"`, `home.nix`/`monitors.nix` to
+  `…/home`. Hardware stays per host (`hardware.nix`) even when repeated. Both
+  homes carry the homelab tools (`just`, `helm`, `virtctl`, `kubelogin`,
+  `programs.gh`, ssh `loft01` forwarding 6443).
+  - `thonkpad`: `base workstation gaming`; Intel laptop, `thermald`, TLP
+    thresholds, UPower, disko, `treefmt`, mDNS/UDP for Chromecast.
+  - `desktop`: `base workstation gaming moonshine`; AMD, RX 6700 XT, ZSA udev
+    rules, disko, hyprmoncfg profiles `default`/`left-only`/`right-only`,
+    nix-index, startup apps pinned to monitors, `quickshell.scale = 1.2`.
+- **Profiles**: `base` (nixos: `boot doas documentation git home-manager
+  journald locale network neovim nix nixpkgs packages podman unstable-nixpkgs
+  users`; HM: `git pi-agent tmux users xdg-user-dirs zsh`), `workstation`
+  (nixos: `display-manager fonts gtk hyprland plymouth sound`; HM: `bluetooth
+  cursor desktop-apps gtk hyprland neovim qt wezterm`). The NixOS half pulls in
+  the HM half.
+- **Theme** (`modules/theme/`): `palette.nix` declares `palettes`; `fonts`
+  nixos, `gtk` both, `cursor` and `qt` HM. GTK4 recoloured through libadwaita's
+  `:root` variables (dark only), GTK3 through adw-gtk3's `@define-color`, both
+  in the user `gtk.css`; Qt's adwaita-dark keeps its own.

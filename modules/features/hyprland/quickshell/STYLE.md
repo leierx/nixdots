@@ -139,28 +139,15 @@ Adwaita Sans at 11 pt, the type classes both name alike (gs `%title_1` …
 
 The OSD hides 1500 ms after its last change (gs `osdWindow.js` `HIDE_TIMEOUT`).
 
-## Where 51 differed from the first board, settled at checkpoint 1
-
-- Buttons that are not pills are 8 px (gs `%button`), not pills; Shell keeps
-  pills for toggles, icon buttons, the search entry and Clear.
-- The slider's knob is 16 px and `#e8e8e8` (white under the pointer), not a
-  20 px white one; its trough 4 px.
-- A popover slides 6 px, in and out over 150 ms, rather than 10 px in and
-  100 ms out.
-- The OSD's level is white, not the accent; its trough 6 px.
-- Shell's focus ring is its accent mixed 60 % with white; ours stays the accent.
-- Radii: popovers 20, rows 12, banners 16, toggle menus 24, the date menu 30,
-  quick settings 36.
-
-Taken from 51 as the user picked: the media card heads the center, Do Not
-Disturb is a switch in the center's footer, one accent everywhere (the nixpkgs mode lost its blues), no
-press bounce, and the dim behind centred panels is 0.6.
+Kept from 51 by the user's pick: the media card heads the center, Do Not
+Disturb is a switch in the center's footer, no press bounce, a 0.6 dim behind centred panels.
 
 ## Pieces
 
 All in `common/`; `qst gallery` shows each in every state, and `design.sh`
 holds it to the census. A piece's look comes from `hovered` and `pressed`
-properties bound to its own mouse area, so the gallery can hold a state.
+properties bound to its own mouse area, so the gallery can hold a state. Nothing
+that takes hover lies over that area: Qt hovers one item and its ancestors only.
 
 - `Button`: Shell's `%button`. 8 px, or `pill` (toggles' kin: Clear, Sign
   In). `flat` on a surface of its own (the media controls, an action that is
@@ -230,18 +217,13 @@ is, never wider.
 | Tray menu | at least 15 em | gs `.popup-menu` |
 | Tray strip | at most 12 em | ours |
 
-## Type, symbols and motion
+## Symbols
 
-- Type: the classes above only, and text elides at a line limit. Bar items
-  and buttons are `heading`; numbers that change are `numeric` or
-  `numericHeading`.
-- Symbols: every path is a `Symbols` property, which the build writes from
-  Material Design Icons 7.4 (Pictogrammers, the set Nerd Fonts ships as nf-md;
-  `scripts/symbols.tsv`, a line per symbol, a 24 px grid). Drawn at 16 px everywhere, 24 in a toggle menu's header,
-  32 in the OSD and the launcher's rows, 64 on the power tiles. App icons are Papirus-Dark's; tray items draw what
-  they send.
-- Motion: the tokens above, each with its easing; keyboard selection never
-  animates.
+Every path is a `Symbols` property, written by the build from Material Design
+Icons 7.4 (`scripts/symbols.tsv`, one line per symbol, a 24 px grid). Drawn at
+16 px, 24 in a toggle menu's header, 32 in the OSD and the launcher's rows, 64
+on the power tiles. App icons are Papirus-Dark's; tray items draw what they
+send. Text elides at a line limit; keyboard selection never animates.
 
 ## Writing
 

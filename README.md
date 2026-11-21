@@ -49,25 +49,21 @@ overrides it.
 
 ## Options
 
-Modules are hardcoded on purpose. An option is added only when a machine
-actually needs a different value — never in anticipation of one. Until then the
-value sits inline in the feature file, where it is one edit away from being
-changed and one glance away from being understood; promoting it to an option
-later is mechanical. A constant nobody is overriding is just indirection.
+Modules are hardcoded on purpose. An option is added only when a machine needs a
+different value, never in anticipation: until then the value sits inline, one
+edit from changed and one glance from understood.
 
-The exception is shared data, which is not an option in that sense: `identity`,
-`palettes`, `hyprland.workspaces` and `systems` are declared once at the top
-level because several modules genuinely read them. Those exist because a value
-is *shared*, not because a value might vary. A value that does vary per host or
-per importer (`piAgent.settings`, `neovim.outOfStorePath`) is an option of the
-aspect that reads it, set from the host's or the importer's own configuration.
+Shared data is the exception: `identity`, `palettes`, `hyprland.workspaces` and
+`systems` are top-level because several modules read them, not because they
+vary. A value that varies per host or importer (`piAgent.settings`,
+`neovim.outOfStorePath`) is an option of the aspect that reads it.
 
 ## Building
 
 ```bash
 host=thonkpad
 
-sudo nixos-rebuild switch --flake ".#$host"
+nixos-rebuild switch --flake ".#$host" --sudo
 nix build ".#nixosConfigurations.$host.config.system.build.toplevel"
 
 # offline installer ISO carrying that host's toplevel and disko script
@@ -88,7 +84,7 @@ modules/
                    identity, checks, offline installer
   features/        one flat file per feature, covering every class it
                    applies to; a directory only when the feature has parts
-                   (hyprland/, neovim/, pi-agent/)
+                   (hyprland/, moonshine/, neovim/, pi-agent/, tmux/)
   profiles/        base and workstation: named groups of features
   theme/           palette, fonts, gtk, qt, cursor
   hosts/           one directory per machine
