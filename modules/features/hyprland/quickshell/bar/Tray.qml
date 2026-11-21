@@ -62,13 +62,13 @@ Item {
     interval: 600
   }
 
-  function press(item: SystemTrayItem, icon: Item, button: int): void {
+  function press(item: SystemTrayItem, icon: Item, button: int, at: point): void {
     const opensMenu = item.hasMenu && (button === Qt.RightButton || (button === Qt.LeftButton && item.onlyMenu));
     if (opensMenu && root.menuOpen && root.menuItem === item) {
       Panels.close();
     } else if (opensMenu) {
-      // Flush under the bar, from the icon's left edge; every window here starts at the screen's corner.
-      root.menuAnchor = Qt.point(icon.mapToItem(null, 0, 0).x, root.Window.height);
+      // At the pointer, as trays have always opened them, a pixel off so the icon under it still takes a second click; every window here starts at the screen's corner.
+      root.menuAnchor = Qt.point(at.x + 1, at.y + 1);
       root.menuIcon = icon;
       root.menuItem = item;
       Panels.open(root.menuPanel);
@@ -93,14 +93,14 @@ Item {
     }
   }
 
-  // The pill behind the icons and the count: the bar button's rest shade (ours: GNOME has no tray), so the tray reads as one thing beside the status button.
+  // The icons and the count, clipped to a pill so the fades follow its round ends; no fill, as one on the black bar barely showed.
   ClippingRectangle {
     id: fill
 
     width: root.strip + (root.more > 0 ? count.implicitWidth + Theme.basePadding : 0)
     height: root.cell
     radius: height / 2
-    color: Theme.buttonBg
+    color: "transparent"
 
     Flickable {
       id: cells
@@ -156,7 +156,7 @@ Item {
               // Few tray icons do anything on a left click, so they keep the arrow.
               cursorShape: Qt.ArrowCursor
               acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-              onClicked: mouse => root.press(cell.modelData, cell, mouse.button)
+              onClicked: mouse => root.press(cell.modelData, cell, mouse.button, area.mapToItem(null, mouse.x, mouse.y))
             }
 
             TooltipArea {
@@ -189,7 +189,7 @@ Item {
 
         GradientStop {
           position: 0
-          color: Qt.tint(Theme.panelBg, Theme.buttonBg)
+          color: Theme.panelBg
         }
         GradientStop {
           position: 1
@@ -213,7 +213,7 @@ Item {
         }
         GradientStop {
           position: 1
-          color: Qt.tint(Theme.panelBg, Theme.buttonBg)
+          color: Theme.panelBg
         }
       }
     }

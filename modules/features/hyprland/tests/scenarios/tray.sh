@@ -44,7 +44,7 @@ qst stays '.trays[0].shown' 0.3
 qst wheel -100
 qst wait '.trays[0].offset == 0'
 
-qst case "a right click opens an item's menu flush under the bar, which keeps the tray out, and the keys walk it"
+qst case "a right click opens an item's menu at the pointer, which keeps the tray out, and the keys walk it"
 qst tray
 qst wait '.tray | length > 0'
 reveal
