@@ -346,3 +346,17 @@ read -r x y < <(at slider:output)
 qst click left "$x" "$y"
 qst wait '.volume.percent == 65'
 qst stays '.volume.percent == 65' 0.5
+
+qst case "Escape mid-drag puts the level back where the drag began and keeps the centre open; Escape after closes it"
+wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.4
+open
+qst wait '.volume.percent == 40'
+read -r x y < <(at slider:output)
+qst drag $((x - 60)) "$y" 180 0 2500 &
+qst wait '.volume.percent > 50'
+qst key Escape
+wait
+qst wait '.volume.percent == 40'
+qst stays '.panel == "controls:DP-1" and .volume.percent == 40' 0.6
+qst key Escape
+qst wait '.panel == ""'

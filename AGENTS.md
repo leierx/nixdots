@@ -358,6 +358,8 @@ Notes on specific features:
       - A picture sent as a bare path (`notify-send -i /file`) reaches
         Quickshell as a theme icon, `image://icon//file`; `Notifs.picture`
         reads it as the file.
+      - A `Binding` with `when: !area.pressed` let its value through during a
+        drag: what a press must hold is set in `onPressed` (`Slider`'s range).
       - Under a disabled ancestor a `MouseArea`'s own `enabled` still reads
         true, so a cursor bound to it shows a hand: set it explicitly
         (`Button`'s area takes the button's).
@@ -423,7 +425,7 @@ Notes on specific features:
         16 px in a row); every chevron an `ExpanderArrow`, turned by its
         `pointing` (`down`, `up`, `left`, `right`) and never by hand: down to
         up for what expands in place, right to down for what opens a menu
-        under it; a level to drag a `Slider` (its range reaching past 1 while the level does, with a tick at 100 %, held still for a drag); a scroll bar a `ScrollBar` (Qt's
+        under it; a level to drag a `Slider` (its range reaching past 1 while the level does, with a tick at 100 %, held still for a drag, which Escape puts back where it began); a scroll bar a `ScrollBar` (Qt's
         `ScrollIndicator`, 4 px, fading out unless `held`); a switch a
         `Switch`; a key a `Keycap`; a text field a `TextField`; a row of a
         panel's list a `ListRow`; a press's feedback a `Pop`; an icon a

@@ -11,11 +11,23 @@ Item {
   property real heldMaximum: 1
   readonly property real span: drag.pressed ? heldMaximum : Math.max(1, maximum)
   readonly property real fraction: Math.max(0, Math.min(1, value / span))
+  // Where a drag began, which Escape puts back; a drag Escape cancelled moves nothing more until released.
+  property real startValue: 0
+  property bool cancelled: false
 
   signal moved(real value)
   signal stepped(int notches)
 
   implicitHeight: 26
+
+  Keys.onEscapePressed: event => {
+    if (!drag.pressed || slider.cancelled) {
+      event.accepted = false;
+      return;
+    }
+    slider.cancelled = true;
+    slider.moved(slider.startValue);
+  }
 
   Rectangle {
     anchors.verticalCenter: parent.verticalCenter
@@ -73,11 +85,14 @@ Item {
     enabled: slider.enabled
     cursorShape: !enabled ? Qt.ArrowCursor : pressed ? Qt.ClosedHandCursor : Qt.PointingHandCursor
     onPressed: mouse => {
+      slider.forceActiveFocus();
+      slider.cancelled = false;
+      slider.startValue = slider.value;
       slider.heldMaximum = Math.max(1, slider.maximum);
       slider.moved(Math.max(0, Math.min(1, mouse.x / width)) * slider.heldMaximum);
     }
     onPositionChanged: mouse => {
-      if (pressed) slider.moved(Math.max(0, Math.min(1, mouse.x / width)) * slider.span);
+      if (pressed && !slider.cancelled) slider.moved(Math.max(0, Math.min(1, mouse.x / width)) * slider.span);
     }
     onWheel: event => {
       const steps = notches.steps(event);

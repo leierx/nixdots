@@ -468,3 +468,23 @@ qst wait '.volume.percent <= 200 and .volume.percent >= 100'
 wpctl set-volume @DEFAULT_AUDIO_SINK@ 2.0
 qst wait '.volume.percent == 200 and (.sliders | map(select(.name == "slider:output"))[0].span * 100 | round) == 200'
 qst stays '.panel == "controls:DP-1"' 0.5
+
+qst case "Escape pressed over and over through drags on both levels leaves each where its drag began"
+wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.4
+wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 0.7
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1" and .volume.percent == 40 and .microphone.percent == 70'
+read -r ox oy < <(named slider:output)
+read -r ix iy < <(named slider:input)
+for _ in 1 2 3; do
+  qst drag $((ox - 100)) "$oy" 200 0 900 &
+  qst wait '.volume.percent != 40'
+  qst key Escape
+  wait
+  qst drag $((ix + 100)) "$iy" -200 0 900 &
+  qst wait '.microphone.percent != 70'
+  qst key Escape
+  wait
+done
+qst wait '.volume.percent == 40 and .microphone.percent == 70'
+qst stays '.panel == "controls:DP-1" and .volume.percent == 40 and .microphone.percent == 70' 0.6
