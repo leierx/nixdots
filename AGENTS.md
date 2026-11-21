@@ -785,10 +785,11 @@ nix fmt                  # formatter = nixfmt-tree
   standards as far as the source shows them: a colour that is not Theme's
   (a literal, `Qt.rgba`, a `Qt.tint` of anything but Theme), a radius typed
   out, a duration or font that is not a Theme token, an icon path outside
-  `Symbols` or a symbol at a size Adwaita does not draw at (16, 32, 64, 128), a shadow on anything but a `Card`, anything turned by hand
+  `Symbols` or a symbol at a size GNOME does not draw at (16, 24, 32, 64, 128), a shadow on anything but a `Card`, anything turned by hand
   rather than an `ExpanderArrow`'s `pointing`, one inline component name
-  in two files or shadowing one in `common/`, `flatMap`, text ending in a full stop, an ellipsis on a settings item, and a plain
-  space between a number and its unit.
+  in two files or shadowing one in `common/`, `flatMap`, text ending in a full stop, an ellipsis on a settings item, a
+  `MouseArea` that names no cursor, and a plain space between a number and
+  its unit.
   What a file does on purpose is listed in the script with why.
 - `checks.<system>.notification-markup` (Linux) — `qmltestrunner` over
   `tests/tst_markup.qml`: what the notification body filter

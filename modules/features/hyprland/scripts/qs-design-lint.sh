@@ -1,7 +1,7 @@
 dir=${1:?usage: qs-design-lint SHELL_DIR}
 cd "$dir"
 
-# What the design standards in AGENTS.md leave to a file on purpose: a file or component, a rule, and why.
+# What the design standard (quickshell/STYLE.md) leaves to a file on purpose: a file or component, a rule, and why.
 allow='power/PowerMenu.qml	radius	the power tiles are large squircles, no role of Theme'"'"'s
 launcher/LayoutDiagram.qml	font	outputs and their labels are drawn to scale
 Preview	component	every launcher mode draws its own preview'
@@ -22,6 +22,7 @@ findings() {
     grep -nP '\.flatMap\(|\.flat\(' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: Qt's JavaScript has no flatMap or flat\tjs|" || true
     awk -v file="$file" '/^\s*IconButton \{/ { inside = 1; depth = 0; found = 0; start = NR } inside { depth += gsub(/\{/, "{"); depth -= gsub(/\}/, "}"); if (/^\s*tooltip:/) found = 1; if (depth == 0) { if (!found) printf "%s:%d: an icon-only button with no tooltip, which the HIG asks of each\ttooltip\n", file, start; inside = 0 } }' "$file"
     awk -v file="$file" '/^\s*Glyph \{/ { inside = 1 } inside && /^\s*size: [0-9]+\s*$/ && $2 !~ /^(16|24|32|64|128)$/ { printf "%s:%d: a symbol at %s px, where GNOME draws at 16, 24 (the header of a toggle menu), 32, 64 or 128\ticon\n", file, NR, $2 } inside && /^\s*\}/ { inside = 0 }' "$file"
+    awk -v file="$file" 'match($0, /^ *MouseArea \{$/) { open = NR; indent = RLENGTH - 11; named = 0; next } open && /cursorShape:/ { named = 1 } open && match($0, /^ *\}$/) && RLENGTH - 1 == indent { if (!named) printf "%s:%d: a MouseArea that names no cursor\tcursor\n", file, open; open = 0 }' "$file"
     grep -nP 'glyphSize: (?!(16|32|64|128)\s*$)[0-9]+' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a symbol at a size Adwaita's do not draw at\ticon|" || true
     grep -nP '^(?!\s*//).*["\x60][^"\x60]*[A-Za-z)]\.["\x60]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: text ending in a full stop, which the HIG leaves off\twords|" || true
     grep -nP '(Settings|Preferences|Properties)…["\x60]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: an ellipsis on a settings item, which asks for no more input\twords|" || true

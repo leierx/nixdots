@@ -27,6 +27,7 @@ PanelWindow {
 
   MouseArea {
     anchors.fill: parent
+    cursorShape: Qt.ArrowCursor
     acceptedButtons: Qt.AllButtons
     onPressed: Panels.close()
   }

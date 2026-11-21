@@ -40,6 +40,7 @@ PanelWindow {
 
   MouseArea {
     anchors.fill: parent
+    cursorShape: Qt.ArrowCursor
     onClicked: mouse => {
       if (!root.card?.contains(mapToItem(root.card, mouse.x, mouse.y))) Panels.close();
     }
