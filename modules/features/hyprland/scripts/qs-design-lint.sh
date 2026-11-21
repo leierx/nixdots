@@ -23,9 +23,9 @@ findings() {
     awk -v file="$file" '/^\s*IconButton \{/ { inside = 1; depth = 0; found = 0; start = NR } inside { depth += gsub(/\{/, "{"); depth -= gsub(/\}/, "}"); if (/^\s*tooltip:/) found = 1; if (depth == 0) { if (!found) printf "%s:%d: an icon-only button with no tooltip, which the HIG asks of each\ttooltip\n", file, start; inside = 0 } }' "$file"
     awk -v file="$file" '/^\s*Glyph \{/ { inside = 1 } inside && /^\s*size: [0-9]+\s*$/ && $2 !~ /^(16|32|64|128)$/ { printf "%s:%d: a symbol at %s px, where Adwaita draws at 16, 32, 64 or 128\ticon\n", file, NR, $2 } inside && /^\s*\}/ { inside = 0 }' "$file"
     grep -nP 'glyphSize: (?!(16|32|64|128)\s*$)[0-9]+' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a symbol at a size Adwaita's do not draw at\ticon|" || true
-    grep -nP '^(?!\s*//).*["`][^"`]*[A-Za-z)]\.["`]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: text ending in a full stop, which the HIG leaves off\twords|" || true
-    grep -nP '(Settings|Preferences|Properties)…["`]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: an ellipsis on a settings item, which asks for no more input\twords|" || true
-    grep -nP '^(?!\s*//).*["`][^"`]*(\}|\d) (%|h|min|s|ms|Hz|[KMGT]i?B|[KMG]b/s)(?![A-Za-z0-9.])' "$file" | grep -v -e 'console\.' -e 'path: "' | sed "s|^\([0-9]*\):.*|$file:\1: a plain space before a unit rather than Theme.unit's narrow no-break space\twords|" || true
+    grep -nP '^(?!\s*//).*["\x60][^"\x60]*[A-Za-z)]\.["\x60]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: text ending in a full stop, which the HIG leaves off\twords|" || true
+    grep -nP '(Settings|Preferences|Properties)…["\x60]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: an ellipsis on a settings item, which asks for no more input\twords|" || true
+    grep -nP '^(?!\s*//).*["\x60][^"\x60]*(\}|\d) (%|h|min|s|ms|Hz|[KMGT]i?B|[KMG]b/s)(?![A-Za-z0-9.])' "$file" | grep -v -e 'console\.' -e 'path: "' | sed "s|^\([0-9]*\):.*|$file:\1: a plain space before a unit rather than Theme.unit's narrow no-break space\twords|" || true
   done
   # A component drawn twice drifts apart: one in common/, or one name per thing.
   for file in $files; do grep -oP '^\s*component \K\w+' "$file" | sed "s|$|\t$file|" || true; done |
