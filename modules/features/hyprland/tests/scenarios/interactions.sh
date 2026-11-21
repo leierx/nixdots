@@ -109,3 +109,31 @@ qst cursor 21 17 arrow
 qst stays '.tooltip == null and .tooltipPending == null' 1
 qst click left 21 17
 qst stays '.panel == ""' 0.5
+
+qst case "a bar button lights under the pointer and goes dark once the panel it opened closes, however it closed"
+qst pointer 300 700
+qst pointer 960 16
+qst wait '.hovered == ["BarWindow/Clock"]'
+qst click
+qst wait '.panel == "center"'
+qst pointer 300 700
+qst click
+qst wait '.panel == "" and .hovered == []'
+qst stays '.hovered == []' 0.5
+read -r x y _ < <(qst areas 'BarWindow/' | awk -F'\t' '$1 > 1800' | tail -1)
+qst pointer "$x" "$y"
+qst wait '.hovered == ["BarWindow/StatusButton"]'
+qst click
+qst wait '.panel == "controls:DP-1"'
+qst pointer 300 700
+qst key Escape
+qst wait '.panel == "" and .hovered == []'
+qst pointer 960 16
+qst click
+qst wait '.panel == "center"'
+qst pointer 960 16
+qst click
+qst wait '.panel == ""'
+qst pointer 300 700
+qst wait '.hovered == []'
+qst stays '.hovered == []' 0.5

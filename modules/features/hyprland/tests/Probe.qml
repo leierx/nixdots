@@ -210,8 +210,8 @@ Scope {
     const found = [];
     for (const entry of windows()) {
       for (const { item } of entry.items) {
-        // A tooltip's hover is no place to click, and would only double its control.
-        const hovers = !("owner" in item && "shown" in item) && Array.from(item.data ?? []).some(child => child && "cursorShape" in child && "hovered" in child && "point" in child && !("width" in child));
+        // A tooltip's hover, on its owner or not, is no place to click, and would only double its control.
+        const hovers = !("owner" in item && "shown" in item) && Array.from(item.data ?? []).some(child => child && child.objectName !== "tooltip" && "cursorShape" in child && "hovered" in child && "point" in child && !("width" in child));
         if (!(isMouseArea(item) || hovers) || item.width < 2 || item.height < 2) continue;
         const middle = item.mapToItem(null, item.width / 2, item.height / 2);
         // Rows a list has scrolled away are not under any pointer.
@@ -377,6 +377,8 @@ Scope {
         // What the keyboard is on in a window that has it, by label, and whether its ring shows.
         focused: (() => { let found = null; for (const entry of probe.windows()) for (const { item } of entry.items) if (item.activeFocus && "activeFocusOnTab" in item && item.activeFocusOnTab) found = probe.label(entry, item); return found; })(),
         ring: Panels.keyboard,
+        // Every piece showing its hover, by label: one left lit after the pointer has gone is the stuck grey.
+        hovered: (() => { const found = []; for (const entry of probe.windows()) for (const { item } of entry.items) if (item.hovered === true && "color" in item) found.push(probe.label(entry, item)); return found; })(),
         tooltip: Tooltips.shown ? { text: Tooltips.text, screen: Tooltips.screen } : null,
         tooltipPending: Tooltips.pending ? Tooltips.pendingText : null,
         history: Notifs.entries.map(e => ({ uid: e.uid, app: Notifs.appKey(e), summary: e.summary ?? null, popup: e.popup, checked: e.checked, restored: e.restored ?? false, image: e.image || null, kept: Object.keys(e.kept ?? {}) })),
