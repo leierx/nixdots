@@ -131,9 +131,9 @@ Item {
     height: root.expanded ? content + root.padding * 2 + root.inset : root.threeLines + root.padding * 2
     radius: Theme.messageRadius
     color: !root.expanded && hover.hovered ? Theme.messageHoverBg : Theme.messageBg
-    // A lone critical notification is marked as its popup is; in a group, only its own box or line is.
-    border.width: root.single && root.newest?.critical ? 1 : 0
-    border.color: Theme.destructive
+    // The popover's edge; a lone critical notification is red as its popup is, in a group only its own box or line.
+    border.width: 1
+    border.color: root.single && root.newest?.critical ? Theme.destructive : Theme.popoverBorder
     clip: true
 
     Behavior on height {

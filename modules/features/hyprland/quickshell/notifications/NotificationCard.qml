@@ -32,6 +32,10 @@ Item {
 
   implicitHeight: card.height
 
+  HoverHandler {
+    id: hover
+  }
+
   Timer {
     id: fold
 
@@ -70,9 +74,15 @@ Item {
     width: root.width
     height: content.implicitHeight + 2 * Theme.padding - root.excess
     radius: Theme.messageRadius
-    color: Theme.messageBg
-    border.color: root.entry.critical ? Theme.destructive : Theme.popoverBorder
+    color: hover.hovered ? Theme.messageHoverBg : Theme.messageBg
+    border.color: root.entry.critical ? Theme.destructive : Theme.popupBorder
     shadow.spreadBy: 2
+
+    Behavior on color {
+      ColorAnimation {
+        duration: Theme.quickTime
+      }
+    }
     opacity: 1 - x / width
 
     Behavior on height {

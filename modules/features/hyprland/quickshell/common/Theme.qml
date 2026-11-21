@@ -18,8 +18,10 @@ Singleton {
   readonly property color popoverBg: Colors.shell_bg_color
   readonly property color popoverBorder: Colors.shell_outer_borders_color
   readonly property color cardBg: Colors.shell_card_bg_color
-  readonly property color messageBg: Colors.shell_message_bg_color
-  readonly property color messageHoverBg: lighten(Colors.shell_message_bg_color, 0.04)
+  // Notifications are the popover, as every floating surface; popups keep a brighter edge to stand out from what is behind them.
+  readonly property color messageBg: popoverBg
+  readonly property color messageHoverBg: lighten(popoverBg, 0.04)
+  readonly property color popupBorder: overlay(0.22)
   readonly property color messageButtonBg: overlay(0.15)
   readonly property color messageButtonHoverBg: overlay(0.3)
   readonly property color messageButtonActiveBg: overlay(0.2)
