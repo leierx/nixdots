@@ -229,15 +229,27 @@ for _ in $(seq 50); do [ "$(qst x hyprctl hyprsunset temperature)" -lt 4000 ] &&
 press menu:night
 qst wait '.controls.menu == ""'
 
-qst case "a backlight gets a slider, set through brightnessctl, and no OSD over the open centre"
+qst case "a backlight gets a slider, set through brightnessctl, and the OSD shows the level it sets"
 qst backlight intel_backlight 600 1000
 open
 qst wait '.brightness.intel_backlight.brightness == 600'
 read -r x y < <(qst areas 'ControlsPanel' | awk -F'\t' '{ print $1, $2 }' | sort -n -k2 | awk '{ count[$2]++; if (!($2 in x)) x[$2] = $1 } END { for (y in count) if (count[y] == 2) print x[y], y }' | sort -n -k2 | head -1)
 qst click left $((x + 40)) "$y"
 qst wait '.brightness.intel_backlight.brightness < 600'
-qst stays '.osd == null' 1
+qst wait '.osd.kind == "brightness" and .osd.level < 0.6'
 qst actions | grep -q 'brightnessctl --quiet --device intel_backlight set' || { qst actions; echo "brightnessctl was not run"; exit 1; }
+
+qst case "the centre's own levels and mute buttons show the OSD with the level they set"
+open
+qst wait '.osdSettling == false'
+read -r x y < <(at slider:output)
+qst click left $((x - 60)) "$y"
+qst wait '.osd.kind == "volume" and .osd.level < 0.6 and .osd.screen == "DP-1"'
+press mute:input
+qst wait '.osd.kind == "microphone" and .osd.muted'
+read -r x y < <(at slider:input)
+qst click left $((x - 60)) "$y"
+qst wait '.osd.kind == "microphone" and .osd.muted == false and .osd.level < 0.6'
 
 qst case "the player that played last gets the card; stopped, it goes"
 # alone: removing a playing player races Quickshell polling its position, and a loaded machine widens the race

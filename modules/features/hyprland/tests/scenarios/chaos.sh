@@ -417,3 +417,23 @@ qst wait '.controls.media.title == "Kid A" and .controls.media.playing'
 qst stays '.controls.media.length == 284' 1
 qst player remove spotify
 qst wait '.controls.media.identity == "Player 1" and .controls.media.length == 251'
+
+qst case "both levels and the input's mute hammered from the open centre show the OSD at every change, ending on the last"
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1" and .osdSettling == false'
+read -r ox oy < <(named slider:output)
+read -r ix iy < <(named slider:input)
+read -r mx my < <(named mute:input)
+before=$(qst state .osdShown)
+# Each round sets both levels somewhere new and mutes the input again, which its slider unmuted.
+for i in $(seq 15); do
+  qst click left $((ox - 100 + i * 12)) "$oy"
+  qst click left $((ix + 100 - i * 12)) "$iy"
+  qst click left "$mx" "$my"
+done
+qst wait '.osd.kind == "microphone" and .osd.muted and .microphone.muted'
+shows=$(($(qst state .osdShown) - before))
+[ "$shows" -ge 30 ] || { echo "the OSD showed $shows times for 45 changes"; exit 1; }
+for _ in $(seq 20); do wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; done
+qst wait '.osd.kind == "volume" and .osd.muted == false and .volume.muted == false'
+qst stays '.panel == "controls:DP-1"' 1

@@ -14,6 +14,7 @@ Column {
   component Level: Row {
     id: level
 
+    property string name: ""
     property string glyph: ""
     property bool mutes: false
     property bool muted: false
@@ -29,6 +30,7 @@ Column {
     IconButton {
       id: lead
 
+      objectName: `mute:${level.name}`
       anchors.verticalCenter: parent.verticalCenter
       flat: true
       enabled: level.mutes && level.enabled
@@ -38,6 +40,7 @@ Column {
     }
 
     Slider {
+      objectName: `slider:${level.name}`
       anchors.verticalCenter: parent.verticalCenter
       width: parent.width - lead.width - arrow.width - 2 * parent.spacing
       enabled: level.enabled
@@ -90,6 +93,7 @@ Column {
   }
 
   Level {
+    name: "output"
     width: parent.width
     visible: Volume.present
     glyph: Volume.glyph
@@ -103,6 +107,7 @@ Column {
   }
 
   Level {
+    name: "input"
     width: parent.width
     visible: Microphone.present
     // A virtual source has nothing to set; it stays in place, so nothing below moves.
@@ -127,6 +132,7 @@ Column {
       required property string modelData
       readonly property var device: Brightness.devices[modelData] ?? null
 
+      name: `backlight:${modelData}`
       width: parent.width
       glyph: Symbols.brightness
       value: device ? device.brightness / device.max : 0

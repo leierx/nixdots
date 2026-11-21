@@ -675,18 +675,18 @@ Notes on specific features:
   - The OSD (`osd/`) shows what just changed on the focused monitor, on the
     overlay layer, for 1.5 s (fading over `Theme.fade`), never taking a click: by its right edge a
     slim upright slider (level filling from the bottom, past 100 % in the
-    warning colour, the number above and the symbol below) for output
-    volume and mute and brightness, and at the bottom centre, 4em up as GNOME
-    Shell's, a pill with a symbol and a word for microphone
-    mute, a new default output or input, and Caps Lock. `Osd` is the backend,
+    warning colour, the number above and the symbol below) for every change
+    of the output's or the input's level or mute and of brightness, wherever
+    it came from (the keys, the control centre, another app), and at the
+    bottom centre, 4em up as GNOME Shell's, a pill with a symbol and a word
+    for a new default output or input, and Caps Lock. `Osd` is the backend,
     changes as they are made rather than states as they are found: each
     `Watch` takes in the first value of what it watches, and any arriving
     within 500 ms of its key (the node's name) or readiness changing, so the
     shell starting, PipeWire coming back and a new output's own volume show
     nothing; each `DeviceWatch` shows a default device only once it settles
     (400 ms) and differs from the last one it knew, so an unplug that leaves
-    no default for a moment shows only where it lands. Nothing shows for the
-    output's level or a backlight's while the control centre is open. Brightness is `Brightness`, every
+    no default for a moment shows only where it lands. Brightness is `Brightness`, every
     backlight from `backlight-watch` (`scripts/backlight-watch.sh`: `udevadm
     monitor` on the backlight subsystem, since the kernel sends a change
     uevent for every set however it is made, a line `name brightness max;`
@@ -1142,7 +1142,7 @@ bursts and mode changes; `notifications.sh` the history: three per app once
 their popups go, the five-popup limit, stack tags replacing in place, and Do
 Not Disturb with transient and critical notifications, and what the bell counts, and a flood's sounds and repeats, and a picture sent as a bare path; `workspaces.sh` windows opened while the shell starts; `osd.sh` what shows and what must not
 (the shell starting, PipeWire restarting, a switch's new level, an unplugged
-default, the popup open, backlights coming and going, the media keys at a
+default, the control centre open, the microphone's level and mute, backlights coming and going, the media keys at a
 level's end, Caps Lock both ways, its monitor going); `privacy.sh` microphones
 real and virtual, meters, sink monitors, PipeWire going and coming back,
 screen casts, cameras through PipeWire and held from `/dev` (a short probe,
@@ -1159,7 +1159,7 @@ up (its profile gone), vanishing and open networks, the radio and its
 hardware switch, a captive portal's Sign in; VPNs down and up, wanting a
 password and failing; a headset paired, trusted and connected in one click
 and a keyboard wanting a PIN; night light kept through a restart and put
-back in a hyprsunset started again; a backlight's slider with no OSD over it;
+back in a hyprsunset started again; a backlight's slider and the centre's own levels and mutes showing the OSD;
 the player that played last and a track length it drops; an output picked; PipeWire gone and back. Areas
 are clicked by name: the probe adds an area's `objectName` (or its parent's)
 to its label, and the centre names its pills, menu arrows, rows and actions
@@ -1192,7 +1192,7 @@ overflow keeping their order as items come and go, 60 items churning under the o
 overflow and a menu opened from it, 200 items scrolling in it and its monitor
 going; 40 microphones real and virtual with 30 more outputs, the default
 input switched by 30 clicks and 50 `wpctl`s, inputs coming and going and the
-default one destroyed under the open input menu, mute and level hammered,
+default one destroyed under the open input menu, mute and level hammered, both levels and the input's mute hammered with the OSD showing each change,
 and PipeWire restarting under it; 300 networks with hostile names (direction
 overrides, newlines, zero-width marks, a kilobyte long, markup) and the filter,
 1000 outputs with the one in use first, 50 VPNs and 100 Bluetooth devices, a player skipping and pausing faster than the card draws,

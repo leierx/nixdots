@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import qs.bar
 import qs.controls
 import qs.common
 
@@ -35,7 +34,6 @@ Scope {
   function labelOf(item: var): string {
     switch (item?.kind) {
     case undefined: return "";
-    case "microphone": return item.muted ? "Microphone Off" : "Microphone On";
     case "caps": return item.muted ? "Caps Lock Off" : "Caps Lock On";
     default: return item.title;
     }
@@ -45,7 +43,6 @@ Scope {
     switch (item?.kind) {
     case "output": return "Output";
     case "input": return "Input";
-    case "microphone": return item.title;
     default: return "";
     }
   }

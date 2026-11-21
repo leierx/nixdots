@@ -75,25 +75,24 @@ qst pipewire restart
 qst wait '.volume.output == "Speakers" and .input == "Microphone"' 10
 qst stays '.osd == null' 2
 
-qst case "the control centre's slider stands in for the OSD"
+qst case "a volume change shows the level with the control centre open too"
 settled
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
 wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.5
-qst wait '.volume.percent == 50'
-qst stays '.osd == null'
+qst wait '.osd.kind == "volume" and (.osd.level * 100 | round) == 50 and .panel == "controls:DP-1"'
 
-qst case "muting the microphone shows it, and unmuting"
+qst case "muting the microphone shows its level, muted, and unmuting"
 settled
 wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 1
-qst wait '.osd.kind == "microphone" and .osd.title == "Microphone" and .osd.muted'
+qst wait '.osd.kind == "microphone" and .osd.title == "Microphone" and .osd.muted and (.osd.level * 100 | round) == 100'
 wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0
-qst wait '.osd.kind == "microphone" and .osd.muted == false'
+qst wait '.osd.kind == "microphone" and .osd.muted == false and (.osd.level * 100 | round) == 100'
 
-qst case "the microphone's level is no OSD"
+qst case "the microphone's level shows as a level"
 settled
 wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 0.4
-qst stays '.osd == null'
+qst wait '.osd.kind == "microphone" and (.osd.level * 100 | round) == 40 and .osd.muted == false'
 
 qst case "switching the default input shows the new one"
 settled

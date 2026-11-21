@@ -5,7 +5,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Services.Pipewire
-import qs.bar
 import qs.controls
 import qs.common
 
@@ -122,8 +121,7 @@ Singleton {
     key: Volume.key
     ready: Volume.ready
     value: [Volume.volume, Volume.muted]
-    // Its popup's slider shows the level already.
-    onNoticed: if (!Panels.active.startsWith("controls:")) root.showVolume()
+    onNoticed: root.showVolume()
   }
 
   Watch {
@@ -131,8 +129,8 @@ Singleton {
 
     key: root.sourceKey
     ready: (root.source?.ready ?? false) && root.source.audio !== null
-    value: root.source?.audio?.muted ?? false
-    onNoticed: root.show({ kind: "microphone", title: root.sourceName, level: null, muted: root.source.audio.muted })
+    value: [root.source?.audio?.volume ?? 0, root.source?.audio?.muted ?? false]
+    onNoticed: root.show({ kind: "microphone", title: root.sourceName, level: root.source.audio.volume, muted: root.source.audio.muted })
   }
 
   DeviceWatch {
@@ -152,9 +150,8 @@ Singleton {
   Connections {
     target: Brightness
 
-    // The centre's own slider shows the level already.
     function onAdjusted(): void {
-      if (!Panels.active.startsWith("controls:")) root.showBrightness();
+      root.showBrightness();
     }
   }
 
