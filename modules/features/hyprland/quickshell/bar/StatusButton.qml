@@ -34,7 +34,15 @@ BarButton {
     loader.active = Panels.active === panel;
   }
 
-  implicitWidth: icons.implicitWidth + 2 * Theme.padding
+  // At least three symbols wide, so it is always an easy target; it eases as one comes or goes.
+  implicitWidth: Math.max(icons.implicitWidth, 3 * 16 + 2 * Theme.basePadding) + 2 * Theme.padding
+
+  Behavior on implicitWidth {
+    NumberAnimation {
+      duration: Theme.popupTime
+      easing.type: Easing.OutQuad
+    }
+  }
   checked: Panels.active === root.panel
   tooltip: "Quick Settings"
   onClicked: Panels.toggle(root.panel)
@@ -45,15 +53,42 @@ BarButton {
     anchors.centerIn: parent
     spacing: Theme.basePadding
 
+    // The others make room for a new one, which fades in on its own: a positioner's add transition cut short leaves its item where it stopped.
+    move: Transition {
+      NumberAnimation {
+        property: "x"
+        duration: Theme.popupTime
+        easing.type: Easing.OutQuad
+      }
+    }
+
     Repeater {
-      model: root.glyphs
+      // Keyed by name, so a symbol that stays keeps its delegate and only the new one arrives.
+      model: ScriptModel {
+        values: root.glyphs
+        objectProp: "name"
+      }
 
       Glyph {
+        id: glyph
+
         required property var modelData
 
         path: modelData.path
         size: 16
         color: modelData.color
+        opacity: 0
+        Component.onCompleted: arrive.start()
+
+        NumberAnimation {
+          id: arrive
+
+          target: glyph
+          property: "opacity"
+          to: 1
+          duration: Theme.popupTime
+          easing.type: Easing.OutQuad
+        }
       }
     }
 
@@ -72,7 +107,7 @@ BarButton {
         anchors.verticalCenter: parent.verticalCenter
         text: Power.percent
         color: Theme.fg
-        font: Theme.numericHeading
+        font: Theme.numeric
       }
     }
   }

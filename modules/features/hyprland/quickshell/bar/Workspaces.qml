@@ -107,7 +107,7 @@ Item {
         if (button.occupied) return root.focused ? Theme.fgStrong : Theme.fgDim;
         return Theme.fgFaint;
       }
-      font: button.mine ? Theme.numericHeading : Theme.captionHeading
+      font: button.mine ? Theme.numeric : Theme.caption
     }
 
     // As tall as the bar and across the gaps either side.
@@ -134,10 +134,10 @@ Item {
     anchors.verticalCenter: parent.verticalCenter
     spacing: Theme.basePadding
 
-    // It does nothing: no button, no hover.
+    // It does nothing: no button, no hover. As tall as the bar's items, all the bar leaves it.
     IconImage {
       anchors.verticalCenter: parent.verticalCenter
-      implicitSize: 16
+      implicitSize: Theme.barItemHeight
       source: root.logo === "" ? "" : Quickshell.iconPath(root.logo, "distributor-logo")
     }
 
