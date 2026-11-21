@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.common
-import qs.nix
 
 // The timezone's city, from tzdata's coordinates, rather than a lookup of the public address.
 Singleton {
@@ -24,18 +23,8 @@ Singleton {
   // Without the time of day, as the legend names them.
   property var names: ({})
 
-  // Adwaita's weather symbol for MET's code, as GNOME's date menu draws the forecast.
   function icon(symbol: string): string {
-    const [kind, time] = symbol.split("_");
-    const night = time === "night";
-    if (kind === "clearsky") return night ? Symbols.weatherClearNight : Symbols.weatherClear;
-    if (kind === "fair" || kind === "partlycloudy") return night ? Symbols.weatherFewCloudsNight : Symbols.weatherFewClouds;
-    if (kind === "fog") return Symbols.weatherFog;
-    if (kind.includes("thunder")) return Symbols.weatherStorm;
-    if (kind.includes("snow") || kind.includes("sleet")) return Symbols.weatherSnow;
-    if (kind.includes("showers")) return Symbols.weatherShowersScattered;
-    if (kind.includes("rain")) return Symbols.weatherShowers;
-    return Symbols.weatherOvercast;
+    return `file://${Quickshell.shellPath(`weather/icons/${symbol}.svg`)}`;
   }
 
   function describe(symbol: string): string {
@@ -61,7 +50,7 @@ Singleton {
   Component.onCompleted: update()
 
   FileView {
-    path: Quickshell.shellPath("weather/met/legend.csv")
+    path: Quickshell.shellPath("weather/icons/legend.csv")
     onLoaded: {
       const names = {};
       for (const line of text().split("\n").slice(1)) {

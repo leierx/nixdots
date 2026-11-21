@@ -59,13 +59,3 @@ restart	system-reboot
 reload	view-refresh
 firmware	computer
 panDown	pan-down
-weatherClear	weather-clear
-weatherClearNight	weather-clear-night
-weatherFewClouds	weather-few-clouds
-weatherFewCloudsNight	weather-few-clouds-night
-weatherOvercast	weather-overcast
-weatherFog	weather-fog
-weatherShowers	weather-showers
-weatherShowersScattered	weather-showers-scattered
-weatherSnow	weather-snow
-weatherStorm	weather-storm

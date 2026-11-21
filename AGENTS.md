@@ -507,9 +507,8 @@ Notes on specific features:
       - `weather/`: MET Norway's forecast for the time zone's city
         (`/etc/localtime` placed by `zone.tab`, no lookup of the address),
         fetched every half hour and at once when the clock shows a suspend
-        skipped one; drawn in Adwaita's weather symbols, as GNOME's date menu
-        draws it, with MET's legend (fetched into `weather/met/` by
-        `quickshell.nix`) naming the sky.
+        skipped one; MET's icons are fetched into `weather/icons/` by
+        `quickshell.nix`.
       - `notifications/`: the notification daemon and its popups. `Notifs`
         keeps every notification as a `NotifEntry` until dismissed, holding it
         a second past its close so views slide it away whole. Popups stack on
@@ -951,7 +950,7 @@ and `camera-users` are the real ones, run on `$QS_TEST_DIR/backlight` and
 what `qst backlight` appends.
 
 - `sync` copies over rather than rebuilds: the copy keeps the built `nix/`
-  and MET's legend. It restarts rather than hot-reloads: a reload keeps
+  and weather icons. It restarts rather than hot-reloads: a reload keeps
   inline components' old types ("X is not a type") and only watches files the
   last load used. A change to Hyprland's config needs `qst down` and `up`.
 - `qst pointer` is an absolute motion of the virtual pointer, as a tablet's:

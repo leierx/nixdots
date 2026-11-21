@@ -80,7 +80,7 @@ in
             ${pkgs.unstable.adwaita-icon-theme}/share/icons/Adwaita/symbolic > $out
         '';
 
-      # MET Norway's names for its symbol codes; the icons drawn are Adwaita's
+      # MET Norway's weather symbols, named by its symbol codes
       weathericons = pkgs.fetchFromGitHub {
         owner = "metno";
         repo = "weathericons";
@@ -95,8 +95,8 @@ in
         cp ${colors} $out/nix/Colors.qml
         cp ${hyprsplit} $out/nix/Hyprsplit.qml
         cp ${symbols} $out/nix/Symbols.qml
-        mkdir $out/weather/met
-        cp ${weathericons}/weather/legend.csv $out/weather/met/
+        mkdir $out/weather/icons
+        cp ${weathericons}/weather/svg/*.svg ${weathericons}/weather/legend.csv $out/weather/icons/
       '';
 
       nixpkgsIndex = pkgs.writeShellApplication {
