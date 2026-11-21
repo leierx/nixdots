@@ -50,6 +50,8 @@
     {
       services.hypridle = {
         enable = true;
+        # 0.1.7 loses logind's idle inhibitor; remove when nixpkgs moves to 26.11 (0.1.8)
+        package = pkgs.unstable.hypridle;
         settings = {
           general = {
             before_sleep_cmd = "loginctl lock-session";
