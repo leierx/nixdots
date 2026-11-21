@@ -38,11 +38,8 @@ Singleton {
   readonly property color accentFg: Colors.accent_fg_color
   readonly property color accentHover: lighten(Colors.accent_bg_color, 0.04)
   readonly property color accentActive: lighten(Colors.accent_bg_color, 0.09)
-  // A quick toggle's menu segment and the rule before it, on (st-mix with white) and off.
-  readonly property color accentSegmentBg: Qt.tint(Colors.accent_bg_color, Qt.rgba(1, 1, 1, 0.15))
+  // The rule before a quick toggle's menu segment, on (st-mix with white) and off.
   readonly property color accentSeparator: Qt.tint(Colors.accent_bg_color, Qt.rgba(1, 1, 1, 0.3))
-  readonly property color accentSegmentHoverBg: lighten(accentSegmentBg, 0.04)
-  readonly property color segmentHoverBg: overlay(0.17)
   readonly property color segmentSeparator: overlay(0.25)
   // A check box's edge off (Shell's .check-box).
   readonly property color checkBorder: overlay(0.15)

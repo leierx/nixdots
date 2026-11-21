@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.common
 
-// Shell's .quick-toggle: a pill, its menu arrow a segment of its own, a step lighter.
+// Shell's .quick-toggle: a pill, its menu arrow a segment of its own after a rule, in the pill's colour, lighter only under the pointer (ours: Shell lightens it always).
 Rectangle {
   id: pill
 
@@ -11,7 +11,6 @@ Rectangle {
   property bool open: false
   readonly property bool on: toggle.on
   readonly property color ink: on ? Theme.accentFg : Theme.fg
-  readonly property color segmentBg: on ? Theme.accentSegmentBg : Theme.buttonHoverBg
 
   implicitHeight: Theme.toggleHeight
   height: Theme.toggleHeight
@@ -94,7 +93,7 @@ Rectangle {
       anchors.leftMargin: 1
       topRightRadius: pill.radius
       bottomRightRadius: pill.radius
-      color: side.containsMouse ? (pill.on ? Theme.accentSegmentHoverBg : Theme.segmentHoverBg) : pill.segmentBg
+      color: !side.containsMouse ? "transparent" : pill.on ? Theme.accentHover : Theme.buttonHoverBg
 
       Behavior on color {
         ColorAnimation {

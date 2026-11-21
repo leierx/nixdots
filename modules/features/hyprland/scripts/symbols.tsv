@@ -7,7 +7,7 @@ wifiOff	wifi-off
 wifiBad	wifi-strength-alert-outline
 wifiPortal	wifi-lock-open
 wired	lan
-vpn	vpn
+vpn	shield-lock
 bluetooth	bluetooth
 bluetoothConnected	bluetooth-connect
 bluetoothOff	bluetooth-off

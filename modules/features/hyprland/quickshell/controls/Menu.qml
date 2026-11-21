@@ -143,15 +143,15 @@ Rectangle {
       id: heading
 
       width: parent.width
-      height: 42 + Theme.padding
+      height: 32 + Theme.padding
 
-      // Shell's header icon: 24 px in a 42 px disc, the accent while on.
+      // 16 px in a 32 px disc, the accent while on (ours: Shell's 24 in 42 outweighed the rows in MDI's filled symbols).
       Rectangle {
         id: chip
 
         x: Theme.basePadding
-        width: 42
-        height: 42
+        width: 32
+        height: 32
         radius: height / 2
         color: menuBox.on ? Theme.accentBg : Theme.headerIconBg
 
@@ -164,7 +164,7 @@ Rectangle {
         Glyph {
           anchors.centerIn: parent
           path: menuBox.glyph
-          size: 24
+          size: 16
           color: menuBox.on ? Theme.accentFg : Theme.fg
         }
       }
@@ -175,7 +175,7 @@ Rectangle {
         anchors.verticalCenter: chip.verticalCenter
         text: menuBox.title
         color: Theme.fg
-        font: Theme.title3
+        font: Theme.title4
       }
 
       Text {
