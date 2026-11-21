@@ -204,8 +204,9 @@ feedback, as in GNOME.
 
 | Surface | Anatomy | Place | Size | Motion |
 | --- | --- | --- | --- | --- |
-| Bar | Workspaces led by the distro's logo (it does nothing), the clock, the status button and the tray's chevron | Top, edge to edge, black | 32 px; items 26 px pills | Fills over `panelButtonTime` |
-| Popover off the bar (control centre, center, tray overflow and menus) | A `Card` | `rise` below the bar, centred on its button, `rise` from the screen's edges | Control centre 400 px (two 176 px toggles, 18 px padding, radius 36); center radius 30; menus radius 20 with 6 px padding | Fade with a `rise` slide over `popupTime`, both ways |
+| Bar | Workspaces led by the distro's logo (it does nothing), the clock, the tray left of the status button, then the status button | Top, edge to edge, black | 32 px; items 26 px pills | Fills over `panelButtonTime` |
+| Popover off the bar (control centre, center) | A `Card` | `rise` below the bar, centred on its button, `rise` from the screen's edges | Control centre 400 px (two 176 px toggles, 18 px padding, radius 36); center radius 30; menus radius 20 with 6 px padding | Fade with a `rise` slide over `popupTime`, both ways |
+| Tray menu | Shell's popup menu, cascading | Flush under the bar, from its icon's left edge | At least 15 em, radius 20, 6 px padding | Opens at once, goes as the pointer leaves |
 | Toggle menu | Header (42 px disc round a 24 px icon, title-3), rows, a separator, settings rows | Under the toggle row that opens it, in the control centre | Radius 24 on `cardBg` | Height then fade |
 | Centred panel (launcher, shortcuts, gallery) | A `Card` over a 0.6 dim | Centre of the focused screen | Widths in em | Opens in place |
 | Banner (popup) | Header line (app icon and name, age, expand, close), the 48 px icon or picture, summary, body, actions | Top right, under the status area | 30 em, radius 16, `messageBg` | Fade and growth from 90 % (`OutBack`) over `bannerTime` |
@@ -275,6 +276,10 @@ underlined in their labels (`Theme.accessKey`).
   and 32.
 - The media card's text sits over its album art, blurred, darkened and held
   to 3:1 by the census.
+- The tray (GNOME has none) is on the bar itself: hidden until the pointer
+  reaches the bar's right end, a strip up to 18 em that the wheel scrolls
+  sideways, lingering 600 ms after the pointer leaves so a near miss still finds
+  it, not a popover under the bar.
 - The monitors mode's placeholder names what it lists ("Monitor layout…").
 - hyprlock, hyprtoolkit and the idle fade follow their own configs.
 

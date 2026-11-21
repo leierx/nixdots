@@ -15,7 +15,7 @@ qst case "the wheel over the volume never turns down a level another app set pas
 qst x wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.3
 qst wait '.volume.percent == 130'
 # The volume is the first button on the right of the bar while nothing records and nothing waits unchecked.
-read -r x y _ < <(qst areas 'BarWindow/' | awk '$1 > 1600' | head -1)
+read -r x y _ < <(qst areas 'BarWindow/' | awk -F'\t' '$1 > 1600 && $6 == "true"' | head -1)
 qst pointer "$x" "$y"
 qst wheel -1
 qst stays '.volume.percent == 130' 1
@@ -80,7 +80,7 @@ qst stays '.tooltip == null' 0.8
 
 qst case "every control on the bar names itself in a tooltip"
 qst tray > /dev/null
-qst wait '.trays[0].shown'
+qst wait '.tray | length > 0'
 hover() {
   qst pointer "$1" 17
   qst pointer $(($1 + 1)) 18
@@ -88,13 +88,19 @@ hover() {
   qst pointer 900 600
   qst wait '.tooltip == null'
 }
-read -r last _ < <(qst areas 'BarWindow' | awk -F'\t' '$6 == "true" { x = $1 } END { print x }')
-read -r status _ < <(qst areas 'BarWindow' | awk -F'\t' -v last="$last" '$6 == "true" && $1 < last { x = $1 } END { print x }')
+read -r status _ < <(qst areas 'BarWindow' | awk -F'\t' '$6 == "true" { x = $1 } END { print x }')
 read -r first _ < <(qst areas 'BarWindow' | awk -F'\t' '$6 == "true"' | sort -n | head -1)
 hover "$first" "Workspace 1"
 hover 960 "Notifications and Calendar"
 hover "$status" "Quick Settings"
-hover "$last" "Hidden Icons"
+# A tray item names itself once the tray is out.
+qst pointer 1850 16
+qst wait '.trays[0].shown'
+qst stays '.trays[0].shown' 0.3
+read -r item _ < <(qst areas BarWindow | awk -F'\t' '$1 > 1000 && $1 < 1840 && $5 == "true" && $6 == "false" && $2 < 32' | sort -n | head -1)
+qst pointer "$item" 17
+qst pointer $((item + 1)) 18
+qst wait '.tooltip.text == "qs-test tray"'
 
 qst case "the distro's logo does nothing: an arrow, no tooltip, and a click opens nothing"
 qst pointer 20 16

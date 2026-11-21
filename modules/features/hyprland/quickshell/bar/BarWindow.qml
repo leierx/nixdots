@@ -45,22 +45,38 @@ PanelWindow {
     anchors.centerIn: parent
   }
 
-  Row {
-    anchors {
-      right: parent.right
-      rightMargin: root.inset
-      verticalCenter: parent.verticalCenter
-    }
-    spacing: 0
+  // The bar's right end, which reveals the tray: the status button and the room the tray takes left of it, short of the clock; the buttons are its children, as hover reaches ancestors and not siblings beneath.
+  Item {
+    anchors.right: parent.right
+    width: Math.min(status.width + tray.most + Theme.basePadding + root.inset, root.width - clock.x - clock.width - Theme.padding)
+    height: root.height
 
-    StatusButton {
-      anchors.verticalCenter: parent.verticalCenter
-      screen: root.screen
+    HoverHandler {
+      id: zone
     }
 
-    Tray {
-      anchors.verticalCenter: parent.verticalCenter
-      screen: root.screen
+    Row {
+      anchors {
+        right: parent.right
+        rightMargin: root.inset
+        verticalCenter: parent.verticalCenter
+      }
+      spacing: 0
+
+      Tray {
+        id: tray
+
+        anchors.verticalCenter: parent.verticalCenter
+        screen: root.screen
+        wanted: zone.hovered
+      }
+
+      StatusButton {
+        id: status
+
+        anchors.verticalCenter: parent.verticalCenter
+        screen: root.screen
+      }
     }
   }
 }

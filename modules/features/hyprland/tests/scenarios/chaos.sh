@@ -2,9 +2,17 @@ export QS_TEST_MONITORS="DP-1:1920x1080:1 DP-2:2560x1440:1.25"
 
 # What a hostile or broken client can throw at the shell. Every wait also holds the shell to answering within 2 s.
 
-# The tray's chevron, the last area on a bar that asks for a hand; DP-1's bar ends at 1920.
-tray_button() {
-  qst areas 'BarWindow' | awk -F'\t' -v screen="$1" '(screen == "DP-1") == ($1 < 1920) && $6 == "true" { x = $1; y = $2 } END { print x, y }'
+# SCREEN's tray, revealed by the pointer at X on its bar's right end.
+reveal() {
+  qst pointer "$2" 16
+  qst wait "(.trays | map(select(.screen == \"$1\")))[0].shown"
+  # Until the strip has finished sliding out, so its cells hold still.
+  qst stays "(.trays | map(select(.screen == \"$1\")))[0].shown" 0.3
+}
+
+# The Nth tray cell between LO and HI on the bars, as "x y": the hand-less areas left of a status button.
+tray_cell() {
+  qst areas BarWindow | awk -F'\t' -v lo="$2" -v hi="$3" '$1 > lo && $1 < hi && $5 == "true" && $6 == "false" && $2 < 32' | sort -n | sed -n "${1}p" | awk -F'\t' '{ print $1, $2 }'
 }
 
 # The open menu's rows, top to bottom: full width, so centred on the card, where the levels' and pills' areas are not.
@@ -105,18 +113,17 @@ qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
 qst stays '(.privacy.mic | length) == 40 and .panel == "controls:DP-1"' 1
 
-qst case "thirty tray items all wait behind the chevron, which keeps the bar off the clock"
+qst case "thirty tray items fit the strip on the bar short of the clock, on a 640x480 screen too"
 qst tray add crowd 30
 qst wait '(.tray | length) == 30' 10
-qst wait 'all(.trays[]; .shown and .hidden == 30)'
-read -r x y < <(tray_button DP-1)
-qst click left "$x" "$y"
-qst wait '.panel == "tray-overflow:DP-1"'
-qst stays '.panel == "tray-overflow:DP-1"' 1
+reveal DP-1 1850
+qst wait '.trays[0].scrolls'
+qst stays '.trays[0].shown' 1
 qst output 640x480 1
-qst wait 'all(.trays[]; .shown and .hidden == 30)'
+reveal DP-1 600
+qst stays '.trays[0].shown' 1
 
-qst case "the overflow keeps tray items in the order they came as items come and go"
+qst case "the strip keeps tray items in the order they came as items come and go"
 n=0
 for name in a b c d e f; do
   qst tray add "$name"
@@ -134,49 +141,52 @@ qst tray add b
 qst wait '(.tray | length) == 45' 10
 qst stays '.trays[0].items[0:4] == ["c", "d", "e", "f"] and .trays[0].items[-1] == "b"' 1
 
-qst case "tray items churning under the open overflow and a menu opened from it"
+qst case "tray items churning under the revealed strip and a menu opened from it"
 qst tray add held 20
 qst tray add stay 40
 qst wait '(.tray | length) == 60' 10
-read -r x y < <(tray_button DP-1)
-qst click left "$x" "$y"
-qst wait '.panel == "tray-overflow:DP-1"'
-read -r cx cy _ < <(qst areas 'TrayOverflow' | awk -F'\t' '$2 > 30 && $2 < 1000' | sort -n -k2 | head -1)
-qst click right "$cx" "$cy"
-qst wait '.layers | any(endswith(" quickshell:menu"))'
-# The item whose menu is open leaves: the menu goes, the overflow stays.
+reveal DP-1 1850
+read -r x y < <(tray_cell 1 1000 1840)
+qst pointer "$x" "$y"
+qst click right "$x" "$y"
+qst wait '.panel == "tray-menu:DP-1" and .trayMenu != null'
+# The item whose menu is open leaves: the menu goes.
 qst tray remove held
-qst wait '(.tray | length) == 40 and .panel == "tray-overflow:DP-1" and (.layers | any(endswith(" quickshell:menu")) | not)' 10
+qst wait '(.tray | length) == 40 and .trayMenu == null and .panel == ""' 10
 for n in $(seq 30); do qst tray add "churn$n" 2; done
 for n in $(seq 30); do qst tray remove "churn$n"; done
 qst wait '(.tray | length) == 40' 20
-qst stays '.panel == "tray-overflow:DP-1"' 1
-# Nothing left behind the chevron closes the overflow.
+reveal DP-1 1850
+qst stays '.trays[0].shown' 1
 qst tray remove stay
-qst wait '.panel == "" and (.tray | length) == 0' 10
+qst wait '(.tray | length) == 0 and (.trays[0].shown | not)' 10
 
-qst case "two hundred tray items scroll in the overflow rather than running off the screen"
+qst case "two hundred tray items scroll in the strip under the hammered wheel, and their monitor going closes a menu"
 qst tray add swarm 200
 qst wait '(.tray | length) == 200' 20
-qst wait 'all(.trays[]; .hidden == 200)' 10
-read -r x y < <(tray_button DP-2)
 qst focus DP-2
-qst click left "$x" "$y"
-qst wait '.panel == "tray-overflow:DP-2"'
-qst wheel 20
-qst stays '.panel == "tray-overflow:DP-2"' 1
-# Its monitor going closes it.
+reveal DP-2 3898
+read -r x y < <(tray_cell 3 3000 3880)
+qst pointer "$x" "$y"
+for n in $(seq 20); do qst wheel 5; qst wheel -2; done
+qst wait '(.trays | map(select(.screen == "DP-2")))[0].offset > 0'
+qst wheel 1000
+qst stays '(.trays | map(select(.screen == "DP-2")))[0].shown' 0.5
+read -r x y < <(tray_cell 2 3000 3880)
+qst click right "$x" "$y"
+qst wait '.panel == "tray-menu:DP-2" and .trayMenu != null'
 qst monitor remove DP-2
-qst wait '.panel == ""'
+qst wait '.panel == "" and .trayMenu == null'
 
 qst case "keys hammered at a tray menu whose app rebuilds it every second, on a 640x480 screen"
 qst tray
 qst wait '.tray | length > 0'
-read -r x y < <(tray_button DP-1)
-qst click left "$x" "$y"
-qst wait '.panel == "tray-overflow:DP-1"'
-# Settings, then its one row: the app starts rebuilding the Networks submenu.
-qst key Right Menu
+reveal DP-1 1850
+read -r x y < <(tray_cell 1 1000 1840)
+qst pointer "$x" "$y"
+qst click right "$x" "$y"
+qst wait '.trayMenu.path == []'
+qst key Down
 qst wait '.trayMenu.selected == "First item"'
 qst key End Up
 qst wait '.trayMenu.selected == "Settings"'
@@ -185,10 +195,12 @@ qst wait '.trayMenu.path == ["Settings"] and .trayMenu.selected == "Rebuild ever
 qst key Return
 qst wait '.panel == ""'
 qst output 640x480 1
-# DP-2 starts at 640 now, past the helper's split: the chevron, last on DP-1's bar.
-qst click left $((640 - 21)) 17
-qst wait '.panel == "tray-overflow:DP-1"'
-qst key Right Menu
+reveal DP-1 600
+read -r x y < <(tray_cell 1 330 620)
+qst pointer "$x" "$y"
+qst click right "$x" "$y"
+qst wait '.trayMenu != null'
+qst key Down
 qst wait '.trayMenu.selected == "First item"'
 qst key End Up Up
 qst wait '.trayMenu.selected == "Networks"'
@@ -197,44 +209,24 @@ qst wait '.trayMenu.path == ["Networks"]'
 for round in $(seq 8); do
   qst key Down Down Up Right Left Right Down Left Left Right Up Up Down End Home Down Right Left
 done
-qst wait '.trayMenu != null and .panel == "tray-overflow:DP-1"'
+qst wait '.trayMenu != null and .panel == "tray-menu:DP-1"'
 qst key Escape
-qst wait '.trayMenu == null and .panel == "tray-overflow:DP-1"'
-qst key Escape
-qst wait '.panel == ""'
+qst wait '.trayMenu == null and .panel == ""'
 
-qst case "the item whose menu the keys hold leaves: the overflow keeps the keyboard, and Escape still closes it"
+qst case "the item whose menu the keys hold leaves: the menu goes and nothing is left open"
 qst tray add held
 qst tray add stay 5
 qst wait '(.tray | length) == 6' 10
-read -r x y < <(tray_button DP-1)
-qst click left "$x" "$y"
-qst wait '.panel == "tray-overflow:DP-1"'
-qst key Right Menu
+reveal DP-1 1850
+read -r x y < <(tray_cell 1 1000 1840)
+qst pointer "$x" "$y"
+qst click right "$x" "$y"
+qst wait '.trayMenu != null'
+qst key Down
 qst wait '.trayMenu.selected == "Open held"'
+qst pointer 900 600
 qst tray remove held
-qst wait '.trayMenu == null and .panel == "tray-overflow:DP-1" and (.tray | length) == 5' 10
-qst key Escape
-qst wait '.panel == ""'
-
-qst case "two hundred tray items walked by the keyboard, under churn, then their monitor going"
-qst tray add swarm 200
-qst wait '(.tray | length) == 200' 20
-read -r x y < <(tray_button DP-2)
-qst focus DP-2
-qst click left "$x" "$y"
-qst wait '.panel == "tray-overflow:DP-2"'
-qst key Right
-qst key $(printf 'Down %.0s' $(seq 40))
-qst wait '.trayFocus == 198'
-for n in $(seq 10); do qst tray add "churn$n"; done
-qst key Up Up Left Menu
-qst wait '.trayMenu.selected == "Open swarm"' 10
-for n in $(seq 10); do qst tray remove "churn$n"; done
-qst key Down Down Up
-qst stays '.trayMenu != null and .panel == "tray-overflow:DP-2"' 1
-qst monitor remove DP-2
-qst wait '.panel == "" and .trayMenu == null'
+qst wait '.trayMenu == null and .panel == "" and (.tray | length) == 5' 10
 
 qst case "forty microphones, real and virtual, scroll in the control centre's input menu with the outputs"
 for n in $(seq 30); do

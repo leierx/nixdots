@@ -3,50 +3,69 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Services.SystemTray
+import Quickshell.Widgets
 import qs.common
 
-// Folded behind one chevron, as Windows does: few tray icons are worth the bar's room.
+// The tray on the bar itself, left of the status button: hidden until the pointer reaches the bar's right end, a strip that scrolls sideways past 18 em, and lingering a moment after the pointer leaves so a near miss still finds it.
 Item {
   id: root
 
   required property ShellScreen screen
+  // The pointer is on the bar's right end (BarWindow's zone).
+  property bool wanted: false
   // Null once the item leaves the tray.
   property SystemTrayItem menuItem: null
-  // The overflow cell it opened from, which keeps the menu open while the pointer rests on it.
+  // The cell it opened from, which keeps the menu open while the pointer rests on it.
   property var menuIcon: null
   property point menuAnchor
-  // Opened from the keyboard, so it starts on its first row.
-  property bool menuByKeys: false
-  property var openMenu: null
   // A name per screen, so a menu on one monitor closes one open on another; set once, so it outlives the screen.
-  property string overflowPanel: ""
-  property real overflowX: 0
+  property string menuPanel: ""
 
   // In the order they came.
   readonly property var items: TrayOrder.items.filter(item => item.status !== Status.Passive)
-  visible: items.length > 0
-  implicitWidth: more.implicitWidth
-  implicitHeight: 26
-  Component.onCompleted: {
-    overflowPanel = `tray-overflow:${screen.name}`;
-  }
+  readonly property bool menuOpen: menuItem !== null && Panels.active === menuPanel
+  readonly property bool revealed: items.length > 0 && (wanted || linger.running || menuOpen)
+  readonly property real most: Math.round(18 * Theme.em)
+  readonly property real cell: Theme.barItemHeight
+  readonly property real offset: cells.contentX
+  readonly property bool scrolls: cells.contentWidth > cells.width + 0.5
+
+  implicitWidth: revealed ? Math.min(row.implicitWidth, most) + Theme.basePadding : 0
+  implicitHeight: cell
+  clip: true
+  Component.onCompleted: menuPanel = `tray-menu:${screen.name}`
   // Gone with its monitor, the menu would otherwise stay open in Panels.
-  Component.onDestruction: if (Panels.active === overflowPanel) Panels.close()
-  onItemsChanged: {
-    if (items.length === 0 && Panels.active === overflowPanel) Panels.close();
+  Component.onDestruction: if (Panels.active === menuPanel) Panels.close()
+  onItemsChanged: if (items.length === 0 && Panels.active === menuPanel) Panels.close()
+  onWantedChanged: {
+    if (wanted) linger.stop();
+    else linger.restart();
   }
 
-  // A click on an icon in the overflow, whose menu then opens over it.
-  function press(item: SystemTrayItem, icon: Item, button: int, x: real, y: real, keys: bool): void {
+  Behavior on implicitWidth {
+    NumberAnimation {
+      duration: Theme.popupTime
+      easing.type: Easing.OutQuad
+    }
+  }
+
+  // A moment's grace after the pointer leaves the bar's end.
+  Timer {
+    id: linger
+
+    interval: 600
+  }
+
+  function press(item: SystemTrayItem, icon: Item, button: int): void {
     const opensMenu = item.hasMenu && (button === Qt.RightButton || (button === Qt.LeftButton && item.onlyMenu));
-    if (opensMenu && root.menuItem === item) {
-      root.menuItem = null;
+    if (opensMenu && root.menuOpen && root.menuItem === item) {
+      Panels.close();
     } else if (opensMenu) {
-      // Every window here starts at the screen's corner.
-      root.menuAnchor = icon.mapToItem(null, x, y);
+      // Flush under the bar, from the icon's left edge; every window here starts at the screen's corner.
+      root.menuAnchor = Qt.point(icon.mapToItem(null, 0, 0).x, root.Window.height);
       root.menuIcon = icon;
-      root.menuByKeys = keys;
       root.menuItem = item;
+      Panels.open(root.menuPanel);
     } else {
       Panels.close();
       if (button === Qt.MiddleButton) item.secondaryActivate();
@@ -54,53 +73,140 @@ Item {
     }
   }
 
-  BarButton {
-    id: more
+  WheelSteps {
+    id: notches
+  }
 
-    expander: true
-    checked: Panels.active === root.overflowPanel
-    tooltip: "Hidden Icons"
-    onClicked: {
-      root.menuItem = null;
-      root.overflowX = more.mapToItem(null, more.width / 2, 0).x;
-      Panels.toggle(root.overflowPanel);
+  // The wheel scrolls the strip sideways, a cell a notch.
+  WheelHandler {
+    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+    onWheel: event => {
+      const steps = notches.steps(event);
+      if (steps !== 0) cells.contentX = Math.max(0, Math.min(cells.contentWidth - cells.width, cells.contentX - steps * (root.cell + row.spacing)));
     }
   }
 
-  LazyLoader {
-    active: Panels.active === root.overflowPanel
+  Flickable {
+    id: cells
 
-    TrayOverflow {
-      screen: root.screen
-      name: root.overflowPanel
-      anchorX: root.overflowX
-      top: root.Window.height
-      items: root.items
-      menu: root.openMenu
-      onPressed: (item, cell, button, x, y, keys) => root.press(item, cell, button, x, y, keys)
+    width: Math.min(row.implicitWidth, root.most)
+    height: root.cell
+    contentWidth: row.implicitWidth
+    interactive: contentWidth > width
+    flickableDirection: Flickable.HorizontalFlick
+    boundsBehavior: Flickable.StopAtBounds
+    clip: true
+
+    Row {
+      id: row
+
+      spacing: 2
+
+      Repeater {
+        model: ScriptModel {
+          values: root.items
+        }
+
+        Rectangle {
+          id: cell
+
+          required property SystemTrayItem modelData
+          readonly property bool hovered: area.containsMouse
+          readonly property bool opened: root.menuOpen && root.menuItem === cell.modelData
+
+          width: root.cell
+          height: root.cell
+          radius: height / 2
+          color: cell.opened ? Theme.panelActiveBg : area.containsMouse ? Theme.panelHoverBg : "transparent"
+
+          Behavior on color {
+            ColorAnimation {
+              duration: Theme.panelButtonTime
+            }
+          }
+
+          IconImage {
+            anchors.centerIn: parent
+            implicitSize: 16
+            source: cell.modelData.icon
+            backer.retainWhileLoading: true
+          }
+
+          MouseArea {
+            id: area
+
+            anchors.fill: parent
+            hoverEnabled: true
+            // Few tray icons do anything on a left click, so they keep the arrow.
+            cursorShape: Qt.ArrowCursor
+            acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+            onClicked: mouse => root.press(cell.modelData, cell, mouse.button)
+          }
+
+          TooltipArea {
+            text: cell.modelData.tooltipTitle || cell.modelData.title || cell.modelData.id
+          }
+        }
+      }
     }
   }
 
-  // Over the overflow, which stays open beneath it.
+  // The ends fade where more lies beyond them.
+  Rectangle {
+    width: 14
+    height: root.cell
+    visible: cells.contentX > 0
+    color: "transparent"
+    gradient: Gradient {
+      orientation: Gradient.Horizontal
+
+      GradientStop {
+        position: 0
+        color: Theme.panelBg
+      }
+      GradientStop {
+        position: 1
+        color: "transparent"
+      }
+    }
+  }
+
+  Rectangle {
+    x: cells.width - width
+    width: 14
+    height: root.cell
+    visible: cells.contentX < cells.contentWidth - cells.width - 1
+    color: "transparent"
+    gradient: Gradient {
+      orientation: Gradient.Horizontal
+
+      GradientStop {
+        position: 0
+        color: "transparent"
+      }
+      GradientStop {
+        position: 1
+        color: Theme.panelBg
+      }
+    }
+  }
+
   Variants {
-    model: Panels.active === root.overflowPanel && root.menuItem !== null ? [root.menuItem] : []
+    model: root.menuOpen ? [root.menuItem] : []
 
     TrayMenu {
-      id: trayMenu
-
       required property SystemTrayItem modelData
 
-      Component.onCompleted: root.openMenu = trayMenu
-      Component.onDestruction: if (root.openMenu === trayMenu) root.openMenu = null
-      keyed: root.menuByKeys
-      pickFirst: root.menuByKeys
       screen: root.screen
-      name: root.overflowPanel
+      name: root.menuPanel
       // Null for a moment once its item has gone.
       menu: modelData?.menu ?? null
       anchor: root.menuAnchor
       held: root.menuIcon?.hovered ?? false
-      onDismissed: root.menuItem = null
+      onDismissed: {
+        root.menuItem = null;
+        if (Panels.active === root.menuPanel) Panels.close();
+      }
     }
   }
 }

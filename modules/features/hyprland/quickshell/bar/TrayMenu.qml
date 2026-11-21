@@ -22,7 +22,7 @@ PanelWindow {
   property list<Item> cards: []
   // A moment's delay, so passing over rows opens nothing.
   property var pending: null
-  // The keyboard's row in the deepest open card; the keys come from the overflow, which keeps the keyboard.
+  // The keyboard's row in the deepest open card.
   property int row: -1
   // Keys have driven it since the pointer was last on it, so it stays without the pointer.
   property bool keyed: false
@@ -30,7 +30,7 @@ PanelWindow {
   property bool pickFirst: false
   readonly property int padding: 6
 
-  // The pointer gone from it, or the app's menu gone: the overflow under it stays.
+  // The pointer gone from it, the app's menu gone, or Escape: the tray closes it.
   signal dismissed
 
   // libadwaita's check button: an outlined box (a ring for a radio), filled with the accent once checked.
@@ -102,7 +102,7 @@ PanelWindow {
     return -1;
   }
 
-  // The keys the overflow passes on while the menu is up; false for one it should keep.
+  // A key while the menu is up; false for one it leaves alone.
   function key(event: var): bool {
     const depth = root.path.length;
     const entries = root.level(depth)?.entries ?? [];
@@ -183,8 +183,8 @@ PanelWindow {
 
   WlrLayershell.layer: WlrLayer.Overlay
   WlrLayershell.namespace: "quickshell:menu"
-  // Taking the keyboard from the overflow would read to it as a click elsewhere, closing both: it passes its keys on instead.
-  WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+  // The keyboard while it is up: the arrows, Return and Escape walk it.
+  WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
   // Hyprland closes it with its monitor.
   onClosed: if (Panels.active === root.name) Panels.close()
@@ -210,6 +210,10 @@ PanelWindow {
   // Only the cards take input, so this is hovered exactly while the pointer is on one; hover reaches ancestors, not siblings beneath.
   Item {
     anchors.fill: parent
+    focus: true
+    Keys.onPressed: event => {
+      event.accepted = root.key(event);
+    }
 
     HoverHandler {
       id: inside
@@ -265,7 +269,8 @@ PanelWindow {
           return Math.max(Theme.rise, Math.min(beside, root.width - width - Theme.rise));
         }
         y: Math.max(Theme.rise, Math.min((parentCard ? parentCard.y + openerY - root.padding : root.anchor.y), root.height - height - Theme.rise))
-        width: Math.max(180, rows.implicitWidth) + root.padding * 2
+        // Shell's .popup-menu: at least 15 em.
+        width: Math.max(Math.round(15 * Theme.em), rows.implicitWidth) + root.padding * 2
         height: rows.implicitHeight + root.padding * 2
         radius: Theme.popoverRadius
 

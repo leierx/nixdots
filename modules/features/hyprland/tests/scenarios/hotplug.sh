@@ -43,19 +43,21 @@ qst stays "$(layer "DP-1 quickshell:launcher") and .panel == \"apps\""
 qst case "a tray menu closes with its monitor"
 qst tray
 qst wait '.tray | length > 0'
-# The tray's chevron on DP-2's bar, 2560 / 1.25 wide: last on the bar, 21 px in from its edge; then the first icon's menu.
+# The tray on the bar's right end (X there, left of its status button), then its first icon's menu by a right click.
 tray_menu() {
   local x y
-  qst click left "$1" 17
-  qst wait ".panel == \"tray-overflow:$2\""
-  read -r x y _ < <(qst areas 'TrayOverflow' | awk -F'\t' '$2 > 30' | sort -n -k2 | head -1)
+  qst pointer "$1" 16
+  qst wait "(.trays | map(select(.screen == \"$2\")))[0].shown"
+  qst stays "(.trays | map(select(.screen == \"$2\")))[0].shown" 0.3
+  read -r x y _ < <(qst areas BarWindow | awk -F'\t' -v lo=$(($1 - 400)) -v hi="$1" '$1 > lo && $1 < hi && $5 == "true" && $6 == "false" && $2 < 32' | sort -n | head -1)
+  qst pointer "$x" "$y"
   qst click right "$x" "$y"
   qst wait "$(layer "$2 quickshell:menu")"
 }
-tray_menu $((1920 + 2048 - 21)) DP-2
+tray_menu $((1920 + 2048 - 70)) DP-2
 qst monitor remove DP-2
 qst wait "$(no_layer quickshell:menu) and .panel == \"\""
-tray_menu $((1920 - 21)) DP-1
+tray_menu 1850 DP-1
 
 qst case "a popup leaves a monitor that goes, and stays where it went"
 qst focus DP-2

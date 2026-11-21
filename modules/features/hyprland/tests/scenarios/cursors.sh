@@ -67,11 +67,12 @@ qst cursors ControlsPanel
 qst case "a hand over a tray menu's rows"
 qst tray
 qst wait '.tray | length > 0'
-# The tray's chevron, last on the bar, then the first icon's menu.
-qst click left $((1920 - 21)) 17
-qst wait '.panel == "tray-overflow:DP-1"'
-qst cursors TrayOverflow
-read -r x y _ < <(qst areas 'TrayOverflow' | awk -F'\t' '$2 > 30' | sort -n -k2 | head -1)
+# The tray revealed on the bar's right end, then the first icon's menu.
+qst pointer 1850 16
+qst wait '.trays[0].shown'
+qst stays '.trays[0].shown' 0.3
+read -r x y _ < <(qst areas BarWindow | awk -F'\t' '$1 > 1000 && $1 < 1840 && $5 == "true" && $6 == "false" && $2 < 32' | sort -n | head -1)
+qst pointer "$x" "$y"
 qst click right "$x" "$y"
 qst wait '.layers | any(endswith(" quickshell:menu"))'
 qst cursors TrayMenu

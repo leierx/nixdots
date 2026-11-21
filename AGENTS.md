@@ -266,7 +266,7 @@ Notes on specific features:
     land on `FALLBACK` holding the keyboard; IPC `panels open|close|toggle
     <name>`: `apps`, `clipboard`, `monitors`, `windows`, `nixpkgs`, `center`,
     `shortcuts`, `power`, and per screen `controls:DP-1` and
-    `tray-overflow:DP-1`), `Overlay` (the full-screen layer a panel lives in:
+    `tray-menu:DP-1`), `Overlay` (the full-screen layer a panel lives in:
     a click off its `card`, or a window elsewhere taking the keyboard, closes
     it; it holds the keyboard exclusively only until it has it, or a window
     clicked on another monitor never got it), `ClickAway` (a layer under the
@@ -490,8 +490,7 @@ Notes on specific features:
         or the machine takes a second press within 5 s. Every action is a
         command, so `qst actions` shows what it would have done.
       - `bar/`: per screen, Shell's panel (32 px, bold 11 pt items in pills filled at 17, 28 and 32 %): the workspaces led by the distro's logo (`LOGO=` from `/etc/os-release` drawn from the icon theme, `distributor-logo` failing that), which does nothing, the clock (opening the
-        center) and the status button (opening the control centre) with the
-        tray's chevron last. Workspaces are hyprsplit's `1 … n` for the
+        center) and the status button (opening the control centre) with the tray left of it. Workspaces are hyprsplit's `1 … n` for the
         monitor, then any other monitor's still on it, named after that
         monitor (`DP2-1`) by `WorkspaceOwners`, which remembers connectors by
         id across unplugs. Quickshell refreshes monitors only as one comes and
@@ -500,9 +499,18 @@ Notes on specific features:
         status button shows, left to right, what records (`Privacy`), the bell
         while notifications wait unchecked or Do Not Disturb struck through,
         the VPN, the link in use, Bluetooth, a muted microphone, the volume
-        and a laptop's battery; the wheel steps the volume. The tray folds every item behind one chevron in the order they
-        came (`TrayOrder`, since Quickshell sorts by category and id);
-        `TrayMenu` is libadwaita's popover menu, cascading as GTK's does and
+        and a laptop's battery; the wheel steps the volume. The tray is on the bar itself, left of the
+        status button, every item in the order it came (`TrayOrder`, since
+        Quickshell sorts by category and id): hidden until the pointer reaches
+        the bar's right end (`BarWindow`'s zone, the status button and the room
+        left of it, short of the clock, and the buttons' parent, as hover
+        reaches ancestors and not siblings beneath), a strip up to 18 em that
+        the wheel scrolls sideways with its ends fading, lingering 600 ms after
+        the pointer leaves and while its menu is open. `TrayMenu` is Shell's
+        popup menu dropping flush from the bar under its icon, the panel
+        `tray-menu:SCREEN`, cascading as GTK's does, taking the keyboard
+        (Up, Down, Home and End pick a row, Right or Return opens a submenu on
+        its first row, Left shuts it, Return runs a row, Escape closes it) and
         closing as the pointer leaves it, unless the keys drive it.
       - Caffeine (the control centre's pill beside Night Light, `Caffeine`,
         `qs ipc -c shell call caffeine toggle|set|active`) is the
@@ -1016,8 +1024,8 @@ the `osd` showing (with its screen), `osdShown` (shows so far) and
 `osdSettling`, `brightness`, `caps`, `privacy` (`mic` names, and `screen` and
 `camera` names or null while unused), `status` (each bar's status button: its glyphs by name, `Microphone`, `bell`, `dnd`, `vpn`, `network` and so on, and the battery's percentage or null), `controls` (the open
 menu, the pills by key with their state, and each backend: `network`, `vpns`,
-`vpnAsking`, `bluetooth`, `night`, `media`), `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: whether its chevron
-shows, how many icons wait behind it and their ids in the overflow's order), `trayMenu` (its open submenus by label, the row the keys are on and whether they drive it), `trayFocus` (the overflow icon with the keyboard, by place), `held` (what Clear holds back for its Undo), `focused` (the control the keyboard is on, by label) and `ring`, `tooltip` (the one shown, and its screen), `sliders` (every slider by name, its value and range), `results` (the launcher's first ten by title), `center` (the center's groups in view, each one's lines in its order), `field`
+`vpnAsking`, `bluetooth`, `night`, `media`), `tray` (the items' ids, in Quickshell's order), `trays` (each bar's: whether its tray is out,
+whether it scrolls and how far, and its items' ids in its order), `trayMenu` (its open submenus by label, the row the keys are on and whether they drive it), `held` (what Clear holds back for its Undo), `focused` (the control the keyboard is on, by label) and `ring`, `tooltip` (the one shown, and its screen), `sliders` (every slider by name, its value and range), `results` (the launcher's first ten by title), `center` (the center's groups in view, each one's lines in its order), `field`
 (the text field up, the launcher's search) and `problems`, plus `layers` (`"DP-1 quickshell:bar"`) and `hypr`
 (`hyprctl monitors all`). Something a test needs to see goes in the probe,
 read through the shell's own singletons rather than worked out again.
@@ -1032,8 +1040,7 @@ not Theme's (or half the size), an image shown without a source or failing
 to load, a disabled mouse area still setting a hand, a card running off its
 window, text drawn over other text (where the glyphs are, cut by clipping
 ancestors), and a window that is not a layer surface. `invariants`
-(`tests/invariants.jq`): an open panel has its layer and a layer its panel (a tray menu may sit over
-the tray's overflow),
+(`tests/invariants.jq`): an open panel has its layer and a layer its panel ,
 nothing on `FALLBACK`, popups only on real screens and five at most, three per app past the popped up,
 unchecked within the count, the history within 100 and five popups, a
 probe answered within 2 s (a shell held up by a flood or a list rebuilt over
@@ -1081,7 +1088,7 @@ line says why after `# sleep: `. `hotplug.sh` covers unplugging, disabling and
 replugging under every panel, a tray menu and popups, every monitor going,
 bursts and mode changes; `notifications.sh` the history: three per app once
 their popups go, the five-popup limit, stack tags replacing in place, and Do
-Not Disturb with transient and critical notifications, and what the bell counts, and a flood's sounds and repeats, and a picture sent as a bare path; `workspaces.sh` windows opened while the shell starts; `tray.sh` the overflow and its menus from the keyboard: opening, walking, submenus, Return, Escape back to the icon, a right-clicked menu taking keys, and the pointer taking it back; `osd.sh` what shows and what must not
+Not Disturb with transient and critical notifications, and what the bell counts, and a flood's sounds and repeats, and a picture sent as a bare path; `workspaces.sh` windows opened while the shell starts; `tray.sh` the tray on the bar: hidden until the bar's right end, lingering after a near miss, scrolling past 18 em, and its menus flush under the bar walked by the keys (submenus, Return, Escape, a disabled row), closed by a second right click or another panel; `osd.sh` what shows and what must not
 (the shell starting, PipeWire restarting, a switch's new level, an unplugged
 default, the control centre open, the microphone's level and mute, backlights coming and going, the media keys at a
 level's end, Caps Lock both ways, its monitor going); `privacy.sh` microphones
@@ -1128,12 +1135,11 @@ at thousands a second, where notify-send manages a hundred), megabytes of
 text, icons that are no picture, panels toggled faster than they open, a
 hotplug storm under an open panel, a workspace of 40 windows (`foot`), 60
 outputs, 40 apps recording, damaged state files, and the tray and the
-inputs: 30 tray items behind the chevron (a 640x480 screen too), the
-overflow keeping their order as items come and go, 60 items churning under the open
-overflow and a menu opened from it, 200 items scrolling in it and its monitor
-going, keys hammered at a menu its app rebuilds every second on a 640x480
-screen, the item whose menu the keys hold leaving, and 200 items walked by
-the keyboard under churn; 40 microphones real and virtual with 30 more outputs, the default
+inputs: 30 tray items in the strip short of the clock (a 640x480 screen too),
+the strip keeping their order as items come and go, 60 items churning under
+it and a menu opened from it, 200 items scrolled by a hammered wheel and their
+monitor going under a menu, keys hammered at a menu its app rebuilds every
+second on a 640x480 screen, and the item whose menu the keys hold leaving; 40 microphones real and virtual with 30 more outputs, the default
 input switched by 30 clicks and 50 `wpctl`s, inputs coming and going and the
 default one destroyed under the open input menu, mute and level hammered, both levels and the input's mute hammered with the OSD showing each change,
 and PipeWire restarting under it; 300 networks with hostile names (direction

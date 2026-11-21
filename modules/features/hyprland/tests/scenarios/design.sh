@@ -41,13 +41,16 @@ qst ipc controls menu "" > /dev/null
 qst ipc panels close > /dev/null
 qst tray
 qst wait '.tray | length > 0'
-# The tray's chevron, last on the bar, then the first icon's menu.
-qst click left $((1920 - 21)) 17
-qst wait '.panel == "tray-overflow:DP-1"'
-read -r x y _ < <(qst areas 'TrayOverflow' | awk -F'\t' '$2 > 30' | sort -n -k2 | head -1)
+# The tray revealed on the bar's right end, then the first icon's menu.
+qst pointer 1850 16
+qst wait '.trays[0].shown'
+qst stays '.trays[0].shown' 0.3
+read -r x y _ < <(qst areas BarWindow | awk -F'\t' '$1 > 1000 && $1 < 1840 && $5 == "true" && $6 == "false" && $2 < 32' | sort -n | head -1)
+qst pointer "$x" "$y"
+qst stays '.trays[0].shown' 0.6
 qst click right "$x" "$y"
 qst wait '.layers | any(endswith(" quickshell:menu"))'
-qst stays '.panel == "tray-overflow:DP-1"' 0.6
+qst stays '.panel == "tray-menu:DP-1"' 0.6
 qst x wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.3
 qst wait '.osd.kind == "volume"'
 qst stays '.osd != null' 0.4

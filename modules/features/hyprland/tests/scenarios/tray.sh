@@ -1,93 +1,106 @@
 export QS_TEST_MONITORS="DP-1:1920x1080:1"
 
-open_overflow() {
-  qst tray
-  qst wait '.tray | length > 0'
-  # The tray's chevron, last on the bar.
-  qst click left $((1920 - 21)) 17
-  qst wait '.panel == "tray-overflow:DP-1"'
+# The tray lives on the bar, left of the status button: hidden until the pointer reaches the bar's right end.
+reveal() {
+  qst pointer 1850 16
+  qst wait '.trays[0].shown'
+  # Until the strip has finished sliding out, so its cells hold still.
+  qst stays '.trays[0].shown' 0.3
 }
 
-qst case "the keyboard opens a tray icon's menu from the overflow and walks it"
-open_overflow
-qst key Right
-qst wait '.trayFocus == 0'
-qst key shift+F10
-qst wait '.trayMenu.selected == "First item" and .panel == "tray-overflow:DP-1"'
-# Round from the top to the bottom, past the separators.
+# The Nth tray cell from the left on DP-1's bar, as "x y": the tray's cells are the hand-less areas left of the status button.
+cell() {
+  qst areas BarWindow | awk -F'\t' '$1 > 1000 && $1 < 1840 && $5 == "true" && $6 == "false" && $2 < 32' | sort -n | sed -n "${1}p" | awk -F'\t' '{ print $1, $2 }'
+}
+
+qst case "the tray hides until the pointer reaches the bar's right end, and lingers a moment after it leaves"
+qst tray
+qst wait '.tray | length > 0'
+qst stays '.trays[0].shown | not' 0.5
+# The left of the bar and the clock do not reveal it.
+qst pointer 400 16
+qst pointer 960 16
+qst stays '.trays[0].shown | not' 0.5
+reveal
+qst pointer 900 600
+# A near miss still finds it.
+qst stays '.trays[0].shown' 0.4
+qst wait '.trays[0].shown | not' 2
+
+qst case "past 18 em the strip scrolls sideways under the wheel, and stops at its ends"
+qst tray add crowd 30
+qst wait '(.tray | length) == 30' 10
+reveal
+qst wait '.trays[0].scrolls and .trays[0].offset == 0'
+read -r x y < <(cell 2)
+qst pointer "$x" "$y"
+qst wheel 3
+qst wait '.trays[0].offset > 0'
+qst wheel 100
+qst wait '.trays[0].offset > 0'
+qst stays '.trays[0].shown' 0.3
+qst wheel -100
+qst wait '.trays[0].offset == 0'
+
+qst case "a right click opens an item's menu flush under the bar, which keeps the tray out, and the keys walk it"
+qst tray
+qst wait '.tray | length > 0'
+reveal
+read -r x y < <(cell 1)
+qst pointer "$x" "$y"
+qst click right "$x" "$y"
+qst wait '.panel == "tray-menu:DP-1" and .trayMenu != null'
+qst key Down
+qst wait '.trayMenu.selected == "First item"'
 qst key Up
 qst wait '.trayMenu.selected == "Quit"'
 qst key Up Up
 qst wait '.trayMenu.selected == "Networks"'
 qst key Right
 qst wait '.trayMenu.path == ["Networks"] and .trayMenu.selected == "Network 0"'
-qst key Up Return
-qst wait '.trayMenu.path == ["Networks", "More networks"] and .trayMenu.selected == "Cafe"'
-qst key Left
-qst wait '.trayMenu.path == ["Networks"] and .trayMenu.selected == "More networks"'
 qst key Left
 qst wait '.trayMenu.path == [] and .trayMenu.selected == "Networks"'
-# Without the pointer on it, a menu the keys drive stays.
-qst stays '.trayMenu.selected == "Networks"' 1
+# Away from the bar, the menu the keys drive keeps the tray out.
+qst pointer 900 600
+qst stays '.trayMenu != null and .trays[0].shown' 1
+qst key Escape
+qst wait '.panel == "" and .trayMenu == null'
+qst wait '.trays[0].shown | not' 2
 
-qst case "Return on a tray menu's row triggers it and closes the overflow"
-open_overflow
-qst key Right Menu
-qst wait '.trayMenu.selected == "First item"'
-qst key Down Down Return
+qst case "Return on a tray menu's row triggers it and closes the menu"
+qst tray
+qst wait '.tray | length > 0'
+reveal
+read -r x y < <(cell 1)
+qst pointer "$x" "$y"
+qst click right "$x" "$y"
+qst wait '.trayMenu != null'
+qst key Down Down Down Return
 qst wait '.panel == "" and .trayMenu == null'
 qst tray log | grep -qx 'qml: triggered Checkable true'
 
 qst case "the keyboard skips a disabled row in a tray menu"
-open_overflow
-qst key Right Menu
-qst key Down Down Down Down
-qst wait '.trayMenu.selected == "With an icon"'
-
-qst case "Escape takes the keyboard from a tray menu back to its icon, and a second Escape closes the overflow"
-open_overflow
-qst key Right Menu
-qst wait '.trayMenu.selected == "First item"'
-qst key Escape
-qst wait '.trayMenu == null and .panel == "tray-overflow:DP-1" and .trayFocus == 0'
-qst stays '.panel == "tray-overflow:DP-1"' 1
-qst key Escape
-qst wait '.panel == ""'
-
-qst case "keys reach a tray menu opened with a right click"
-open_overflow
-read -r x y _ < <(qst areas 'TrayOverflow' | awk -F'\t' '$2 > 30' | sort -n -k2 | head -1)
+qst tray
+qst wait '.tray | length > 0'
+reveal
+read -r x y < <(cell 1)
+qst pointer "$x" "$y"
 qst click right "$x" "$y"
 qst wait '.trayMenu != null'
-qst key Down
-qst wait '.trayMenu.selected == "First item"'
-# The pointer leaving no longer closes it, as the keys have it.
-qst pointer 400 600
-qst stays '.trayMenu.selected == "First item"' 1
-qst key Down Return
-qst wait '.panel == ""'
-qst tray log | grep -qx 'qml: triggered long label'
+qst key Down Down Down Down Down
+qst wait '.trayMenu.selected == "With an icon"'
 
-qst case "the pointer back on a tray menu the keys drove hands it back to the pointer"
-open_overflow
-qst key Right Menu
-qst wait '.trayMenu.selected == "First item"'
-read -r x y _ < <(qst areas 'TrayMenu' | sort -n -k2 | head -1)
+qst case "a second right click on the item closes its menu, and another panel opening closes it too"
+qst tray
+qst wait '.tray | length > 0'
+reveal
+read -r x y < <(cell 1)
 qst pointer "$x" "$y"
-qst wait '.trayMenu.keyed == false'
-qst pointer 400 600
-qst wait '.trayMenu == null and .panel == "tray-overflow:DP-1"'
-
-qst case "up and down move a whole row through the overflow's grid"
-qst tray add grid 14
-qst wait '(.tray | length) == 14' 10
-qst click left $((1920 - 21)) 17
-qst wait '.panel == "tray-overflow:DP-1"'
-qst key Right
-qst wait '.trayFocus == 0'
-qst key Down
-qst wait '.trayFocus == 6'
-qst key Down Down
-qst wait '.trayFocus == 12'
-qst key Up Left
-qst wait '.trayFocus == 5'
+qst click right "$x" "$y"
+qst wait '.trayMenu != null'
+qst click right "$x" "$y"
+qst wait '.trayMenu == null and .panel == ""'
+qst click right "$x" "$y"
+qst wait '.trayMenu != null'
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center" and .trayMenu == null'
