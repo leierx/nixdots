@@ -501,7 +501,15 @@ Notes on specific features:
       - Exceptions: the bar is all black; the power menu has its own
         backdrop and 28 px tiles; a launcher mode may carry an `accent`
         (nixpkgs' two blues); hyprlock follows its own config; `LayoutDiagram`
-        draws outputs and their labels to scale.
+        draws outputs and their labels to scale. Kept against the HIG on
+        purpose: the monitors mode's placeholder names what it lists
+        ("Monitor layout…") rather than an instruction, since a layout is
+        picked more than searched for; an occupied workspace differs from an
+        empty one by colour alone (`fgStrong` over `fgDim`), as the current one
+        has its own fill and a mark would crowd 26 px items; the media card's
+        text sits over its album art, blurred and darkened and held to 3:1 by
+        the census, and hyprlock's clock over the blurred screen, as GNOME
+        Shell's lock does.
       - A new visual piece is drafted first: options shot in the test session
         for the user to pick from, then built from the pieces above, linted
         (`qst lint`), and given probe fields and a scenario where it has
