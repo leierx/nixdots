@@ -214,6 +214,9 @@ in
         };
         Service = {
           RestartSec = 1;
+          # about 500 MiB in use; a runaway is restarted rather than swapping the desktop out
+          MemoryMax = "2G";
+          MemorySwapMax = 0;
           Environment = [ "QT_SCALE_FACTOR=${builtins.toJSON config.quickshell.scale}" ];
         };
       };
