@@ -26,13 +26,14 @@ Overlay {
     restoreMode: Binding.RestoreNone
   }
 
-  // What the card stacks, each menu in a slot of its own under the row that opens it, so one eases shut as the next eases open; by id, so an open menu outlives every change around it.
+  // What the card stacks, a menu slot under each row that opens one: menus of different rows ease shut and open apart, the same row's swap in one slot that eases to the new height; by id, so an open menu outlives every change around it.
   readonly property var sections: {
-    const list = [{ id: "header", kind: "header" }, { id: "levels", kind: "levels" }, { id: "menu:output", kind: "menu", key: "output" }, { id: "menu:input", kind: "menu", key: "input" }];
+    const list = [{ id: "header", kind: "header" }, { id: "levels", kind: "levels" }, { id: "menu:levels", kind: "menu", keys: ["output", "input"] }];
     for (let i = 0; i < Controls.toggles.length; i += 2) {
       const row = Controls.toggles.slice(i, i + 2);
       list.push({ id: `toggles:${i}`, kind: "toggles", items: row });
-      for (const toggle of row) if (toggle.menu) list.push({ id: `menu:${toggle.key}`, kind: "menu", key: toggle.key });
+      const keys = row.filter(toggle => toggle.menu).map(toggle => toggle.key);
+      if (keys.length > 0) list.push({ id: `menu:${keys[0]}`, kind: "menu", keys });
     }
     if (Privacy.kinds.length > 0) list.push({ id: "inuse", kind: "inuse" });
     return list;
@@ -157,7 +158,18 @@ Overlay {
             required property var modelData
             readonly property bool menu: modelData.kind === "menu"
             readonly property real gap: modelData.kind === "header" ? 0 : Theme.padding
-            property real opened: !menu || root.menu === modelData.key ? 1 : 0
+            readonly property var keys: modelData.keys ?? []
+            readonly property bool mine: menu && keys.includes(root.menu)
+            // The menu it shows, held while it eases shut.
+            property string held: ""
+
+            Binding on held {
+              when: section.mine
+              value: root.menu
+              restoreMode: Binding.RestoreNone
+            }
+
+            property real opened: !menu || mine ? 1 : 0
 
             Behavior on opened {
               NumberAnimation {
@@ -204,10 +216,48 @@ Overlay {
             Component {
               id: menuSection
 
-              Menu {
-                key: section.modelData.key
-                limit: root.available - 2 * Theme.quickSettingsPadding - column.fixed - section.gap
-                onWantsInView: item => root.reveal(item)
+              Item {
+                id: menus
+
+                readonly property real natural: each.count > 0 ? (((each.itemAt(section.keys.indexOf(section.held)) as Loader)?.item as Item)?.height ?? 0) : 0
+                property real eased: natural
+
+                // Only while it stays open, as another of its row's menus takes the slot.
+                Behavior on eased {
+                  enabled: section.opened === 1
+
+                  NumberAnimation {
+                    duration: Theme.popupTime
+                    easing.type: Easing.OutQuad
+                  }
+                }
+
+                height: eased
+
+                Repeater {
+                  id: each
+
+                  model: ScriptModel {
+                    values: section.keys
+                  }
+
+                  Loader {
+                    id: one
+
+                    required property string modelData
+
+                    width: menus.width
+                    active: section.held === one.modelData
+                    visible: active
+                    sourceComponent: Component {
+                      Menu {
+                        key: one.modelData
+                        limit: root.available - 2 * Theme.quickSettingsPadding - column.fixed - section.gap
+                        onWantsInView: item => root.reveal(item)
+                      }
+                    }
+                  }
+                }
               }
             }
 

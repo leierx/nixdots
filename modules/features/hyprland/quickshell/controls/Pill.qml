@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell.Widgets
 import qs.common
 
 // Shell's .quick-toggle: a pill, its menu arrow a segment of its own after a rule, in the pill's colour, lighter only under the pointer (ours: Shell lightens it always).
@@ -19,14 +20,42 @@ Rectangle {
   Keys.onSpacePressed: Controls.flip(pill.toggle)
   Keys.onReturnPressed: pill.toggle.menu ? Controls.show(pill.toggle.key) : Controls.flip(pill.toggle)
   opacity: toggle.unavailable ? 0.5 : 1
-  color: {
-    if (on) return main.pressed ? Theme.accentActive : main.containsMouse ? Theme.accentHover : Theme.accentBg;
-    return main.pressed ? Theme.buttonActiveBg : main.containsMouse ? Theme.buttonHoverBg : Theme.buttonBg;
+  color: "transparent"
+
+  function fill(area: MouseArea): color {
+    if (pill.on) return area.pressed ? Theme.accentActive : area.containsMouse ? Theme.accentHover : Theme.accentBg;
+    return area.pressed ? Theme.buttonActiveBg : area.containsMouse ? Theme.buttonHoverBg : Theme.buttonBg;
   }
 
-  Behavior on color {
-    ColorAnimation {
-      duration: Theme.quickTime
+  // The toggle and its segment side by side in one pill-shaped clip: a fill of the segment alone could round its corners only to half its width, and laid over the toggle's, its colour stacked.
+  ClippingRectangle {
+    anchors.fill: parent
+    radius: pill.radius
+    color: "transparent"
+
+    Rectangle {
+      width: main.width
+      height: parent.height
+      color: pill.fill(main)
+
+      Behavior on color {
+        ColorAnimation {
+          duration: Theme.quickTime
+        }
+      }
+    }
+
+    Rectangle {
+      x: main.width
+      width: parent.width - main.width
+      height: parent.height
+      color: pill.fill(side)
+
+      Behavior on color {
+        ColorAnimation {
+          duration: Theme.quickTime
+        }
+      }
     }
   }
 
@@ -87,20 +116,6 @@ Rectangle {
     visible: pill.toggle.menu
     width: 38
     height: parent.height
-
-    Rectangle {
-      anchors.fill: parent
-      anchors.leftMargin: 1
-      topRightRadius: pill.radius
-      bottomRightRadius: pill.radius
-      color: !side.containsMouse ? "transparent" : pill.on ? Theme.accentHover : Theme.buttonHoverBg
-
-      Behavior on color {
-        ColorAnimation {
-          duration: Theme.quickTime
-        }
-      }
-    }
 
     Rectangle {
       width: 1
