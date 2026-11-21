@@ -9,6 +9,13 @@ qst ipc caffeine toggle
 qst wait '.caffeine == false'
 qst actions | grep -qx 'systemctl --user stop caffeine.service'
 
+qst case "a second toggle while systemctl still runs the first is not lost"
+qst wait '.caffeine == false'
+qst x sh -c 'shell=${XDG_CONFIG_HOME%/cfg}/shell; qs ipc -p "$shell" call caffeine toggle & qs ipc -p "$shell" call caffeine toggle; wait'
+qst stays '.caffeine == false' 2
+qst actions | grep -qx 'systemctl --user stop caffeine.service'
+qst x sh -c '[ ! -e "${XDG_CONFIG_HOME%/cfg}/units/caffeine.service" ]'
+
 qst case "a unit started elsewhere shows, and one that stops by itself goes"
 systemctl --user start caffeine.service
 qst wait '.caffeine' 7

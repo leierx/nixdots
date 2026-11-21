@@ -244,6 +244,16 @@ static void wheel(int steps, bool horizontal) {
   pause_ms(STEP_MS);
 }
 
+// Each notch its own event, all at once, as a wheel spun hard sends them.
+static void spin(int steps) {
+  for (int i = 0; i < abs(steps); i++) {
+    zwlr_virtual_pointer_v1_axis_source(pointer, WL_POINTER_AXIS_SOURCE_WHEEL);
+    zwlr_virtual_pointer_v1_axis_discrete(pointer, now(), WL_POINTER_AXIS_VERTICAL_SCROLL, wl_fixed_from_int(steps < 0 ? -15 : 15), steps < 0 ? -1 : 1);
+    zwlr_virtual_pointer_v1_frame(pointer);
+  }
+  pause_ms(STEP_MS);
+}
+
 static bool number(const char *s, double *out) {
   char *end;
   *out = strtod(s, &end);
@@ -277,6 +287,8 @@ static bool run(int argc, char **argv) {
   }
   if (!strcmp(cmd, "wheel") && (argc == 2 || argc == 3))
     return number(argv[1], &x) && (wheel((int)x, argc == 3 && !strcmp(argv[2], "horizontal")), true);
+  if (!strcmp(cmd, "spin") && argc == 2)
+    return number(argv[1], &x) && (spin((int)x), true);
   if (!strcmp(cmd, "key") && argc >= 2) {
     for (int i = 1; i < argc; i++)
       if (!key(argv[i]))

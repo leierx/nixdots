@@ -431,6 +431,19 @@ in
               )
             ) (lib.attrValues root.config.flake.nixosConfigurations)
           );
+
+      # A pure script's qmltestrunner test, with only that script beside it.
+      qmlTest =
+        name: script: test:
+        pkgs.runCommand name { } ''
+          mkdir -p quickshell/${dirOf script} tests
+          cp ${./quickshell + "/${script}"} quickshell/${script}
+          cp ${./tests + "/${test}"} tests/${test}
+          XDG_CACHE_HOME=$TMPDIR QT_QPA_PLATFORM=offscreen QT_PLUGIN_PATH=${unstable.qt6.qtbase}/lib/qt-6/plugins \
+            QML_IMPORT_PATH=${qtdeclarative}/lib/qt-6/qml \
+            ${qtdeclarative}/bin/qmltestrunner -input tests/${test}
+          touch "$out"
+        '';
     in
     lib.optionalAttrs (lib.hasSuffix "-linux" system) {
       packages.qs-test = qsTest;
@@ -441,24 +454,15 @@ in
         touch "$out"
       '';
       # The notification body filter, which no lint can see is right.
-      checks.notification-markup = pkgs.runCommand "notification-markup" { } ''
-        mkdir -p quickshell/notifications tests
-        cp ${./quickshell/notifications/markup.js} quickshell/notifications/markup.js
-        cp ${./tests/tst_markup.qml} tests/tst_markup.qml
-        XDG_CACHE_HOME=$TMPDIR QT_QPA_PLATFORM=offscreen QT_PLUGIN_PATH=${unstable.qt6.qtbase}/lib/qt-6/plugins \
-          QML_IMPORT_PATH=${qtdeclarative}/lib/qt-6/qml \
-          ${qtdeclarative}/bin/qmltestrunner -input tests/tst_markup.qml
-        touch "$out"
-      '';
+      checks.notification-markup =
+        qmlTest "notification-markup" "notifications/markup.js"
+          "tst_markup.qml";
       # The saved history, which a damaged file must never break.
-      checks.notification-history = pkgs.runCommand "notification-history" { } ''
-        mkdir -p quickshell/notifications tests
-        cp ${./quickshell/notifications/history.js} quickshell/notifications/history.js
-        cp ${./tests/tst_history.qml} tests/tst_history.qml
-        XDG_CACHE_HOME=$TMPDIR QT_QPA_PLATFORM=offscreen QT_PLUGIN_PATH=${unstable.qt6.qtbase}/lib/qt-6/plugins \
-          QML_IMPORT_PATH=${qtdeclarative}/lib/qt-6/qml \
-          ${qtdeclarative}/bin/qmltestrunner -input tests/tst_history.qml
-        touch "$out"
-      '';
+      checks.notification-history =
+        qmlTest "notification-history" "notifications/history.js"
+          "tst_history.qml";
+      checks.launcher-search = qmlTest "launcher-search" "launcher/search.js" "tst_search.qml";
+      # Names from hostile networks and devices, kept to one line.
+      checks.names = qmlTest "names" "controls/names.js" "tst_names.qml";
     };
 }

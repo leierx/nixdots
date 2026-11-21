@@ -386,6 +386,15 @@ qst wait '.panel == "controls:DP-1" and .controls.menu == "sound" and .volume.ou
 first=$(qst areas 'ControlsPanel' | awk -F'\t' '$3 ~ /:row:/ { print $3; exit }')
 [[ $first == *":row:Output 601"* ]] || { echo "first row: $first"; exit 1; }
 qst stays '.panel == "controls:DP-1"' 1
+# The header counts devices, not the Input heading; a filter matching nothing says so, heading and all gone.
+qst wait '.controls.open.count == 1003 and .controls.open.rows == 1004'
+read -r x y < <(qst areas ControlsPanel | awk -F'\t' '$3 ~ /TextField$/ { print $1, $2; exit }')
+qst click left "$x" "$y"
+qst type zzzz
+qst wait '.controls.open.rows == 0'
+qst key ctrl+a BackSpace
+qst type headset
+qst wait '.controls.open.first == ["Input", "Headset Microphone"]'
 qst ipc bar realVolume > /dev/null
 
 qst case "fifty VPNs and a hundred Bluetooth devices scroll in their menus"

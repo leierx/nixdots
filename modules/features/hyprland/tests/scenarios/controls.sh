@@ -282,6 +282,16 @@ press row:Headphones
 qst wait '.volume.output == "Headphones"'
 qst stays '.panel == "controls:DP-1" and .controls.menu == "sound"' 0.5
 
+qst case "a microphone without an output keeps the volume row, dim, whose arrow still opens Sound for it"
+for node in test-speakers test-headphones test-hdmi; do qst x pw-cli destroy "$node" > /dev/null; done
+qst wait '.volume.output == null and .microphone.input == "Microphone"'
+open
+qst areas ControlsPanel | grep -q $'slider:output\tfalse'
+press menu:sound
+qst wait '.controls.menu == "sound" and .controls.open == { count: 3, rows: 4, first: ["Input", "Microphone", "Headset Microphone", "Noise Cancelling"] }'
+press row:Headset
+qst wait '.microphone.input == "Headset Microphone"'
+
 qst case "PipeWire gone: one dim line where the sliders were, and back when it is"
 open
 qst pipewire stop

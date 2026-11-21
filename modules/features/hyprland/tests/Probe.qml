@@ -388,7 +388,7 @@ Scope {
         unchecked: Notifs.unchecked,
         volume: { percent: Volume.percent, muted: Volume.muted, output: Volume.devices.find(d => d.current)?.name ?? null },
         input: Osd.sourceName,
-        microphone: { percent: Microphone.percent, muted: Microphone.muted, adjustable: Microphone.adjustable, input: Microphone.name || null, inputs: Microphone.devices.map(d => d.name) },
+        microphone: { muted: Microphone.muted, adjustable: Microphone.adjustable, input: Microphone.name || null, inputs: Microphone.devices.map(d => d.name) },
         osd: Osd.current ? Object.assign({ screen: Osd.screen }, Osd.current) : null,
         osdShown: Osd.serial,
         osdSettling: Osd.settling,
@@ -398,6 +398,8 @@ Scope {
         privacy: { mic: Privacy.mic, screen: Privacy.screenActive ? Privacy.screen : null, camera: Privacy.cameraActive ? Privacy.camera : null },
         controls: {
           menu: Controls.menu,
+          // The open menu: its count, and the rows its filter leaves, a few by title.
+          open: (menu => menu ? { count: menu.count, rows: menu.shown.length, first: menu.shown.slice(0, 5).map(row => row.title) } : null)(probe.windows().find(entry => entry.type === "ControlsPanel")?.items.find(({ item }) => "filtering" in item && "shown" in item)?.item ?? null),
           toggles: Controls.toggles.map(t => ({ key: t.key, subtitle: t.subtitle, on: t.on, unavailable: t.unavailable ?? false })),
           network: { present: Net.present, running: Net.running, wifi: Net.wifi !== null, wifiOn: Net.wifiOn, scanning: Net.scanning, connected: Net.connected?.name ?? null, networks: Net.networks.map(n => n.name), known: Net.networks.filter(n => n.known).map(n => n.name), asking: Net.asking || null, askError: Net.askError || null, created: Net.created, failures: Net.failures, portal: Net.portal, limited: Net.limited, wired: Net.wired.map(d => ({ name: d.name, connected: d.connected, link: d.hasLink })) },
           vpns: Net.vpns.map(v => ({ name: v.name, active: v.active, busy: Net.busy(v.uuid) || null })),
@@ -415,7 +417,7 @@ Scope {
         center: [].concat(...probe.windows().filter(entry => entry.type === "NotificationCenter").map(entry => entry.items.filter(({ item }) => "ordered" in item && "unfolded" in item).map(({ item }) => ({ app: item.newest ? Notifs.appKey(item.newest) : null, expanded: item.expanded, lines: item.ordered.map(e => ({ summary: e.summary, critical: e.critical })) })))),
         trays: probe.windows().filter(entry => entry.type === "BarWindow").map(entry => {
           const tray = entry.items.find(({ item }) => "menuPanel" in item && "menuAnchor" in item)?.item;
-          return { screen: entry.screen, shown: tray?.visible ?? false, expanded: tray?.expanded ?? false, more: tray?.more ?? 0, scrolls: tray?.scrolls ?? false, offset: Math.round(tray?.offset ?? 0), items: tray ? tray.items.map(item => item.id) : [] };
+          return { screen: entry.screen, shown: tray?.visible ?? false, expanded: tray?.expanded ?? false, more: tray?.more ?? 0, width: Math.round(tray?.implicitWidth ?? 0), scrolls: tray?.scrolls ?? false, offset: Math.round(tray?.offset ?? 0), items: tray ? tray.items.map(item => item.id) : [] };
         }),
         // The tray menu up: its open submenus by label and the row the keyboard is on.
         trayMenu: (menu => menu ? { path: menu.path, keyed: menu.keyed, selected: menu.level(menu.path.length)?.entries[menu.row]?.text ?? null } : null)(probe.windows().find(entry => entry.type === "TrayMenu")?.window ?? null),

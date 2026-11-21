@@ -13,7 +13,7 @@ TestCase {
 
   function test_round_trip() {
     const records = [record("a", 1000), record("b", 2000)];
-    compare(Saved.parse(Saved.serialise(records, now), now), { records, problem: "" });
+    compare(Saved.parse(Saved.serialise(records), now), { records, problem: "" });
   }
 
   function test_damaged() {
@@ -36,5 +36,10 @@ TestCase {
     compare(kept.length, 100);
     compare(kept[0].uid, "n0");
     verify(!kept.some(r => r.uid === "old"));
+  }
+
+  function test_future_dropped() {
+    const text = JSON.stringify({ notifications: [record("soon", -30 * 1000), record("ahead", -3600 * 1000)] });
+    compare(Saved.parse(text, now).records.map(r => r.uid), ["soon"]);
   }
 }

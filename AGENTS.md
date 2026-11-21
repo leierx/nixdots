@@ -483,7 +483,8 @@ pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `ClickAway`,
   typing. `apps` ranks equal matches by `AppUsage` (frecency as one number, no
   decay) and warms every icon at start (an icon Papirus lacks costs thousands
   of stats). `clipboard` decodes each clip once into Quickshell's cache, pruned
-  to what cliphist lists. `monitors` lists the profile hyprmoncfgd would apply
+  to what cliphist lists; it searches cliphist's preview, a clip's first 100
+  characters. `monitors` lists the profile hyprmoncfgd would apply
   next first (`Recommended`), reloading a second after hotplug bursts.
   `windows` is wlr-foreign-toplevels in Hyprland focus order with live
   previews. `nixpkgs` searches nixos-unstable's ~130 000 packages
@@ -531,7 +532,8 @@ pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `ClickAway`,
   critical ones. Same card updates in place for a stack tag
   (`x-canonical-private-synchronous`, `x-dunst-stack-tag`), an id, or the same
   app, summary and body within 2 s. Past 30 a second (critical apart) a flood is
-  turned away and summed in one card; text is cut before layout (a megabyte held
+  turned away and summed in one card, and an update in place only updates its
+  card (no reorder, popup or sound); text is cut before layout (a megabyte held
   the shell for seconds); newest three per app, 100 in all. Body markup filtered
   to the spec (`markup.js`). elementary OS sounds via `pw-play`, one per 300 ms.
   `History` saves atomically to the state dir (no transient ones, 7 days,
@@ -543,7 +545,8 @@ pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `ClickAway`,
   them with Undo in a `Toast` for 5 s; `Notifs` dismisses what it held when the
   toast goes or the center closes. Do Not Disturb is a switch in its footer.
 - `controls/` (SUPER+A): GNOME's quick settings: `Header`, `Levels` (the volume, its arrow
-  opening Sound: outputs, the microphone's mute, inputs; each backlight), the `Pill`s
+  opening Sound: outputs, the microphone's mute, inputs; dim but for the arrow
+  with a microphone and no output; each backlight), the `Pill`s
   the machine has (`Controls.toggles`), a `Menu` under the row that opens it (one slot
   per row, so its menus swap in place),
   `InUse` while something records. Backends are singletons: `Net`
@@ -601,8 +604,9 @@ Checks (`modules/flake/checks.nix`): `format` (`nixfmt --check` everywhere),
   `common/`, `flatMap`, text ending in a full stop, an ellipsis on a settings
   item, a `MouseArea` naming no cursor, a plain space between number and unit.
   Deliberate exceptions are listed in the script with why.
-- `notification-markup`, `notification-history`: `qmltestrunner` over
-  `tests/tst_markup.qml` and `tests/tst_history.qml`.
+- `notification-markup`, `notification-history`, `launcher-search`, `names`:
+  `qmltestrunner` over `tests/tst_{markup,history,search,names}.qml`, each with
+  only its script beside it (`qmlTest`).
 - `qs-test`: builds the package, so shellcheck runs over `scripts/qs-test.sh`.
 
 ## External consumers
@@ -643,6 +647,7 @@ qst pointer 960 21             # absolute motion, layout coordinates (a warp may
 qst click                      # left, where the pointer is; or `qst click right 1889 20`
 qst drag 1631 112 320 0 250    # press at x y, move dx dy over ms, release
 qst wheel 3                    # notches, positive down
+qst spin 5                     # five one-notch events at once, a wheel spun hard
 qst layers                     # layer surfaces up, per monitor
 qst shot apps                  # numbered PNG in $QS_TEST_DIR/shots, path printed
 qst shot crop "360,330 600x260"

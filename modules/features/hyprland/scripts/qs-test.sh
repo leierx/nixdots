@@ -40,6 +40,7 @@ usage: qs-test COMMAND
   press|release BUTTON  hold or let go of a button
   drag X Y DX DY [MS]   press left at X Y, glide DX DY over MS (300) ms, release
   wheel STEPS [horizontal]  scroll STEPS notches, positive down or right
+  spin STEPS            STEPS one-notch events at once, a wheel spun hard
   layers                the layer surfaces up, by namespace and monitor
   shot [NAME] [WHERE]   screenshot of everything, a monitor, or "x,y wxh"; prints its path
   monitor add NAME [MODE] [SCALE] [POSITION]   plug a monitor in (1920x1080, 1, auto-right)
@@ -1670,6 +1671,7 @@ case $cmd in
     input release left
     ;;
   wheel) need_up; input wheel "$@" ;;
+  spin) need_up; input spin "$@" ;;
   layers) need_up; enter; "$HC" layers -j | jq -r 'to_entries[] | .key as $m | .value.levels[][] | "\($m) \(.namespace)"' ;;
   shot) need_up; shot "$@" ;;
   monitor)

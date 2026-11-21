@@ -11,3 +11,16 @@ for _ in $(seq 12); do
 done
 wait "$syncing"
 qst wait '(.windows | length) == 12 and (.workspaces | map(select(.id == 1))[0].windows) == 12' 15
+
+qst case "a wheel spun hard over the workspaces moves one a notch, as far as the ends"
+read -r x y _ < <(qst areas 'BarWindow' | awk -F'\t' '$6 == "true"' | sort -n | head -1)
+qst pointer "$x" "$y"
+qst wait '.monitors[0].workspace == 1'
+qst spin 4
+qst wait '.monitors[0].workspace == 5'
+qst stays '.monitors[0].workspace == 5' 0.5
+qst spin 20
+qst wait '.monitors[0].workspace == 6'
+qst spin -20
+qst wait '.monitors[0].workspace == 1'
+qst stays '.monitors[0].workspace == 1' 0.5
