@@ -489,7 +489,7 @@ Notes on specific features:
         fading). Keyboard selection never animates.
       - Hints and empty states: there are no tooltips, as every icon-only
         button is one GNOME uses the same way. A list that can be empty says
-        so in one dim `body` line where its first row would be ("No matches",
+        so in one dim `body` line where its first row would be ("No results",
         "Looking for networks…"); the center's is its bell and title.
       - Behaviour: the pointer rule under the conventions above. Escape and a
         click away close every panel; right click dismisses a notification;

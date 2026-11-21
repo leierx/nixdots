@@ -190,7 +190,7 @@ Overlay {
       height: list.rowHeight
       verticalAlignment: Text.AlignVCenter
       visible: list.count === 0
-      text: list.query.trim() !== "" ? "No matches" : list.mode.nothing
+      text: list.query.trim() !== "" ? "No results" : list.mode.nothing
       elide: Text.ElideRight
       color: Theme.fgDim
       font: Theme.body
