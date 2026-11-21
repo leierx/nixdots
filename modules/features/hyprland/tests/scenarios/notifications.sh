@@ -106,3 +106,23 @@ qst wait '.panel == "center"'
 read -r x y _ < <(qst areas 'NotificationCenter/SwipeArea' | head -1)
 qst click right "$x" "$y"
 qst stays '.notifications == 1 and .panel == "center"' 0.6
+
+qst case "the center's close buttons show without the pointer: a lone card's, a group's, and each card's once it expands, each closing its own"
+notify-send -a Chat "alone"
+notify-send -a Mail "one"
+notify-send -a Mail "two"
+qst wait '.notifications == 3'
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center"'
+qst pointer 1800 900
+closes() { qst areas 'NotificationCenter' | awk -F'\t' 'index($3, ":close") { print $1, $2 }' | sort -n -k2; }
+for _ in $(seq 20); do [ "$(closes | wc -l)" -eq 2 ] && break; sleep 0.1; done # sleep: the areas come from the window walk, outside the probe
+[ "$(closes | wc -l)" -eq 2 ] || { closes; echo "not two close buttons"; exit 1; }
+# Mail is newest, so its group comes first; expanded, each of its two cards has one.
+read -r x y _ < <(qst areas 'NotificationCenter/SwipeArea' | head -1)
+qst click left "$x" "$y"
+qst wait '.center | map(select(.app == "Mail"))[0].expanded'
+for _ in $(seq 20); do [ "$(closes | wc -l)" -eq 3 ] && break; sleep 0.1; done # sleep: as above
+read -r x y < <(closes | head -1)
+qst click left "$x" "$y"
+qst wait '.notifications == 2 and (.history | map(.summary) | index("two") | not)'

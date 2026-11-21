@@ -492,7 +492,9 @@ Notes on specific features:
         button is one GNOME uses the same way. A list that can be empty says
         so in one dim `body` line where its first row would be ("No results",
         "Looking for networks…"); the center's is its bell and title.
-      - Behaviour: the pointer rule under the conventions above. Escape and a
+      - Behaviour: the pointer rule under the conventions above, and nothing
+        shows only under the pointer (the HIG's rule): an action is there to
+        see, or reached another way too. Escape and a
         click away close every panel; a right click only ever opens a menu (the tray's), never dismisses or mutes;
         the tray's menu takes no keyboard, as GTK's doesn't. The wheel steps in
         notches (`WheelSteps`), and only the center's list glides. Only the
@@ -620,7 +622,10 @@ Notes on specific features:
         grouped per app (`NotificationGroup`), each card three lines tall so
         the stack is even, the calendar (ISO weeks) and the weather beside it
         where the screen has room. Opening it checks every notification and
-        puts the popups away. Its list glides on the wheel and flicks.
+        puts the popups away. Each card's close button sits after its age
+        without the pointer over it (a group's on its first line), and every
+        line keeps its room, so the ages line up. Its list glides on the wheel
+        and flicks.
       - `controls/`: the control centre, GNOME's quick settings under the
         status button (SUPER+A): `Header`, `Levels` (output, input and each
         backlight), the `Pill`s the machine has (`Controls.toggles`: wired per

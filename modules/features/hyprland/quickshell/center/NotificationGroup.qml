@@ -234,7 +234,7 @@ Item {
             Layout.alignment: Qt.AlignTop
             Layout.topMargin: 1
             entry: root.newest
-            closable: root.expandable && hover.hovered
+            closable: true
             onClosed: root.slideAway(false)
           }
         }
@@ -257,7 +257,7 @@ Item {
             expanded: root.unfolded
             single: root.single
             lines: root.rows - 1
-            closable: !root.unfolded && index === 0 && hover.hovered
+            closable: !root.unfolded && index === 0
             settled: root.settled
             onClosed: root.slideAway(false)
           }

@@ -228,9 +228,12 @@ Item {
               font: Theme.heading
             }
 
-            NotificationAge {
+            NotificationStamp {
               Layout.alignment: Qt.AlignTop
+              Layout.topMargin: 1
               entry: root.entry
+              closable: true
+              onClosed: swipe.slideAway(false, root.entry.dismissal())
             }
 
             // Overhanging the line, so the arrow costs it no height.

@@ -2,6 +2,7 @@ import QtQuick
 import qs.common
 import qs.notifications
 
+// The age, and after it the close button, there without the pointer as the HIG asks of actions.
 Item {
   id: root
 
@@ -10,19 +11,23 @@ Item {
 
   signal closed()
 
-  implicitWidth: age.implicitWidth
+  // Room for it on every line, so the ages line up.
+  implicitWidth: age.implicitWidth + close.width
   implicitHeight: age.implicitHeight
 
   NotificationAge {
     id: age
 
-    anchors.right: parent.right
-    opacity: root.closable ? 0 : 1
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
     entry: root.entry
   }
 
-  // In the age's place, so the cross costs the line no room.
+  // Overhanging the line, so it costs the line no height.
   IconButton {
+    id: close
+
+    objectName: "close"
     implicitWidth: 24
     implicitHeight: 24
     flat: true
