@@ -1,4 +1,5 @@
 import QtQuick
+import qs.nix
 
 // libadwaita's entry: the button's shade, ringed in the accent while it has the keyboard; a password one has an eye to show it.
 Rectangle {

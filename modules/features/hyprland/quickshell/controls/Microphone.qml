@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Services.Pipewire
 import "names.js" as Names
 import qs.common
+import qs.nix
 
 // PipeWire's default input, and the sources to pick it from.
 Singleton {

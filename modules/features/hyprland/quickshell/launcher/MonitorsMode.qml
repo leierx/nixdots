@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
 import qs.common
+import qs.nix
 
 LauncherMode {
   id: root

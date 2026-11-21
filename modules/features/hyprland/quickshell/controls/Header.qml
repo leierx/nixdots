@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.common
+import qs.nix
 
 // GNOME's top row: the battery on the left, then a screenshot, the lock and the power menu.
 Item {

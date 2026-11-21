@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Bluetooth
 import qs.common
+import qs.nix
 import "names.js" as Names
 
 // BlueZ's default adapter and its devices; one click pairs, trusts and connects a new one.

@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Services.Pipewire
 import qs.common
+import qs.nix
 import "names.js" as Names
 
 // PipeWire's default output; `fake` stands in where there is no sound server, as in qs-test.

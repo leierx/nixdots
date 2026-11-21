@@ -6,6 +6,7 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Networking
 import qs.common
+import qs.nix
 import qs.notifications
 import "names.js" as Names
 

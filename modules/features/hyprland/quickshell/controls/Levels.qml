@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.common
+import qs.nix
 import qs.osd
 
 Column {

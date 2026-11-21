@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Networking
 import qs.common
+import qs.nix
 import "names.js" as Names
 
 // An open menu, GNOME's: a header (its symbol in a chip, blue while on, and its title), a filter once the list is long, the list, and what it leads on to.

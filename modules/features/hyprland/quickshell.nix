@@ -65,6 +65,21 @@ in
         }
       '';
 
+      # GNOME 51's symbolic icons as path data, the Shell's own before Adwaita's
+      symbols =
+        let
+          shellIcons = pkgs.runCommand "gnome-shell-icons" { } ''
+            tar -xf ${pkgs.unstable.gnome-shell.src} --strip-components=3 --wildcards '*/data/icons/scalable/*'
+            mv scalable $out
+          '';
+        in
+        pkgs.runCommand "Symbols.qml" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
+          cp ${./scripts/symbols.mjs} symbols.mjs
+          cp ${./scripts/symbols.tsv} symbols.tsv
+          node symbols.mjs ${pkgs.svgo}/lib/svgo ${shellIcons} \
+            ${pkgs.unstable.adwaita-icon-theme}/share/icons/Adwaita/symbolic > $out
+        '';
+
       # MET Norway's weather symbols, named by its symbol codes
       weathericons = pkgs.fetchFromGitHub {
         owner = "metno";
@@ -79,6 +94,7 @@ in
         mkdir $out/nix
         cp ${colors} $out/nix/Colors.qml
         cp ${hyprsplit} $out/nix/Hyprsplit.qml
+        cp ${symbols} $out/nix/Symbols.qml
         mkdir $out/weather/icons
         cp ${weathericons}/weather/svg/*.svg ${weathericons}/weather/legend.csv $out/weather/icons/
       '';

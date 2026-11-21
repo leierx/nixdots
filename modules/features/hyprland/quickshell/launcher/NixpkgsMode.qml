@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.common
+import qs.nix
 import "search.js" as Search
 
 LauncherMode {

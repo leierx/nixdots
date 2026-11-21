@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import qs.common
+import qs.nix
 
 Overlay {
   id: root

@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.common
+import qs.nix
 import "search.js" as Search
 
 Overlay {

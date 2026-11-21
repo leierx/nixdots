@@ -1,5 +1,6 @@
 import QtQuick
 import qs.common
+import qs.nix
 import qs.notifications
 
 // The age, and after it the close button, there without the pointer as the HIG asks of actions.

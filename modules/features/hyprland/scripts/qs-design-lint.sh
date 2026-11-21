@@ -16,7 +16,7 @@ findings() {
     awk -v file="$file" '/ColorAnimation \{/ { inside = 1 } inside && /duration: [0-9]/ { printf "%s:%d: a colour fading over its own time rather than Theme.fade\tfade\n", file, NR } inside && /\}/ { inside = 0 }' "$file"
     grep -nP '\bduration: [0-9]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a duration typed out rather than Theme's fade, move, open, close, tap or settle\tmotion|" || true
     grep -nP 'pointSize|pixelSize|Qt\.font\(|font\.(family|weight)' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a font of its own rather than Theme's\tfont|" || true
-    [ "$file" = common/Symbols.qml ] || grep -nP '"[mM][0-9]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: an icon path outside common/Symbols.qml\ticon|" || true
+    grep -nP '"[mM][0-9]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: an icon path rather than one of Symbols', which the build writes\ticon|" || true
     [ "$file" = common/Card.qml ] || grep -nP '^\s*Shadow \{' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a shadow on something that is not a Card\tshadow|" || true
     [ "$file" = common/ExpanderArrow.qml ] || grep -nP '^\s*rotation:' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: something turned by hand rather than an ExpanderArrow's pointing\tturn|" || true
     grep -nP '\.flatMap\(|\.flat\(' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: Qt's JavaScript has no flatMap or flat\tjs|" || true

@@ -478,13 +478,13 @@ Notes on specific features:
         degrees none ("5°"); a track's time is
         m:ss; a date is in the locale's order with the day unpadded ("Friday
         20 November").
-      - Icons: every path is in `Symbols`, Adwaita's own symbolic icons as
-        the HIG asks, written by `scripts/symbols.mjs` from the names in
-        `scripts/symbols.tsv` (svgo turns shapes and transforms into path
-        data; a faint part, Adwaita's 35 %, follows a "|"): `nix shell
-        nixpkgs#nodejs nixpkgs#svgo` and `node scripts/symbols.mjs
-        <svgo>/lib/svgo <adwaita-icon-theme>/share/icons/Adwaita/symbolic >
-        quickshell/common/Symbols.qml`. Drawn at 16 px in the bar, rows and
+      - Icons: every path is in `Symbols`, GNOME 51's own symbolic icons as
+        the HIG asks, which `quickshell.nix` writes at build time into the
+        `qs.nix` module: `scripts/symbols.mjs` over the names in
+        `scripts/symbols.tsv`, from gnome-shell's `data/icons` first and then
+        adwaita-icon-theme (svgo turns shapes and transforms into path data; a
+        faint part, Adwaita's 35 %, follows a "|"). A new symbol is a line in
+        the TSV. Drawn at 16 px in the bar, rows and
         buttons, 32 px in the OSD, the launcher's modes and rows and the
         player's placeholder, 64 px on the power tiles and the center's empty
         state; the lint fails any other size.
@@ -556,7 +556,7 @@ Notes on specific features:
       `quickshell.nix` installs the ones no other feature does. The only Nix
       in the QML is `palettes.adwaita_darker` as the `Colors` singleton (translucent
       colours turned into Qt's `#aarrggbb`) and `hyprland.workspaces` as
-      `Hyprsplit.workspaces`, in a `qs.nix`
+      `Hyprsplit.workspaces`, with GNOME's symbolic icons as `Symbols`, in a `qs.nix`
       module added to the store copy, so it only runs from the built copy
       (`programs.quickshell.configs.shell`), not the checkout. A new component
       is a directory with a `Scope`, a line in `shell.qml`, an `IpcHandler`

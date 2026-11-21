@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import qs.common
+import qs.nix
 
 // The player, washed in its album art: the art blurred behind, a big white play.
 Rectangle {

@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import qs.common
+import qs.nix
 
 LauncherMode {
   id: root

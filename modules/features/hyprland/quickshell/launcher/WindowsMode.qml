@@ -5,6 +5,7 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.common
+import qs.nix
 
 LauncherMode {
   id: root

@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import qs.controls
 import qs.common
+import qs.nix
 import qs.notifications
 
 // The control centre's button: what is worth a glance, as glyphs; the wheel turns the volume and a right click mutes it.
