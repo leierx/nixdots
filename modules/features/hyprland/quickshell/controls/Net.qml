@@ -269,7 +269,7 @@ Singleton {
     // Its card's id, printed first, so the card goes when the portal does.
     property int card: 0
 
-    command: ["notify-send", "-p", "-a", "Network", "-i", "network-wireless", "-A", "sign-in=Sign in", "Sign in to network", "This network wants you to sign in before it lets you on the internet."]
+    command: ["notify-send", "-p", "-a", "Network", "-i", "network-wireless", "-A", "sign-in=Sign In", "Sign In to Network", "This network wants a sign-in before it lets anything through"]
     stdout: SplitParser {
       onRead: line => {
         const text = line.trim();

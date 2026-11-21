@@ -471,7 +471,7 @@ Notes on specific features:
         menu's clock (`display`). Long text elides at a line limit. Words
         follow GNOME's HIG: header capitals for titles (the notifications our scripts send too), buttons, pills and menu
         items ("Collapse All", "In Use"), sentence case for subtitles, states,
-        placeholders and bind descriptions. Numbers take a space before % and
+        placeholders and bind descriptions; no text ends in a full stop, our own notifications' bodies too. Numbers take a space before % and
         units ("76 %", "2 h 40 min"), degrees none ("5°"); a track's time is
         m:ss; a date is in the locale's order with the day unpadded ("Friday
         20 November").
@@ -854,7 +854,8 @@ nix fmt                  # formatter = nixfmt-tree
   out, a duration or font that is not a Theme token, an icon path outside
   `Symbols`, a shadow on anything but a `Card`, anything turned by hand
   rather than an `ExpanderArrow`'s `pointing`, one inline component name
-  in two files or shadowing one in `common/`, and `flatMap`.
+  in two files or shadowing one in `common/`, `flatMap`, and text ending in a
+  full stop.
   What a file does on purpose is listed in the script with why.
 - `checks.<system>.notification-markup` (Linux) — `qmltestrunner` over
   `tests/tst_markup.qml`: what the notification body filter
@@ -1158,7 +1159,7 @@ row's charge; which pills a machine gets
 (NetworkManager, BlueZ, devices gone); NetworkManager stopping and starting
 under it; Wi-Fi's saved, new (a wrong password, then the right one), given
 up (its profile gone), vanishing and open networks, the radio and its
-hardware switch, a captive portal's Sign in; VPNs down and up, wanting a
+hardware switch, a captive portal's Sign In; VPNs down and up, wanting a
 password and failing; a headset paired, trusted and connected in one click
 and a keyboard wanting a PIN; night light kept through a restart and put
 back in a hyprsunset started again; a backlight's slider and the centre's own levels and mutes showing the OSD;

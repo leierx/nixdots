@@ -136,7 +136,7 @@ qst case "a captive portal: a notification and the connected row offer to sign i
 qst network up Pixel_7128
 qst wait '.controls.network.connected == "Pixel_7128"'
 qst network connectivity portal
-qst wait '.controls.network.portal and any(.history[]; .summary == "Sign in to network")'
+qst wait '.controls.network.portal and any(.history[]; .summary == "Sign In to Network")'
 open wifi
 qst wait '.controls.toggles | map(select(.key == "wifi"))[0].subtitle == "Sign in to network"'
 press sign-in
@@ -145,7 +145,7 @@ qst actions | grep -q 'xdg-open http://neverssl.com/' || { qst actions; echo "th
 qst network connectivity full
 qst wait '(.controls.network.portal | not)'
 # Online again, its card goes with the portal.
-qst wait 'all(.history[]; .summary != "Sign in to network")'
+qst wait 'all(.history[]; .summary != "Sign In to Network")'
 
 qst case "a VPN goes down and up on a click, and the pill takes them all"
 open vpn

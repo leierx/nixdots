@@ -33,7 +33,7 @@ while [ ! -e "$marker" ] && kill -0 "$wp" 2>/dev/null && [ "$i" -lt 100 ]; do
   sleep 0.05
   i=$((i + 1))
 done
-[ -e "$marker" ] || fail "The screen could not be frozen."
+[ -e "$marker" ] || fail "The screen could not be frozen"
 # Escape in slurp is no failure.
 g=$(slurp -d) || exit 0
 [ -n "$g" ] || exit 0
@@ -45,16 +45,16 @@ if [ "$mode" = copy ]; then
   rm -f "$dir"/copy-*.png
   file="$dir/copy-$(date +%Y%m%d-%H%M%S)-$$.png"
 else
-  mkdir -p "$screenshot_dir" || fail "Could not make $screenshot_dir."
+  mkdir -p "$screenshot_dir" || fail "Could not make $screenshot_dir"
   file="$screenshot_dir/$(date +%Y%m%d-%H%M%S)-$$.png"
 fi
 
-err=$(grim -g "$g" "$file" 2>&1) || fail "${err:-grim failed.}"
+err=$(grim -g "$g" "$file" 2>&1) || fail "${err:-grim failed}"
 kill "$wp" 2>/dev/null || true
 
 if [ "$mode" = copy ]; then
   # Its server keeps any pipe open, so its error is not captured.
-  wl-copy --type image/png < "$file" || fail "Could not copy it to the clipboard."
+  wl-copy --type image/png < "$file" || fail "Could not copy it to the clipboard"
   notify -h boolean:transient:true -h boolean:suppress-sound:true -i "file://$file" -h string:x-canonical-private-synchronous:screenshot "Screenshot Copied to Clipboard"
 else
   # Each save keeps a card of its own, with its own file to open; the actions wait in the background.
