@@ -507,7 +507,7 @@ Notes on specific features:
         pressing, a panel opening or closing, or its control going. The lint
         fails an `IconButton` without one. A list that can be empty says
         so in one dim `body` line where its first row would be ("No results",
-        "Looking for networks…"); the center's is its bell and title.
+        "Looking for networks…"); the center's says "No Notifications".
       - Keyboard: every control in the control centre and the center takes
         Tab (a `Button`, `ListRow`, `Pill`, `Slider`, the center's cards and
         the player's play); Return and Space do what a click does, Delete

@@ -64,7 +64,7 @@ Item {
     property: "eased"
     from: 0
     to: 1
-    duration: root.settled ? Theme.move : 0
+    duration: root.settled ? Theme.popupTime : 0
     easing.type: Easing.OutCubic
   }
 
@@ -114,10 +114,10 @@ Item {
 
     width: root.width
     height: root.eased < 1 ? root.from + (root.natural - root.from) * root.eased : root.natural
-    radius: Theme.buttonRadius
+    radius: Theme.cardRadius
     color: {
       if (!root.boxed) return "transparent";
-      return hover.hovered ? Theme.cardHover : Theme.card;
+      return hover.hovered ? Theme.buttonHoverBg : Theme.buttonBg;
     }
     border.width: root.boxed && root.entry.critical ? 1 : 0
     border.color: Theme.destructive
@@ -125,7 +125,7 @@ Item {
 
     Behavior on color {
       ColorAnimation {
-        duration: Theme.fade
+        duration: Theme.quickTime
       }
     }
 
@@ -201,7 +201,7 @@ Item {
           visible: !root.single && root.entry.image !== ""
           Layout.alignment: Qt.AlignTop
           source: root.single ? "" : root.entry.image
-          radius: Theme.buttonRadius
+          radius: Theme.baseRadius
         }
 
         ColumnLayout {
@@ -270,9 +270,9 @@ Item {
       Rectangle {
         Layout.fillWidth: true
         visible: root.expanded && root.entry.progress !== undefined
-        implicitHeight: 8
+        implicitHeight: 4
         radius: height / 2
-        color: Theme.trough
+        color: Theme.troughBg
 
         Rectangle {
           width: parent.width * Math.max(0, Math.min(100, root.entry.progress ?? 0)) / 100
@@ -292,7 +292,7 @@ Item {
   }
 
   FocusRing {
-    corner: Theme.buttonRadius
+    corner: Theme.cardRadius
     on: root.activeFocus
   }
 }

@@ -252,6 +252,9 @@ qst wait '.osd.kind == "microphone" and .osd.muted == false and .osd.level < 0.6
 
 qst case "the player that played last gets the card; stopped, it goes"
 # alone: removing a playing player races Quickshell polling its position, and a loaded machine widens the race
+# The race can lose the poll's reply as the player leaves the bus.
+qst expect --may 'Error updating property org.mpris.MediaPlayer2.firefox'
+qst expect --may 'Message recipient disconnected from message bus without replying'
 qst player add spotify Spotify Playing
 qst player add firefox Firefox Paused
 open

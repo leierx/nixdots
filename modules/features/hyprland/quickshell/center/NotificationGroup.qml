@@ -42,8 +42,8 @@ Item {
     enabled: root.settled
 
     NumberAnimation {
-      duration: Theme.move
-      easing.type: Easing.OutCubic
+      duration: Theme.popupTime
+      easing.type: Easing.OutQuad
     }
   }
 
@@ -128,10 +128,8 @@ Item {
 
     width: root.width
     height: root.expanded || !root.unfolded ? content + root.padding * 2 + root.inset : root.threeLines + root.padding * 2
-    radius: Theme.cardRadius
-    color: {
-      return !root.expanded && hover.hovered ? Theme.cardHover : Theme.card;
-    }
+    radius: Theme.messageRadius
+    color: !root.expanded && hover.hovered ? Theme.messageHoverBg : Theme.messageBg
     // A lone critical notification is marked as its popup is; in a group, only its own box or line is.
     border.width: root.single && root.newest?.critical ? 1 : 0
     border.color: Theme.destructive
@@ -141,14 +139,14 @@ Item {
       enabled: root.settled
 
       NumberAnimation {
-        duration: Theme.move
-        easing.type: Easing.OutCubic
+        duration: Theme.popupTime
+        easing.type: Easing.OutQuad
       }
     }
 
     Behavior on color {
       ColorAnimation {
-        duration: Theme.fade
+        duration: Theme.quickTime
       }
     }
 
@@ -183,16 +181,16 @@ Item {
           implicitWidth: Math.max(height, count.implicitWidth + 9)
           implicitHeight: 18
           radius: height / 2
-          color: Theme.slider
+          color: Theme.sliderKnob
           border.width: 2
-          border.color: Theme.bg
+          border.color: Theme.messageBg
 
           Text {
             id: count
 
             anchors.centerIn: parent
             text: root.shown.length
-            color: Theme.bg
+            color: Theme.panelBg
             font: Theme.captionHeading
           }
         }
@@ -210,8 +208,8 @@ Item {
           enabled: root.settled
 
           NumberAnimation {
-            duration: Theme.move
-            easing.type: Easing.OutCubic
+            duration: Theme.popupTime
+            easing.type: Easing.OutQuad
           }
         }
 
@@ -286,7 +284,7 @@ Item {
   }
 
   FocusRing {
-    corner: Theme.cardRadius
+    corner: Theme.messageRadius
     on: root.activeFocus
   }
 }

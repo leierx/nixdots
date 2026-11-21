@@ -17,8 +17,8 @@ Overlay {
   readonly property var apps: [...new Set(Notifs.shown.map(entry => Notifs.appKey(entry)))]
   readonly property int padding: Theme.padding
   // Beside the calendar the list keeps 24em, or the calendar steps aside, as on a small screen at a large scale, or one too short for it.
-  readonly property real room: width - 2 * Theme.gap - 4 * padding - 1 - side.implicitWidth
-  readonly property bool besides: room >= Math.round(24 * Theme.em) && height - 2 * Theme.gap - 2 * padding >= calendar.implicitHeight
+  readonly property real room: width - 2 * Theme.rise - 4 * padding - 1 - side.implicitWidth
+  readonly property bool besides: room >= Math.round(24 * Theme.em) && height - 2 * Theme.rise - 2 * padding >= calendar.implicitHeight
 
   property real shown: 0
   // Groups expanded, for Collapse all; each counts itself in and out.
@@ -70,8 +70,8 @@ Overlay {
     target: root
     property: "shown"
     to: 1
-    duration: Theme.open
-    easing.type: Easing.OutQuint
+    duration: Theme.popupTime
+    easing.type: Easing.OutQuad
   }
 
   NumberAnimation {
@@ -80,8 +80,8 @@ Overlay {
     target: root
     property: "shown"
     to: 0
-    duration: Theme.close
-    easing.type: Easing.InCubic
+    duration: Theme.popupTime
+    easing.type: Easing.OutQuad
   }
 
   Card {
@@ -89,19 +89,17 @@ Overlay {
 
     anchors {
       top: parent.top
-      topMargin: Theme.gap
+      topMargin: Theme.rise
       horizontalCenter: parent.horizontalCenter
     }
+    radius: Theme.dateMenuRadius
     width: columns.implicitWidth + root.padding * 2
     height: columns.implicitHeight + root.padding * 2
     opacity: root.shown
     focus: true
-    // Grown out of the clock, as the control centre grows out of its button.
-    transform: Scale {
-      origin.x: panel.width / 2
-      origin.y: -Theme.gap
-      xScale: 0.9 + 0.1 * root.shown
-      yScale: 0.9 + 0.1 * root.shown
+    // BoxPointer's: a fade and a slide down from the clock by its rise.
+    transform: Translate {
+      y: -Theme.rise * (1 - root.shown)
     }
 
     RowLayout {
@@ -117,19 +115,19 @@ Overlay {
       ColumnLayout {
         Layout.alignment: Qt.AlignTop
         // Wider than GNOME Shell's 29em message list, which read long and narrow beside the calendar; narrower where the screen is.
-        Layout.preferredWidth: Math.min(Math.round(40 * Theme.em), root.besides ? root.room : root.width - 2 * Theme.gap - 2 * root.padding)
+        Layout.preferredWidth: Math.min(Math.round(40 * Theme.em), root.besides ? root.room : root.width - 2 * Theme.rise - 2 * root.padding)
         spacing: root.padding
 
         Item {
           Layout.fillWidth: true
           // As tall as the calendar and weather at least, so the panel keeps its shape, and no taller than the screen.
-          Layout.preferredHeight: Math.min(root.height - 2 * Theme.gap - 3 * root.padding - footer.implicitHeight, Math.max(side.implicitHeight - footer.implicitHeight - root.padding, list.contentHeight))
+          Layout.preferredHeight: Math.min(root.height - 2 * Theme.rise - 3 * root.padding - footer.implicitHeight, Math.max(side.implicitHeight - footer.implicitHeight - root.padding, list.contentHeight))
 
           ListView {
             id: list
 
             anchors.fill: parent
-            spacing: 6
+            spacing: Theme.padding
             clip: true
             flickableDirection: Flickable.VerticalFlick
             maximumFlickVelocity: 3500
@@ -166,15 +164,15 @@ Overlay {
                 property: "opacity"
                 from: 0
                 to: 1
-                duration: Theme.move
+                duration: Theme.popupTime
               }
 
               NumberAnimation {
                 property: "scale"
                 from: 0.95
                 to: 1
-                duration: Theme.move
-                easing.type: Easing.OutCubic
+                duration: Theme.popupTime
+                easing.type: Easing.OutQuad
               }
             }
 
@@ -182,15 +180,15 @@ Overlay {
               NumberAnimation {
                 property: "opacity"
                 to: 0
-                duration: Theme.fade
+                duration: Theme.quickTime
               }
             }
 
             displaced: Transition {
               NumberAnimation {
                 property: "y"
-                duration: Theme.move
-                easing.type: Easing.OutCubic
+                duration: Theme.popupTime
+                easing.type: Easing.OutQuad
               }
             }
           }
@@ -218,28 +216,14 @@ Overlay {
 
             target: list
             property: "contentY"
-            duration: Theme.move
-            easing.type: Easing.OutCubic
+            duration: Theme.popupTime
+            easing.type: Easing.OutQuad
           }
 
-          Column {
-            anchors.centerIn: parent
+          EmptyLine {
+            width: parent.width
             visible: Notifs.shown.length === 0
-            spacing: 12
-
-            Glyph {
-              anchors.horizontalCenter: parent.horizontalCenter
-              path: Notifs.dnd ? Symbols.dnd : Symbols.bell
-              size: 64
-              color: Theme.fgDim
-            }
-
-            Text {
-              anchors.horizontalCenter: parent.horizontalCenter
-              text: "No Notifications"
-              color: Theme.fgDim
-              font: Theme.title4
-            }
+            text: "No Notifications"
           }
         }
 
@@ -247,8 +231,8 @@ Overlay {
           id: footer
 
           Layout.fillWidth: true
-          Layout.leftMargin: 6
-          spacing: 12
+          Layout.leftMargin: Theme.basePadding
+          spacing: Theme.padding
 
           Item {
             Layout.fillWidth: true
@@ -268,7 +252,7 @@ Overlay {
 
           Button {
             text: "Collapse All"
-            font: Theme.body
+            pill: true
             opacity: root.expandedGroups > 0 && !toast.shown ? 1 : 0
             enabled: opacity === 1
             onClicked: root.collapseAll()
@@ -277,7 +261,7 @@ Overlay {
           Button {
             objectName: "action:Clear"
             text: "Clear"
-            font: Theme.body
+            pill: true
             // Hidden without leaving the layout, so the footer keeps its height.
             opacity: Notifs.shown.length > 0 && !toast.shown ? 1 : 0
             enabled: opacity === 1
@@ -293,7 +277,7 @@ Overlay {
         Layout.fillHeight: true
         visible: root.besides
         implicitWidth: 1
-        color: Theme.border
+        color: Theme.separator
       }
 
       ColumnLayout {
@@ -312,7 +296,7 @@ Overlay {
 
           Layout.fillWidth: true
           // Left out where the screen is too short for it below the calendar.
-          visible: Weather.now !== null && root.height - 2 * Theme.gap - 2 * root.padding - calendar.implicitHeight - side.spacing >= forecast.implicitHeight
+          visible: Weather.now !== null && root.height - 2 * Theme.rise - 2 * root.padding - calendar.implicitHeight - side.spacing >= forecast.implicitHeight
         }
       }
     }

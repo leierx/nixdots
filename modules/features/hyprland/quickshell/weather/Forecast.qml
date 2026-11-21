@@ -25,7 +25,7 @@ Rectangle {
 
   implicitHeight: content.implicitHeight + 2 * padding
   radius: Theme.cardRadius
-  color: Theme.card
+  color: Theme.cardBg
 
   ColumnLayout {
     id: content
@@ -60,7 +60,7 @@ Rectangle {
           Text {
             text: Math.round(root.now?.temperature ?? 0)
             color: Theme.fg
-            font: Theme.temperature
+            font: Theme.largeTitle
           }
 
           Text {

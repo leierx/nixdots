@@ -67,7 +67,7 @@ ColumnLayout {
     Text {
       text: root.locale.toString(root.today, "d MMMM yyyy")
       color: Theme.fg
-      font: Theme.title4
+      font: Theme.title2
 
       MouseArea {
         anchors.fill: parent
