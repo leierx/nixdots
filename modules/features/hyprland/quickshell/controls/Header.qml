@@ -39,7 +39,7 @@ Item {
       Text {
         anchors.verticalCenter: parent.verticalCenter
         width: Math.min(implicitWidth, header.width - actions.width - 56)
-        text: `${Power.percent} % · ${header.batteryState()}`
+        text: `${Theme.unit(Power.percent, "%")} · ${header.batteryState()}`
         elide: Text.ElideRight
         color: Theme.fg
         font: Theme.body

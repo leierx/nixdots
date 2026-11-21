@@ -81,6 +81,11 @@ Singleton {
   readonly property int tap: 100
   readonly property int settle: 400
 
+  // A number and its unit kept together by a narrow no-break space, as the HIG writes them ("76 %", "1 Gb/s").
+  function unit(value: var, unit: string): string {
+    return `${value}\u202f${unit}`;
+  }
+
   // The foreground over whatever lies below, as libadwaita mixes currentColor.
   function overlay(alpha: real): color {
     return Qt.rgba(root.fg.r, root.fg.g, root.fg.b, alpha);

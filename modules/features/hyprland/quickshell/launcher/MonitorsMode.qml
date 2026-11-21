@@ -110,7 +110,7 @@ LauncherMode {
           x: output.enabled ? output.x : null,
           y: output.enabled ? output.y : null,
           reference,
-          mode: output.enabled ? `${output.width}×${output.height} @ ${Math.round(output.refresh)} Hz` : "",
+          mode: output.enabled ? `${output.width}×${output.height} @ ${Theme.unit(Math.round(output.refresh), "Hz")}` : "",
           position: `${output.x}x${output.y}`,
           scale: output.scale,
         }, shape ? logical(shape) : { width: 1920, height: 1080 });

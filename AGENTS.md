@@ -471,8 +471,9 @@ Notes on specific features:
         menu's clock (`display`). Long text elides at a line limit. Words
         follow GNOME's HIG: header capitals for titles (the notifications our scripts send too), buttons, pills and menu
         items ("Collapse All", "In Use"), sentence case for subtitles, states,
-        placeholders and bind descriptions; "…" only where more input follows (a placeholder that acts), never on a settings item ("Network Settings"); no text ends in a full stop, our own notifications' bodies too. Numbers take a space before % and
-        units ("76 %", "2 h 40 min"), degrees none ("5°"); a track's time is
+        placeholders and bind descriptions; "…" only where more input follows (a placeholder that acts), never on a settings item ("Network Settings"); no text ends in a full stop, our own notifications' bodies too. Numbers take a narrow no-break
+        space (U+202F, `Theme.unit`) before % and units ("76 %", "2 h 40 min"),
+        degrees none ("5°"); a track's time is
         m:ss; a date is in the locale's order with the day unpadded ("Friday
         20 November").
       - Icons: every path is in `Symbols` (Material Symbols Rounded), filled
@@ -854,7 +855,8 @@ nix fmt                  # formatter = nixfmt-tree
   out, a duration or font that is not a Theme token, an icon path outside
   `Symbols`, a shadow on anything but a `Card`, anything turned by hand
   rather than an `ExpanderArrow`'s `pointing`, one inline component name
-  in two files or shadowing one in `common/`, `flatMap`, text ending in a full stop, and an ellipsis on a settings item.
+  in two files or shadowing one in `common/`, `flatMap`, text ending in a full stop, an ellipsis on a settings item, and a plain
+  space between a number and its unit.
   What a file does on purpose is listed in the script with why.
 - `checks.<system>.notification-markup` (Linux) — `qmltestrunner` over
   `tests/tst_markup.qml`: what the notification body filter

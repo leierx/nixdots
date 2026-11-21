@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Services.UPower
+import qs.common
 
 // UPower's display device combines the laptop batteries and leaves out mice and UPSes.
 Singleton {
@@ -18,6 +19,6 @@ Singleton {
   function duration(seconds: real): string {
     const minutes = Math.round(seconds / 60);
     const hours = Math.floor(minutes / 60);
-    return hours > 0 ? `${hours} h ${minutes % 60} min` : `${minutes} min`;
+    return hours > 0 ? `${Theme.unit(hours, "h")} ${Theme.unit(minutes % 60, "min")}` : Theme.unit(minutes, "min");
   }
 }

@@ -326,7 +326,7 @@ Rectangle {
             Text {
               anchors.verticalCenter: parent.verticalCenter
               visible: (row.modelData.battery ?? -1) >= 0
-              text: `${Math.round((row.modelData.battery ?? 0) * 100)} %`
+              text: Theme.unit(Math.round((row.modelData.battery ?? 0) * 100), "%")
               color: Theme.fgDim
               font: Theme.caption
             }

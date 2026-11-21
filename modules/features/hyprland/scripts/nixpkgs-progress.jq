@@ -2,8 +2,8 @@
 # Activity types: 100 copyPath, 101 fileTransfer, 104 builds; results: 105 progress, 106 setExpected.
 def mib: . / 104857.6 | floor | "\(. / 10 | floor).\(. % 10)";
 def sizes($got; $total):
-  if $total >= 1048576 then "\($got | mib) of \($total | mib) MiB"
-  else "\($got / 1024 | floor) of \($total / 1024 | floor) KiB" end;
+  if $total >= 1048576 then "\($got | mib) of \($total | mib)\u202fMiB"
+  else "\($got / 1024 | floor) of \($total / 1024 | floor)\u202fKiB" end;
 
 foreach (inputs | ltrimstr("@nix ") | fromjson? // empty) as $e (
   { types: {}, parents: {}, got: {}, total: 0, builds: [0, 0, 0], shown: null, out: null };

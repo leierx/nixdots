@@ -43,7 +43,7 @@ Singleton {
     if (!device.connected) return "Off";
     if (Net.portal) return "Sign in to network";
     if (Net.limited) return "No internet";
-    return device.linkSpeed >= 1000 ? `${device.linkSpeed / 1000} Gb/s` : device.linkSpeed > 0 ? `${device.linkSpeed} Mb/s` : "Connected";
+    return device.linkSpeed >= 1000 ? Theme.unit(device.linkSpeed / 1000, "Gb/s") : device.linkSpeed > 0 ? Theme.unit(device.linkSpeed, "Mb/s") : "Connected";
   }
 
   function wifiState(): string {

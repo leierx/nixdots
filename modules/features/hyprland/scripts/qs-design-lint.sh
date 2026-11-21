@@ -22,6 +22,7 @@ findings() {
     grep -nP '\.flatMap\(|\.flat\(' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: Qt's JavaScript has no flatMap or flat\tjs|" || true
     grep -nP '^(?!\s*//).*["`][^"`]*[A-Za-z)]\.["`]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: text ending in a full stop, which the HIG leaves off\twords|" || true
     grep -nP '(Settings|Preferences|Properties)…["`]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: an ellipsis on a settings item, which asks for no more input\twords|" || true
+    grep -nP '^(?!\s*//).*["`][^"`]*(\}|\d) (%|h|min|s|ms|Hz|[KMGT]i?B|[KMG]b/s)(?![A-Za-z0-9.])' "$file" | grep -v -e 'console\.' -e 'path: "' | sed "s|^\([0-9]*\):.*|$file:\1: a plain space before a unit rather than Theme.unit's narrow no-break space\twords|" || true
   done
   # A component drawn twice drifts apart: one in common/, or one name per thing.
   for file in $files; do grep -oP '^\s*component \K\w+' "$file" | sed "s|$|\t$file|" || true; done |
