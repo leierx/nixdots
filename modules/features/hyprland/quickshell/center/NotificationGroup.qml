@@ -105,10 +105,8 @@ Item {
     // A hand only where the click opens something, an arrow where it only dismisses.
     restCursor: root.expandable || root.newest?.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     onSwiped: left => root.slideAway(left)
-    onTapped: button => {
-      if (button !== Qt.LeftButton) {
-        root.slideAway(false);
-      } else if (root.expandable) {
+    onTapped: {
+      if (root.expandable) {
         root.expanded = !root.expanded;
       } else if (root.newest.defaultAction) {
         root.newest.defaultAction.invoke();

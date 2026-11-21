@@ -26,7 +26,7 @@ status_button() {
   qst areas 'BarWindow' | awk -F'\t' '$6 == "true" && $1 > 1500 { x = $1; y = $2 } END { print x, y }'
 }
 
-qst case "the bar's button, SUPER+A and Escape open and close the centre; the wheel and a right click are the volume's"
+qst case "the bar's button, SUPER+A and Escape open and close the centre; the wheel is the volume's, and a right click does nothing"
 read -r x y < <(status_button)
 qst click left "$x" "$y"
 qst wait '.panel == "controls:DP-1"'
@@ -41,8 +41,7 @@ qst wheel -2
 # Onto the 5 % marks: 64, 70, 75.
 qst wait '.volume.percent == 75'
 qst click right "$x" "$y"
-qst wait '.volume.muted'
-qst stays '.panel == ""' 0.5
+qst stays '(.volume.muted | not) and .panel == ""' 0.5
 
 qst case "every pill the machine has, and only those"
 qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "bluetooth", "night", "dnd"]' 10

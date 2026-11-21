@@ -493,7 +493,7 @@ Notes on specific features:
         so in one dim `body` line where its first row would be ("No results",
         "Looking for networks…"); the center's is its bell and title.
       - Behaviour: the pointer rule under the conventions above. Escape and a
-        click away close every panel; right click dismisses a notification;
+        click away close every panel; a right click only ever opens a menu (the tray's), never dismisses or mutes;
         the tray's menu takes no keyboard, as GTK's doesn't. The wheel steps in
         notches (`WheelSteps`), and only the center's list glides. Only the
         centred panels (launcher, shortcuts) dim the screen behind; popovers
@@ -588,8 +588,7 @@ Notes on specific features:
         status button shows, left to right, what records (`Privacy`), the bell
         while notifications wait unchecked or Do Not Disturb struck through,
         the VPN, the link in use, Bluetooth, a muted microphone, the volume
-        and a laptop's battery; the wheel steps the volume, a right click
-        mutes. The tray folds every item behind one chevron in the order they
+        and a laptop's battery; the wheel steps the volume. The tray folds every item behind one chevron in the order they
         came (`TrayOrder`, since Quickshell sorts by category and id);
         `TrayMenu` is libadwaita's popover menu, cascading as GTK's does,
         taking no keyboard and closing as the pointer leaves it.

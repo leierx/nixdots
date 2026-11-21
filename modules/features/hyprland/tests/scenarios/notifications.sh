@@ -94,3 +94,15 @@ notify-send -a Mail "third"
 qst wait '.notifications == 3'
 qst ipc panels open center > /dev/null
 qst wait '(.center | map(select(.app == "Mail")) | .[0].lines | map(.summary)) == ["disk almost full", "third", "second"]'
+
+qst case "a right click on a popup or a center card leaves it be"
+notify-send -t 0 -a Chat "stays"
+qst wait '(.popups | length) == 1'
+read -r x y _ < <(qst areas 'NotificationPopups/SwipeArea' | head -1)
+qst click right "$x" "$y"
+qst stays '(.popups | length) == 1' 0.6
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center"'
+read -r x y _ < <(qst areas 'NotificationCenter/SwipeArea' | head -1)
+qst click right "$x" "$y"
+qst stays '.notifications == 1 and .panel == "center"' 0.6

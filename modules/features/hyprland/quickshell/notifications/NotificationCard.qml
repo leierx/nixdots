@@ -49,9 +49,8 @@ Item {
     onSwiped: left => {
       if (!left) swipe.slideAway(false, root.entry.dismissal());
     }
-    onTapped: button => {
-      if (button !== Qt.LeftButton) swipe.slideAway(false, root.entry.dismissal());
-      else if (root.expandable) root.expanded = !root.expanded;
+    onTapped: {
+      if (root.expandable) root.expanded = !root.expanded;
       else if (root.entry.defaultAction) root.entry.invoke(root.entry.defaultAction);
       else if (root.entry.buttons.length === 1) root.entry.invoke(root.entry.buttons[0]);
       else root.entry.popup = false;

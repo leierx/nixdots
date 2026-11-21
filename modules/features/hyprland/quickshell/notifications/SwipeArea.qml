@@ -22,7 +22,7 @@ MouseArea {
   property var finished: null
 
   signal swiped(bool left)
-  signal tapped(int button)
+  signal tapped()
 
   // `done` runs once the target is off the edge.
   function slideAway(left: bool, done: var): void {
@@ -41,7 +41,8 @@ MouseArea {
   // Gone mid-slide, its panel closed or its monitor unplugged, it still dismisses what it was sliding away.
   Component.onDestruction: finish()
 
-  acceptedButtons: Qt.LeftButton | Qt.RightButton
+  // The HIG keeps the secondary click for a menu, never another way to dismiss.
+  acceptedButtons: Qt.LeftButton
   preventStealing: dragging
   cursorShape: dragging ? Qt.ClosedHandCursor : restCursor
 
@@ -86,7 +87,7 @@ MouseArea {
     back.start();
   }
   onClicked: mouse => {
-    if (!dragged) tapped(mouse.button);
+    if (!dragged) tapped();
   }
 
   // Fast first, carrying on from the drag rather than starting again from rest.
