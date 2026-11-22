@@ -153,7 +153,7 @@ Item {
 
         IconImage {
           anchors.centerIn: parent
-          implicitSize: 24
+          implicitSize: 22
           source: Machine.icon
         }
       }
