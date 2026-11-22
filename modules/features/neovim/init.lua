@@ -4,6 +4,7 @@ vim.loader.enable()
 -- nvim-pack-lock.json pins plugins; from the read-only store vim.pack uses a writable copy, resynced when it changes
 local config_dir = vim.fn.stdpath("config")
 local resync = false
+local seeded_path, committed
 
 local function read(path)
   local f = io.open(path, "r")
@@ -30,12 +31,11 @@ if vim.uv.fs_access(config_dir, "W") then
   vim.pack.add = add
 else
   local writable_config = vim.fs.joinpath(vim.fn.stdpath("data"), "nvim-pack-config")
-  local committed = read(vim.fs.joinpath(config_dir, "nvim-pack-lock.json"))
-  local seeded_path = vim.fs.joinpath(writable_config, "seeded-lock.json")
+  committed = read(vim.fs.joinpath(config_dir, "nvim-pack-lock.json"))
+  seeded_path = vim.fs.joinpath(writable_config, "seeded-lock.json")
   if committed and committed ~= read(seeded_path) then
     vim.fn.mkdir(writable_config, "p")
     write(vim.fs.joinpath(writable_config, "nvim-pack-lock.json"), committed)
-    write(seeded_path, committed)
     resync = true
   end
 
@@ -57,6 +57,15 @@ require("plugins")
 
 if resync then
   vim.pack.update(nil, { target = "lockfile", force = true })
+  -- seeded only once every plugin is on it, so an update that failed (offline, say) runs again next start
+  local revs = vim.json.decode(committed).plugins
+  local synced = vim.iter(vim.pack.get(nil, { info = false })):all(function(p)
+    local head = vim.system({ "git", "rev-parse", "HEAD" }, { cwd = p.path, text = true }):wait().stdout
+    return not revs[p.spec.name] or revs[p.spec.name].rev == vim.trim(head or "")
+  end)
+  if synced then
+    write(seeded_path, committed)
+  end
 end
 
 local stale = vim.iter(vim.pack.get(nil, { info = false }))
