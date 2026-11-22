@@ -27,16 +27,19 @@ usage: qs-test COMMAND
   case NAME             a test's next case: check the last one left no problems, print it and reset
   expect [--may] REGEX  this case must (or may) log a warning matching REGEX
   check                 whether the case so far left problems
-  run [-j N] [--fail-fast] [--failed] [--changed] [FILE[:CASE-REGEX]...]
+  run [-j N] [--fail-fast] [--failed|--failed-first] [--changed] [--keep|--down] [FILE[:CASE-REGEX]...]
                         the checkout's QML into N sessions side by side (by cores and memory; 1: this one),
                         and every case of tests/scenarios/*.sh, or those given, longest first; qst on PATH
+                        --failed runs only the last run's failures; worker sessions go when it ends (--keep keeps them)
+  red [REV] FILE:CASE...  run cases against REV's QML (HEAD) in this session, expecting them to fail, then sync back
   jobs [FILE[:REGEX]...]  the jobs a run would take, in its order
   timings               the last run's slowest cases and where the time went
   key COMBO...          press keys in turn (ctrl+n, super+d, shift+Tab, Escape)
   type TEXT             type TEXT into the focused surface
   pointer X Y           put the pointer at X Y in layout coordinates (hover)
   move DX DY            move the pointer by DX DY
-  click [BUTTON] [X Y]  click left (or right, middle), at X Y if given
+  click [BUTTON] [X Y | [WINDOW:]NAME]   click left (or right, middle), at X Y or on an area by name
+  area [WINDOW:]NAME    where that area is, as "x y"; lists the names there when it is not found
   press|release BUTTON  hold or let go of a button
   drag X Y DX DY [MS]   press left at X Y, glide DX DY over MS (300) ms, release
   wheel STEPS [horizontal]  scroll STEPS notches, positive down or right
@@ -77,6 +80,7 @@ usage: qs-test COMMAND
   motion start|stop     record every visible item each frame; stop prints what moved, failing on a jump
   fail TOOL MODE        TOOL fails as MODE (exit, crash, missing, garbage, off) wherever the shell runs it
   actions               what the session tried to run on the machine (power, systemd-run, ...)
+  trace                 the qst commands run in this case, with their file and line
 
 env: QS_TEST_DIR (session dir), QS_TEST_HOST (host whose config is built, $host),
      QS_TEST_NETWORK, QS_TEST_BLUETOOTH (none: no NetworkManager, no BlueZ), QS_TEST_SCALE (the shell's QT_SCALE_FACTOR, 1),
@@ -87,6 +91,42 @@ EOF
 die() {
   echo "qs-test: $*" >&2
   exit 1
+}
+
+# What a scenario's qst wrapper hands over (QST_FILE, QST_LINE, QST_WHERE): the call that led here.
+trace() {
+  [ -d "$T" ] && [ -n "${QST_LINE:-}" ] || return 0
+  printf '%s:%s%s\tqst %s\n' "${QST_FILE:--}" "$QST_LINE" "${QST_WHERE:-}" "$*" >> "$T/trace.log"
+}
+
+trace_tail() {
+  [ -s "$T/trace.log" ] || return 0
+  echo "qs-test: the last qst commands:" >&2
+  tail -n 10 "$T/trace.log" | sed 's/^/  /' >&2
+}
+
+# Only the top-level keys a filter names, and the panel, so a timeout does not print a megabyte of history.
+failure_state() {
+  local filter=$1 keys list
+  printf '%s\n' "$snap_json" > "$T/last-failure.json"
+  keys=$(printf '%s\npanel\n' "$(grep -oE '\.[A-Za-z_][A-Za-z0-9_]*' <<< "$filter" | cut -c2-)" | sort -u)
+  list=$(printf '%s\n' "$keys" | jq -R . | jq -sc .)
+  echo "qs-test: the state it was waiting on:" >&2
+  jq -c --argjson keys "$list" 'with_entries(select(.key as $k | [$keys[]] | index($k)))' <<< "$snap_json" >&2
+  echo "qs-test: the whole state in $T/last-failure.json" >&2
+}
+
+failure_context() {
+  local kind=$1 filter=$2 at=""
+  [ -s "$T/trace.log" ] && at=$(tail -n 1 "$T/trace.log" | cut -f1)
+  [ -z "$at" ] || echo "qs-test: failed at $at" >&2
+  trace_tail
+  {
+    echo "== $(date -Is) $kind: $filter"
+    tail -n 12 "$T/trace.log" 2> /dev/null || true
+    printf '%s\n' "$snap_json"
+  } >> "$T/failures.log"
+  failure_state "$filter"
 }
 
 # Milliseconds in REPLY, without a fork; the locale may write a comma in it.
@@ -195,6 +235,7 @@ case_check() {
   fi
   mark=$(cat "$T/case-mark" 2> /dev/null || echo 1)
   found=$(problems "$mark")
+  note_service_changes
   # Peak, as every case starts a qs of its own: a flood or a list built over and over shows here first.
   for pid in $(testqs); do
     peak=$(awk '/VmHWM/ { print int($2 / 1024) }' "/proc/$pid/status" 2> /dev/null || echo 0)
@@ -553,27 +594,33 @@ network_start() {
   mock_start network org.freedesktop.NetworkManager "$tests/networkmanager.py" "$(jq -cn --arg state "${1:-$(network_default)}" '{ state: $state }')"
 }
 
+network_reset() {
+  mock_stop network
+  [ "${QS_TEST_NETWORK:-default}" = none ] || network_start
+}
+
+power_reset() {
+  mock_start power org.freedesktop.UPower "$tests/upower.py"
+  battery 76 discharging 9600
+}
+
+bluetooth_reset() {
+  mock_stop bluetooth
+  if [ "${QS_TEST_BLUETOOTH:-default}" != none ]; then
+    mock_start bluetooth org.bluez "$tests/bluez.py"
+    bluez AddAdapter string:hci0 string:qs-test > /dev/null
+  fi
+}
+
 # Fresh fakes for a case: NetworkManager as network_default, a battery at 76 % so the bar shows all it can,
 # and BlueZ with an adapter and nothing paired; QS_TEST_NETWORK or QS_TEST_BLUETOOTH set to none leaves that one out.
 services_reset() {
   local fakes=() fake
-  {
-    mock_stop network
-    [ "${QS_TEST_NETWORK:-default}" = none ] || network_start
-  } &
+  network_reset &
   fakes+=($!)
-  {
-    mock_start power org.freedesktop.UPower "$tests/upower.py"
-    battery 76 discharging 9600
-  } &
+  power_reset &
   fakes+=($!)
-  {
-    mock_stop bluetooth
-    if [ "${QS_TEST_BLUETOOTH:-default}" != none ]; then
-      mock_start bluetooth org.bluez "$tests/bluez.py"
-      bluez AddAdapter string:hci0 string:qs-test > /dev/null
-    fi
-  } &
+  bluetooth_reset &
   fakes+=($!)
   for fake in "${fakes[@]}"; do wait "$fake" || die "a fake service did not come back"; done
 }
@@ -937,6 +984,8 @@ EOF
   sysbus_start
   services_reset
   pw_start
+  remember_defaults
+  remember_service_state
   XKB_DEFAULT_LAYOUT=$("$HC" getoption input:kb_layout -j | jq -r .str) \
     XKB_DEFAULT_VARIANT=$("$HC" getoption input:kb_variant -j | jq -r .str) \
     setsid qs-input serve "$XDG_RUNTIME_DIR/input" > "$T/input.log" 2>&1 < /dev/null &
@@ -973,6 +1022,8 @@ down() {
   id=$(shell_id)
   rm -rf "$HOME/.local/state/quickshell/by-shell/$id" "$HOME/.cache/quickshell/by-shell/$id"
   [ -n "$runtime" ] && rm -rf "$runtime"
+  # A caller may have redirected a run into the session dir; keep the one that has a home of its own.
+  if [ -s "$T/full.log" ]; then mkdir -p "$hist"; cp "$T/full.log" "$hist/last-full.log"; fi
   rm -rf "$T"
   echo down
 }
@@ -1085,7 +1136,7 @@ wait_for() {
     ms
     if [ $held = 0 ] && [ "$REPLY" -ge "$deadline" ]; then
       echo "qs-test: timed out after ${2:-5} s waiting for: $filter" >&2
-      jq -c "del(.workspaces)" <<< "$snap_json" >&2
+      failure_context wait "$filter"
       exit 1
     fi
     sleep 0.1
@@ -1105,7 +1156,7 @@ stays() {
     violations || clear=0
     if [ "$snap_held" != true ]; then
       echo "qs-test: no longer holds: $filter" >&2
-      jq -c "del(.workspaces)" <<< "$snap_json" >&2
+      failure_context stays "$filter"
       exit 1
     fi
     sleep 0.1
@@ -1123,32 +1174,109 @@ trays_reset() {
   rm -rf "$T/tray.pid" "$T/trays"
 }
 
-# A fresh start for a test: QS_TEST_MONITORS again, the focus on the first, and a new qs with no state.
-reset() {
-  local pid
-  ms
-  phase_at=$REPLY
+# What the fakes and monitors are meant to look like under the current QS_TEST_* values.
+want() {
+  case $1 in
+    monitors) printf '%s' "${QS_TEST_MONITORS:-DP-1:1920x1080:1}" ;;
+    network) printf '%s' "${QS_TEST_NETWORK:-default}" ;;
+    bluetooth) printf '%s' "${QS_TEST_BLUETOOTH:-default}" ;;
+    scale) printf '%s' "${QS_TEST_SCALE:-1}" ;;
+  esac
+}
+
+defaults_same() {
+  [ -s "$T/default-$1" ] && [ "$(cat "$T/default-$1")" = "$(want "$1")" ]
+}
+
+remember_defaults() {
+  local name
+  for name in monitors network bluetooth scale; do want "$name" > "$T/default-$name"; done
+}
+
+# Whether prepare left this session ready for the first case, as it still asks for it.
+fresh_session() {
+  local name
+  [ -e "$T/fresh" ] || return 1
+  for name in monitors network bluetooth scale; do defaults_same "$name" || return 1; done
+}
+
+mark_dirty() { [ -d "$T" ] && : > "$T/dirty-$1"; }
+
+dirty() { [ -e "$T/dirty-$1" ]; }
+
+service_state() {
+  case $1 in
+    nm) owned org.freedesktop.NetworkManager && nm Dump | sed 's/^ *//' ;;
+    bt) owned org.bluez && dbus-send --system --print-reply --dest=org.bluez / org.freedesktop.DBus.ObjectManager.GetManagedObjects 2> /dev/null ;;
+    pw) timeout 2 wpctl status 2> /dev/null ;;
+  esac | md5sum
+}
+
+remember_service_state() {
+  local name
+  for name in nm bt pw; do service_state "$name" > "$T/state-$name"; done
+}
+
+# A click or a key can change a fake as surely as a qst command: compare what each says with what the last reset left.
+note_service_changes() {
+  local name now
+  for name in nm bt pw; do
+    now=$(service_state "$name")
+    if [ -n "$now" ] && [ -s "$T/state-$name" ] && [ "$now" != "$(cat "$T/state-$name")" ]; then mark_dirty "$name"; fi
+    [ -z "$now" ] || printf '%s\n' "$now" > "$T/state-$name"
+  done
+}
+
+wait_bar() {
+  enter
+  wait_kind=reset:bar wait_for "(.screens | length) == ($("$HC" monitors -j | jq length)) and (.layers | map(select(endswith(\" quickshell:bar\"))) | length) == (.screens | length)" 10
+}
+
+# Everything a fresh case has, less the shell: full resets it all, otherwise only what the last case touched.
+reset_state() {
+  local force=${1:-} pid parts=() part pw=0 nm=0 up=0 bt=0 mon=0
   enter
   trays_reset
   players_reset
   for pid in $("$HC" clients -j | jq -r '.[].pid'); do kill "$pid" 2> /dev/null || true; done
   phase clients
-  stop_qs
-  phase stop_qs
+  if [ "$force" = full ]; then
+    pw=1 nm=1 up=1 bt=1 mon=1
+  else
+    dirty pw && pw=1
+    { dirty nm || ! defaults_same network; } && nm=1
+    dirty up && up=1
+    { dirty bt || ! defaults_same bluetooth; } && bt=1
+    { dirty mon || ! defaults_same monitors; } && mon=1
+  fi
   # Side by side, as none reaches the others; with the shell gone, none of it reaches a state file either.
-  local parts=() part
-  alongside pw_reset > "$T/reset.pw_reset.log" 2>&1 &
-  parts+=($!)
-  alongside services_reset > "$T/reset.services_reset.log" 2>&1 &
-  parts+=($!)
+  if [ $pw = 1 ]; then alongside pw_reset > "$T/reset.pw_reset.log" 2>&1 & parts+=($!); fi
+  if [ $nm = 1 ]; then alongside network_reset > "$T/reset.network_reset.log" 2>&1 & parts+=($!); fi
+  if [ $up = 1 ]; then alongside power_reset > "$T/reset.power_reset.log" 2>&1 & parts+=($!); fi
+  if [ $bt = 1 ]; then alongside bluetooth_reset > "$T/reset.bluetooth_reset.log" 2>&1 & parts+=($!); fi
   alongside camera_reset
   rm -rf "$T/units" "$T/backlight"
   mkdir -p "$T/backlight"
-  alongside monitors_reset
+  if [ $mon = 1 ]; then alongside monitors_reset; fi
   "$HC" dispatch "hl.dsp.focus({ monitor = \"$("$HC" monitors -j | jq -r 'min_by(.id).name')\" })" > /dev/null
   for part in "${parts[@]}"; do
     wait "$part" || { cat "$T"/reset.*.log >&2; die "the reset failed"; }
   done
+  rm -f "$T"/dirty-*
+  remember_defaults
+  remember_service_state
+}
+
+# A fresh start for a test: QS_TEST_MONITORS again, the focus on the first, and a new qs with no state.
+reset() {
+  local force=${1:-}
+  ms
+  phase_at=$REPLY
+  enter
+  rm -f "$T/fresh"
+  stop_qs
+  phase stop_qs
+  reset_state "$force"
   phase pipewire+services+monitors
   rm -rf "$HOME/.local/state/quickshell/by-shell/$(shell_id)"
   : > "$T/actions.log"
@@ -1156,7 +1284,7 @@ reset() {
   start_qs > /dev/null
   problems
   phase start_qs
-  wait_kind=reset:bar wait_for "(.screens | length) == ($("$HC" monitors -j | jq length)) and (.layers | map(select(endswith(\" quickshell:bar\"))) | length) == (.screens | length)" 10
+  wait_bar
 }
 
 
@@ -1232,39 +1360,105 @@ order_jobs() {
 
 # What a change in the checkout could break, by the components each scenario exercises; anything not listed here runs them all.
 changed_scenarios() {
-  local path dir all=0 picked=()
+  local path dir comp all=0 probe=0 picked=() components=() chaos=() importers=() importer name rel
   while IFS= read -r path; do
     case $path in
       *.md) ;;
       modules/features/hyprland/tests/scenarios/*.sh) picked+=("$(basename "$path" .sh)") ;;
-      modules/features/hyprland/tests/networkmanager.py | modules/features/hyprland/tests/upower.py) picked+=(controls chaos) ;;
-      modules/features/hyprland/tests/bluez.py | modules/features/hyprland/tests/mpris.py) picked+=(controls chaos cursors design) ;;
-      modules/features/hyprland/tests/tray.qml | modules/features/hyprland/tests/trays.qml) picked+=(tray cursors design hotplug chaos) ;;
+      modules/features/hyprland/tests/Probe.qml | modules/features/hyprland/tests/ProbeWindow.qml | modules/features/hyprland/tests/ProbeWindows.qml | modules/features/hyprland/tests/invariants.jq | modules/features/hyprland/tests/Gallery.qml | modules/features/hyprland/tests/GalleryWindow.qml) probe=1 ;;
+      modules/features/hyprland/tests/networkmanager.py | modules/features/hyprland/tests/upower.py) components+=(controls) ;;
+      modules/features/hyprland/tests/bluez.py | modules/features/hyprland/tests/mpris.py) components+=(controls design) ;;
+      modules/features/hyprland/tests/tray.qml | modules/features/hyprland/tests/trays.qml) picked+=(tray cursors design hotplug) ;;
       modules/features/hyprland/scripts/camera-users.c) picked+=(privacy design) ;;
       modules/features/hyprland/scripts/backlight-watch.sh) picked+=(osd controls design) ;;
+      modules/features/hyprland/quickshell.nix) picked+=(binds cursors design interactions hotplug) ;;
       modules/features/hyprland/quickshell/*/*)
         dir=${path#modules/features/hyprland/quickshell/}
-        case ${dir%%/*} in
-          bar) picked+=(tray hotplug workspaces cursors design controls chaos interactions idle notifications) ;;
-          center) picked+=(notifications history motion cursors design hotplug chaos interactions idle failures) ;;
-          controls) picked+=(controls caffeine cursors design chaos osd privacy interactions notifications) ;;
-          idle) picked+=(idle chaos) ;;
-          launcher) picked+=(launcher hotplug cursors design failures interactions chaos binds) ;;
-          notifications) picked+=(notifications history cursors design chaos hotplug motion interactions controls failures) ;;
-          osd) picked+=(osd motion design) ;;
-          power) picked+=(interactions hotplug cursors design binds controls) ;;
-          shortcuts) picked+=(hotplug cursors design binds failures) ;;
-          weather) picked+=(failures design cursors notifications history motion) ;;
-          *) all=1 ;;
-        esac
+        comp=${dir%%/*}
+        if [ "$comp" = common ]; then
+          name=$(basename "$path" .qml)
+          mapfile -t importers < <(grep -rl --include='*.qml' -E "(^|[^A-Za-z0-9_])${name}([^A-Za-z0-9_]|$)" "$src" | grep -vxF "$src/$dir" || true)
+          if [ ${#importers[@]} -eq 0 ]; then
+            all=1
+          else
+            for importer in "${importers[@]}"; do
+              rel=${importer#"$src"/}
+              case $rel in
+                */*) components+=("${rel%%/*}") ;;
+                *) all=1 ;;
+              esac
+            done
+          fi
+        else
+          components+=("$comp")
+        fi
         ;;
+      modules/features/hyprland/quickshell/*) all=1 ;;
       *) all=1 ;;
     esac
   done < <(git -C "$repo" diff --name-only HEAD && git -C "$repo" ls-files --others --exclude-standard)
   if [ $all = 1 ]; then
     echo "$tests"/scenarios/*.sh
-  else
-    printf '%s\n' "${picked[@]}" | sort -u
+    return
+  fi
+  for comp in "${components[@]}"; do
+    case $comp in
+      bar)
+        picked+=(tray hotplug workspaces cursors design controls interactions idle notifications)
+        chaos+=('tray|workspace|window|bar|status|hotplug|monitor|output|panel')
+        ;;
+      center)
+        picked+=(notifications history motion cursors design hotplug interactions idle failures)
+        chaos+=('notification|critical|Clear|player|media|centre|center|volume|output')
+        ;;
+      controls)
+        picked+=(controls caffeine cursors design osd privacy interactions notifications)
+        chaos+=('network|VPN|Bluetooth|outputs|sound|volume|centre|center|toggle|device|microphone|input|backlight|camera|record|PipeWire|OSD')
+        ;;
+      idle)
+        picked+=(idle)
+        chaos+=('idle|lock')
+        ;;
+      launcher)
+        picked+=(launcher hotplug cursors design failures interactions binds)
+        chaos+=('launcher|typed|words')
+        ;;
+      notifications)
+        picked+=(notifications history cursors design hotplug motion interactions controls failures)
+        chaos+=('notification|critical|flood|screenshot|Clear|popup|text|icon|sound')
+        ;;
+      osd)
+        picked+=(osd motion design)
+        chaos+=('volume|backlight|OSD|mute|PipeWire')
+        ;;
+      power)
+        picked+=(interactions hotplug cursors design binds controls)
+        chaos+=('idle|lock|session|power')
+        ;;
+      privacy)
+        picked+=(privacy controls design)
+        chaos+=('record|microphone|camera|input|device')
+        ;;
+      shortcuts)
+        picked+=(hotplug cursors design binds failures)
+        chaos+=('keys|shortcut|bind')
+        ;;
+      weather) picked+=(failures design cursors notifications history motion) ;;
+      *) all=1 ;;
+    esac
+  done
+  if [ $all = 1 ]; then
+    echo "$tests"/scenarios/*.sh
+    return
+  fi
+  if [ ${#picked[@]} -eq 0 ] && [ ${#chaos[@]} -eq 0 ]; then
+    # Only the probe changed: there is no smaller slice to blame.
+    [ $probe = 0 ] || echo "$tests"/scenarios/*.sh
+    return
+  fi
+  printf '%s\n' "${picked[@]}" | sort -u
+  if [ ${#chaos[@]} -gt 0 ]; then
+    printf 'chaos:%s\n' "$(printf '%s\n' "${chaos[@]}" | sort -u | paste -sd '|')"
   fi
 }
 
@@ -1276,22 +1470,129 @@ default_jobs() {
   awk -v cores="$cores" -v memory="$memory" 'BEGIN { n = int(cores / 2); m = int((memory - 4096) / 1536); if (m < n) n = m; print n < 1 ? 1 : n }'
 }
 
-# A session for `run`, up if it is not, with the checkout's QML in it.
+# The QS_TEST_* values a scenario sets before its first case, so a prepared session comes up as that case needs it.
+prepare_env() {
+  local file=$1 line
+  [ -s "$file" ] || return 0
+  while IFS= read -r line; do
+    case $line in
+      export\ QS_TEST_MONITORS=* | QS_TEST_MONITORS=* | export\ QS_TEST_NETWORK=* | QS_TEST_NETWORK=* | export\ QS_TEST_BLUETOOTH=* | QS_TEST_BLUETOOTH=* | export\ QS_TEST_SCALE=* | QS_TEST_SCALE=*) eval "$line" ;;
+    esac
+  done < <(grep -E '^(export )?QS_TEST_(MONITORS|NETWORK|BLUETOOTH|SCALE)=' "$file" | grep -vE '(^|[[:space:]])qst([[:space:]]|$)' || true)
+}
+
+# A session for `run`, up if it is not, with the checkout's QML in it and the first case's fakes.
 prepare() {
-  local build
+  local build scenario=${1:-}
+  if [ -n "$scenario" ]; then
+    [ -f "$scenario" ] || scenario=$tests/scenarios/${scenario%.sh}.sh
+    [ -f "$scenario" ] || die "no scenario $1"
+    prepare_env "$scenario"
+  fi
   if running; then
     read -r build < "$T/build"
     fakes "$build"
+    stop_qs
+    reset_state full
   else
     up
   fi
   ln -sfn "$self" "$T/bin/qst"
   mkdir -p "$T/tests"
   : > "$T/timings.tsv"
-  rm -f "$T/case"
+  rm -f "$T/case" "$T/fresh"
+  rm -rf "$HOME/.local/state/quickshell/by-shell/$(shell_id)"
+  : > "$T/actions.log"
+  restore_tools
   stop_qs
   sync_source
   start_qs
+  touch "$T/fresh"
+}
+
+# The objectName lines a fix added; REV's QML lacks them, and a test needs them to find what it clicks.
+carry_object_names() {
+  local file rel old add
+  while IFS= read -r file; do
+    rel=${file#"$src"/}
+    old=$T/shell/$rel
+    [ -f "$old" ] || continue
+    add=$T/red-objectnames
+    git diff --no-index -U0 -- "$old" "$file" 2> /dev/null | awk '
+      /^@@/ { split($2, h, ","); at = substr(h[1], 2) + 0; next }
+      /^\+/ && !/^\+\+\+/ && /objectName:/ { print at "\t" substr($0, 2) }
+    ' > "$add" || true
+    [ -s "$add" ] || continue
+    awk -F'\t' 'FNR == NR { have[$0] = 1; next } !($2 in have)' "$old" "$add" > "$add.new"
+    mv "$add.new" "$add"
+    awk -F'\t' -v mapfile="$add" '
+      BEGIN {
+        while ((getline l < mapfile) > 0) { split(l, p, "\t"); ins[p[1]] = ins[p[1]] p[2] "\n" }
+      }
+      NR == 1 && (0 in ins) { printf "%s", ins[0] }
+      { print; if (NR in ins) printf "%s", ins[NR] }
+    ' "$old" > "$old.new"
+    mv "$old.new" "$old"
+  done < <(find "$src" -name '*.qml' -type f)
+  rm -f "$T/red-objectnames"
+}
+
+red_restore() {
+  stop_qs
+  sync_source
+  start_qs > /dev/null
+  rm -f "$T/fresh"
+}
+
+# Run cases against REV's QML (HEAD), expecting them to fail, then put the checkout's back. No build, no second session.
+red() {
+  local rev=HEAD old keep=$T/red-keep file prelude first last alone names name log status pid jobs=0 passed=0
+  [ $# -gt 0 ] || die "red [REV] FILE:CASE..."
+  if [ $# -gt 1 ] && [[ $1 != *:* ]] && [ ! -f "$1" ] && [ ! -f "$tests/scenarios/${1%.sh}.sh" ]; then
+    rev=$1
+    shift
+  fi
+  need_up
+  git -C "$repo" rev-parse --verify --quiet "$rev^{commit}" > /dev/null || die "no revision $rev"
+  trap red_restore EXIT
+  rm -rf "$T/red" "$keep"
+  mkdir -p "$T/red" "$keep"
+  git -C "$repo" archive "$rev" modules/features/hyprland/quickshell | tar -x -C "$T/red" || die "cannot read $rev"
+  old=$T/red/modules/features/hyprland/quickshell
+  cp -r "$T/shell/nix" "$keep/nix"
+  cp -r "$T/shell/weather/icons" "$keep/icons"
+  stop_qs
+  rm -rf "$T/shell"
+  cp -r "$old" "$T/shell"
+  chmod -R u+w "$T/shell"
+  cp -r "$keep/nix" "$T/shell/nix"
+  mkdir -p "$T/shell/weather"
+  cp -r "$keep/icons" "$T/shell/weather/icons"
+  install_probe
+  carry_object_names
+  rm -f "$T/fresh"
+  mkdir -p "$T/tests"
+  while IFS=$'\t' read -r file prelude first last alone names; do
+    name=$(basename "$file" .sh)
+    jobs=$((jobs + 1))
+    log=$T/tests/$name.$first.red.log
+    QS_TEST_DIR=$T QST_RED=1 setsid "$self" job "$file" "$prelude" "$first" "$last" "${names%% | *}" > "$log" 2>&1 &
+    pid=$!
+    status=0
+    wait "$pid" || status=$?
+    kill -- "-$pid" 2> /dev/null || true
+    if [ $status -eq 0 ]; then
+      echo "qs-test: \"${names%% | *}\" passed against $rev, so it does not catch the bug" >&2
+      passed=$((passed + 1))
+    else
+      echo "qs-test: \"${names%% | *}\" failed against $rev, as it should ($log)"
+      grep -v '^== ' "$log" | tail -10 | sed 's/^/     /'
+    fi
+  done < <(select_jobs "$@")
+  red_restore
+  trap - EXIT
+  [ $jobs -gt 0 ] || die "no case matches $*"
+  [ $passed -eq 0 ] || die "$passed of $jobs cases pass without the fix"
 }
 
 # One job in this session: its file's lines before the first case, then its own.
@@ -1299,7 +1600,21 @@ run_job() {
   local file=$1 prelude=$2 first=$3 last=$4 key=$5 name script status=0
   name=$(basename "$file" .sh)
   script=$T/tests/$name.$first.sh
-  awk -v prelude="$prelude" -v first="$first" -v last="$last" 'NR <= prelude || (NR >= first && NR <= last)' "$file" > "$script"
+  local wrapper qst_bin
+  printf -v qst_bin '%q' "$T/bin/qst"
+  wrapper=$(cat <<'EOF'
+qst() {
+  local at=$((BASH_LINENO[0] - 5)) from=""
+  if [ "${FUNCNAME[1]:-main}" != main ]; then from=" ${FUNCNAME[1]}()@$((BASH_LINENO[1] - 5))"; fi
+  QST_LINE=$at QST_WHERE=$from @QST@ "$@"
+}
+EOF
+  )
+  wrapper=${wrapper//@QST@/$qst_bin}
+  {
+    printf '%s\n' "$wrapper"
+    awk -v prelude="$prelude" -v first="$first" -v last="$last" 'NR <= prelude || (NR >= first && NR <= last)' "$file"
+  } > "$script"
   export QS_TEST_DIR=$T QS_TEST_REPO=$repo QS_TEST_HOST=$host
   rm -f "$T/case"
   touch "$T/timings.tsv"
@@ -1307,7 +1622,7 @@ run_job() {
   lines=$(wc -l < "$T/timings.tsv")
   ms
   local began=$REPLY
-  (enter && QST_FILE=$name bash -euo pipefail "$script" && QST_FILE=$name "$self" check) || status=$?
+  (enter && QST_FILE=$name bash -euo pipefail "$script" && { [ "${QST_RED:-0}" = 1 ] || QST_FILE=$name "$self" check; }) || status=$?
   rm -f "$T/case"
   peak=$(tail -n +$((lines + 1)) "$T/timings.tsv" | awk -F'\t' '$3 == "snapshot" && $5 > peak { peak = $5 } END { print peak + 0 }')
   ms
@@ -1316,31 +1631,57 @@ run_job() {
   return $status
 }
 
+# The failures of the last run, keyed as order_jobs keys them.
+filter_failed() {
+  awk -F'\t' -v failures="$hist/failed" '
+    BEGIN { while ((getline l < failures) > 0) failed[l] = 1 }
+    {
+      name = $1
+      sub(/.*\//, "", name)
+      sub(/\.sh$/, "", name)
+      split($6, names, " [|] ")
+      if ((name "\t" names[1]) in failed) print
+    }'
+}
+
 # Jobs spread over N sessions, each a QS_TEST_DIR of its own ($T itself when N is 1, else $T/w1 …); a line as each finishes.
 run_tests() {
-  local workers=() selected=() files=() n="" fail_fast=0 failed_first=0 changed=0 arg w k
+  local workers=() selected=() files=() n="" fail_fast=0 failed_first=0 changed=0 failed_only=0 keep=0 force_down=0 arg w k first_file
   while [ $# -gt 0 ]; do
     case $1 in
       -j) n=$2; shift ;;
       -j*) n=${1#-j} ;;
       --fail-fast) fail_fast=1 ;;
-      --failed) failed_first=1 ;;
+      --failed) failed_only=1 ;;
+      --failed-first) failed_first=1 ;;
       --changed) changed=1 ;;
-      -*) die "run [-j N] [--fail-fast] [--failed] [--changed] [FILE[:CASE-REGEX]...]" ;;
+      --keep) keep=1 ;;
+      --down) force_down=1 ;;
+      -*) die "run [-j N] [--fail-fast] [--failed|--failed-first] [--changed] [--keep|--down] [FILE[:CASE-REGEX]...]" ;;
       *) selected+=("$1") ;;
     esac
     shift
   done
+  mkdir -p "$T" "$hist"
+  exec 9> "$T/run.lock"
+  flock -n 9 || die "another qst run is using $T"
+  exec > >(tee "$hist/last-run.log")
   if [ $changed = 1 ]; then
     while IFS= read -r arg; do [ -n "$arg" ] && selected+=("$arg"); done < <(changed_scenarios | tr ' ' '\n')
     [ ${#selected[@]} -gt 0 ] || { echo "nothing changed that a scenario exercises"; return 0; }
   fi
   [ ${#selected[@]} -gt 0 ] || selected=("$tests"/scenarios/*.sh)
-  mkdir -p "$T" "$hist"
   local queue=()
   rm -rf "$T/scenarios"
-  mapfile -t queue < <(select_jobs "${selected[@]}" | order_jobs $failed_first)
-  [ ${#queue[@]} -gt 0 ] || die "no case matches ${selected[*]}"
+  if [ $failed_only = 1 ]; then
+    mapfile -t queue < <(select_jobs "${selected[@]}" | order_jobs 0 | filter_failed)
+  else
+    mapfile -t queue < <(select_jobs "${selected[@]}" | order_jobs $failed_first)
+  fi
+  if [ ${#queue[@]} -eq 0 ]; then
+    [ $failed_only = 0 ] || { echo "no failures from the last run"; return 0; }
+    die "no case matches ${selected[*]}"
+  fi
   mapfile -t files < <(printf '%s\n' "${queue[@]}" | cut -f1 | sort -u)
   lint_scenarios "${files[@]}"
   n=${n:-$(default_jobs)}
@@ -1361,9 +1702,10 @@ run_tests() {
       break
     fi
   done
-  for w in "${workers[@]}"; do
-    mkdir -p "$w"
-    QS_TEST_DIR=$w "$self" prepare > "$w.prepare.log" 2>&1 &
+  for k in "${!workers[@]}"; do
+    mkdir -p "${workers[$k]}"
+    first_file=$(printf '%s\n' "${queue[$k]}" | cut -f1)
+    QS_TEST_DIR=${workers[$k]} "$self" prepare "$first_file" > "${workers[$k]}.prepare.log" 2>&1 9>&- &
     pids+=($!)
   done
   for k in "${!pids[@]}"; do
@@ -1387,7 +1729,7 @@ run_tests() {
       idle=("${idle[@]:1}")
       mkdir -p "$w/tests"
       # A session of its own, so --fail-fast can stop the whole job.
-      QS_TEST_DIR=$w setsid "$self" job "$file" "$prelude" "$first" "$last" "${names%% | *}" > "$w/tests/$(basename "$file" .sh).$first.log" 2>&1 < /dev/null &
+      QS_TEST_DIR=$w setsid "$self" job "$file" "$prelude" "$first" "$last" "${names%% | *}" > "$w/tests/$(basename "$file" .sh).$first.log" 2>&1 9>&- < /dev/null &
       job_of[$!]=$next
       worker_of[$!]=$w
       ms
@@ -1435,6 +1777,12 @@ run_tests() {
   timing run $((REPLY - run_began))
   remember_run
   report "$T/timings.tsv"
+  if [ $force_down = 1 ] && [ "${#workers[@]}" -eq 1 ]; then
+    QS_TEST_DIR=$T "$self" down > /dev/null
+  elif [ "${#workers[@]}" -gt 1 ] && { [ $force_down = 1 ] || [ $keep = 0 ]; }; then
+    for w in "${workers[@]}"; do QS_TEST_DIR=$w "$self" down > /dev/null 9>&- & done
+    wait
+  fi
   return $failed
 }
 
@@ -1457,7 +1805,7 @@ report() {
     $3 == "case" { cases++; total += $4; files[$1] += $4 }
     $3 == "run" { run = $4 }
     $3 ~ /^reset:/ { reset += $4; phases[substr($3, 7)] += $4 }
-    $3 ~ /^reset~/ { beside[substr($3, 7)] += $4 }
+    $3 ~ /^reset~/ { beside[substr($3, 7)] += $4; beside_n++ }
     $3 == "wait" { wait += $4 }
     $3 == "stays" { stays += $4 }
     $3 == "snapshot" { snaps++; snapping += $4; if ($5 > answered) answered = $5 }
@@ -1469,7 +1817,7 @@ report() {
       print substr(line, 1, length(line) - 1)
       printf "phases of reset:"
       for (p in phases) printf " %s %.1f s", p, phases[p] / 1000
-      if (length(beside)) printf ", of which side by side:"
+      if (beside_n) printf ", of which side by side:"
       for (p in beside) printf " %s %.1f s", p, beside[p] / 1000
       printf "\n%d cases, %.0f s (the run %.0f s): reset %s, waits %s, stays %s, the cases themselves %s\n", cases, total / 1000, run / 1000, share(reset), share(wait), share(stays), share(total - reset - wait - stays)
       if (snaps) printf "%d snapshots, %.0f ms each, %s of the time\n", snaps, snapping / snaps, share(snapping)
@@ -1560,6 +1908,42 @@ areas() {
     | [($layer.x + $a.x * $scale | floor), ($layer.y + $a.y * $scale | floor), $a.label, $a.enabled, $a.clicks, $a.hand] | @tsv' <<< "$areas"
 }
 
+# Where [WINDOW:]NAME is on screen, as "x y label": an area's objectName suffix (`pill:wifi`, `action:Clear`) or its text.
+area_lookup() {
+  local spec=$1
+  areas | awk -F'\t' -v spec="$spec" '
+    { row[NR] = $0 }
+    END {
+      name = spec
+      i = index(spec, ":")
+      if (i > 0) {
+        window = substr(spec, 1, i - 1)
+        name = substr(spec, i + 1)
+        for (r = 1; r <= NR; r++) {
+          split(row[r], f, "\t")
+          if (index(f[3], window "/") == 1) { found = 1; break }
+        }
+        if (!found) { window = ""; name = spec }
+      }
+      for (r = 1; r <= NR; r++) {
+        split(row[r], f, "\t")
+        if (window != "" && index(f[3], window "/") != 1) continue
+        at = index(f[3], ":" name)
+        if (at && substr(f[3], at + length(name) + 1, 1) ~ /^([ \t]|$)/) { print f[1], f[2], f[3]; exit }
+        if (index(f[3], "\"" name "\"")) { print f[1], f[2], f[3]; exit }
+      }
+    }'
+}
+
+area_missing() {
+  local window="" names count
+  case $1 in [A-Z]*:*) window=${1%%:*} ;; esac
+  names=$(areas | awk -F'\t' -v w="$window" '(w == "" || index($3, w "/") == 1) { print $3 }' | sed -E 's/^[^:]*://; s/ "[^"]*"$//' | awk '!seen[$0]++')
+  count=$(printf '%s\n' "$names" | wc -l)
+  names=$(printf '%s\n' "$names" | head -n 20 | paste -sd ', ')
+  die "no area named $1${names:+; there: $names}$([ "$count" -le 20 ] || echo " and $((count - 20)) more")"
+}
+
 # Every enabled mouse area that takes a click and asks for a hand gets one: something laid over it must not set an arrow of its own.
 cursor_sweep() {
   local x y label enabled clicks hand shape address what bad=0
@@ -1591,6 +1975,7 @@ shot() {
 
 cmd=${1:-help}
 shift || true
+[ "$cmd" = click ] || [ "$cmd" = case ] || trace "$cmd" "$@"
 case $cmd in
   up) up ;;
   down) down ;;
@@ -1603,7 +1988,7 @@ case $cmd in
   state) need_up; state "$@" ;;
   wait) need_up; wait_for "$@" ;;
   stays) need_up; stays "$@" ;;
-  reset) need_up; reset ;;
+  reset) need_up; reset full ;;
   case)
     need_up
     case_check
@@ -1612,7 +1997,15 @@ case $cmd in
     ms
     echo "$REPLY" > "$T/case-start"
     : > "$T/expected"
-    reset
+    : > "$T/trace.log"
+    trace case "$*"
+    if fresh_session; then
+      rm -f "$T/fresh"
+      wait_bar
+    else
+      rm -f "$T/fresh"
+      reset
+    fi
     ;;
   check) need_up; case_check ;;
   expect)
@@ -1645,10 +2038,22 @@ case $cmd in
     ;;
   cursors) need_up; cursor_sweep "$@" ;;
   areas) need_up; areas | awk -F "\t" -v pattern="${1:-.}" '$3 ~ pattern' ;;
+  area)
+    need_up
+    [ $# -eq 1 ] || die "area [WINDOW:]NAME"
+    read -r x y _ <<< "$(area_lookup "$1")"
+    [ -n "$x" ] || area_missing "$1"
+    echo "$x $y"
+    ;;
+  trace) cat "$T/trace.log" 2> /dev/null || true ;;
   fail) need_up; [ $# -eq 2 ] || die "fail TOOL exit|crash|missing|garbage|off"; fail_tool "$1" "$2" ;;
   run) run_tests "$@" ;;
+  red)
+    need_up
+    red "$@"
+    ;;
   job) need_up; run_job "$@" ;;
-  prepare) prepare ;;
+  prepare) prepare "$@" ;;
   timings) report "$T/timings.tsv" ;;
   jobs) [ $# -gt 0 ] || set -- "$tests"/scenarios/*.sh; select_jobs "$@" | order_jobs 0 | awk -F"\t" '{ sub(/.*\//, "", $1); printf "%s:%d-%d (prelude 1-%d)%s  %s\n", $1, $3, $4, $2, $5 ? ", alone" : "", $6 }' ;;
   key) need_up; input key "$@" ;;
@@ -1659,8 +2064,22 @@ case $cmd in
     need_up
     button=left
     case ${1:-} in left | right | middle) button=$1; shift ;; esac
-    [ $# -ge 2 ] && pointer "$1" "$2"
-    input click "$button"
+    if [ $# -eq 0 ]; then
+      trace click "$button"
+      input click "$button"
+    elif [ $# -eq 1 ]; then
+      read -r x y _ <<< "$(area_lookup "$1")"
+      [ -n "$x" ] || area_missing "$1"
+      pointer "$x" "$y"
+      trace click "$button" "$x" "$y" "$1"
+      input click "$button"
+    elif [ $# -eq 2 ] && [[ $1 =~ ^-?[0-9]+([.][0-9]+)?$ ]] && [[ $2 =~ ^-?[0-9]+([.][0-9]+)?$ ]]; then
+      pointer "$1" "$2"
+      trace click "$button" "$1" "$2"
+      input click "$button"
+    else
+      die "click [BUTTON] [X Y | [WINDOW:]NAME]"
+    fi
     ;;
   press | release) need_up; input "$cmd" "${1:-left}" ;;
   drag)
@@ -1677,6 +2096,7 @@ case $cmd in
   monitor)
     need_up
     enter
+    mark_dirty mon
     case ${1:-} in
       add) shift; monitor_add "$@" ;;
       remove) monitor_remove "$2" ;;
@@ -1690,10 +2110,12 @@ case $cmd in
   output)
     need_up
     enter
+    mark_dirty mon
     monitor_add "$("$HC" monitors -j | jq -r 'min_by(.id).name')" "$1" "${2:-1}" 0x0
     ;;
   pipewire)
     need_up
+    mark_dirty pw
     case ${1:-} in
       start) pw_start ;;
       stop) printf "may\t%s\n" "Failed to connect pipewire context" "Pipewire error on object 0 with code -32" >> "$T/expected"; pw_stop ;;
@@ -1701,12 +2123,12 @@ case $cmd in
       *) die "pipewire start|stop|restart" ;;
     esac
     ;;
-  network) need_up; enter; network "$@" ;;
-  battery) need_up; enter; battery "$@" ;;
-  bluetooth) need_up; enter; bluetooth "$@" ;;
+  network) need_up; enter; mark_dirty nm; network "$@" ;;
+  battery) need_up; enter; mark_dirty up; battery "$@" ;;
+  bluetooth) need_up; enter; mark_dirty bt; bluetooth "$@" ;;
   player) need_up; enter; player "$@" ;;
   backlight) need_up; [ $# -ge 2 ] || die "backlight NAME VALUE [MAX], or NAME remove"; backlight "$@" ;;
-  camera) need_up; enter; camera "$@" ;;
+  camera) need_up; enter; mark_dirty cam; camera "$@" ;;
   spawn) need_up; enter; setsid "$@" >> "$T/spawn.log" 2>&1 < /dev/null & ;;
   flood) need_up; enter; qs-flood "$@" ;;
   tray)
@@ -1735,7 +2157,20 @@ case $cmd in
       *) die "tray [log|add NAME [COUNT]|remove NAME|clear]" ;;
     esac
     ;;
-  x) need_up; enter; exec "$@" ;;
+  x)
+    need_up
+    enter
+    case " $* " in
+      *" pw-cli "* | *" pw-dump "* | *" wpctl "* | *" pipewire "*) mark_dirty pw ;;
+    esac
+    case " $* " in
+      *" nmcli "*) mark_dirty nm ;;
+    esac
+    case " $* " in
+      *" bluetoothctl "*) mark_dirty bt ;;
+    esac
+    exec "$@"
+    ;;
   log) cat "$T/qs.log" ;;
   hyprlog) enter; cat "$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/hyprland.log" ;;
   problems) problems ;;

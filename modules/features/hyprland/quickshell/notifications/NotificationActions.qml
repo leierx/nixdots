@@ -22,6 +22,7 @@ ColumnLayout {
   component ActionButton: Button {
     required property NotificationAction modelData
 
+    objectName: "action:" + (modelData?.text ?? "")
     color: pressed ? Theme.messageButtonActiveBg : hovered ? Theme.messageButtonHoverBg : Theme.messageButtonBg
     Layout.fillWidth: true
     // Equal shares, whatever their labels.

@@ -25,6 +25,8 @@ Rectangle {
   // The mouse's, unless something (the gallery) holds a look.
   property bool hovered: area.containsMouse
   property bool pressed: area.pressed
+  // What a test clicks by: the label, unless the control names itself.
+  objectName: text ? "button:" + text : ""
 
   readonly property bool filled: suggested || destructive
   readonly property color fillBg: suggested ? Theme.accentBg : Theme.destructiveBg

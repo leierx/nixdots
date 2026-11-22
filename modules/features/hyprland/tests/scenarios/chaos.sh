@@ -20,18 +20,6 @@ menu_rows() {
   qst areas 'ControlsPanel' | awk -F'\t' '$2 > 60 && $2 < 1000 { print $1, $2 }' | sort -n -k2 | awk '{ n[$1]++; at[$1] = at[$1] " " $2 } END { for (x in n) if (n[x] > best) { best = n[x]; bx = x } print bx at[bx] }'
 }
 
-# The control centre's areas by name (pill:wifi, row:Pixel_7128), as "x y", on the screen given or DP-1.
-named() {
-  qst areas 'ControlsPanel' | awk -F'\t' -v name="$1" -v screen="${2:-DP-1}" '(screen == "DP-1") == ($1 < 1920) && index($3, ":" name) && substr($3, index($3, ":" name) + length(name) + 1, 1) ~ /^( |$)/ { print $1, $2; exit }'
-}
-
-press_named() {
-  local x y
-  read -r x y < <(named "$@")
-  [ -n "$x" ] || { echo "no area named $1" >&2; exit 1; }
-  qst click left "$x" "$y"
-}
-
 qst case "a flood of critical notifications keeps five popups, plays almost nothing, and one card counts what it turned away"
 qst flood 3000 --urgency 2
 qst wait '(.popups | length) == 5'
@@ -256,7 +244,7 @@ qst ipc controls menu sound > /dev/null
 qst wait '.panel == "controls:DP-1"'
 # The one in use comes first, so each pick moves the list: each row is found again by name.
 for n in $(seq 0 29); do
-  read -r x y < <(named "$([ $((n % 2)) -eq 0 ] && echo Headset || echo Microphone)")
+  read -r x y < <(qst area "ControlsPanel:$([ $((n % 2)) -eq 0 ] && echo Headset || echo Microphone)")
   qst click left "$x" "$y"
 done
 qst wait '.microphone.input != null' 10
@@ -353,7 +341,7 @@ qst network wifi many 300 "Altibox "
 qst network wifi json "$(jq -cn '[["Right‮to left", 90, "wpa2", "x"], ["two\nlines", 88, "open", ""], ["zero​width​", 86, "wpa2", "x"], [("A network a kilobyte long " * 40), 84, "wpa2", "x"], ["<b>bold</b> & co", 82, "open", ""]]')"
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
-press_named menu:wifi
+qst click ControlsPanel:menu:wifi
 qst wait '(.controls.network.networks | length) == 308' 15
 rows=$(qst areas 'ControlsPanel' | grep -c ':row:' || true)
 [ "$rows" -gt 3 ] && [ "$rows" -lt 40 ] || { echo "$rows rows on screen"; exit 1; }
@@ -390,18 +378,18 @@ for n in $(seq 50); do qst network profile vpn "office-$n.vpn.example.org"; done
 for n in $(seq 100); do qst bluetooth add "$(printf '11:22:33:44:%02X:%02X' $((n / 256)) $((n % 256)))" "Device $n $([ "$n" = 7 ] && printf 'with a name long enough to run off any row %.0s' 1 2 3 4 5)" audio-headset ok; done
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1" and (.controls.vpns | length) == 51'
-press_named menu:vpn
+qst click ControlsPanel:menu:vpn
 qst stays '.controls.menu == "vpn"' 1
-press_named menu:bluetooth
+qst click ControlsPanel:menu:bluetooth
 qst wait '(.controls.bluetooth.devices | length) == 100' 10
 qst stays '.controls.menu == "bluetooth"' 1
 
 qst case "NetworkManager restarting while a password is typed keeps the row and the menu"
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
-press_named menu:wifi
+qst click ControlsPanel:menu:wifi
 qst wait '.controls.network.networks | index("Hvit_Monster")'
-press_named row:Hvit_Monster
+qst click ControlsPanel:row:Hvit_Monster
 qst wait '.controls.network.asking == "Hvit_Monster"'
 qst type half
 qst network restart
@@ -421,14 +409,14 @@ qst wait '.panel == "controls:DP-1"'
 qst case "toggles hammered faster than their services answer settle where the last click left them"
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
-for _ in $(seq 25); do press_named pill:wifi; done
+for _ in $(seq 25); do qst click ControlsPanel:pill:wifi; done
 qst wait '(.controls.network.wifiOn | not)' 10
-for _ in $(seq 20); do press_named pill:night; done
+for _ in $(seq 20); do qst click ControlsPanel:pill:night; done
 qst wait '(.controls.night.on | not)'
-for _ in $(seq 15); do press_named pill:vpn; done
+for _ in $(seq 15); do qst click ControlsPanel:pill:vpn; done
 # Each click reads the state before the last one is done, so only that it settles is certain.
 qst wait '.controls.vpns[0].busy == null' 15
-for _ in $(seq 21); do press_named pill:bluetooth; done
+for _ in $(seq 21); do qst click ControlsPanel:pill:bluetooth; done
 qst wait '(.controls.bluetooth.on | not)'
 qst stays '.panel == "controls:DP-1"' 1
 
@@ -441,7 +429,7 @@ qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
 qst ipc controls menu wifi > /dev/null
 qst wait '(.controls.network.networks | length) == 43' 10
-press_named row:Hvit_Monster
+qst click ControlsPanel:row:Hvit_Monster
 qst wait '.controls.network.asking == "Hvit_Monster"'
 qst type visible
 qst wait '.field == "visible"'
@@ -476,7 +464,7 @@ qst case "the volume hammered from the open centre and the input's mute from wpc
 qst ipc panels open controls:DP-1 > /dev/null
 qst ipc controls menu sound > /dev/null
 qst wait '.panel == "controls:DP-1" and .controls.menu == "sound" and .osdSettling == false'
-read -r ox oy < <(named slider:output)
+read -r ox oy < <(qst area ControlsPanel:slider:output)
 before=$(qst state .osdShown)
 # Each round sets the volume somewhere new and flips the input's mute.
 for i in $(seq 15); do
@@ -511,7 +499,7 @@ qst case "the output's slider past 100 % dragged across while another app sets i
 wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.5
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1" and (.sliders | map(select(.name == "slider:output"))[0].span * 100 | round) == 150'
-read -r x y < <(named slider:output)
+read -r x y < <(qst area ControlsPanel:slider:output)
 qst drag $((x - 140)) "$y" 280 0 600 &
 for level in 1.6 1.8 2.0; do wpctl set-volume @DEFAULT_AUDIO_SINK@ "$level"; done
 wait
@@ -525,7 +513,7 @@ qst case "Escape pressed over and over through drags on the volume leaves it whe
 wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.4
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1" and .volume.percent == 40'
-read -r ox oy < <(named slider:output)
+read -r ox oy < <(qst area ControlsPanel:slider:output)
 for _ in 1 2 3; do
   qst drag $((ox - 100)) "$oy" 200 0 900 &
   qst wait '.volume.percent != 40'
@@ -552,11 +540,10 @@ qst stays '.panel == "apps"' 0.5
 qst case "Clear hammered while notifications keep arriving and the center closes and opens: every card ends in place or gone, and a last Clear takes all"
 qst ipc panels open center > /dev/null
 qst wait '.panel == "center"'
-press() { read -r x y _ < <(qst areas 'NotificationCenter' | awk -F'\t' -v name=":$1" 'index($3, name) && $4 == "true" { print $1, $2; exit }'); [ -n "${x:-}" ] && qst click left "$x" "$y"; }
 for n in $(seq 6); do notify-send -a "App $n" "first $n"; done
 qst wait '.notifications == 6'
 for round in $(seq 8); do
-  press action:Clear || true
+  qst click NotificationCenter:action:Clear || true
   notify-send -a Late "late $round" &
   notify-send -a "App $round" "again $round" &
   [ $((round % 3)) -eq 0 ] && { qst ipc panels close > /dev/null; qst ipc panels open center > /dev/null; }
@@ -565,7 +552,7 @@ wait
 qst wait '.panel == "center" and (.history | map(select(.summary | startswith("first"))) | length) == 0'
 qst wait '(.center | length) == ([.history[].app] | unique | length)'
 qst stays '(.center | map(select(.slid != 0)) | length) == 0' 0.5
-press action:Clear
+qst click NotificationCenter:action:Clear
 qst wait '.notifications == 0 and (.center | length) == 0 and .panel == "center"'
 
 qst case "the pointer swept over every button in the centre faster than the delay shows only the last one's tooltip, and the centre or its monitor going takes it away"

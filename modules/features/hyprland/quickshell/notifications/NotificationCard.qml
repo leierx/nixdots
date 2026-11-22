@@ -11,6 +11,8 @@ Item {
 
   required property NotifEntry entry
 
+  // What a test clicks by: the app its card belongs to.
+  objectName: "notification:" + (entry.notification.appName ?? "")
   property bool expanded: false
   // Shown whole until a collapse has eased the card down, so collapsing animates as expanding does.
   property bool full: false

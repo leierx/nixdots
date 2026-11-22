@@ -11,6 +11,8 @@ Item {
 
   required property var entries
   property bool expanded: false
+  // What a test clicks by: the app whose group this is.
+  objectName: newest ? "group:" + (newest.notification.appName ?? "") : ""
 
   // Kept once the app's last entry has gone, so the group fades out whole.
   property var shown: []

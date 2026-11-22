@@ -658,7 +658,9 @@ qst key super+d                # through Hyprland's bind and the shell's global 
 qst type fire
 qst key ctrl+n Down Return     # one key per argument
 qst pointer 960 21             # absolute motion, layout coordinates (a warp may not hover)
-qst click                      # left, where the pointer is; or `qst click right 1889 20`
+qst click                      # left, where the pointer is; `qst click right 1889 20`
+qst click ControlsPanel:pill:wifi   # or on an area by [WINDOW:]NAME
+qst area ControlsPanel:pill:wifi    # where it is, as "x y"; a miss lists the names there
 qst drag 1631 112 320 0 250    # press at x y, move dx dy over ms, release
 qst wheel 3                    # notches, positive down
 qst spin 5                     # five one-notch events at once, a wheel spun hard
@@ -677,9 +679,12 @@ qst reset                      # monitors from QS_TEST_MONITORS, no windows, fre
 qst run                        # every case, sessions side by side (-j N), longest first
 qst run chaos 'controls:VPN'   # a file, or its cases matching a regex
 qst run --changed --fail-fast  # scenarios the checkout's changes reach
-qst run --failed               # last failures first
+qst run --failed               # only the last run's failures
+qst run --failed-first         # every case, the last run's failures first
+qst red HEAD notifications.sh:'a flood'  # expect the case to fail without the fix, then sync back
 qst jobs [FILE[:REGEX]...]     # what a run would take, in order
 qst timings                    # last run's slowest cases and phases
+qst trace                      # this case's qst calls, with their file and line
 qst flood 3000 --urgency 2     # notifications over D-Bus (--apps N, --summary/--body LENGTH, --rate N)
 qst tray                       # a tray item with nested submenus; `tray log`, `tray add first 4`, `tray remove first`, `tray clear`
 qst x notify-send -a Discord loft01 hello   # anything inside the session
@@ -706,6 +711,14 @@ qst actions                    # what the session tried to run on the machine
 qst lint                       # the qmllint check on the checkout
 qst down                       # kill and delete the session(s) and the test shell's state
 ```
+
+For a test-debug loop, hand `qst run --failed`, failure triage and `qst red`
+to a fresh subagent: it starts with little context and returns a short
+diagnosis, instead of re-sending the design and edits of a long session. A
+failed `wait`/`stays` prints its file and line, the last `qst` calls
+(`$QS_TEST_DIR/trace.log`) and only the state slice it waited on;
+`$XDG_STATE_HOME/qs-test/last-run.log` keeps the last run's output, and
+`qst run` stops its worker sessions when it ends unless `--keep` is given.
 
 ### The session's fakes
 
