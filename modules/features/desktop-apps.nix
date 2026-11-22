@@ -9,6 +9,8 @@
         firefox-bin
         obsidian
         discord-canary
+        celluloid
+        loupe
       ];
     };
 }
