@@ -41,7 +41,12 @@
             config=$XDG_RUNTIME_DIR/hyprlock-dimmed.conf
           fi
 
-          hyprlock -c "$config" || true
+          # a crash leaves Hyprland locked with no client; allow_session_lock_restore lets a new hyprlock take over
+          for _ in 1 2 3; do
+            status=0
+            hyprlock -c "$config" || status=$?
+            [ "$status" -gt 128 ] || break
+          done
           # also when hyprlock never got the lock
           timeout 2 qs ipc -c shell call idle unlocked > /dev/null 2>&1 || true
         '';
