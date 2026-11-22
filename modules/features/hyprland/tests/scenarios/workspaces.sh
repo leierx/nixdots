@@ -6,7 +6,7 @@ qst expect --may 'Got openwindow for workspace ".*" which was not previously tra
 qst sync > /dev/null &
 syncing=$!
 for _ in $(seq 12); do
-  (wezterm start --always-new-process > /dev/null 2>&1 &)
+  qst spawn foot sleep 600
   sleep 0.12 # sleep: spread over the shell's start, so some open before it has loaded the workspaces
 done
 wait "$syncing"

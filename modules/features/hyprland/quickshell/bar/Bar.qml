@@ -6,8 +6,11 @@ import qs.common
 import qs.controls
 
 Scope {
-  // The control centre's shortcut lives in a singleton, made on first use.
-  Component.onCompleted: Controls.menu
+  // The control centre's shortcut lives in a singleton, made on first use; also recover windows opened before this attached.
+  Component.onCompleted: {
+    Controls.menu;
+    windowsSettled.restart();
+  }
 
   IpcHandler {
     target: "bar"
@@ -42,7 +45,10 @@ Scope {
     id: windowsSettled
 
     interval: 300
-    onTriggered: Hyprland.refreshToplevels()
+    onTriggered: {
+      Hyprland.refreshWorkspaces();
+      Hyprland.refreshToplevels();
+    }
   }
 
   Variants {

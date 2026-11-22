@@ -191,7 +191,9 @@ Scope {
           const inherited = item.parent && isRect(item.parent) && item.parent.radius === radius;
           const roles = [0, Theme.keycapRadius, Theme.workspaceRadius, Theme.baseRadius, Theme.menuItemRadius, Theme.cardRadius, Theme.tileRadius, Theme.messageRadius, Theme.popoverRadius, Theme.toggleMenuRadius, Theme.dateMenuRadius, Theme.quickSettingsRadius];
           if (!own && !inherited && !roles.includes(radius) && Math.abs(radius - half) > 0.6) problems.push(`${label(entry, item)} has a radius of ${radius}: neither Theme's nor half its size`);
-          if (!own && item.color.a > 0 && !allowedColors.has(key(item.color))) problems.push(`${label(entry, item)} is coloured ${item.color}, which is not Theme's`);
+          const behavior = ProbeWindows.colorBehaviors.get(item);
+          const shownColor = behavior?.animation?.running ? behavior.targetValue : item.color;
+          if (!own && shownColor.a > 0 && !allowedColors.has(key(shownColor))) problems.push(`${label(entry, item)} is coloured ${shownColor}, which is not Theme's`);
           if (!own && item.border.width > 0 && !allowedColors.has(key(item.border.color))) problems.push(`${label(entry, item)} has a border coloured ${item.border.color}, which is not Theme's`);
         } else if (isMouseArea(item) && !item.enabled && item.cursorShape === Qt.PointingHandCursor) {
           problems.push(`${label(entry, item)} is disabled but still sets a pointing hand`);
@@ -307,11 +309,27 @@ Scope {
     onTriggered: probe.sample()
   }
 
+  Component {
+    id: churnCard
+
+    Card {
+      width: 100
+      height: 50
+    }
+  }
+
   IpcHandler {
     target: "probe"
 
     function census(): string {
       return JSON.stringify(probe.census());
+    }
+
+    // COUNT Cards made and destroyed: what each leaves behind shows in the process's memory.
+    function churn(count: int): string {
+      for (let i = 0; i < count; i++) churnCard.createObject(null).destroy();
+      gc();
+      return "done";
     }
 
     function areas(): string {
@@ -382,6 +400,7 @@ Scope {
         tooltipPending: Tooltips.pending ? Tooltips.pendingText : null,
         history: Notifs.entries.map(e => ({ uid: e.uid, time: e.time.getTime(), app: Notifs.appKey(e), summary: e.summary ?? null, popup: e.popup, checked: e.checked, restored: e.restored ?? false, image: e.image || null, kept: Object.keys(e.kept ?? {}) })),
         historyFile: Quickshell.statePath("notification-history.json"),
+        historyLoaded: History.loaded,
         historyImages: History.images,
         dnd: Notifs.dnd,
         unchecked: Notifs.unchecked,

@@ -4,6 +4,15 @@ import Quickshell
 
 Singleton {
   property var markers: []
+  property var colorBehaviors: new Map()
+
+  function trackColor(item, behavior) {
+    if (item) colorBehaviors.set(item, behavior);
+  }
+
+  function untrackColor(item, behavior) {
+    if (colorBehaviors.get(item) === behavior) colorBehaviors.delete(item);
+  }
   // Each window once, named by its own file rather than common/Overlay's or Popover's.
   readonly property var windows: {
     const found = new Map();

@@ -621,6 +621,18 @@ qst stays 'true' 2
 qst ipc notifications clear > /dev/null
 qst wait '.notifications == 0'
 
+qst case "cards made and destroyed by the thousand give their memory back"
+# Qt's RectangularShadow leaked its inner ShaderEffect with every card, which a notification flood grew without end.
+pid=$(qst status | awk '{print $NF}')
+rss() { awk '/VmRSS/ { print int($2 / 1024) }' "/proc/$pid/status"; }
+qst ipc probe churn 5000 > /dev/null
+qst stays true 0.5
+base=$(rss)
+for _ in 1 2 3 4; do qst ipc probe churn 5000 > /dev/null; done
+qst stays true 0.5
+after=$(rss)
+[ $((after - base)) -le 8 ] || { echo "RSS grew from $base MiB to $after MiB over 20000 cards"; exit 1; }
+
 qst case "tray items crossing three as they come and go keep the count true, the tray collapsed and gone when empty"
 qst pointer 400 600
 for _ in 1 2 3; do

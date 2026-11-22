@@ -17,7 +17,7 @@ Rectangle {
 
   function rows(key: string): var {
     if (key === "wifi") {
-      const rank = network => network.connected || network.stateChanging ? 2 : network.known ? 1 : 0;
+      const rank = network => network.connected ? 3 : network.name === Net.asking || network.stateChanging ? 2 : network.known ? 1 : 0;
       // By the steps the glyph shows, not the strength itself, so a rescan moves a row only when its glyph changes.
       const steps = network => [0.05, 0.25, 0.5, 0.75].filter(step => network.signalStrength > step).length;
       const sorted = [...Net.networks].sort((a, b) => rank(b) - rank(a) || steps(b) - steps(a) || a.name.localeCompare(b.name, undefined, { numeric: true }));
@@ -126,6 +126,19 @@ Rectangle {
     running: menuBox.key === "wifi"
     triggeredOnStart: true
     onTriggered: menuBox.settled = menuBox.rows("wifi")
+  }
+
+  Connections {
+    target: Net
+    enabled: menuBox.key === "wifi"
+
+    function onAskingChanged(): void {
+      menuBox.settled = menuBox.rows("wifi");
+    }
+
+    function onAskErrorChanged(): void {
+      menuBox.settled = menuBox.rows("wifi");
+    }
   }
 
   Column {

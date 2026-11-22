@@ -10,7 +10,8 @@ LauncherMode {
 
   readonly property string prefix: "nixpkgs:"
   readonly property int limit: 50
-  // Columns rather than an object per package, since there are over 130 000.
+  // Columns rather than an object per package, since there are over 130 000; loaded on first open so startup stays lean.
+  property bool loaded: false
   property var index: ({ rev: "", lines: [], attrs: [], names: [], texts: [] })
   // A list fetched while open waits for the close, so a search never changes under the keys.
   property bool stale: false
@@ -125,7 +126,10 @@ LauncherMode {
     return rows;
   }
 
-  onOpened: refresh.running = true
+  onOpened: {
+    loaded = true;
+    refresh.running = true;
+  }
   onOpenChanged: {
     if (!open) root.memo.state = null;
     if (!open && stale) {
@@ -139,12 +143,10 @@ LauncherMode {
     Panels.close();
   }
 
-  Component.onCompleted: refresh.running = true
-
   FileView {
     id: list
 
-    path: Quickshell.cachePath("nixpkgs.tsv")
+    path: root.loaded ? Quickshell.cachePath("nixpkgs.tsv") : ""
     // There is no file until the first fetch.
     printErrors: false
     onLoaded: root.parse(list.text())
@@ -154,7 +156,7 @@ LauncherMode {
     id: refresh
 
     name: "nixpkgs-index"
-    command: ["nixpkgs-index", list.path]
+    command: ["nixpkgs-index", Quickshell.cachePath("nixpkgs.tsv")]
     // Only an open with no list waits on it; at login the network may not be up yet.
     quiet: !root.open || root.index.lines.length > 0
     onDone: output => {

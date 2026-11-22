@@ -454,6 +454,8 @@ icon theme, hostname, uptime).
 - An item destroyed mid-`grabToImage` crashes Qt's render thread
   (`QQuickItemGrabResult::render`): a copy goes only once its grab is back
   (`NotificationPopups`).
+- `RectangularShadow` leaks an inner `ShaderEffect` per instance (Qt 6.11,
+  TODO.md): `Shadow` is a `ShaderEffect` on Qt's own shadow shader.
 - A `Singleton` is created on first use, so an unread one's `IpcHandler` does
   not exist, and `qs ipc` says "Target not found." with exit 0.
 - A value at the moment a state flips depends on binding order: derive it from
@@ -500,7 +502,7 @@ icon theme, hostname, uptime).
   next first (`Recommended`), reloading a second after hotplug bursts.
   `windows` is wlr-foreign-toplevels in Hyprland focus order with live
   previews. `nixpkgs` searches nixos-unstable's ~130 000 packages
-  (`nixpkgs-index` TSV, columns, own loop and memo, no slip pass: it would cost
+  (`nixpkgs-index` TSV, read and refreshed on first open, columns, own loop and memo, no slip pass: it would cost
   a pass over every row per key).
 - `nixpkgs-run`: builds `github:NixOS/nixpkgs/<rev>#<attr>` with a progress card
   (`nixpkgs-progress.jq` over nix's internal-json), then runs it in a transient
@@ -720,7 +722,7 @@ qst down                       # kill and delete the session(s) and the test she
 
 ### The session's fakes
 
-- `systemctl`, `loginctl`, `pw-play`, `xdg-open`, `nixpkgs-run`, `brightnessctl`
+- `systemctl`, `loginctl`, `pw-play`, `xdg-open`, `nixpkgs-run`, `nixpkgs-index`, `brightnessctl`
   and `hyprmoncfg` log to `qst actions` (`hyprmoncfg status` replays the live
   profiles; fake profiles in `$QS_TEST_DIR/cfg/hyprmoncfg/profiles`).
   `systemd-run --scope` logs and runs in the session. `hyprctl` is the test
@@ -789,7 +791,8 @@ test needs goes in the probe, read through the shell's own singletons.
 Every snapshot also checks the whole shell:
 
 - `problems` (the census): text with no room or under 8 pt, contrast below 3:1
-  (Theme's faint colour and fading text aside), colours and radii not Theme's,
+  (Theme's faint colour and fading text aside), colours and radii not Theme's
+  (a running `Behavior on color` is held to its target),
   images without source or failing, a disabled area setting a hand, a card off
   its window, text over text, a window that is not a layer surface.
 - `invariants` (`tests/invariants.jq`): an open panel has its layer and vice

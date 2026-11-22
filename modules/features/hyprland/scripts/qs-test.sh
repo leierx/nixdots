@@ -258,6 +258,7 @@ start_qs() {
     enter
     # Qt names the item behind every cursor change, which `cursor` reads back.
     QT_SCALE_FACTOR=${QS_TEST_SCALE:-1} QT_LOGGING_RULES=qt.quick.hover.cursor.debug=true setsid qs -p "$T/shell" > "$T/qs.log" 2>&1 < /dev/null &
+    echo $! > "$T/qs.pid"
   )
   echo 1 > "$T/case-mark"
   rm -f "$T/countdowns.json"
@@ -268,15 +269,20 @@ start_qs() {
   kill "$tailer" 2> /dev/null || true
   exec 3<&-
   grep -q 'Configuration Loaded' "$T/qs.log" || { problems; die "the shell did not load, see qs-test log"; }
-  ipc_targets
+  [ -e "$T/ipc-checked" ] || { ipc_targets; : > "$T/ipc-checked"; }
   problems
 }
 
 # The whole process group setsid made it, as systemd takes the service's cgroup: the watchers it runs (camera-users,
 # backlight-watch) wait on inotify with nobody reading them, and each would scan /proc for every case after.
 stop_qs() {
-  local pids pid left
-  pids=$(testqs)
+  local pids="" pid left
+  if [ -s "$T/qs.pid" ]; then
+    read -r pid < "$T/qs.pid"
+    kill -0 "$pid" 2> /dev/null && pids=$pid
+    rm -f "$T/qs.pid"
+  fi
+  [ -n "$pids" ] || pids=$(testqs)
   [ -n "$pids" ] || return 0
   for pid in $pids; do kill -- "-$pid" 2> /dev/null || kill "$pid" 2> /dev/null || true; done
   for _ in $(seq 250); do
@@ -316,6 +322,7 @@ sync_source() {
   chmod -R u+w "$T/shell"
   mv "$keep/nix" "$T/shell/nix"
   mv "$keep/icons" "$T/shell/weather/icons"
+  rm -f "$T/ipc-checked"
   install_probe
 }
 
@@ -330,6 +337,11 @@ install_probe() {
     name=${file#"$T/shell/"}
     sed -i -E -e "s#^((\\s*)(component \\w+: )?(PanelWindow|PopupWindow|FloatingWindow|Overlay|Popover) \\{)\$#\\1\\n\\2  ProbeWindow {\\n\\2    file: \"${name%.qml}\"\\n\\2  }\\n#" -e '0,/^import /s/^import /import qs.probe\nimport /' "$file"
   done < <(grep -rlE '(PanelWindow|PopupWindow|FloatingWindow|^Overlay|^Popover) \{$' "$T/shell" --include='*.qml')
+  # Register each Behavior on color so the census validates its target while a ColorAnimation is running.
+  while IFS= read -r file; do
+    sed -i -E -e 's#^(\s*)Behavior on color \{$#\1Behavior on color {\n\1  Component.onCompleted: ProbeWindows.trackColor(parent, this)\n\1  Component.onDestruction: ProbeWindows.untrackColor(parent, this)#' "$file"
+    grep -q '^import qs\.probe$' "$file" || sed -i -E '0,/^import /s/^import /import qs.probe\nimport /' "$file"
+  done < <(grep -rlE '^\s*Behavior on color \{$' "$T/shell" --include='*.qml')
 }
 
 # Nothing in the session may reach the real machine: these log what would have run instead.
@@ -376,7 +388,7 @@ EOF
   printf '#!/bin/sh\nexec tail -n0 -F "%s/udev"\n' "$T" > "$T/bin/udevadm"
   printf '#!/bin/sh\nexec %s "%s/backlight"\n' "$(command -v backlight-watch)" "$T" > "$T/bin/backlight-watch"
   printf '#!/bin/sh\nexec %s "%s/dev"\n' "$(command -v camera-users)" "$T" > "$T/bin/camera-users"
-  for entry in loginctl pw-play xdg-open nixpkgs-run freeze-region; do
+  for entry in loginctl pw-play xdg-open nixpkgs-run nixpkgs-index freeze-region; do
     printf '#!/bin/sh\necho "%s $*" >> "%s/actions.log"\n' "$entry" "$T" > "$T/bin/$entry"
   done
   # libnm will not register its secret agent with a NetworkManager not run by root, so the fake brings a profile up.
@@ -923,6 +935,7 @@ up() {
   echo "$build" > "$T/build"
   cp -rL "$build/shell" "$T/shell"
   chmod -R u+w "$T/shell"
+  rm -f "$T/ipc-checked"
   install_probe
   seed_cache
   fakes "$build"

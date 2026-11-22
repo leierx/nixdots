@@ -68,11 +68,11 @@ popover, so they hold on any surface.
 | `placeholder` | fg 70 % | gs `%entry .hint-text` | A field's placeholder |
 | `panelBg` | `#000000` | gs `$panel_bg_color` | The bar (**ours**: all black, Shell's outside the overview) |
 | `popoverBg` | `#1a1a1e` | gs `$bg_color` | Popovers, quick settings, date menu, centred panels, popups |
-| `popoverBorder` | `#26262b` | gs `$outer_borders_color` | A popover's 1 px edge; the center's cards |
+| `popoverBorder` | `#26262b` | gs `$outer_borders_color` | A popover's 1 px edge |
 | `cardBg` | `#2b2b30` | gs `$card_bg_color` | Toggle menus, inset cards (weather, events) |
 | `messageBg`, `messageHoverBg` | `cardBg`, + 4 % lightness | **ours**: gs `.message` (card + 5 %) stood out against the darker desktop, and the popover's own colour vanished on the popover; gs `%card:hover` | The center's cards |
 | `bannerBg`, `bannerHoverBg` | `popoverBg`, + 4 % lightness | **ours**: a popup is the popover, as every floating surface | Popups |
-| `popupBorder` | fg 22 % | **ours**: a popup stands out from what is behind it | A banner's edge (the center's cards keep `popoverBorder`) |
+| `popupBorder` | fg 22 % | **ours**: a popup stands out from what is behind it | A banner's edge |
 | `messageButtonBg`, `…HoverBg`, `…ActiveBg` | fg 15, 30, 20 % | gs `%notification_button` | A notification's actions |
 | `osdBg`, `osdBorder` | `#121217`, fg 2 % | gs `$osd_bg_color`, `$osd_outer_borders_color` | The OSD |
 | `tooltipBg`, `tooltipBorder` | black 90 %, fg 10 % | gs `%tooltip` | Tooltips |
@@ -113,7 +113,7 @@ Adwaita Sans 11 pt; only these classes (gs `%title_1` … `%caption`, adw
 | `body` | 11 pt, 400 | Everything else |
 | `captionHeading`, `caption` | 9 pt 700, 9 pt 400 | Badges; toggle subtitles, ages |
 | `monospace` | Adwaita Mono 11 pt | Code only: attributes, versions, paths, clipboard text |
-| `numeric`, `numericHeading` | 11 pt, tabular | Numbers that change in place (gs `%numeric`); `numeric` for the bar's clock and battery (**ours**: regular, gs `#panel` bold read heavy), `numericHeading` for its workspace numbers |
+| `numeric`, `numericSemiBold`, `numericHeading` | 11 pt, tabular (400, 600, 700) | Numbers that change in place (gs `%numeric`); `numeric` for the bar's clock and battery (**ours**: regular, gs `#panel` bold read heavy), `numericSemiBold` (**ours**: `Font.DemiBold`) for its workspace numbers, `numericHeading` for OSD levels |
 | `display` | 64 pt, 700 | **ours**: the power menu's clock only |
 
 ## Radii
@@ -209,7 +209,7 @@ to the census.
 
 | Surface | Anatomy | Place | Size | Motion |
 | --- | --- | --- | --- | --- |
-| Bar | Distro logo (os-release's, `Machine`) at 22 px in a workspace's 26 px square, spaced as they are (does nothing), workspaces (**ours**: numbered squares, occupied by colour alone, a mark would crowd 26 px), clock, tray, status button (at least three symbols wide, an easy target; ours) | Top, edge to edge, black | 32 px; items 26 px pills, regular weight but the bold workspace numbers | Fills over `panelButtonTime`; a new status symbol fades in as the others slide aside over `popupTime` |
+| Bar | Distro logo (os-release's, `Machine`) at 22 px in a workspace's 26 px square, spaced as they are (does nothing), workspaces (**ours**: numbered squares, occupied by colour alone, a mark would crowd 26 px), clock, tray, status button (at least three symbols wide, an easy target; ours) | Top, edge to edge, black | 32 px; items 26 px pills, regular weight, SemiBold workspace numbers | Fills over `panelButtonTime`; a new status symbol fades in as the others slide aside over `popupTime` |
 | Tray (**ours**: GNOME has none) | Left of the status button, no fill (**ours**: one barely showed on the black bar), each icon hovered as a bar item: its first three icons in the order they came, then "+N" in the dim caption; under the pointer at the bar's right end, every icon, a strip the wheel scrolls sideways; lingers 600 ms; gone when empty | Bar | Three icons; at most 12 em expanded | Width eases over `popupTime`, growing leftwards |
 | Tray menu | gs popup menu, cascading | At the pointer, a pixel off (**ours**: as trays have always opened them, not a dropdown under the bar) | At least 15 em, radius 20, 6 px padding | Opens at once, goes as the pointer leaves |
 | Popover off the bar (control centre, center) | A `Popover` + `Card` | `rise` below the bar, centred on its button, `rise` from screen edges | See Panel sizes | Fade + `rise` slide over `popupTime` |
@@ -270,8 +270,9 @@ unpadded.
 - One click, one action; a row's click does the obvious thing. A right click
   only opens a menu.
 - Escape and a click away close every panel; Escape in a submenu goes back.
-- The keyboard reaches every control: Tab and arrows move, Return and Space
-  act, a `FocusRing` shows once keys have moved it.
+- The keyboard reaches every control in panels and menus: Tab and arrows move,
+  Return and Space act, a `FocusRing` shows once keys have moved it (the bar has
+  no keyboard focus; panels open from global shortcuts).
 - The wheel steps in notches (`WheelSteps`); only the center's list glides.
 - Only centred panels dim what is behind them.
 - Every icon-only control has a tooltip.

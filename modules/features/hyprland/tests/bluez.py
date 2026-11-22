@@ -34,24 +34,45 @@ def connect(device):
 
 @dbus.service.method(bluez5.BLUEZ_MOCK_IFACE, in_signature="sssssbbi", out_signature="s")
 def AddFullDevice(self, adapter, address, name, icon, behaviour, paired, connected, battery):
-    path = bluez5.AddDevice(self, adapter, address, name)
-    device = mockobject.objects[path]
+    adapter_path = f"/org/bluez/{adapter}"
+    if adapter_path not in mockobject.objects:
+        raise dbus.exceptions.DBusException(f"Adapter {adapter} does not exist", name=bluez5.BLUEZ_MOCK_IFACE + ".Error")
+    path = f"{adapter_path}/dev_" + address.replace(":", "_").upper()
+    if path in mockobject.objects:
+        raise dbus.exceptions.DBusException(f"Device {address} already exists on adapter {adapter}", name=bluez5.BLUEZ_MOCK_IFACE + ".Error")
     BEHAVIOUR[path] = str(behaviour)
-    props = {"Icon": dbus.String(icon)}
-    if not name:
-        props.update({"Name": dbus.String(""), "Alias": dbus.String(address.replace(":", "-"))})
-    device.props[bluez5.DEVICE_IFACE].update(props)
-    device.EmitSignal(dbus.PROPERTIES_IFACE, "PropertiesChanged", "sa{sv}as", [bluez5.DEVICE_IFACE, dbus.Dictionary(props, signature="sv"), dbus.Array([], signature="s")])
-    device.AddMethods(bluez5.DEVICE_IFACE, [("Pair", "", "", pair), ("Connect", "", "", connect)])
-    if paired:
-        bluez5.PairDevice(self, adapter, address)
-    if connected:
-        bluez5.ConnectDevice(self, adapter, address)
-        # Which the stock Disconnect reads rather than the property.
-        device.connected = True
+    alias = str(name) if name else str(address).replace(":", "-")
+    props = {
+        "UUIDs": dbus.Array([], signature="s"),
+        "Blocked": dbus.Boolean(False),
+        "Connected": dbus.Boolean(bool(connected)),
+        "LegacyPairing": dbus.Boolean(False),
+        "Paired": dbus.Boolean(bool(paired)),
+        "Trusted": dbus.Boolean(False),
+        "RSSI": dbus.Int16(-79),
+        "Adapter": dbus.ObjectPath(adapter_path),
+        "Address": dbus.String(address),
+        "Alias": dbus.String(alias),
+        "Name": dbus.String(name),
+        "Icon": dbus.String(icon),
+        "Class": dbus.UInt32(0),
+        "Modalias": dbus.String(""),
+    }
+    self.AddObject(path, bluez5.DEVICE_IFACE, props, [
+        ("CancelPairing", "", "", ""),
+        ("Connect", "", "", connect),
+        ("ConnectProfile", "s", "", ""),
+        ("Disconnect", "", "", bluez5.Disconnect),
+        ("DisconnectProfile", "s", "", ""),
+        ("Pair", "", "", pair),
+    ])
+    device = mockobject.objects[path]
+    device.paired = bool(paired)
+    device.connected = bool(connected)
     if battery >= 0:
         device.AddProperties("org.bluez.Battery1", {"Percentage": dbus.Byte(battery)})
-        self.object_manager_emit_added(path)
+    # One InterfacesAdded with the final state avoids a PropertiesChanged race before clients add a match rule.
+    self.object_manager_emit_added(path)
     return path
 
 
