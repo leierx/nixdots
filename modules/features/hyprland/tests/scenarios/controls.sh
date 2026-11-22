@@ -190,6 +190,21 @@ qst network connectivity full
 qst wait '.controls.network.relaxed == null'
 qst actions | grep -q 'nmcli device reapply' || { qst actions; echo "the profile's DNS was not put back"; exit 1; }
 
+qst case "a shell restarted mid-sign-in still puts the profile's DNS back once online"
+qst network up Pixel_7128
+qst wait '.controls.network.connected == "Pixel_7128"'
+qst network connectivity limited
+open wifi
+qst wait '.controls.network.signIn'
+qst click ControlsPanel:sign-in
+qst wait '.panel == "" and .controls.network.relaxed != null'
+qst restart > /dev/null
+qst wait '.controls.network.relaxed != null'
+qst actions | grep -q 'nmcli device reapply' && { qst actions; echo "put back before online"; exit 1; }
+qst network connectivity full
+qst wait '.controls.network.relaxed == null'
+qst actions | grep -q 'nmcli device reapply' || { qst actions; echo "the profile's DNS was not put back"; exit 1; }
+
 qst case "a VPN goes down and up on a click, and the pill takes them all"
 open vpn
 qst click ControlsPanel:row:wg0

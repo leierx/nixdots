@@ -33,8 +33,8 @@ Singleton {
   readonly property bool limited: (connected !== null || wiredUp) && (Networking.connectivity === NetworkConnectivity.Limited || Networking.connectivity === NetworkConnectivity.None)
   // A portal blocks DNS over TLS until signed in, so NetworkManager's check never resolves to see one: Wi-Fi without internet may be one too.
   readonly property bool signInOffered: connected !== null && (portal || limited)
-  // The Wi-Fi device whose connection takes the network's own DNS until it is online; NetworkManager drops that with the connection.
-  property string relaxed: ""
+  // The Wi-Fi device whose connection takes the network's own DNS until it is online; NetworkManager drops that with the connection. Saved, as the change outlives a shell restarted mid-sign-in.
+  property alias relaxed: saved.relaxed
 
   // The network a password is asked for, why it is asked again, and those this shell saved a profile for that never connected.
   property string asking: ""
@@ -331,7 +331,12 @@ Singleton {
   }
 
   // Online, the saved profile's DNS again; failing means the connection, and the change with it, has gone.
-  onOnlineChanged: if (online && relaxed !== "") strict.running = true
+  function restrict(): void {
+    if (root.online && root.relaxed !== "" && !strict.running) strict.running = true;
+  }
+
+  onOnlineChanged: restrict()
+  onRelaxedChanged: restrict()
 
   Command {
     id: strict
@@ -438,6 +443,16 @@ Singleton {
         again = false;
         running = true;
       }
+    }
+  }
+
+  StateFile {
+    name: "network.json"
+
+    JsonAdapter {
+      id: saved
+
+      property string relaxed: ""
     }
   }
 
