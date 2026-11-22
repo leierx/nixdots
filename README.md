@@ -17,6 +17,21 @@ root: {
 }
 ```
 
+## Gallery
+
+The desktop is Hyprland with a [Quickshell](https://quickshell.org) shell
+modelled on GNOME. Screenshots come from `qs-test`, which runs the shell nested
+and headless against fake NetworkManager, BlueZ, UPower and MPRIS services.
+
+| | |
+| --- | --- |
+| ![Date menu with a player, notifications, calendar and weather](docs/gallery/center.png) | ![Quick settings with the Wi-Fi menu open](docs/gallery/controls.png) |
+| Date menu: player, notifications, calendar, MET Norway weather | Quick settings, Wi-Fi menu open |
+| ![App launcher](docs/gallery/launcher.png) | ![Notification popups](docs/gallery/notifications.png) |
+| Launcher (SUPER+D) | Notification popups |
+| ![Power menu](docs/gallery/power.png) | ![Keyboard shortcuts overlay](docs/gallery/shortcuts.png) |
+| Power menu (SUPER+X) | Keyboard shortcuts (SUPER+?) |
+
 ## Using a module elsewhere
 
 Every aspect is published as a flake output, so another flake can import
