@@ -103,7 +103,7 @@ qst click ControlsPanel:row:Hvit_Monster
 qst wait '.controls.network.asking == "Hvit_Monster"'
 qst type monster
 qst key Return
-qst key Escape
+qst key Escape Escape
 qst wait '.panel == ""'
 qst wait '.controls.network.connected == "Hvit_Monster" and (.controls.network.known | index("Hvit_Monster")) and .controls.network.created == []' 10
 
@@ -115,7 +115,7 @@ qst click ControlsPanel:row:Hvit_Monster
 qst wait '.controls.network.asking == "Hvit_Monster"'
 qst type wrong
 qst key Return
-qst key Escape
+qst key Escape Escape
 qst wait '.panel == ""'
 qst wait '.controls.network.failures.Hvit_Monster == "Wrong password" and (.controls.network.known | index("Hvit_Monster") | not) and .controls.network.created == [] and .controls.network.asking == null' 10
 
@@ -460,7 +460,7 @@ qst stays '.panel == "controls:DP-1" and .volume.percent == 40' 0.6
 qst key Escape
 qst wait '.panel == ""'
 
-qst case "the keyboard reaches every control in the centre: Tab and the arrows move a ring, Space toggles a pill, Return opens its menu, the arrows step a slider"
+qst case "the keyboard reaches every control in the centre: Tab and the arrows move a ring, Space toggles a pill, Return opens its menu, the arrows step a slider, Escape shuts the menu before the centre"
 open
 qst stays '.ring == false' 0.3
 qst key Tab
@@ -479,5 +479,7 @@ qst wait '.controls.toggles[0].on == false'
 qst key Tab
 qst key Return
 qst wait '.controls.menu == "wifi"'
+qst key Escape
+qst wait '.controls.menu == "" and .panel == "controls:DP-1"'
 qst key Escape
 qst wait '.panel == ""'

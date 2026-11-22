@@ -583,7 +583,7 @@ qst wait '.tooltip.text == "Lock" and .tooltip.screen == "DP-2"'
 qst monitor remove DP-2
 qst wait '.tooltip == null' 5
 
-qst case "hundreds of keys through the centre while networks come and go under it keep the focus inside, and Escape still closes"
+qst case "hundreds of keys through the centre while networks come and go under it keep the focus inside, and Escape still shuts the menu, then the centre"
 qst ipc panels open controls:DP-1 > /dev/null
 qst ipc controls menu wifi > /dev/null
 qst wait '.panel == "controls:DP-1" and .controls.menu == "wifi"'
@@ -596,6 +596,8 @@ done
 qst wait '.panel == "controls:DP-1"'
 qst key Tab
 qst wait '.focused != null and (.focused | startswith("ControlsPanel/"))'
+qst key Escape
+qst wait '.controls.menu == "" and .panel == "controls:DP-1"'
 qst key Escape
 qst wait '.panel == ""'
 

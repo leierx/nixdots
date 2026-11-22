@@ -11,7 +11,9 @@ Rectangle {
   border.width: 1
   border.color: Theme.popoverBorder
 
-  Keys.onEscapePressed: Panels.close()
+  // A step back first, a submenu shut say: true when it took one, so Escape closes the panel only once there is none.
+  property var back: null
+  Keys.onEscapePressed: if (!(root.back?.() ?? false)) Panels.close()
   // A control of its own the keyboard was on can go (a row rebuilt, a menu shut): the card takes it back, so Escape and Tab still work.
   property Item lastFocus: null
   Window.onActiveFocusItemChanged: {

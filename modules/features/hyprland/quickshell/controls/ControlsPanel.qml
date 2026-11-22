@@ -57,6 +57,11 @@ Popover {
     height: Math.min(column.implicitHeight + 2 * Theme.quickSettingsPadding, root.available)
     radius: Theme.quickSettingsRadius
     focus: true
+    back: () => {
+      if (Controls.menu === "") return false;
+      Controls.show(Controls.menu);
+      return true;
+    }
     opacity: root.shown
     // BoxPointer's: a fade and a slide down from the bar by its rise.
     transform: Translate {
