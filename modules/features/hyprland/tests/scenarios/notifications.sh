@@ -1,7 +1,6 @@
 export QS_TEST_MONITORS="DP-1:1920x1080:1"
 
 summaries() { echo "(.history | map(.summary)) == $1"; }
-press() { read -r x y _ < <(qst areas 'NotificationCenter' | awk -F'\t' -v name=":$1" 'index($3, name) && $4 == "true" { print $1, $2; exit }'); [ -n "${x:-}" ] || { echo "no $1"; exit 1; }; qst click left "$x" "$y"; }
 
 qst case "an app keeps its newest three notifications once their popups go"
 notify-send -a Mail "mail 1"
@@ -133,7 +132,7 @@ for n in $(seq 16); do notify-send -a "App $n" "message $n" "a body long enough 
 qst wait '.notifications == 16'
 qst ipc panels open center > /dev/null
 qst wait '.panel == "center" and (.center | length) == 16'
-press action:Clear
+qst click NotificationCenter:action:Clear
 qst wait '.notifications == 0 and (.center | length) == 0' 2
 qst stays '.panel == "center" and .notifications == 0' 1
 ! qst areas 'NotificationCenter' | grep -q 'action:Undo' || { echo "Clear still offers Undo"; exit 1; }
@@ -145,7 +144,7 @@ qst wait '.notifications == 4'
 qst ipc panels open center > /dev/null
 qst wait '.panel == "center" and (.center | length) == 4'
 for round in 1 2 3 4 5; do
-  press action:Clear
+  qst click NotificationCenter:action:Clear
   tagged "round $round"
   qst wait '.notifications == 4 and (.center | length) == 4 and (.center | map(select(.slid != 0)) | length) == 0'
 done
@@ -177,9 +176,9 @@ qst wait '.panel == "center" and (.center | length) == 1'
 read -r cx cy _ < <(qst areas 'NotificationCenter/SwipeArea' | head -1)
 qst click left "$cx" "$cy"
 qst wait '.center[0].expanded'
-press action:More
+qst click NotificationCenter:action:More
 qst wait '.centerMore == 1'
-press 'action:Collapse All'
+qst click 'NotificationCenter:action:Collapse All'
 qst wait '(.center[0].expanded | not) and .centerMore == 0'
 qst click left "$cx" "$cy"
 qst wait '.center[0].expanded'

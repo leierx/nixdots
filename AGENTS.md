@@ -659,6 +659,8 @@ qst type fire
 qst key ctrl+n Down Return     # one key per argument
 qst pointer 960 21             # absolute motion, layout coordinates (a warp may not hover)
 qst click                      # left, where the pointer is; or `qst click right 1889 20`
+qst click ControlsPanel:pill:wifi   # on the area named so ([WINDOW:]objectName, an enabled one first); `... 80 0` that far off it
+qst area ControlsPanel:row:wg0 # where it is, as "x y"; a miss lists the names there
 qst drag 1631 112 320 0 250    # press at x y, move dx dy over ms, release
 qst wheel 3                    # notches, positive down
 qst spin 5                     # five one-notch events at once, a wheel spun hard
@@ -671,15 +673,17 @@ qst monitors                   # Hyprland's, disabled too
 qst focus DP-2
 qst output 2560x1440 1.5       # the first monitor's mode
 qst state                      # what the shell sees (JSON); `qst state '.popups | map(.screen)'`
-qst wait '.panel == ""'        # until it holds (5 s, or `qst wait FILTER 10`), else fail printing the state
+qst wait '.panel == ""'        # until it holds (5 s, or `qst wait FILTER 10`), else fail printing the keys it reads
 qst stays '.panel == "apps"' 2 # fail if it stops holding within 2 s
 qst reset                      # monitors from QS_TEST_MONITORS, no windows, fresh qs without state
 qst run                        # every case, sessions side by side (-j N), longest first
 qst run chaos 'controls:VPN'   # a file, or its cases matching a regex
 qst run --changed --fail-fast  # scenarios the checkout's changes reach
-qst run --failed               # last failures first
+qst run --failed               # only the last run's failures; `--failed-first` all, those first
+qst red [REV] controls:VPN     # those cases on REV's QML (HEAD) with the checkout's tests, in this session: each must fail
 qst jobs [FILE[:REGEX]...]     # what a run would take, in order
 qst timings                    # last run's slowest cases and phases
+qst trace                      # this case's qst calls, by seconds into it
 qst flood 3000 --urgency 2     # notifications over D-Bus (--apps N, --summary/--body LENGTH, --rate N)
 qst tray                       # a tray item with nested submenus; `tray log`, `tray add first 4`, `tray remove first`, `tray clear`
 qst x notify-send -a Discord loft01 hello   # anything inside the session
@@ -745,7 +749,7 @@ qst down                       # kill and delete the session(s) and the test she
   change needs `down` and `up` (they live in the built `nix/`).
 - `run` copies the working tree per case: to test a commit while editing, use
   a `git worktree` with `QS_TEST_REPO` pointing at it.
-- One `qst` at a time per `QS_TEST_DIR`. `run -j N` uses `$QS_TEST_DIR/w1…wN`,
+- One `qst` at a time per `QS_TEST_DIR` (`run` holds a lock). `run -j N` uses `$QS_TEST_DIR/w1…wN`,
   kept up for the next run; `down` them, or leftover sessions exhaust
   Xwayland's 33 displays and Hyprland dies with "CBackend::create() failed".
 - Each window in the copy gets a `ProbeWindow` (`tests/ProbeWindow.qml`) naming
@@ -797,7 +801,14 @@ before the first case are shared helpers; no case may use what an earlier one
 set. Assert with `wait`/`stays`, never `sleep` (`run` refuses one without
 `# sleep: why`). A case timing against the machine says `# alone: why` and runs
 with nothing beside it. `--changed` maps changed files to scenarios
-(`changed_scenarios` in `qs-test.sh`), all for an unknown file.
+(`changed_scenarios` in `qs-test.sh`): a `common/` type through the files that
+use it, the probe alone to all, all for an unknown file.
+
+A failing case prints the line it failed at, its last `qst` calls
+(`qst trace`) and, for a `wait`/`stays`, only the state's keys its filter reads;
+the whole state is in `$QS_TEST_DIR/failed-state.json`, the run's output in
+`~/.local/state/qs-test/last-run.log`. Click areas by name, not by a scenario's
+own `qst areas` filter: a missing name then says what is there.
 
 | Scenario | Covers |
 | --- | --- |
@@ -820,8 +831,8 @@ with nothing beside it. `--changed` maps changed files to scenarios
 | `tray.sh` | the tray strip, its menus and keys |
 | `workspaces.sh` | windows opened while the shell starts, the wheel spun hard |
 
-Behaviour that broke once gets a case; check it fails without the fix (a
-`git worktree` of `HEAD` with the new `tests/` copied in, `QS_TEST_REPO` set).
+Behaviour that broke once gets a case; check it fails without the fix:
+`qst red` (only QML; a fix elsewhere needs a `git worktree` and `QS_TEST_REPO`).
 
 What Hyprland does that tests run into:
 

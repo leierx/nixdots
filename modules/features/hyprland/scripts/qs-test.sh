@@ -27,16 +27,20 @@ usage: qs-test COMMAND
   case NAME             a test's next case: check the last one left no problems, print it and reset
   expect [--may] REGEX  this case must (or may) log a warning matching REGEX
   check                 whether the case so far left problems
-  run [-j N] [--fail-fast] [--failed] [--changed] [FILE[:CASE-REGEX]...]
+  run [-j N] [--fail-fast] [--failed|--failed-first] [--changed] [FILE[:CASE-REGEX]...]
                         the checkout's QML into N sessions side by side (by cores and memory; 1: this one),
-                        and every case of tests/scenarios/*.sh, or those given, longest first; qst on PATH
+                        and every case of tests/scenarios/*.sh, or those given, longest first; qst on PATH;
+                        --failed takes only the last run's failures; the output is kept in $hist/last-run.log
+  red [REV] FILE[:CASE-REGEX]...  those cases on REV's QML (HEAD) with the checkout's tests, in this session: each must fail
+  trace                 the qst calls of the case so far, by seconds into it
   jobs [FILE[:REGEX]...]  the jobs a run would take, in its order
   timings               the last run's slowest cases and where the time went
   key COMBO...          press keys in turn (ctrl+n, super+d, shift+Tab, Escape)
   type TEXT             type TEXT into the focused surface
   pointer X Y           put the pointer at X Y in layout coordinates (hover)
   move DX DY            move the pointer by DX DY
-  click [BUTTON] [X Y]  click left (or right, middle), at X Y if given
+  click [BUTTON] [X Y | [WINDOW:]NAME [DX DY]]   click left (or right, middle), at X Y, or DX DY off the area named NAME
+  area [WINDOW:]NAME    where the area named NAME (pill:wifi, ControlsPanel:row:wg0) is, as "x y"; a miss lists the names there
   press|release BUTTON  hold or let go of a button
   drag X Y DX DY [MS]   press left at X Y, glide DX DY over MS (300) ms, release
   wheel STEPS [horizontal]  scroll STEPS notches, positive down or right
@@ -101,6 +105,27 @@ timing() {
   local name=-
   [ -s "$T/case" ] && read -r name < "$T/case"
   printf '%s\t%s\t%s\t%s\t%s\n' "${QST_FILE:--}" "$name" "$1" "$2" "${3:-}" >> "$T/timings.tsv"
+}
+
+# Each call a case makes, by seconds into it, so a failure shows what led there.
+trace() {
+  local start line cmd=$1
+  shift
+  read -r start 2> /dev/null < "$T/case-start" || return 0
+  ms
+  printf -v line '%4d.%d s  qst %s %s' $(((REPLY - start) / 1000)) $(((REPLY - start) % 1000 / 100)) "$cmd" "${*@Q}"
+  printf '%s\n' "${line:0:200}" >> "$T/trace.log"
+}
+
+# The keys a failed filter reads, and the panel: the whole state grows with every list and the history, so it goes to a file.
+state_slice() {
+  local keys slice
+  printf '%s\n' "$snap_json" > "$T/failed-state.json"
+  keys=$(grep -oE '\.[A-Za-z_][A-Za-z0-9_]*' <<< "${1:-}" | cut -c2- | jq -Rsc 'split("\n") | map(select(. != "")) + ["panel"]')
+  slice=$(jq -c --argjson keys "$keys" 'with_entries(select(.key as $k | $keys | any(. == $k)))' <<< "$snap_json")
+  [ ${#slice} -le 3000 ] || slice="${slice:0:3000} …"
+  echo "$slice" >&2
+  echo "qs-test: the whole state is in $T/failed-state.json" >&2
 }
 
 # A part of reset run beside others, timed on its own.
@@ -1061,13 +1086,14 @@ violations() {
 
 violated() {
   echo "qs-test: $1" >&2
-  jq -c "del(.workspaces)" <<< "$2" >&2
+  state_slice "${waiting_on:-} .problems .invariants"
   exit 1
 }
 
 # Until FILTER holds, as jq -e reads it, or fails after SECONDS.
 wait_for() {
   local filter=$1 deadline held=0 clear began snaps=0
+  waiting_on=$filter
   ms
   began=$REPLY
   deadline=$((began + ${2:-5} * 1000))
@@ -1085,7 +1111,7 @@ wait_for() {
     ms
     if [ $held = 0 ] && [ "$REPLY" -ge "$deadline" ]; then
       echo "qs-test: timed out after ${2:-5} s waiting for: $filter" >&2
-      jq -c "del(.workspaces)" <<< "$snap_json" >&2
+      state_slice "$filter"
       exit 1
     fi
     sleep 0.1
@@ -1095,6 +1121,7 @@ wait_for() {
 # FILTER holds throughout SECONDS (1): what should stay as it is.
 stays() {
   local filter=$1 deadline clear=1 began snaps=0
+  waiting_on=$filter
   ms
   began=$REPLY
   deadline=$((began + $(awk -v s="${2:-1}" 'BEGIN { print int(s * 1000) }')))
@@ -1105,7 +1132,7 @@ stays() {
     violations || clear=0
     if [ "$snap_held" != true ]; then
       echo "qs-test: no longer holds: $filter" >&2
-      jq -c "del(.workspaces)" <<< "$snap_json" >&2
+      state_slice "$filter"
       exit 1
     fi
     sleep 0.1
@@ -1208,18 +1235,19 @@ select_jobs() {
   done
 }
 
-# With $1 the last run's failures first; then jobs that run alone, then longest first by the last time each took, those never timed before the rest.
+# The last run's failures first with $1 "first", alone with "only"; then jobs that run alone, then longest first by the last time each took, those never timed before the rest.
 # A job runs alone where it says so (`# alone: why`), or where the shell last took a second to answer the probe in it,
 # halfway to the 2 s it may: what other sessions take from the machine shows there first.
 order_jobs() {
-  awk -F'\t' -v OFS='\t' -v times="$hist/jobs.tsv" -v failures="$hist/failed" -v first="$1" '
+  awk -F'\t' -v OFS='\t' -v times="$hist/jobs.tsv" -v failures="$hist/failed" -v failed_jobs="$1" '
     BEGIN {
       while ((getline l < times) > 0) { split(l, f, "\t"); took[f[1] "\t" f[2]] = f[3]; peak[f[1] "\t" f[2]] = f[4] }
       while ((getline l < failures) > 0) failed[l] = 1
     }
+    failed_jobs == "only" && !(key() in failed) { next }
     {
       if (peak[key()] >= 1000) $5 = 1
-      print (first && (key() in failed)) ? 1 : 0, $5, (key() in took) ? took[key()] : 1e9, $0
+      print (failed_jobs == "first" && (key() in failed)) ? 1 : 0, $5, (key() in took) ? took[key()] : 1e9, $0
     }
     function key(  name, names) {
       name = $1
@@ -1230,40 +1258,77 @@ order_jobs() {
     }' | sort -t $'\t' -s -k1,1nr -k2,2nr -k3,3nr | cut -f4-
 }
 
+# The scenarios that exercise a directory of the shell; none for one this does not know.
+component_scenarios() {
+  case $1 in
+    bar) echo tray hotplug workspaces cursors design controls chaos interactions idle notifications ;;
+    center) echo notifications history motion cursors design hotplug chaos interactions idle failures ;;
+    controls) echo controls caffeine cursors design chaos osd privacy interactions notifications ;;
+    idle) echo idle chaos ;;
+    launcher) echo launcher hotplug cursors design failures interactions chaos binds ;;
+    notifications) echo notifications history cursors design chaos hotplug motion interactions controls failures ;;
+    osd) echo osd motion design ;;
+    power) echo interactions hotplug cursors design binds controls ;;
+    shortcuts) echo hotplug cursors design binds failures ;;
+    weather) echo failures design cursors notifications history motion ;;
+  esac
+}
+
+# The directories a common/ type reaches, through the common/ types that use it; "all" if shell.qml uses one.
+common_users() {
+  local queue=("$1") visited=" $1 " name file rel
+  while [ ${#queue[@]} -gt 0 ]; do
+    name=${queue[0]}
+    queue=("${queue[@]:1}")
+    while IFS= read -r file; do
+      rel=${file#"$src"/}
+      case $rel in
+        "common/$name.qml") ;;
+        common/*.qml)
+          file=$(basename "$rel" .qml)
+          [[ $visited == *" $file "* ]] || { visited+="$file "; queue+=("$file"); }
+          ;;
+        */*) echo "${rel%%/*}" ;;
+        *) echo all ;;
+      esac
+    done < <(grep -rlw --include='*.qml' -e "$name" "$src" || true)
+  done | sort -u
+}
+
 # What a change in the checkout could break, by the components each scenario exercises; anything not listed here runs them all.
+# The probe and gallery are in every case, so they add nothing beside another change, and run everything alone.
 changed_scenarios() {
-  local path dir all=0 picked=()
+  local path dir comp all=0 probe=0 picked=() comps=()
   while IFS= read -r path; do
     case $path in
       *.md) ;;
       modules/features/hyprland/tests/scenarios/*.sh) picked+=("$(basename "$path" .sh)") ;;
+      modules/features/hyprland/tests/Probe*.qml | modules/features/hyprland/tests/invariants.jq) probe=1 ;;
+      modules/features/hyprland/tests/Gallery*.qml) picked+=(cursors design) ;;
       modules/features/hyprland/tests/networkmanager.py | modules/features/hyprland/tests/upower.py) picked+=(controls chaos) ;;
       modules/features/hyprland/tests/bluez.py | modules/features/hyprland/tests/mpris.py) picked+=(controls chaos cursors design) ;;
       modules/features/hyprland/tests/tray.qml | modules/features/hyprland/tests/trays.qml) picked+=(tray cursors design hotplug chaos) ;;
       modules/features/hyprland/scripts/camera-users.c) picked+=(privacy design) ;;
       modules/features/hyprland/scripts/backlight-watch.sh) picked+=(osd controls design) ;;
+      modules/features/hyprland/quickshell/common/*.qml)
+        # The gallery, in cursors and design, shows every piece.
+        picked+=(cursors design)
+        mapfile -t -O "${#comps[@]}" comps < <(common_users "$(basename "$path" .qml)")
+        ;;
       modules/features/hyprland/quickshell/*/*)
         dir=${path#modules/features/hyprland/quickshell/}
-        case ${dir%%/*} in
-          bar) picked+=(tray hotplug workspaces cursors design controls chaos interactions idle notifications) ;;
-          center) picked+=(notifications history motion cursors design hotplug chaos interactions idle failures) ;;
-          controls) picked+=(controls caffeine cursors design chaos osd privacy interactions notifications) ;;
-          idle) picked+=(idle chaos) ;;
-          launcher) picked+=(launcher hotplug cursors design failures interactions chaos binds) ;;
-          notifications) picked+=(notifications history cursors design chaos hotplug motion interactions controls failures) ;;
-          osd) picked+=(osd motion design) ;;
-          power) picked+=(interactions hotplug cursors design binds controls) ;;
-          shortcuts) picked+=(hotplug cursors design binds failures) ;;
-          weather) picked+=(failures design cursors notifications history motion) ;;
-          *) all=1 ;;
-        esac
+        comps+=("${dir%%/*}")
         ;;
       *) all=1 ;;
     esac
   done < <(git -C "$repo" diff --name-only HEAD && git -C "$repo" ls-files --others --exclude-standard)
-  if [ $all = 1 ]; then
+  for comp in "${comps[@]}"; do
+    dir=$(component_scenarios "$comp")
+    if [ -z "$dir" ]; then all=1; else read -ra dir <<< "$dir"; picked+=("${dir[@]}"); fi
+  done
+  if [ $all = 1 ] || { [ $probe = 1 ] && [ ${#picked[@]} = 0 ]; }; then
     echo "$tests"/scenarios/*.sh
-  else
+  elif [ ${#picked[@]} -gt 0 ]; then
     printf '%s\n' "${picked[@]}" | sort -u
   fi
 }
@@ -1294,20 +1359,63 @@ prepare() {
   start_qs
 }
 
-# One job in this session: its file's lines before the first case, then its own.
+# The cases on REV's QML with the checkout's tests, in this session, which goes back to the checkout's QML after.
+red() {
+  local rev=HEAD tree=$T/red status=0
+  if [ $# -gt 1 ] && [[ $1 != *:* ]] && [ ! -f "$1" ] && [ ! -f "$tests/scenarios/${1%.sh}.sh" ]; then
+    rev=$1
+    shift
+  fi
+  [ $# -gt 0 ] || die "red [REV] FILE[:CASE-REGEX]..."
+  git -C "$repo" rev-parse -q --verify "$rev^{commit}" > /dev/null || die "no revision $rev"
+  rm -rf "$tree"
+  mkdir -p "$tree/modules/features/hyprland"
+  git -C "$repo" archive "$rev" modules/features/hyprland/quickshell | tar -x -C "$tree"
+  cp -r "$tests" "$tree/modules/features/hyprland/tests"
+  if ! running; then
+    QS_TEST_BUILD=$(build)
+    export QS_TEST_BUILD
+  fi
+  QS_TEST_RED=$rev QS_TEST_REPO=$tree "$self" run -j 1 "$@" || status=$?
+  rm -rf "$tree"
+  if running; then
+    stop_qs
+    sync_source
+    start_qs > /dev/null
+  fi
+  return $status
+}
+
+# One job in this session: its file's lines before the first case, then its own, each at its line in the file.
 run_job() {
   local file=$1 prelude=$2 first=$3 last=$4 key=$5 name script status=0
   name=$(basename "$file" .sh)
   script=$T/tests/$name.$first.sh
-  awk -v prelude="$prelude" -v first="$first" -v last="$last" 'NR <= prelude || (NR >= first && NR <= last)' "$file" > "$script"
+  awk -v prelude="$prelude" -v first="$first" -v last="$last" '{ print (NR <= prelude || (NR >= first && NR <= last)) ? $0 : "" }' "$file" > "$script"
+  # Read before the script by its bash alone: the line that failed, as set -e exits without saying.
+  cat > "$T/tests/errexit.sh" << 'ERREXIT'
+unset BASH_ENV
+set -E
+failed_at() {
+  [ "$BASHPID" = $$ ] || return 0
+  local at="line ${BASH_LINENO[0]}"
+  [ "${#FUNCNAME[@]}" -le 2 ] || at+=" in ${FUNCNAME[1]}, called at line ${BASH_LINENO[-2]}"
+  printf 'qs-test: %s.sh %s exited %s: %.200s\n' "$QST_FILE" "$at" "$1" "$2" >&2
+}
+trap 'failed_at $? "$BASH_COMMAND"' ERR
+ERREXIT
   export QS_TEST_DIR=$T QS_TEST_REPO=$repo QS_TEST_HOST=$host
-  rm -f "$T/case"
+  rm -f "$T/case" "$T/trace.log"
   touch "$T/timings.tsv"
   local lines peak
   lines=$(wc -l < "$T/timings.tsv")
   ms
   local began=$REPLY
-  (enter && QST_FILE=$name bash -euo pipefail "$script" && QST_FILE=$name "$self" check) || status=$?
+  (enter && QST_FILE=$name BASH_ENV=$T/tests/errexit.sh bash -euo pipefail "$script" && QST_FILE=$name "$self" check) || status=$?
+  if [ $status != 0 ] && [ -s "$T/trace.log" ]; then
+    echo "qs-test: the case's last qst calls:"
+    tail -n 6 "$T/trace.log"
+  fi
   rm -f "$T/case"
   peak=$(tail -n +$((lines + 1)) "$T/timings.tsv" | awk -F'\t' '$3 == "snapshot" && $5 > peak { peak = $5 } END { print peak + 0 }')
   ms
@@ -1318,15 +1426,16 @@ run_job() {
 
 # Jobs spread over N sessions, each a QS_TEST_DIR of its own ($T itself when N is 1, else $T/w1 …); a line as each finishes.
 run_tests() {
-  local workers=() selected=() files=() n="" fail_fast=0 failed_first=0 changed=0 arg w k
+  local workers=() selected=() files=() n="" fail_fast=0 failed_jobs=all changed=0 arg w k
   while [ $# -gt 0 ]; do
     case $1 in
       -j) n=$2; shift ;;
       -j*) n=${1#-j} ;;
       --fail-fast) fail_fast=1 ;;
-      --failed) failed_first=1 ;;
+      --failed) failed_jobs=only ;;
+      --failed-first) failed_jobs=first ;;
       --changed) changed=1 ;;
-      -*) die "run [-j N] [--fail-fast] [--failed] [--changed] [FILE[:CASE-REGEX]...]" ;;
+      -*) die "run [-j N] [--fail-fast] [--failed|--failed-first] [--changed] [FILE[:CASE-REGEX]...]" ;;
       *) selected+=("$1") ;;
     esac
     shift
@@ -1337,10 +1446,16 @@ run_tests() {
   fi
   [ ${#selected[@]} -gt 0 ] || selected=("$tests"/scenarios/*.sh)
   mkdir -p "$T" "$hist"
+  # Held by this run alone: the sessions it starts close it, or one left up would hold it for good.
+  exec 9> "$T/run.lock"
+  flock -n 9 || die "another run is using $T"
   local queue=()
   rm -rf "$T/scenarios"
-  mapfile -t queue < <(select_jobs "${selected[@]}" | order_jobs $failed_first)
-  [ ${#queue[@]} -gt 0 ] || die "no case matches ${selected[*]}"
+  mapfile -t queue < <(select_jobs "${selected[@]}" | order_jobs $failed_jobs)
+  if [ ${#queue[@]} = 0 ]; then
+    [ $failed_jobs != only ] || { echo "no failures left from the last run"; return 0; }
+    die "no case matches ${selected[*]}"
+  fi
   mapfile -t files < <(printf '%s\n' "${queue[@]}" | cut -f1 | sort -u)
   lint_scenarios "${files[@]}"
   n=${n:-$(default_jobs)}
@@ -1356,14 +1471,14 @@ run_tests() {
   # One build for every session that has to come up.
   for w in "${workers[@]}"; do
     if ! QS_TEST_DIR=$w "$self" status | grep -q '^up'; then
-      QS_TEST_BUILD=$(build)
+      QS_TEST_BUILD=${QS_TEST_BUILD:-$(build)}
       export QS_TEST_BUILD
       break
     fi
   done
   for w in "${workers[@]}"; do
     mkdir -p "$w"
-    QS_TEST_DIR=$w "$self" prepare > "$w.prepare.log" 2>&1 &
+    QS_TEST_DIR=$w "$self" prepare > "$w.prepare.log" 2>&1 9>&- &
     pids+=($!)
   done
   for k in "${!pids[@]}"; do
@@ -1387,7 +1502,7 @@ run_tests() {
       idle=("${idle[@]:1}")
       mkdir -p "$w/tests"
       # A session of its own, so --fail-fast can stop the whole job.
-      QS_TEST_DIR=$w setsid "$self" job "$file" "$prelude" "$first" "$last" "${names%% | *}" > "$w/tests/$(basename "$file" .sh).$first.log" 2>&1 < /dev/null &
+      QS_TEST_DIR=$w setsid "$self" job "$file" "$prelude" "$first" "$last" "${names%% | *}" > "$w/tests/$(basename "$file" .sh).$first.log" 2>&1 9>&- < /dev/null &
       job_of[$!]=$next
       worker_of[$!]=$w
       ms
@@ -1409,6 +1524,15 @@ run_tests() {
     log=$w/tests/$file.$first.log
     if [ -n "${stopped[$done_pid]:-}" ]; then
       echo "stop $file: ${names%% | *} ($took s)"
+    elif [ -n "${QS_TEST_RED:-}" ]; then
+      # On the old QML a case must fail; the line it failed at shows whether for the right reason.
+      if [ $status = 0 ]; then
+        failed=1
+        echo "FAIL $file: ${names%% | *} passes on $QS_TEST_RED, so it does not catch the bug ($took s)"
+      else
+        echo "ok   $file: ${names%% | *} fails on $QS_TEST_RED ($took s, $log)"
+        sed '/^qs-test: the case.s last qst calls:$/,$d; /^== /d' "$log" | tail -4 | cut -c1-300 | sed 's/^/     /'
+      fi
     elif [ $status = 0 ]; then
       echo "ok   $file: ${names%% | *}$([ "$names" = "${names%% | *}" ] || echo " and $(grep -c '^== ' "$log" | awk '{ print $1 - 1 }') more") ($took s)"
     else
@@ -1433,6 +1557,7 @@ run_tests() {
   if [ "${#workers[@]}" -gt 1 ]; then cat "${workers[@]/%//timings.tsv}" >> "$T/timings.tsv"; fi
   ms
   timing run $((REPLY - run_began))
+  [ -n "${QS_TEST_RED:-}" ] && return $failed
   remember_run
   report "$T/timings.tsv"
   return $failed
@@ -1560,6 +1685,30 @@ areas() {
     | [($layer.x + $a.x * $scale | floor), ($layer.y + $a.y * $scale | floor), $a.label, $a.enabled, $a.clicks, $a.hand] | @tsv' <<< "$areas"
 }
 
+# Where the area named [WINDOW:]NAME is, as "x y": its objectName (pill:wifi, action:Clear), an enabled one first; WINDOW starts upper case.
+# Missing, the names there, so a test that lost its target says what it could have clicked.
+area_at() {
+  local window="" name=$1 found
+  if [[ $1 =~ ^([A-Z][A-Za-z0-9]*):(.+)$ ]]; then
+    window=${BASH_REMATCH[1]}
+    name=${BASH_REMATCH[2]}
+  fi
+  found=$(areas | awk -F'\t' -v window="$window" -v name="$name" '
+    window != "" && index($3, window "/") != 1 { next }
+    { at = index($3, ":" name) }
+    at && substr($3, at + length(name) + 1, 1) ~ /^( |$)/ {
+      if ($4 == "true") { print $1, $2; hit = 1; exit }
+      if (!fallback) fallback = $1 " " $2
+    }
+    { if (index($3, ":")) names[substr($3, index($3, ":") + 1)] = 1 }
+    END { if (hit) exit; if (fallback) print fallback; else for (n in names) print "\t" n }')
+  if [ -n "$found" ] && [ "${found:0:1}" != $'\t' ]; then
+    echo "$found"
+    return
+  fi
+  die "no area named $name${window:+ in $window}; there: $(cut -f2 <<< "$found" | sort | head -n 30 | paste -sd ',' | sed 's/,/, /g')"
+}
+
 # Every enabled mouse area that takes a click and asks for a hand gets one: something laid over it must not set an arrow of its own.
 cursor_sweep() {
   local x y label enabled clicks hand shape address what bad=0
@@ -1591,6 +1740,7 @@ shot() {
 
 cmd=${1:-help}
 shift || true
+case $cmd in case | check | trace | job | run | red | prepare) ;; *) trace "$cmd" "$@" ;; esac
 case $cmd in
   up) up ;;
   down) down ;;
@@ -1611,6 +1761,7 @@ case $cmd in
     echo "$*" > "$T/case"
     ms
     echo "$REPLY" > "$T/case-start"
+    : > "$T/trace.log"
     : > "$T/expected"
     reset
     ;;
@@ -1645,12 +1796,15 @@ case $cmd in
     ;;
   cursors) need_up; cursor_sweep "$@" ;;
   areas) need_up; areas | awk -F "\t" -v pattern="${1:-.}" '$3 ~ pattern' ;;
+  area) need_up; [ $# -eq 1 ] || die "area [WINDOW:]NAME"; area_at "$1" ;;
+  trace) cat "$T/trace.log" 2> /dev/null || true ;;
   fail) need_up; [ $# -eq 2 ] || die "fail TOOL exit|crash|missing|garbage|off"; fail_tool "$1" "$2" ;;
-  run) run_tests "$@" ;;
+  run) mkdir -p "$hist"; run_tests "$@" 2>&1 | tee "$hist/last-run.log" ;;
+  red) red "$@" ;;
   job) need_up; run_job "$@" ;;
   prepare) prepare ;;
   timings) report "$T/timings.tsv" ;;
-  jobs) [ $# -gt 0 ] || set -- "$tests"/scenarios/*.sh; select_jobs "$@" | order_jobs 0 | awk -F"\t" '{ sub(/.*\//, "", $1); printf "%s:%d-%d (prelude 1-%d)%s  %s\n", $1, $3, $4, $2, $5 ? ", alone" : "", $6 }' ;;
+  jobs) [ $# -gt 0 ] || set -- "$tests"/scenarios/*.sh; select_jobs "$@" | order_jobs all | awk -F"\t" '{ sub(/.*\//, "", $1); printf "%s:%d-%d (prelude 1-%d)%s  %s\n", $1, $3, $4, $2, $5 ? ", alone" : "", $6 }' ;;
   key) need_up; input key "$@" ;;
   type) need_up; input type "$*" ;;
   pointer) need_up; pointer "$1" "$2" ;;
@@ -1659,7 +1813,13 @@ case $cmd in
     need_up
     button=left
     case ${1:-} in left | right | middle) button=$1; shift ;; esac
-    [ $# -ge 2 ] && pointer "$1" "$2"
+    if [ $# = 1 ] || [ $# = 3 ]; then
+      at=$(area_at "$1")
+      read -r x y <<< "$at"
+      pointer $((x + ${2:-0})) $((y + ${3:-0}))
+    elif [ $# = 2 ]; then
+      pointer "$1" "$2"
+    fi
     input click "$button"
     ;;
   press | release) need_up; input "$cmd" "${1:-left}" ;;

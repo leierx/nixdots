@@ -38,9 +38,8 @@ qst case "the control centre's Caffeine pill, beside Night Light, turns it on an
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
 qst wait '([.controls.toggles[].key] | index("caffeine")) == ([.controls.toggles[].key] | index("night")) + 1'
-read -r x y _ < <(qst areas ControlsPanel | awk -F'\t' 'index($3, "pill:caffeine") { print $1, $2; exit }')
-qst click left "$x" "$y"
+qst click ControlsPanel:pill:caffeine
 qst wait '.caffeine and (.status[0].glyphs | index("caffeine")) != null'
 qst actions | grep -qx 'systemctl --user start caffeine.service'
-qst click left "$x" "$y"
+qst click ControlsPanel:pill:caffeine
 qst wait '(.caffeine | not) and (.status[0].glyphs | index("caffeine")) == null'
