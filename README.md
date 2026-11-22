@@ -33,7 +33,7 @@ individual features by name, as my mac's configuration does:
   ];
 
   # knobs an importer may need are options of the aspect itself
-  piAgent.settings.defaultThinkingLevel = "high";
+  programs.pi-coding-agent.settings.defaultThinkingLevel = "high";
   neovim.outOfStorePath = "/Users/me/nixdots/modules/features/neovim";
 }
 ```
@@ -55,8 +55,9 @@ edit from changed and one glance from understood.
 
 Shared data is the exception: `identity`, `palettes`, `hyprland.workspaces` and
 `systems` are top-level because several modules read them, not because they
-vary. A value that varies per host or importer (`piAgent.settings`,
-`neovim.outOfStorePath`) is an option of the aspect that reads it.
+vary. A value that varies per host or importer
+(`programs.pi-coding-agent.settings`, `neovim.outOfStorePath`) is an option of
+the aspect that reads it.
 
 ## Building
 

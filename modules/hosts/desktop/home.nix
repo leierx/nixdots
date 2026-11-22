@@ -9,7 +9,7 @@ root: {
       home.packages = [ pkgs.unstable.claude-code ];
       # the shell a size up on the 27" 1440p monitors, which run at scale 1
       quickshell.scale = 1.2;
-      piAgent.settings = {
+      programs.pi-coding-agent.settings = {
         defaultProvider = "opencode-go";
         defaultModel = "deepseek-v4.1-flash";
         defaultThinkingLevel = "max";

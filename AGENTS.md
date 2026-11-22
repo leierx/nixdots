@@ -20,7 +20,7 @@ flake-parts; the substrate is hand-rolled in `flake.nix`, `import-tree.nix` and
   `palettes`, `hyprland.workspaces`), read as `root.config.<option>`.
 - **Anything a host or importer sets is an option of the feature's class
   module.** Top-level values are global and baked into exported aspects, so
-  per-host knobs live in the aspect (`piAgent.settings`,
+  per-host knobs live in the aspect (`programs.pi-coding-agent.settings`,
   `neovim.outOfStorePath`, `hyprmoncfg.profiles`, `quickshell.scale`), set from
   the host's home aspect or the importer.
 - **Install through the module when one exists** (`programs.<x>.enable`,
@@ -73,9 +73,10 @@ outputs =
 Every file is a module of this one configuration, so each may read `config`,
 `lib` and `inputs` at the top level.
 
-Inputs: `nixpkgs` (26.05), `nixpkgs-unstable`, `home-manager`, `disko`,
-`nix-index-database`, `hyprland` (pinned tag; dev-only `pre-commit-hooks`
-pruned with `follows = ""`), `hyprsplit` (`nixpkgs` follows
+Inputs: `nixpkgs` (26.05), `nixpkgs-unstable`, `home-manager` (26.05),
+`home-manager-unstable` (only for `programs.pi-coding-agent` until 26.11),
+`disko`, `nix-index-database`, `hyprland` (pinned tag; dev-only
+`pre-commit-hooks` pruned with `follows = ""`), `hyprsplit` (`nixpkgs` follows
 `hyprland/nixpkgs`), `moonshine` (upstream `main`; `nixpkgs` follows ours, only
 its sources used).
 
@@ -174,7 +175,7 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | `nix-index.nix` | HM | `nix-index` | small prebuilt DB + wrapped comma |
 | `nixpkgs.nix` | nixos | `nixpkgs`, `unstable-nixpkgs` | `allowUnfree`; overlay `pkgs.unstable`. Prefer default `pkgs` unless a package needs unstable |
 | `packages.nix` | nixos | `packages` | jq, fzf, fastfetch, tree, kubectl |
-| `pi-agent/` | HM | `pi-agent` (+ HM `piAgent.settings`, `piAgent.models`) | below |
+| `pi-agent/` | HM | `pi-agent` (imports `programs.pi-coding-agent`) | below |
 | `plymouth.nix` | nixos | `plymouth` | plymouth + quiet boot |
 | `podman.nix` | nixos | `podman` | docker compat, DNS on `podman0` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
@@ -232,21 +233,24 @@ committed `nvim-pack-lock.json`:
 
 ### `pi-agent/`
 
-`pi-coding-agent` from `inputs.nixpkgs-unstable` directly (the mac lacks
-`pkgs.unstable`). nixpkgs' wrapper prefixes ripgrep and fd; ours suffixes git
-and node, so a project shell's win. Writes into `~/.pi/agent` (pi ignores XDG):
-`settings.json` (defaults merged with `piAgent.settings`; both hosts pin
-provider, model, thinking level `max`), `models.json` (`piAgent.models`; DeepSeek V4.1 Flash at its agentic evals' `top_p` 0.95, temperature 1), `APPEND_SYSTEM.md`, the `commit-style`
-skill, a `bell` extension (BEL on finish or prompt) and `tmux-session` (session
-file in pane option `@pi_session`). pi packages are pinned in `packages`,
-installed by pi with nixpkgs' `npm` into `~/.pi/agent/npm`. HM's
-`programs.pi-coding-agent` is not in release-26.05.
+Configures HM's `programs.pi-coding-agent` (imported from
+`inputs.home-manager-unstable` with its `modules/lib` overlay until
+`release-26.11` ships it) with `pi-coding-agent` from `inputs.nixpkgs-unstable`
+directly (the mac lacks `pkgs.unstable`). `extraPackages` suffixes `git` and
+`nodejs` so a project shell's win (nixpkgs' wrapper already prefixes `rg` and
+`fd`). Writes into `config.programs.pi-coding-agent.configDir` (`~/.pi/agent` by
+default): `settings.json` (with `mutableSettings = true`, so activation merges
+declared settings in place while pi can still write its own keys like
+`defaultProjectTrust`; both hosts pin provider, model, thinking level `max`),
+`models.json` (DeepSeek V4.1 Flash at its agentic evals' `top_p` 0.95,
+temperature 1), `APPEND_SYSTEM.md` (`appendSystem`), the `commit-style` skill,
+a `bell` extension (BEL on finish or prompt) and `tmux-session` (session file in
+pane option `@pi_session`). pi packages are pinned in `settings.packages`,
+installed by pi with nixpkgs' `npm` into `~/.pi/agent/npm`.
 
-Sharp edges: `settings.json` is a read-only store link, so what pi would save
-itself (`theme`, `defaultProvider`, `defaultModel`, `defaultTools`,
-`packages`, `defaultProjectTrust`) fails and reverts; set it through
-`piAgent.settings`. pi themes cannot paint the background (no global token);
-it is wezterm's.
+Sharp edges: with `mutableSettings = true`, removing a declared key from
+`settings` does not delete it from the existing `settings.json`; delete it by
+hand. pi themes cannot paint the background (no global token); it is wezterm's.
 
 ### `hyprland/`
 
