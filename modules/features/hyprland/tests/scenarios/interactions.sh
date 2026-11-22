@@ -124,6 +124,27 @@ qst pointer "$item" 17
 qst pointer $((item + 1)) 18
 qst wait '.tooltip.text == "qs-test tray"'
 
+qst case "a tooltip sits at its control on screen, also from a window off the screen's corner: the popups at the right edge, the center below the bar"
+# Where the probe says the tooltip's control is, against where it is on screen; the pointer comes in from the left in steps, or a popup never sees it.
+at() {
+  qst pointer 900 "$2"
+  for dx in 300 150 60 20 2; do qst pointer $(($1 - dx)) "$2"; done
+  qst pointer "$1" "$2"
+  qst wait ".tooltip.text == \"$3\" and (.tooltip.at[0] - $1 | fabs) <= 2 and (.tooltip.at[1] - $2 | fabs) <= 2"
+}
+notify-send -t 0 -a Chat "Hello" "there"
+notify-send -t 0 -a Mail "Hello" "again"
+qst wait '(.popups | length) == 2'
+read -r x y _ < <(qst areas popup:close | sort -t'	' -k2 -n | head -1)
+at "$x" "$y" Close
+# Empty, the calendar's Previous Month is the first button from the left.
+qst ipc notifications clear > /dev/null
+qst wait '.notifications == 0'
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center"'
+read -r x y _ < <(qst areas NotificationCenter | awk -F'\t' '$2 < 200 && $4 == "true" && $6 == "true"' | sort -n | head -1)
+at "$x" "$y" "Previous Month"
+
 qst case "the distro's logo does nothing: an arrow, no tooltip, and a click opens nothing"
 qst pointer 20 16
 qst pointer 21 17

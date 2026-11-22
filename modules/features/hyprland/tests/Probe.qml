@@ -378,7 +378,7 @@ Scope {
         ring: Panels.keyboard,
         // Every piece showing its hover, by label: one left lit after the pointer has gone is the stuck grey.
         hovered: (() => { const found = []; for (const entry of probe.windows()) for (const { item } of entry.items) if (item.hovered === true && "color" in item) found.push(probe.label(entry, item)); return found; })(),
-        tooltip: Tooltips.shown ? { text: Tooltips.text, screen: Tooltips.screen } : null,
+        tooltip: Tooltips.shown ? { text: Tooltips.text, screen: Tooltips.screen, at: [Math.round(Tooltips.target.x + Tooltips.target.width / 2), Math.round(Tooltips.target.y + Tooltips.target.height / 2)] } : null,
         tooltipPending: Tooltips.pending ? Tooltips.pendingText : null,
         history: Notifs.entries.map(e => ({ uid: e.uid, time: e.time.getTime(), app: Notifs.appKey(e), summary: e.summary ?? null, popup: e.popup, checked: e.checked, restored: e.restored ?? false, image: e.image || null, kept: Object.keys(e.kept ?? {}) })),
         historyFile: Quickshell.statePath("notification-history.json"),

@@ -19,7 +19,7 @@ Item {
     parent: root.owner
     enabled: root.text !== ""
     onHoveredChanged: {
-      if (hovered) Tooltips.request(root.owner, root.text, root.shown?.screen?.name ?? "");
+      if (hovered) Tooltips.request(root.owner, root.text, root.shown);
       else Tooltips.cancel(root.owner);
     }
   }
