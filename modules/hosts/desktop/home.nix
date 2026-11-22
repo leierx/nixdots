@@ -2,53 +2,29 @@ root: {
   flake.modules.homeManager."nixosConfigurations/desktop/home" =
     { pkgs, lib, ... }:
     {
-      imports = [ root.config.flake.modules.homeManager.nix-index ];
-
-      home.packages = with pkgs; [
-        just
-        kubernetes-helm
-        kubevirt
-        # `kubectl oidc-login`: the homelab kubeconfig logs in through Authentik
-        kubelogin-oidc
-        unstable.claude-code
+      imports = with root.config.flake.modules.homeManager; [
+        homelab
+        nix-index
       ];
-
+      home.packages = [ pkgs.unstable.claude-code ];
       # the shell a size up on the 27" 1440p monitors, which run at scale 1
       quickshell.scale = 1.2;
-
       piAgent.settings = {
         defaultProvider = "opencode-go";
         defaultModel = "deepseek-v4.1-flash";
         defaultThinkingLevel = "max";
       };
-
-      # also git's credential helper for github.com over https
-      programs.gh = {
-        enable = true;
-        settings.aliases.co = "pr checkout";
-      };
-
-      programs.ssh = {
-        enable = true;
-        enableDefaultConfig = false;
-        settings.loft01 = {
-          HostName = "10.0.0.1";
-          User = root.config.identity.username;
-          ServerAliveInterval = 30;
-          # k3s API, for kubectl and helm
-          LocalForward = "6443 127.0.0.1:6443";
-        };
-        settings."github.com" = {
+      programs.ssh.settings = {
+        "github.com" = {
           HostName = "github.com";
           User = "git";
           IdentityFile = [ "~/.ssh/id_ed25519" ];
         };
-        settings."*.rsync.net" = {
+        "*.rsync.net" = {
           IdentityFile = [ "~/.ssh/id_rsync_net" ];
           IdentitiesOnly = true;
         };
       };
-
       wayland.windowManager.hyprland.settings = {
         window_rule = [
           {
