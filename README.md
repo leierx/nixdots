@@ -25,12 +25,18 @@ and headless against fake NetworkManager, BlueZ, UPower and MPRIS services.
 
 | | |
 | --- | --- |
-| ![Date menu with a player, notifications, calendar and weather](docs/gallery/center.png) | ![Quick settings with the Wi-Fi menu open](docs/gallery/controls.png) |
-| Date menu: player, notifications, calendar, MET Norway weather | Quick settings, Wi-Fi menu open |
-| ![App launcher](docs/gallery/launcher.png) | ![Notification popups](docs/gallery/notifications.png) |
-| Launcher (SUPER+D) | Notification popups |
-| ![Power menu](docs/gallery/power.png) | ![Keyboard shortcuts overlay](docs/gallery/shortcuts.png) |
-| Power menu (SUPER+X) | Keyboard shortcuts (SUPER+?) |
+| ![Date menu with a player, notifications, calendar and weather](docs/gallery/center.png) | ![Notification popups](docs/gallery/notifications.png) |
+| Date menu: player, notifications, calendar, MET Norway weather | Notification popups |
+| ![Quick settings with the Wi-Fi menu open](docs/gallery/controls.png) | ![Quick settings with the Bluetooth menu open](docs/gallery/bluetooth.png) |
+| Quick settings (SUPER+A), Wi-Fi | Quick settings, Bluetooth |
+| ![App launcher](docs/gallery/launcher.png) | ![Clipboard history](docs/gallery/clipboard.png) |
+| Apps (SUPER+D) | Clipboard history (SUPER+V) |
+| ![Window switcher with live previews](docs/gallery/windows.png) | ![Monitor layouts](docs/gallery/monitors.png) |
+| Windows, with live previews (SUPER+Tab) | Monitor layouts (SUPER+P) |
+| ![Running a package from nixpkgs](docs/gallery/nixpkgs.png) | ![Power menu](docs/gallery/power.png) |
+| Run anything from nixpkgs, sandboxed (SUPER+N) | Power menu (SUPER+X) |
+| ![Keyboard shortcuts overlay](docs/gallery/shortcuts.png) | |
+| Keyboard shortcuts (SUPER+?) | |
 
 ## Using a module elsewhere
 
