@@ -17,6 +17,11 @@
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # drop when github:nix-community/home-manager/release-26.11 ships programs.pi-coding-agent
+    home-manager-unstable = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
 
     disko = {
       url = "github:nix-community/disko";

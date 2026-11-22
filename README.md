@@ -17,6 +17,27 @@ root: {
 }
 ```
 
+## Gallery
+
+The desktop is Hyprland with a [Quickshell](https://quickshell.org) shell
+modelled on GNOME. Screenshots come from `qs-test`, which runs the shell nested
+and headless against fake NetworkManager, BlueZ, UPower and MPRIS services.
+
+| | |
+| --- | --- |
+| ![Date menu with a player, notifications, calendar and weather](docs/gallery/center.png) | ![Notification popups](docs/gallery/notifications.png) |
+| Date menu: player, notifications, calendar, MET Norway weather | Notification popups |
+| ![Quick settings with the Wi-Fi menu open](docs/gallery/controls.png) | ![Quick settings with the Bluetooth menu open](docs/gallery/bluetooth.png) |
+| Quick settings (SUPER+A), Wi-Fi | Quick settings, Bluetooth |
+| ![App launcher](docs/gallery/launcher.png) | ![Clipboard history](docs/gallery/clipboard.png) |
+| Apps (SUPER+D) | Clipboard history (SUPER+V) |
+| ![Window switcher with live previews](docs/gallery/windows.png) | ![Monitor layouts](docs/gallery/monitors.png) |
+| Windows, with live previews (SUPER+Tab) | Monitor layouts (SUPER+P) |
+| ![Running a package from nixpkgs](docs/gallery/nixpkgs.png) | ![Power menu](docs/gallery/power.png) |
+| Run anything from nixpkgs, sandboxed (SUPER+N) | Power menu (SUPER+X) |
+| ![Keyboard shortcuts overlay](docs/gallery/shortcuts.png) | |
+| Keyboard shortcuts (SUPER+?) | |
+
 ## Using a module elsewhere
 
 Every aspect is published as a flake output, so another flake can import
@@ -33,7 +54,7 @@ individual features by name, as my mac's configuration does:
   ];
 
   # knobs an importer may need are options of the aspect itself
-  piAgent.settings.defaultThinkingLevel = "high";
+  programs.pi-coding-agent.settings.defaultThinkingLevel = "high";
   neovim.outOfStorePath = "/Users/me/nixdots/modules/features/neovim";
 }
 ```
@@ -55,8 +76,9 @@ edit from changed and one glance from understood.
 
 Shared data is the exception: `identity`, `palettes`, `hyprland.workspaces` and
 `systems` are top-level because several modules read them, not because they
-vary. A value that varies per host or importer (`piAgent.settings`,
-`neovim.outOfStorePath`) is an option of the aspect that reads it.
+vary. A value that varies per host or importer
+(`programs.pi-coding-agent.settings`, `neovim.outOfStorePath`) is an option of
+the aspect that reads it.
 
 ## Building
 

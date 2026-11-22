@@ -5,96 +5,91 @@
       config,
       pkgs,
       lib,
+      modulesPath,
       ...
     }:
-    {
-      options.piAgent.settings = lib.mkOption {
-        type = lib.types.attrsOf lib.types.json;
-        default = { };
-        description = ''
-          Overrides for ~/.pi/agent/settings.json, merged over the defaults
-          in pi-agent/default.nix; e.g. pin a default provider, model or thinking level.
-        '';
-      };
-
-      options.piAgent.models = lib.mkOption {
-        type = lib.types.attrsOf lib.types.json;
-        default = { };
-        description = ''
-          Overrides for ~/.pi/agent/models.json, merged over the defaults
-          in pi-agent/default.nix; e.g. a custom provider or a model's sampling.
-        '';
-      };
-
-      config.home = {
-        packages = [
-          # suffixed so a project shell's git and node win; nixpkgs' wrapper already prefixes rg and fd
-          (pkgs.symlinkJoin {
-            name = "pi-wrapped";
-            paths = [
-              inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pi-coding-agent
-            ];
-            nativeBuildInputs = [ pkgs.makeWrapper ];
-            postBuild = ''
-              wrapProgram $out/bin/pi --suffix PATH : ${
-                lib.makeBinPath [
-                  pkgs.git
-                  pkgs.nodejs
-                ]
+    let
+      cfgDir = config.programs.pi-coding-agent.configDir;
+      # drop when github:nix-community/home-manager/release-26.11 ships programs.pi-coding-agent
+      piCodingAgentModule =
+        args@{
+          config,
+          pkgs,
+          lib,
+          ...
+        }:
+        let
+          hmUnstableLib = import "${inputs.home-manager-unstable}/modules/lib" { inherit lib; };
+        in
+        import "${inputs.home-manager-unstable}/modules/programs/pi-coding-agent.nix" (
+          args
+          // {
+            lib = lib.extend (
+              _: super: {
+                hm = super.hm // hmUnstableLib;
+                maintainers = super.maintainers // hmUnstableLib.maintainers;
               }
-            '';
-          })
+            );
+          }
+        );
+    in
+    {
+      imports = lib.optional (
+        !builtins.pathExists "${modulesPath}/programs/pi-coding-agent.nix"
+      ) piCodingAgentModule;
+
+      programs.pi-coding-agent = {
+        enable = true;
+        package = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pi-coding-agent;
+        # suffixed so a project shell's git and node win; nixpkgs' wrapper already prefixes rg and fd
+        extraPackages = [
+          pkgs.git
+          pkgs.nodejs
         ];
+        appendSystem = ./APPEND_SYSTEM.md;
+        mutableSettings = true;
 
-        file = {
-          ".pi/agent/settings.json".source = (pkgs.formats.json { }).generate "pi-settings.json" (
-            lib.recursiveUpdate {
-              enableInstallTelemetry = false;
-              collapseChangelog = true;
-              quietStartup = true;
-              hideThinkingBlock = true;
-              tuiMode = "regular";
-              fullscreenScrollbar = "hidden";
+        settings = {
+          enableInstallTelemetry = false;
+          collapseChangelog = true;
+          quietStartup = true;
+          hideThinkingBlock = true;
+          tuiMode = "regular";
+          fullscreenScrollbar = "hidden";
 
-              npmCommand = [ (lib.getExe' pkgs.nodejs "npm") ];
+          npmCommand = [ (lib.getExe' pkgs.nodejs "npm") ];
 
-              defaultTools = [
-                "read"
-                "bash"
-                "edit"
-                "write"
-                "grep"
-                "find"
-                "ls"
-              ];
+          defaultTools = [
+            "read"
+            "bash"
+            "edit"
+            "write"
+            "grep"
+            "find"
+            "ls"
+          ];
 
-              packages = [
-                "npm:@tintinweb/pi-subagents@0.23.1"
-                "npm:@juicesharp/rpiv-ask-user-question@2.15.0"
-                "npm:@juicesharp/rpiv-todo@2.15.0"
-              ];
-            } config.piAgent.settings
-          );
+          packages = [
+            "npm:@tintinweb/pi-subagents@0.26.2"
+            "npm:@juicesharp/rpiv-ask-user-question@2.15.0"
+            "npm:@juicesharp/rpiv-todo@2.15.0"
+          ];
+        };
 
-          ".pi/agent/models.json".source = (pkgs.formats.json { }).generate "pi-models.json" (
-            lib.recursiveUpdate {
-              # DeepSeek's agentic evals; its API ignores temperature in thinking mode, other hosts may not
-              providers.opencode-go.modelOverrides."deepseek-v4.1-flash".samplingParams = {
-                temperature = 1.0;
-                top_p = 0.95;
-              };
-            } config.piAgent.models
-          );
+        # DeepSeek's agentic evals; its API ignores temperature in thinking mode, other hosts may not
+        models.providers.opencode-go.modelOverrides."deepseek-v4.1-flash".samplingParams = {
+          temperature = 1.0;
+          top_p = 0.95;
+        };
+      };
 
-          ".pi/agent/APPEND_SYSTEM.md".source = ./APPEND_SYSTEM.md;
+      home.file = {
+        "${cfgDir}/skills/commit-style/SKILL.md".source = ./skills/commit-style/SKILL.md;
 
-          ".pi/agent/skills/commit-style/SKILL.md".source = ./skills/commit-style/SKILL.md;
+        "${cfgDir}/extensions/bell.ts".source = ./extensions/bell.ts;
 
-          ".pi/agent/extensions/bell.ts".source = ./extensions/bell.ts;
-
-          ".pi/agent/extensions/tmux-session.ts".source = pkgs.replaceVars ./extensions/tmux-session.ts {
-            tmux = lib.getExe config.programs.tmux.package;
-          };
+        "${cfgDir}/extensions/tmux-session.ts".source = pkgs.replaceVars ./extensions/tmux-session.ts {
+          tmux = lib.getExe config.programs.tmux.package;
         };
       };
     };
