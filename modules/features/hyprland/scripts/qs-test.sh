@@ -368,7 +368,9 @@ echo "systemd-run \$*" >> "$T/actions.log"
 case " \$* " in *' --scope '*) ;; *) exit ;; esac
 while [ "\${1#-}" != "\$1" ]; do shift; done
 case "\$1" in nixpkgs-run | xdg-open | freeze-region) exit ;; esac
-exec "\$@"
+# Its own process group, which reset kills: a window still starting has no client to kill yet.
+echo \$\$ >> "$T/launched"
+exec setsid "\$@"
 EOF
   # systemctl keeps the state of the units it starts and stops, as the shell reads it back.
   cat > "$T/bin/systemctl" << EOF
@@ -1174,6 +1176,10 @@ reset() {
   trays_reset
   players_reset
   for pid in $("$HC" clients -j | jq -r '.[].pid'); do kill "$pid" 2> /dev/null || true; done
+  if [ -s "$T/launched" ]; then
+    while read -r pid; do kill -- "-$pid" 2> /dev/null || kill "$pid" 2> /dev/null || true; done < "$T/launched"
+    rm -f "$T/launched"
+  fi
   phase clients
   stop_qs
   phase stop_qs
@@ -1882,7 +1888,7 @@ case $cmd in
   player) need_up; enter; player "$@" ;;
   backlight) need_up; [ $# -ge 2 ] || die "backlight NAME VALUE [MAX], or NAME remove"; backlight "$@" ;;
   camera) need_up; enter; camera "$@" ;;
-  spawn) need_up; enter; setsid "$@" >> "$T/spawn.log" 2>&1 < /dev/null & ;;
+  spawn) need_up; enter; setsid "$@" >> "$T/spawn.log" 2>&1 < /dev/null & echo $! >> "$T/launched" ;;
   flood) need_up; enter; qs-flood "$@" ;;
   tray)
     need_up

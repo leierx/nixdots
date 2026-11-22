@@ -35,10 +35,9 @@ root@{ inputs, ... }:
 
       services.moonshine = {
         enable = true;
-        # unpatched, one stalled TLS handshake hangs pairing and launches until a restart
-        package = (pkgs.callPackage "${inputs.moonshine}/nix/package.nix" { }).overrideAttrs (old: {
-          patches = old.patches or [ ] ++ [ ./https-handshake.patch ];
-        });
+        package = pkgs.callPackage "${inputs.moonshine}/nix/package.nix" {
+          ferriscopeSrc = inputs.moonshine.inputs.ferriscope;
+        };
         user = root.config.identity.username;
         settings = {
           name = config.networking.hostName;

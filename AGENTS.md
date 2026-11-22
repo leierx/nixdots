@@ -190,8 +190,7 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 [Moonshine](https://github.com/hgaiser/moonshine) from its flake (upstream
 `main`), via its NixOS module (which disables nixpkgs'). The package is built
 against our nixpkgs, since its implicit Vulkan layer loads into every Vulkan
-app, and patched to TLS-handshake per connection with a timeout (upstream
-handshakes in the accept loop; one stalled client hung pairing). Each Moonlight
+app (ferriscope's source passed from moonshine's own input). Each Moonlight
 stream gets its own headless compositor at the client's mode. One app: Steam
 `-gamepadui` in gamescope, `DISABLE_FERRISCOPE_WSI`, `--xwayland-count 2` (on
 one Xwayland a game loses X focus to the overlay and never comes back), Deck UI
