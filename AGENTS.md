@@ -156,17 +156,16 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | --- | --- | --- | --- |
 | `bluetooth.nix` | HM | `bluetooth` | `bluetui` when the host has `hardware.bluetooth` (`osConfig`); the control centre's Bluetooth Settings |
 | `boot.nix` | nixos | `boot`, `systemd-boot` | GRUB on EFI (themed); `systemd-boot` `mkForce`s GRUB off, conflicts by design, unused |
-| `desktop-apps.nix` | HM | `desktop-apps` | GUI apps every workstation gets (Celluloid, Loupe among them) |
+| `desktop-apps.nix` | HM | `desktop-apps` | GUI apps every workstation gets; Loupe and Celluloid the default image viewer and video player through `~/.local/share/applications/mimeapps.list` (below the mutable `~/.config/mimeapps.list`, which apps write and "Open With" overrides); Celluloid on an mpv.conf (`hwdec=auto-safe`, its default is software; `profile=fast`) and graphics offload via dconf |
 | `display-manager.nix` | nixos | `display-manager` | ly |
 | `doas.nix` | nixos | `doas` | doas replaces sudo (`doas-sudo-shim`); wheel `noPass`, no `keepenv`, passes only `LANG`, `NIX_PATH`, `SUDO_*` |
 | `documentation.nix` | nixos | `documentation` | NixOS manpages off |
 | `gaming.nix` | nixos | `gaming` | Steam + proton-ge |
 | `git.nix` | nixos, HM | `git` | git, identity from `identity` |
 | `home-manager.nix` | nixos | `home-manager` | HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<host>/home` |
+| `homelab.nix` | HM | `homelab` | just, helm, virtctl, kubelogin, `programs.gh`, ssh `loft01` forwarding 6443; both homes import it |
 | `hyprland/` | nixos, HM | `hyprland` (+ `hyprland.workspaces`, HM `hyprmoncfg.profiles`, `quickshell.scale`) | below |
-| `incus.nix` | nixos | `incus` | incus + preseed; unused |
 | `journald.nix` | nixos | `journald` | 90-day retention |
-| `libvirt.nix` | nixos | `libvirt` | unprivileged QEMU/KVM, swtpm, virt-manager, trusted `br0`; unused |
 | `locale.nix` | nixos | `locale` | `no`/`nodeadkeys`, `en_DK.UTF-8`, Europe/Oslo, timesyncd; hyprland reads xkb via `osConfig` |
 | `moonshine/` | nixos | `moonshine` | below |
 | `neovim/` | nixos, HM | `neovim` (+ HM `neovim.outOfStorePath`) | below |
@@ -297,6 +296,8 @@ fprintd, NetworkManager), so it needs the NixOS half.
   (`$XDG_RUNTIME_DIR`) with brightness 0.6 ÷ (1 − darkness), so every lock ends
   on the same picture. `on_lock_cmd` (`idle locked`) drops the dim and blocks
   new ones; `on_unlock_cmd` and `lock` exiting (`idle unlocked`) clear all.
+  hyprlock dying by a signal is started again, three times at most
+  (`allow_session_lock_restore`), so a crash never needs a TTY.
 - **Idle dim** (`quickshell/idle/`, layer `quickshell:idle`): 10 s before the
   lock hypridle runs `qs ipc -c shell call idle fade 10 0.4` (0.4 black for
   hyprlock's 0.6), its resume `cancel`, so input brings the screens back. A
@@ -514,7 +515,7 @@ icon theme, hostname, uptime).
 - `power/` (SUPER+X): five tiles, each key a keycap on it (pressed without Alt), Reload
   Hyprland, Restart to Firmware on UEFI; ending the session or machine takes a
   second press within 5 s.
-- `bar/`: per screen. Workspaces led by the distro's logo (`Machine`, 24 px in
+- `bar/`: per screen. Workspaces led by the distro's logo (`Machine`, 22 px in
   a workspace's square); other monitors' workspaces still
   here are named after them (`DP2-1`, `WorkspaceOwners`, remembering connectors
   across unplugs). Quickshell refreshes monitors only as one comes and drops
@@ -564,7 +565,9 @@ icon theme, hostname, uptime).
   per row, so its menus swap in place),
   `InUse` while something records. Backends are singletons: `Net`
   (Quickshell.Networking for Wi-Fi and wired, `nmcli` for VPNs; a captive
-  portal gets a card), `BluetoothDevices` (pair, trust, connect in one click; a
+  portal gets a card; Wi-Fi without internet offers Sign In too, as a portal
+  blocking DoT reads as limited: `nmcli device modify` gives the connection,
+  not the profile, DHCP DNS without TLS, `device reapply` once online), `BluetoothDevices` (pair, trust, connect in one click; a
   PIN device goes to bluetui), `Volume`, `Microphone`, `NightLight`
   (hyprsunset, state kept and restored when hyprsunset restarts), `Media`,
   `Power` (UPower display device), `Privacy` (a capture stream from a mic while
@@ -727,7 +730,8 @@ qst down                       # kill and delete the session(s) and the test she
   unless `QS_TEST_NETWORK=none`), UPower (`tests/upower.py`; battery 76 %
   discharging), BlueZ (`tests/bluez.py`; an adapter, unless
   `QS_TEST_BLUETOOTH=none`). `nmcli` is real except `connection up`, which asks
-  the fake (libnm won't register an agent with a non-root NetworkManager).
+  the fake (libnm won't register an agent with a non-root NetworkManager), and
+  `device modify|reapply`, only logged.
 - MPRIS players (`tests/mpris.py`) on the session bus, one mock each, named
   as they start.
 - PipeWire on `tests/pipewire.conf`, WirePlumber on `tests/wireplumber.conf`:
@@ -858,10 +862,10 @@ What Hyprland does that tests run into:
 - **Hosts**: each is a directory; `imports.nix` declares it and its aspects,
   siblings add to `"nixosConfigurations/<name>"`, `home.nix`/`monitors.nix` to
   `…/home`. Hardware stays per host (`hardware.nix`) even when repeated. Both
-  homes carry the homelab tools (`just`, `helm`, `virtctl`, `kubelogin`,
-  `programs.gh`, ssh `loft01` forwarding 6443).
+  homes import `homelab`.
   - `thonkpad`: `base workstation gaming`; Intel laptop, `thermald`, TLP
-    thresholds, UPower, disko, `treefmt`, mDNS/UDP for Chromecast.
+    thresholds, UPower, disko, `treefmt`; for Chromecast 5353 and, for 10 s, the
+    port an outgoing mDNS or SSDP query left from (nftables set `discovery`).
   - `desktop`: `base workstation gaming moonshine`; AMD, RX 6700 XT, ZSA udev
     rules, disko, hyprmoncfg profiles `default`/`left-only`/`right-only`,
     nix-index, startup apps pinned to monitors, `quickshell.scale = 1.2`.
