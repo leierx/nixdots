@@ -111,8 +111,8 @@ Singleton {
       function onPairingChanged(): void {
         if (modelData.pairing || modelData.paired || !root.pairing.includes(modelData.address)) return;
         root.pairing = root.pairing.filter(address => address !== modelData.address);
-        // BlueZ without an agent pairs only what asks for no code.
-        root.setFailure(modelData.address, "Needs a PIN: use Bluetooth Settings");
+        // BlueZ says only that it ended; without an agent it pairs only what asks for no code, so a code is the likely want.
+        root.setFailure(modelData.address, "Couldn't pair: use Bluetooth Settings");
       }
 
       function onStateChanged(): void {

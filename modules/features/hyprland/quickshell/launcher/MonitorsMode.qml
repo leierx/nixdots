@@ -158,7 +158,7 @@ LauncherMode {
   }
   onActivated: row => {
     // The launcher is gone by then, so a failure comes back as a notification.
-    Quickshell.execDetached(["sh", "-c", 'out=$(hyprmoncfg apply --confirm-timeout 0 "$1" 2>&1) || notify-send -u critical "hyprmoncfg: $1" "$out"', "sh", row.profile]);
+    Quickshell.execDetached(["sh", "-c", 'out=$(hyprmoncfg apply --confirm-timeout 0 "$1" 2>&1) || notify-send -u critical -a Shell -i dialog-warning "hyprmoncfg: $1" "$out"', "sh", row.profile]);
     Panels.close();
   }
 

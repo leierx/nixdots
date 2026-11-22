@@ -264,7 +264,7 @@ qst wait '.controls.bluetooth.scanning and (.controls.bluetooth.devices | length
 qst click ControlsPanel:row:WH-1000XM4
 qst wait '.controls.bluetooth.devices | map(select(.name == "WH-1000XM4"))[0] | .paired and .trusted and .connected'
 qst click "ControlsPanel:row:Keychron K3"
-qst wait '.controls.bluetooth.devices | map(select(.name == "Keychron K3"))[0].note == "Needs a PIN: use Bluetooth Settings"'
+qst wait '.controls.bluetooth.devices | map(select(.name == "Keychron K3"))[0].note == "Couldn'"'"'t pair: use Bluetooth Settings"'
 qst click ControlsPanel:row:WH-1000XM4
 qst wait '.controls.bluetooth.devices | map(select(.name == "WH-1000XM4"))[0].connected | not'
 qst ipc panels close > /dev/null

@@ -183,7 +183,6 @@ Rectangle {
           anchors.verticalCenter: parent.verticalCenter
           flat: true
           enabled: Media.player?.canGoPrevious ?? false
-          opacity: enabled ? 1 : 0.5
           glyph: Symbols.previous
           tooltip: "Previous Track"
           onClicked: Media.player?.previous()
@@ -231,7 +230,6 @@ Rectangle {
           anchors.verticalCenter: parent.verticalCenter
           flat: true
           enabled: Media.player?.canGoNext ?? false
-          opacity: enabled ? 1 : 0.5
           glyph: Symbols.next
           tooltip: "Next Track"
           onClicked: Media.player?.next()

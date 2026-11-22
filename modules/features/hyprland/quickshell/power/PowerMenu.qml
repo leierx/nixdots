@@ -103,8 +103,8 @@ Overlay {
       const action = letter === "" ? null : root.tiles.find(action => action.letter === letter);
       if (event.key === Qt.Key_Escape) Panels.close();
       else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) root.trigger(root.actions[root.current]);
-      else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Right) root.select((root.current + 1) % count);
-      else if (event.key === Qt.Key_Backtab || event.key === Qt.Key_Left) root.select((root.current + count - 1) % count);
+      else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Right || event.key === Qt.Key_Down) root.select((root.current + 1) % count);
+      else if (event.key === Qt.Key_Backtab || event.key === Qt.Key_Left || event.key === Qt.Key_Up) root.select((root.current + count - 1) % count);
       else if (action) root.trigger(action);
       else return;
       event.accepted = true;

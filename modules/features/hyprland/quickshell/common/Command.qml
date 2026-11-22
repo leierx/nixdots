@@ -18,7 +18,7 @@ Process {
     if (root.quiet) {
       console.warn(`${root.name}: ${message}`);
     } else {
-      Quickshell.execDetached(["notify-send", "-u", "critical", root.name, message]);
+      Quickshell.execDetached(["notify-send", "-u", "critical", "-a", "Shell", "-i", "dialog-warning", root.name, message]);
       if (Panels.active === root.panel) Panels.close();
     }
     root.failed(message);

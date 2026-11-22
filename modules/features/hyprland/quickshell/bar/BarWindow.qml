@@ -48,7 +48,7 @@ PanelWindow {
   // The bar's right end, which reveals the tray: the status button and the room the tray takes left of it, short of the clock; the buttons are its children, as hover reaches ancestors and not siblings beneath.
   Item {
     anchors.right: parent.right
-    width: Math.min(status.width + tray.most + Theme.basePadding + root.inset, root.width - clock.x - clock.width - Theme.padding)
+    width: Math.max(0, Math.min(status.width + tray.most + Theme.basePadding + root.inset, root.width - clock.x - clock.width - Theme.padding))
     height: root.height
 
     HoverHandler {
