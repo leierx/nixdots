@@ -389,8 +389,8 @@ icon theme, hostname, uptime).
 - Every panel through `Panels`; saved state through `StateFile`.
 - Check behaviour against source (Quickshell, Qt, Hyprland), and test it in
   qs-test before it lands.
-- An inline component sees the file's ids before its own properties: read
-  those through its own id (`list.results`).
+- An inline component or delegate sees the file's ids before its own
+  properties: read those through its own id (`list.results`, `row.heading`).
 - Cursors: a `MouseArea` always sets one, an arrow unless told; Qt takes the
   topmost. One laid over others (for the wheel) or beside a parent's
   `HoverHandler` needs `cursorShape: undefined`. Hand where a click acts,
@@ -462,6 +462,9 @@ icon theme, hostname, uptime).
   what stays put.
 - Switching `Layout.alignment` snaps: animate a `Layout.topMargin` bound to a
   property with a `Behavior`.
+- A `ListView` row moving under a `displaced` transition keeps the place it
+  aimed for when a row above changes height meanwhile: a list whose rows grow
+  (the control centre's menus) has none.
 - A `Behavior` whose duration follows the flag driving its value may start with
   the old duration: two `NumberAnimation`s from the flag's change handler.
 - `Quickshell.Networking` exports `Network`, shadowing a singleton of that

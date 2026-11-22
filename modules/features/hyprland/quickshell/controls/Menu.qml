@@ -269,14 +269,7 @@ Rectangle {
           }
         }
 
-        displaced: Transition {
-          NumberAnimation {
-            property: "y"
-            duration: Theme.popupTime
-            easing.type: Easing.OutQuad
-          }
-        }
-
+        // No displaced transition: Qt drops a row's new place while one runs, so a row above growing to ask left it underneath.
         delegate: Rectangle {
           id: row
 
@@ -287,7 +280,7 @@ Rectangle {
           readonly property bool heading: modelData.heading ?? false
 
           width: ListView.view.width
-          height: heading ? menuBox.headingHeight + (modelData.gap ? Theme.basePadding : 0) : asking ? menuBox.askingHeight : menuBox.rowHeight
+          height: row.heading ? menuBox.headingHeight + (row.modelData.gap ? Theme.basePadding : 0) : row.asking ? menuBox.askingHeight : menuBox.rowHeight
           radius: Theme.menuItemRadius
           color: asking ? Theme.menuHoverBg : "transparent"
           onHeightChanged: if (asking) Qt.callLater(menuBox.reveal, row)

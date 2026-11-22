@@ -345,6 +345,14 @@ qst wait '.panel == ""'
 for _ in $(seq 20); do qst actions | grep -q 'systemd-run --user --scope --quiet pwvucontrol' && break; sleep 0.1; done # sleep: the launch is logged by a process the shell detached
 qst actions | grep -q 'systemd-run --user --scope --quiet pwvucontrol' || { qst actions; echo "pwvucontrol was not run"; exit 1; }
 
+qst case "the sound menu's rows are a row apart under their headings, the last as far over the separator as the footer under it"
+open sound
+qst wait '(.controls.open.sound | length) == 8'
+y() { qst area "ControlsPanel:row:$1" | cut -d' ' -f2; }
+[ $(($(y Headphones) - $(y Speakers))) -eq 36 ] || { echo "rows overlap: Speakers at $(y Speakers), Headphones at $(y Headphones)"; exit 1; }
+footer=$(qst area 'ControlsPanel:action:Audio Settings' | cut -d' ' -f2)
+[ $((footer - $(y 'Noise Cancelling'))) -eq 49 ] || { echo "the last row is $((footer - $(y 'Noise Cancelling'))) px over the footer, not 49"; exit 1; }
+
 qst case "without a battery the header shows the machine, and a battery takes its place back"
 qst battery remove
 open
