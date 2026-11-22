@@ -173,6 +173,23 @@ qst wait '(.controls.network.portal | not)'
 # Online again, its card goes with the portal.
 qst wait 'all(.history[]; .summary != "Sign In to Network")'
 
+qst case "a portal blocking DNS over TLS reads as no internet: Sign In takes the network's own DNS for the connection, the profile's again once online"
+qst network up Pixel_7128
+qst wait '.controls.network.connected == "Pixel_7128"'
+qst network connectivity limited
+open wifi
+qst wait '.controls.network.signIn'
+qst click ControlsPanel:sign-in
+qst wait '.panel == "" and .controls.network.relaxed != null'
+qst actions | grep -q 'nmcli device modify .* ipv4.ignore-auto-dns no .* connection.dns-over-tls no' || { qst actions; echo "the connection kept its DNS"; exit 1; }
+qst actions | grep -q 'xdg-open http://neverssl.com/' || { qst actions; echo "the portal was not opened"; exit 1; }
+# Resolving now, it shows as the portal it is; the browser is on it already, so no card.
+qst network connectivity portal
+qst stays 'all(.history[]; .summary != "Sign In to Network")' 1
+qst network connectivity full
+qst wait '.controls.network.relaxed == null'
+qst actions | grep -q 'nmcli device reapply' || { qst actions; echo "the profile's DNS was not put back"; exit 1; }
+
 qst case "a VPN goes down and up on a click, and the pill takes them all"
 open vpn
 qst click ControlsPanel:row:wg0

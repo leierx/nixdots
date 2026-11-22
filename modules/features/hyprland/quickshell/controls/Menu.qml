@@ -26,7 +26,7 @@ Rectangle {
         const asking = ssid === Net.asking;
         const failure = Net.failures[ssid] ?? "";
         const state = network.state === ConnectionState.Connecting ? "Connecting…" : network.state === ConnectionState.Disconnecting ? "Disconnecting…" : network.connected ? "" : Net.enterprise(network) && !network.known ? "Enterprise" : network.known ? "Saved" : "";
-        return { key: ssid, glyph: Net.signalGlyph(network.signalStrength), title: Net.name(network) || "Hidden Network", lock: Net.secured(network), current: network.connected, note: failure || (asking ? Net.askError : "") || state, bad: failure !== "" || asking && Net.askError !== "", asking, action: network.connected && Net.portal ? "Sign In" : "", target: network };
+        return { key: ssid, glyph: Net.signalGlyph(network.signalStrength), title: Net.name(network) || "Hidden Network", lock: Net.secured(network), current: network.connected, note: failure || (asking ? Net.askError : "") || state, bad: failure !== "" || asking && Net.askError !== "", asking, action: network.connected && Net.signInOffered ? "Sign In" : "", target: network };
       });
       // Gone while its password is typed: kept, saying so, with what was typed.
       if (Net.asking !== "" && !list.some(row => row.asking)) list.unshift({ key: Net.asking, glyph: Symbols.wifi0, title: Names.clean(Net.asking), lock: true, note: "Out of range", bad: true, asking: true, target: null });

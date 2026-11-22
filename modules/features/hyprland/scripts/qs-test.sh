@@ -385,6 +385,8 @@ EOF
 real=$(command -v nmcli)
 case " \$* " in
   *" connection up "* | *" con up "* | *" c up "*) ;;
+  # what a connection does on the machine, the mock cannot reapply
+  *" device modify "* | *" device reapply "*) echo "nmcli \$*" >> "$T/actions.log"; exit 0 ;;
   *) exec "\$real" "\$@" ;;
 esac
 echo "nmcli \$*" >> "$T/actions.log"

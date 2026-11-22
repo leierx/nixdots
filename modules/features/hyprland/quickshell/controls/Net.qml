@@ -29,7 +29,12 @@ Singleton {
   readonly property var connected: networks.find(network => network.connected) ?? null
   readonly property bool wiredUp: wired.some(device => device.connected)
   readonly property bool portal: Networking.connectivity === NetworkConnectivity.Portal
+  readonly property bool online: Networking.connectivity === NetworkConnectivity.Full
   readonly property bool limited: (connected !== null || wiredUp) && (Networking.connectivity === NetworkConnectivity.Limited || Networking.connectivity === NetworkConnectivity.None)
+  // A portal blocks DNS over TLS until signed in, so NetworkManager's check never resolves to see one: Wi-Fi without internet may be one too.
+  readonly property bool signInOffered: connected !== null && (portal || limited)
+  // The Wi-Fi device whose connection takes the network's own DNS until it is online; NetworkManager drops that with the connection.
+  property string relaxed: ""
 
   // The network a password is asked for, why it is asked again, and those this shell saved a profile for that never connected.
   property string asking: ""
@@ -169,6 +174,12 @@ Singleton {
 
   function signIn(): void {
     Panels.close();
+    // Seen as a portal, its check resolved: DNS works as it is.
+    if (root.portal || root.relaxed !== "" || !root.wifi) root.openPortal();
+    else relax.running = true;
+  }
+
+  function openPortal(): void {
     Detached.run(["xdg-open", "http://neverssl.com/"], "");
   }
 
@@ -306,12 +317,38 @@ Singleton {
     }
   }
 
+  // For this connection only, never the saved profile: the network's own DNS, without TLS, which the portal answers.
+  Command {
+    id: relax
+
+    name: "Signing In to Network"
+    command: ["nmcli", "device", "modify", root.wifi?.name ?? "", "ipv4.ignore-auto-dns", "no", "ipv6.ignore-auto-dns", "no", "connection.dns-over-tls", "no"]
+    onDone: {
+      root.relaxed = root.wifi?.name ?? "";
+      Networking.checkConnectivity();
+      root.openPortal();
+    }
+  }
+
+  // Online, the saved profile's DNS again; failing means the connection, and the change with it, has gone.
+  onOnlineChanged: if (online && relaxed !== "") strict.running = true
+
+  Command {
+    id: strict
+
+    name: "Network: back to its own DNS"
+    quiet: true
+    command: ["nmcli", "device", "reapply", root.relaxed]
+    onDone: root.relaxed = ""
+    onFailed: root.relaxed = ""
+  }
+
   onPortalChanged: {
-    if (root.portal) {
+    // Signing in already, the browser is open on it.
+    if (root.portal && root.relaxed === "") {
       portalNote.card = 0;
       portalNote.running = true;
-      recheck.start();
-    } else {
+    } else if (!root.portal) {
       Notifs.close(portalNote.card);
       portalNote.running = false;
     }
@@ -323,7 +360,7 @@ Singleton {
 
     interval: 10000
     repeat: true
-    running: root.portal
+    running: root.portal || root.relaxed !== ""
     onTriggered: Networking.checkConnectivity()
   }
 
