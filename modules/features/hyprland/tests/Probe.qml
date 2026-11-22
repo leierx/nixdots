@@ -373,7 +373,6 @@ Scope {
           remaining: e.remaining ?? null
         })),
         notifications: Notifs.entries.length,
-        held: Notifs.held.length,
         // What the keyboard is on in a window that has it, by label, and whether its ring shows.
         focused: (() => { let found = null; for (const entry of probe.windows()) for (const { item } of entry.items) if (item.activeFocus && "activeFocusOnTab" in item && item.activeFocusOnTab) found = probe.label(entry, item); return found; })(),
         ring: Panels.keyboard,
@@ -388,18 +387,20 @@ Scope {
         unchecked: Notifs.unchecked,
         volume: { percent: Volume.percent, muted: Volume.muted, output: Volume.devices.find(d => d.current)?.name ?? null },
         input: Osd.sourceName,
-        microphone: { muted: Microphone.muted, adjustable: Microphone.adjustable, input: Microphone.name || null, inputs: Microphone.devices.map(d => d.name) },
+        microphone: { muted: Microphone.muted, input: Microphone.name || null, inputs: Microphone.devices.map(d => d.name) },
         osd: Osd.current ? Object.assign({ screen: Osd.screen }, Osd.current) : null,
         osdShown: Osd.serial,
         osdSettling: Osd.settling,
         brightness: Brightness.devices,
         caps: CapsLock.on,
         caffeine: Caffeine.active,
+        // The machine, and whether the control centre's header shows it.
+        machine: { logo: Machine.logo, icon: Machine.icon !== "", hostname: Machine.hostname, uptime: Machine.uptime, header: probe.windows().find(entry => entry.type === "ControlsPanel")?.items.find(({ item }) => "bare" in item)?.item.bare ?? null },
         privacy: { mic: Privacy.mic, screen: Privacy.screenActive ? Privacy.screen : null, camera: Privacy.cameraActive ? Privacy.camera : null },
         controls: {
           menu: Controls.menu,
           // The open menu: its count, and the rows its filter leaves, a few by title.
-          open: (menu => menu ? { count: menu.count, rows: menu.shown.length, first: menu.shown.slice(0, 5).map(row => row.title) } : null)(probe.windows().find(entry => entry.type === "ControlsPanel")?.items.find(({ item }) => "filtering" in item && "shown" in item)?.item ?? null),
+          open: (menu => menu ? { count: menu.count, rows: menu.shown.length, first: menu.shown.slice(0, 5).map(row => row.title), sound: menu.key === "sound" ? menu.shown.map(row => row.heading ? `# ${row.title}` : `${row.title} (${row.kind})`) : null } : null)(probe.windows().find(entry => entry.type === "ControlsPanel")?.items.find(({ item }) => "filtering" in item && "shown" in item)?.item ?? null),
           toggles: Controls.toggles.map(t => ({ key: t.key, subtitle: t.subtitle, on: t.on, unavailable: t.unavailable ?? false })),
           network: { present: Net.present, running: Net.running, wifi: Net.wifi !== null, wifiOn: Net.wifiOn, scanning: Net.scanning, connected: Net.connected?.name ?? null, networks: Net.networks.map(n => n.name), known: Net.networks.filter(n => n.known).map(n => n.name), asking: Net.asking || null, askError: Net.askError || null, created: Net.created, failures: Net.failures, portal: Net.portal, limited: Net.limited, wired: Net.wired.map(d => ({ name: d.name, connected: d.connected, link: d.hasLink })) },
           vpns: Net.vpns.map(v => ({ name: v.name, active: v.active, busy: Net.busy(v.uuid) || null })),
@@ -414,7 +415,9 @@ Scope {
         // Every slider on screen by name, with its range: past 1 while it reaches beyond 100 %.
         sliders: [].concat(...probe.windows().map(entry => entry.items.filter(({ item }) => "heldMaximum" in item).map(({ item }) => ({ name: item.objectName, value: item.value, span: item.span })))),
         // The center's groups as drawn, top to bottom: each one's lines in its order, and whether expanded.
-        center: [].concat(...probe.windows().filter(entry => entry.type === "NotificationCenter").map(entry => entry.items.filter(({ item }) => "ordered" in item && "unfolded" in item).map(({ item }) => ({ app: item.newest ? Notifs.appKey(item.newest) : null, expanded: item.expanded, lines: item.ordered.map(e => ({ summary: e.summary, critical: e.critical })) })))),
+        center: [].concat(...probe.windows().filter(entry => entry.type === "NotificationCenter").map(entry => entry.items.filter(({ item }) => "ordered" in item && "unfolded" in item).map(({ item }) => ({ app: item.newest ? Notifs.appKey(item.newest) : null, y: Math.round(item.y), slid: Math.round(item.slid), expanded: item.expanded, lines: item.ordered.map(e => ({ summary: e.summary, critical: e.critical })) })))),
+        // Action rows opened past their first two (More), in the center's cards.
+        centerMore: [].concat(...probe.windows().filter(entry => entry.type === "NotificationCenter").map(entry => entry.items.filter(({ item }) => "moreOpen" in item && item.moreOpen))).length,
         trays: probe.windows().filter(entry => entry.type === "BarWindow").map(entry => {
           const tray = entry.items.find(({ item }) => "menuPanel" in item && "menuAnchor" in item)?.item;
           return { screen: entry.screen, shown: tray?.visible ?? false, expanded: tray?.expanded ?? false, more: tray?.more ?? 0, width: Math.round(tray?.implicitWidth ?? 0), scrolls: tray?.scrolls ?? false, offset: Math.round(tray?.offset ?? 0), items: tray ? tray.items.map(item => item.id) : [] };

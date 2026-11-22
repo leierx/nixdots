@@ -1,10 +1,11 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell.Widgets
 import qs.common
 import qs.nix
 
-// GNOME's top row: the battery on the left, then a screenshot, the lock and the power menu.
+// GNOME's top row: the battery on the left, or the machine without one, then a screenshot, the lock and the power menu.
 Item {
   id: header
 
@@ -13,6 +14,8 @@ Item {
     if (Power.plugged) return "Plugged in";
     return Power.remaining > 0 ? `About ${Power.duration(Power.remaining)} left` : "On battery";
   }
+
+  readonly property bool bare: !Power.present && Machine.hostname !== ""
 
   implicitHeight: Theme.iconButtonSize
 
@@ -44,6 +47,42 @@ Item {
         color: Theme.fg
         font: Theme.body
       }
+    }
+  }
+
+  // Where there is no battery, the machine: bare, as nothing here is a button.
+  Row {
+    x: Theme.basePadding
+    anchors.verticalCenter: parent.verticalCenter
+    visible: header.bare
+    spacing: Theme.basePadding
+
+    IconImage {
+      anchors.verticalCenter: parent.verticalCenter
+      implicitSize: 24
+      source: Machine.icon
+    }
+
+    Text {
+      id: host
+
+      anchors.verticalCenter: parent.verticalCenter
+      width: Math.min(implicitWidth, header.width - actions.width - 2 * Theme.padding - 24)
+      text: Machine.hostname
+      textFormat: Text.PlainText
+      elide: Text.ElideRight
+      color: Theme.fg
+      font: Theme.heading
+    }
+
+    Text {
+      anchors.verticalCenter: parent.verticalCenter
+      width: Math.max(0, Math.min(implicitWidth, header.width - actions.width - 2 * Theme.padding - 24 - host.width - 2 * Theme.basePadding))
+      visible: Machine.uptime !== ""
+      text: `· ${Machine.uptime}`
+      elide: Text.ElideRight
+      color: Theme.fgDim
+      font: Theme.body
     }
   }
 

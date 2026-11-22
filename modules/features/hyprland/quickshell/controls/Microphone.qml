@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Services.Pipewire
 import "names.js" as Names
 import qs.common
-import qs.nix
 
 // PipeWire's default input, and the sources to pick it from.
 Singleton {
@@ -16,18 +15,11 @@ Singleton {
   readonly property var untyped: Pipewire.nodes.values.filter(node => node.type === PwNodeType.Untracked && !node.isStream)
   readonly property var inputs: Pipewire.nodes.values.filter(node => node.type === PwNodeType.AudioSource || node.type === PwNodeType.Untracked && !node.isStream && node.ready && /^Audio\/Source/.test(node.properties["media.class"] ?? ""))
   readonly property bool present: source !== null || inputs.length > 0
-  // An untyped node has no audio, so no mute to set.
-  readonly property bool adjustable: (source?.audio ?? null) !== null
   readonly property bool muted: source?.audio?.muted ?? false
-  readonly property string glyph: muted ? Symbols.micOff : Symbols.mic
   readonly property string name: source ? Names.clean(source.description || source.nickname || source.name) : ""
   // The next default for wpctl while it is still setting one.
   property string queued: ""
-  readonly property var devices: inputs.map((node, i) => ({ name: Names.clean(node.description || node.nickname || node.name), current: node === source, index: i }))
-
-  function toggleMute(): void {
-    if (source?.audio) source.audio.muted = !source.audio.muted;
-  }
+  readonly property var devices: inputs.map((node, i) => ({ name: Names.clean(node.description || node.nickname || node.name), current: node === source, index: i, props: node.properties }))
 
   function choose(index: int): void {
     const node = inputs[index];

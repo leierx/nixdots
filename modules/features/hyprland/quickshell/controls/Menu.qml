@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Networking
 import qs.common
 import qs.nix
+import "devices.js" as Devices
 import "names.js" as Names
 
 // An open menu, GNOME's: a header (its symbol in a chip, blue while on, and its title), a filter once the list is long, the list, and what it leads on to.
@@ -38,11 +39,17 @@ Rectangle {
     });
     if (key === "bluetooth") return BluetoothDevices.devices.map(device => ({ key: device.address, glyph: BluetoothDevices.glyph(device), title: BluetoothDevices.name(device), current: device.connected, tick: false, note: BluetoothDevices.note(device), bad: (BluetoothDevices.failures[device.address] ?? "") !== "", battery: device.connected && device.batteryAvailable ? device.battery : -1, link: device.connected ? "connected" : device.paired ? "paired" : "", target: device }));
     if (key === "sound") {
-      const devices = (backend, side) => backend.devices.map(device => ({ key: `${side}:${device.index}`, side, glyph: "", title: device.name, current: device.current, target: device.index }));
+      const ids = backend => new Set(backend.devices.map(device => device.props?.["device.id"]).filter(id => id !== undefined));
+      const glyphs = { speaker: Symbols.speaker, headphones: Symbols.headphones, headset: Symbols.headset, display: Symbols.speakerDisplay, microphone: Symbols.mic, webcam: Symbols.camera, virtual: Symbols.audioVirtual };
+      const devices = (backend, side, other) => backend.devices.map(device => {
+        const kind = Devices.kind(device.props, side === "input", other.has(device.props?.["device.id"]));
+        return { key: `${side}:${device.index}`, side, kind, glyph: glyphs[kind], title: device.name, current: device.current, target: device.index };
+      });
       const first = list => [...list.filter(device => device.current), ...list.filter(device => !device.current)];
-      const inputs = Microphone.present ? first(devices(Microphone, "input")) : [];
-      // The microphone is its mute and its inputs under the outputs, as it is seldom touched (ours: no level of its own).
-      return [...first(devices(Volume, "output")), ...(inputs.length > 0 ? [{ key: "heading:input", heading: true, title: "Input" }] : []), ...inputs];
+      const outputs = first(devices(Volume, "output", ids(Microphone)));
+      const inputs = Microphone.present ? first(devices(Microphone, "input", ids(Volume))) : [];
+      const heading = (side, title, gap) => [{ key: `heading:${side}`, heading: true, title, gap }];
+      return [...(outputs.length > 0 ? heading("output", "Output", false) : []), ...outputs, ...(inputs.length > 0 ? heading("input", "Input", outputs.length > 0) : []), ...inputs];
     }
     return [];
   }
@@ -65,6 +72,7 @@ Rectangle {
   // The most it may take; the list scrolls within.
   property real limit: 1e6
   readonly property int rowHeight: Theme.menuRowHeight
+  readonly property int headingHeight: 28
   // A row asking for a password: its own row and the field under it.
   readonly property int askingHeight: 2 * rowHeight + 12
   // Night light's menu is its strength rather than a list.
@@ -85,7 +93,7 @@ Rectangle {
   readonly property var toggle: Controls.toggles.find(toggle => toggle.key === key) ?? null
   readonly property string glyph: toggle?.glyph ?? (Volume.present ? Volume.glyph : Symbols.volumeOff)
   readonly property bool on: toggle?.on ?? true
-  readonly property var footer: key === "wifi" || key === "vpn" ? ["Network Settings"] : key === "bluetooth" ? ["Bluetooth Settings"] : []
+  readonly property var footer: key === "wifi" || key === "vpn" ? ["Network Settings"] : key === "bluetooth" ? ["Bluetooth Settings"] : key === "sound" ? ["Audio Settings"] : []
   // Said in place of a list with nothing in it.
   readonly property string empty: {
     if (key === "wifi") return !Net.wifiOn ? "Wi-Fi is off" : "Looking for networks…";
@@ -97,6 +105,7 @@ Rectangle {
 
   function act(name: string): void {
     if (name === "Network Settings") Net.settings([]);
+    else if (name === "Audio Settings") Volume.settings();
     else BluetoothDevices.settings();
   }
 
@@ -267,7 +276,7 @@ Rectangle {
           readonly property bool heading: modelData.heading ?? false
 
           width: ListView.view.width
-          height: asking ? menuBox.askingHeight : menuBox.rowHeight
+          height: heading ? menuBox.headingHeight + (modelData.gap ? Theme.basePadding : 0) : asking ? menuBox.askingHeight : menuBox.rowHeight
           radius: Theme.menuItemRadius
           color: asking ? Theme.menuHoverBg : "transparent"
           onHeightChanged: if (asking) Qt.callLater(menuBox.reveal, row)
@@ -276,39 +285,15 @@ Rectangle {
           onAskAgainChanged: if (asking) password.input.forceActiveFocus()
           Component.onCompleted: if (asking) password.input.forceActiveFocus()
 
-          // Where the inputs begin, with the microphone's mute.
-          Item {
-            anchors.fill: parent
+          Text {
+            x: Theme.padding
+            y: parent.height - height
+            height: menuBox.headingHeight
             visible: row.heading
-
-            Rectangle {
-              x: Theme.padding
-              width: parent.width - 2 * Theme.padding
-              height: 1
-              color: Theme.separator
-            }
-
-            Text {
-              x: Theme.padding
-              anchors.verticalCenter: parent.verticalCenter
-              text: row.modelData.title
-              color: Theme.fgDim
-              font: Theme.captionHeading
-            }
-
-            IconButton {
-              objectName: "mute:input"
-              anchors.right: parent.right
-              anchors.rightMargin: Theme.basePadding
-              anchors.verticalCenter: parent.verticalCenter
-              small: true
-              flat: true
-              enabled: row.heading && Microphone.adjustable
-              checked: Microphone.muted
-              glyph: Microphone.glyph
-              tooltip: Microphone.muted ? "Unmute Microphone" : "Mute Microphone"
-              onClicked: Microphone.toggleMute()
-            }
+            verticalAlignment: Text.AlignVCenter
+            text: row.modelData.title
+            color: Theme.fgDim
+            font: Theme.captionHeading
           }
 
           ListRow {

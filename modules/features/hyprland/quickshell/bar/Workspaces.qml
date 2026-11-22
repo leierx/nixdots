@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import Quickshell.Io
 import Quickshell.Widgets
 import qs.common
 
@@ -11,8 +10,6 @@ Item {
   id: root
 
   required property HyprlandMonitor monitor
-  // The distro's logo as os-release names it (NixOS nix-snowflake, Fedora fedora-logo-icon).
-  property string logo: ""
   // Not monitor.focused: Quickshell binds it only on monitors added after it started.
   readonly property bool focused: monitor !== null && Hyprland.focusedMonitor === monitor
   readonly property var own: {
@@ -60,12 +57,6 @@ Item {
 
   implicitWidth: row.implicitWidth
   implicitHeight: row.implicitHeight
-
-  FileView {
-    path: "/etc/os-release"
-    blockLoading: true
-    onLoaded: root.logo = /^LOGO=["']?([^"'\n]+)/m.exec(text())?.[1] ?? "distributor-logo"
-  }
 
   WheelSteps {
     id: notches
@@ -150,16 +141,22 @@ Item {
     anchors.verticalCenter: parent.verticalCenter
     spacing: Theme.basePadding
 
-    // It does nothing: no button, no hover. As tall as the bar's items, all the bar leaves it.
-    IconImage {
-      anchors.verticalCenter: parent.verticalCenter
-      implicitSize: Theme.barItemHeight
-      source: root.logo === "" ? "" : Quickshell.iconPath(root.logo, "distributor-logo")
-    }
-
     Row {
       anchors.verticalCenter: parent.verticalCenter
       spacing: 2
+
+      // It does nothing: no button, no hover. In a workspace's square, so it keeps their rhythm.
+      Item {
+        anchors.verticalCenter: parent.verticalCenter
+        width: Theme.barItemHeight
+        height: Theme.barItemHeight
+
+        IconImage {
+          anchors.centerIn: parent
+          implicitSize: 24
+          source: Machine.icon
+        }
+      }
 
       Repeater {
         model: root.own

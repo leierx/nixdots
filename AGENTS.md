@@ -329,7 +329,8 @@ Components: `bar/`, `center/`, `controls/`, `launcher/`, `notifications/`,
 only instantiates them. `common/` holds what several share: the STYLE.md
 pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `ClickAway`,
 `Screens`, `Time`, `StateFile`, `Command`, `Detached`, `WheelSteps`,
-`WorkspaceOwners`, `Tooltips`.
+`WorkspaceOwners`, `Tooltips`, `Machine` (os-release's `LOGO=` through the
+icon theme, hostname, uptime).
 
 ### Wiring
 
@@ -357,7 +358,7 @@ pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `ClickAway`,
   `xdg-open`, `systemd-run`, `hyprmoncfg`, `wezterm`, `curl`, `nixpkgs-index`,
   `nixpkgs-run`, `hyprctl`, `systemctl`, `wpctl`, `camera-users`,
   `backlight-watch`, `nmcli`, `nm-connection-editor`, `brightnessctl`,
-  `bluetui`), so it works as any rice: an exception to store paths;
+  `bluetui`, `pwvucontrol`), so it works as any rice: an exception to store paths;
   `quickshell.nix` installs those no other feature does.
 - **Scale**: designed at scale 1 (1920x1080). Hyprland's per-monitor scale
   handles dense screens; HM `quickshell.scale` (default 1, the desktop 1.2)
@@ -507,8 +508,8 @@ pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `ClickAway`,
 - `power/` (SUPER+X): five tiles, each key a keycap on it (pressed without Alt), Reload
   Hyprland, Restart to Firmware on UEFI; ending the session or machine takes a
   second press within 5 s.
-- `bar/`: per screen. Workspaces led by the distro's logo (`LOGO=` from
-  `/etc/os-release`, else `distributor-logo`); other monitors' workspaces still
+- `bar/`: per screen. Workspaces led by the distro's logo (`Machine`, 24 px in
+  a workspace's square); other monitors' workspaces still
   here are named after them (`DP2-1`, `WorkspaceOwners`, remembering connectors
   across unplugs). Quickshell refreshes monitors only as one comes and drops
   windows opened on a workspace it has not loaded, so `Bar.qml` refreshes on
@@ -541,11 +542,17 @@ pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `ClickAway`,
   screen once. IPC `notifications toggleDnd|setDnd|dnd|count|clear|hidePopups`.
 - `center/`: GNOME's date menu under the clock: the last-playing player's
   `MediaCard`, notifications grouped per app, calendar (ISO weeks) and weather
-  where there is room. Opening it checks all and puts popups away. Clear hides
-  them with Undo in a `Toast` for 5 s; `Notifs` dismisses what it held when the
-  toast goes or the center closes. Do Not Disturb is a switch in its footer.
-- `controls/` (SUPER+A): GNOME's quick settings: `Header`, `Levels` (the volume, its arrow
-  opening Sound: outputs, the microphone's mute, inputs; dim but for the arrow
+  where there is room. Opening it checks all, puts popups away and sorts the
+  groups; while open a group keeps its place as its notifications go, a new app
+  comes in on top. Clear slides every group in view off at once (each its own
+  swipe) and dismisses the rest unanimated, no Undo; a card whose group gained
+  one mid-slide comes back. Collapse All also shuts each card's More. Do Not
+  Disturb is a switch in its footer.
+- `controls/` (SUPER+A): GNOME's quick settings: `Header` (the battery, or
+  without one the machine), `Levels` (the volume, its arrow
+  opening Sound: Output and Input, a symbol per device from its PipeWire
+  properties, `devices.js`, and Audio Settings (pwvucontrol, whose meters
+  Privacy already skips as passive); no mic mute; dim but for the arrow
   with a microphone and no output; each backlight), the `Pill`s
   the machine has (`Controls.toggles`), a `Menu` under the row that opens it (one slot
   per row, so its menus swap in place),
@@ -604,8 +611,9 @@ Checks (`modules/flake/checks.nix`): `format` (`nixfmt --check` everywhere),
   `common/`, `flatMap`, text ending in a full stop, an ellipsis on a settings
   item, a `MouseArea` naming no cursor, a plain space between number and unit.
   Deliberate exceptions are listed in the script with why.
-- `notification-markup`, `notification-history`, `launcher-search`, `names`:
-  `qmltestrunner` over `tests/tst_{markup,history,search,names}.qml`, each with
+- `notification-markup`, `notification-history`, `launcher-search`, `names`,
+  `sound-devices`: `qmltestrunner` over
+  `tests/tst_{markup,history,search,names,devices}.qml`, each with
   only its script beside it (`qmlTest`).
 - `qs-test`: builds the package, so shellcheck runs over `scripts/qs-test.sh`.
 
@@ -756,7 +764,8 @@ copy): panel, screens and monitors, workspaces, windows, popups, notification
 history, DND, volume, microphone, OSD, brightness, caps, privacy, the status
 button's glyphs, controls and its backends, tray, tray menu, the focused
 control and `ring`, `hovered` (pieces lit by the pointer), tooltip, sliders,
-launcher `results`, `center`, `field`, `problems`, `layers`, `hypr`. A field a
+launcher `results`, `center` (groups with `y`, `slid`) and `centerMore`,
+`machine`, `field`, `problems`, `layers`, `hypr`. A field a
 test needs goes in the probe, read through the shell's own singletons.
 
 Every snapshot also checks the whole shell:
@@ -789,7 +798,7 @@ with nothing beside it. `--changed` maps changed files to scenarios
 | `binds.sh` | every global bind opens its own panel and closes it |
 | `caffeine.sh` | Caffeine's unit, pill and status cup |
 | `chaos.sh` | hostile and broken clients: floods, megabytes of text, bad icons, panel and hotplug storms, 40-window workspaces, 60 outputs, damaged state, 200 tray items, 300 hostile network names, 1000 outputs, 50 VPNs, 100 BT devices, small and 4K screens |
-| `controls.sh` | the control centre: open/close paths, status glyphs, header, every pill and menu against the fakes, services stopping under it |
+| `controls.sh` | the control centre: open/close paths, status glyphs, header (battery or machine), every pill and menu against the fakes, the sound menu's headings, symbols and Audio Settings, services stopping under it |
 | `cursors.sh` | the bar and every panel's cursors, a closed hand mid-drag |
 | `design.sh` | every surface on screen, scaled too, for the census |
 | `failures.sh` | the shell's tools failing (`qst fail`) |
@@ -799,7 +808,7 @@ with nothing beside it. `--changed` maps changed files to scenarios
 | `interactions.sh` | fixes that had no case: popups, wheel past 100 %, clip scope, 1024x600, power keys, hover after a panel closes |
 | `launcher.sh` | typing as it opens, open time, clicks on another monitor |
 | `motion.sh` | center groups expanding, the OSD fading |
-| `notifications.sh` | per-app limits, five popups, stack tags, DND, the bell, flood sounds, bare-path pictures |
+| `notifications.sh` | per-app limits, five popups, stack tags, DND, the bell, flood sounds, bare-path pictures, Clear, groups holding their places, Collapse All shutting More |
 | `osd.sh` | what shows and what must not |
 | `privacy.sh` | mics real and virtual, casts, cameras via PipeWire and `/dev` |
 | `tray.sh` | the tray strip, its menus and keys |

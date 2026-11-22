@@ -390,7 +390,7 @@ Overlay {
         }
 
         Section {
-          title: "ListRow, EmptyLine, EmptyState, Toast"
+          title: "ListRow, EmptyLine, EmptyState"
 
           Repeater {
             model: [
@@ -445,15 +445,6 @@ Overlay {
               text: "No Results"
             }
           }
-          Labelled {
-            label: "toast"
-            Toast {
-              text: "Notifications cleared"
-              action: "Undo"
-              Component.onCompleted: show()
-              onExpired: show()
-            }
-          }
         }
 
         Section {
@@ -479,7 +470,7 @@ Overlay {
           title: "Surfaces and symbols"
 
           Repeater {
-            model: ["panelBg", "popoverBg", "cardBg", "messageBg", "osdBg", "toastBg"]
+            model: ["panelBg", "popoverBg", "cardBg", "messageBg", "osdBg"]
 
             Labelled {
               required property string modelData

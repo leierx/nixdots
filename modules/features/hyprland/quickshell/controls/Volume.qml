@@ -25,7 +25,7 @@ Singleton {
   readonly property int percent: Math.round(volume * 100)
   readonly property string glyph: glyphFor(volume, muted)
   // What the popup lists: every output, the one in use marked.
-  readonly property var devices: fake ? fake.devices.map((name, i) => ({ name: Names.clean(name), current: i === fake.current, index: i })) : outputs.map((node, i) => ({ name: Names.clean(node.description || node.nickname || node.name), current: node === sink, index: i }))
+  readonly property var devices: fake ? fake.devices.map((name, i) => ({ name: Names.clean(name), current: i === fake.current, index: i })) : outputs.map((node, i) => ({ name: Names.clean(node.description || node.nickname || node.name), current: node === sink, index: i, props: node.properties }))
 
   function glyphFor(level: real, silenced: bool): string {
     return silenced ? Symbols.volumeOff : level <= 0.001 ? Symbols.volumeMute : level < 0.5 ? Symbols.volumeDown : Symbols.volumeUp;
@@ -49,6 +49,11 @@ Singleton {
   function toggleMute(): void {
     if (fake) fake = Object.assign({}, fake, { muted: !fake.muted });
     else if (sink?.audio) sink.audio.muted = !sink.audio.muted;
+  }
+
+  function settings(): void {
+    Panels.close();
+    Detached.run(["pwvucontrol"], "");
   }
 
   function choose(index: int): void {

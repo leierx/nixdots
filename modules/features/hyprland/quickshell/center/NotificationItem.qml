@@ -43,6 +43,7 @@ Item {
   onExpandedChanged: {
     if (expanded) return;
     open = false;
+    actionRow.moreOpen = false;
     ease.stop();
     eased = 1;
     fold.stop();
@@ -277,6 +278,8 @@ Item {
       }
 
       NotificationActions {
+        id: actionRow
+
         Layout.fillWidth: true
         visible: root.expanded && actions.length > 0
         actions: root.entry.buttons

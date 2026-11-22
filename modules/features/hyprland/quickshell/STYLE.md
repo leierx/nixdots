@@ -31,7 +31,6 @@ nixpkgs-unstable#gnome-shell.src`, `#libadwaita.src`): `gs` is
 | A key | `Keycap` | 26 px, radius 6 |
 | Nothing to show, a panel | `EmptyState` | dim 64 px symbol (or none) over title-3, centred |
 | Nothing to show, a menu | `EmptyLine` | one dim line where the first row would be |
-| Something to undo | `Toast` | pill, bold raised button, round close, 5 s |
 | A symbol | `Glyph` + `Symbols.<name>` | 16 px; 32 and 64 only where Symbols (below) says |
 | A tooltip | `TooltipArea` in the owner | half a second after the pointer rests |
 | Anything else | a new token in `Theme`, a row here | |
@@ -75,7 +74,6 @@ popover, so they hold on any surface.
 | `bannerBg`, `bannerHoverBg` | `popoverBg`, + 4 % lightness | **ours**: a popup is the popover, as every floating surface | Popups |
 | `popupBorder` | fg 22 % | **ours**: a popup stands out from what is behind it | A banner's edge (the center's cards keep `popoverBorder`) |
 | `messageButtonBg`, `…HoverBg`, `…ActiveBg` | fg 15, 30, 20 % | gs `%notification_button` | A notification's actions |
-| `toastBg` | `#343437` | adw `$toast_bg_color` less 28 | The toast |
 | `osdBg`, `osdBorder` | `#121217`, fg 2 % | gs `$osd_bg_color`, `$osd_outer_borders_color` | The OSD |
 | `tooltipBg`, `tooltipBorder` | black 90 %, fg 10 % | gs `%tooltip` | Tooltips |
 | `separator` | fg 10 % | gs `.popup-separator-menu-item` | Dividers |
@@ -124,7 +122,7 @@ Adwaita Sans 11 pt; only these classes (gs `%title_1` … `%caption`, adw
 | --- | --- | --- | --- |
 | `keycapRadius` | 6 | adw `.keycap` | Keys |
 | `workspaceRadius` | 6 | **ours**: squares, not Shell's pills | Workspaces |
-| `baseRadius` | 8 | gs `$base_border_radius`, `%button` | Buttons that are not pills, notification actions, the toast's button (adw has 9) |
+| `baseRadius` | 8 | gs `$base_border_radius`, `%button` | Buttons that are not pills, notification actions (adw has 9) |
 | `menuItemRadius` | 12 | gs `$menuitem_border_radius` | Every row in a popover or panel |
 | `cardRadius` | 12 | gs `%card_common` | Inset cards |
 | `tileRadius` | 16 | gs `%tile` | Launcher rows and tiles |
@@ -133,7 +131,7 @@ Adwaita Sans 11 pt; only these classes (gs `%title_1` … `%caption`, adw
 | `toggleMenuRadius` | 24 | gs `.quick-toggle-menu` | A toggle's menu |
 | `dateMenuRadius` | 30 | gs `.datemenu-popover` | The center |
 | `quickSettingsRadius` | 36 | gs `.quick-settings` | The control centre |
-| `height / 2` | pill | gs `$forced_circular_radius` | Toggles, icon buttons, search entry, bar items, OSD, tooltips, toast |
+| `height / 2` | pill | gs `$forced_circular_radius` | Toggles, icon buttons, search entry, bar items, OSD, tooltips |
 
 ## Sizes
 
@@ -203,8 +201,6 @@ to the census.
 - `EmptyLine`: one dim line where the first row would be, for menus (**ours**
   over gs `.bt-menu-placeholder`: the toggle and header already show the
   symbol twice).
-- `Toast`: adw toast. Pill, its text 18 px in (adw 12 padding + 6 margin), a raised bold button, a round flat close;
-  for what can be taken back (Clear's Undo).
 - `ScrollBar`, `FocusRing`, `Glyph`, `TooltipArea` (with `tooltip/`): the
   scroll handle, the keyboard's 2 px ring, a `Symbols` path, a tooltip whose
   `HoverHandler` sits on its owner.
@@ -213,17 +209,18 @@ to the census.
 
 | Surface | Anatomy | Place | Size | Motion |
 | --- | --- | --- | --- | --- |
-| Bar | Distro logo at 26 px (does nothing), workspaces (**ours**: numbered squares, occupied by colour alone, a mark would crowd 26 px), clock, tray, status button (at least three symbols wide, an easy target; ours) | Top, edge to edge, black | 32 px; items 26 px pills, regular weight but the bold workspace numbers | Fills over `panelButtonTime`; a new status symbol fades in as the others slide aside over `popupTime` |
+| Bar | Distro logo (os-release's, `Machine`) at 24 px in a workspace's 26 px square, spaced as they are (does nothing), workspaces (**ours**: numbered squares, occupied by colour alone, a mark would crowd 26 px), clock, tray, status button (at least three symbols wide, an easy target; ours) | Top, edge to edge, black | 32 px; items 26 px pills, regular weight but the bold workspace numbers | Fills over `panelButtonTime`; a new status symbol fades in as the others slide aside over `popupTime` |
 | Tray (**ours**: GNOME has none) | Left of the status button, no fill (**ours**: one barely showed on the black bar), each icon hovered as a bar item: its first three icons in the order they came, then "+N" in the dim caption; under the pointer at the bar's right end, every icon, a strip the wheel scrolls sideways; lingers 600 ms; gone when empty | Bar | Three icons; at most 12 em expanded | Width eases over `popupTime`, growing leftwards |
 | Tray menu | gs popup menu, cascading | At the pointer, a pixel off (**ours**: as trays have always opened them, not a dropdown under the bar) | At least 15 em, radius 20, 6 px padding | Opens at once, goes as the pointer leaves |
 | Popover off the bar (control centre, center) | A `Card` | `rise` below the bar, centred on its button, `rise` from screen edges | See Panel sizes | Fade + `rise` slide over `popupTime` |
 | Quick toggle | Pill, symbol, title, subtitle; a menu segment after a 1 px rule in the pill's own colour, lighter only hovered (**ours**: gs lightens it always) | Control centre grid | 48 px × 12 em | |
 | Toggle menu | Header (16 px symbol in a 32 px disc, title-4; **ours**: gs 24 in 42 and title-3 outweighed the rows in MDI's filled symbols), rows, separator, settings rows | Under the toggle row | Radius 24 on `cardBg` | Height then fade; another menu of the same row swaps in place as the slot eases to its height (ours: two slots of one row slid past each other) |
-| Sound (**ours**) | The volume's slider alone on the card; its arrow opens Sound: the outputs, an "Input" line with the microphone's mute, the inputs (no microphone level: seldom touched) | Under the levels | As a toggle menu | As a toggle menu |
+| Sound (**ours**) | The volume's slider alone on the card; its arrow opens Sound: "Output" and "Input" captions alike (no rule), each device with a symbol for what it is, Audio Settings (pwvucontrol); no microphone level or mute (seldom touched; pwvucontrol has them) | Under the levels | As a toggle menu | As a toggle menu |
+| Control centre header | The battery's pill (gs); without one the machine, bare (**ours**): 24 px os-release logo, hostname bold, uptime dim; then screenshot, lock, power | Top of the control centre | 36 px | |
 | Caffeine (**ours**: GNOME has none) | A toggle beside Night Light; a cup in the status button while on | Control centre | | |
 | Centred panel (launcher, shortcuts, gallery) | A `Card` over a 0.6 dim (gs) | Centre of the focused screen | Widths in em | Opens in place |
 | Banner (popup) | Header line (app name, age, expand, close; no app icon, **ours**: the body shows it, whole or as the picture's badge), 48 px icon or picture, summary, body, actions | Top right, under the status area | 34 em, radius 16, `bannerBg`, `popupBorder` edge | Fade and growth from 90 % over `bannerTime` |
-| Center | Media card (gs place), groups per app on `messageBg`, each header age, expand, close (gs `MessageHeader`), a lone one folding without its text moving, calendar, weather; Do Not Disturb switch and Clear in the footer (gs) | Under the clock | See Panel sizes | |
+| Center | Media card (gs place), groups per app on `messageBg`, each header age, expand, close (gs `MessageHeader`), a lone one folding without its text moving, calendar, weather; Do Not Disturb switch and Clear in the footer (gs); Clear slides every group off at once, no Undo (**ours**); groups hold their places while it is open | Under the clock | See Panel sizes | |
 | Media card | Album art in colour, blurred and darkened, text held to 3:1 (**ours**: the user asked for colour) | Heads the center's list | | |
 | Weather card | MET Norway's own colour icons (**ours**: the service's, not Adwaita's), the sky as a gradient (`skies`) | Beside the calendar | | |
 | OSD | Symbol, 160 px level (white, red past 100 %), number; or symbol and a word | Bottom centre, 4 em up | 56 px pill on `osdBg` | `quickTime` fade, gone 1.5 s after the last change |

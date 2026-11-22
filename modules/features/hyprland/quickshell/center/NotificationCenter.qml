@@ -15,7 +15,8 @@ Overlay {
   id: root
 
   readonly property bool open: Panels.active === name
-  readonly property var apps: [...Notifs.byApp.keys()]
+  // While open, a group keeps its place as its notifications go, so a dismissal never moves the one under the pointer; a new app comes in on top, and each open sorts them afresh.
+  property var apps: []
   readonly property int padding: Theme.padding
   // Beside the calendar the list keeps 24em, or the calendar steps aside, as on a small screen at a large scale, or one too short for it.
   readonly property real room: width - 2 * Theme.rise - 4 * padding - 1 - side.implicitWidth
@@ -27,10 +28,31 @@ Overlay {
 
   signal hidden()
   signal collapseAll()
+  signal clearAll()
+
+  function arrange(fresh: bool): void {
+    const keys = [...Notifs.byApp.keys()];
+    if (fresh || !root.open) {
+      root.apps = keys;
+      return;
+    }
+    const kept = root.apps.filter(key => Notifs.byApp.has(key));
+    root.apps = [...keys.filter(key => !kept.includes(key)), ...kept];
+  }
+
+  Connections {
+    target: Notifs
+
+    function onByAppChanged(): void {
+      root.arrange(false);
+    }
+  }
 
   onOpenChanged: {
-    if (open) Notifs.hidePopups();
-    else toast.dismiss();
+    if (open) {
+      arrange(true);
+      Notifs.hidePopups();
+    }
     (open ? closing : opening).stop();
     // Closed before it moved, it has nothing to animate, and would never report itself hidden.
     if (!open && shown === 0) Qt.callLater(root.hideClosed);
@@ -40,6 +62,7 @@ Overlay {
   // A window Hyprland has closed stays closed, so the next open needs a new one.
   onClosed: hidden()
   Component.onCompleted: {
+    arrange(true);
     Notifs.hidePopups();
     if (open) opening.start();
     else Qt.callLater(root.hideClosed);
@@ -122,7 +145,7 @@ Overlay {
         Item {
           Layout.fillWidth: true
           // As tall as the calendar and weather at least, so the panel keeps its shape, and no taller than the screen.
-          Layout.preferredHeight: Math.min(root.height - 2 * Theme.rise - 3 * root.padding - footer.implicitHeight, Math.max(side.implicitHeight - footer.implicitHeight - root.padding, list.contentHeight, Notifs.shown.length === 0 ? empty.y + empty.implicitHeight : 0))
+          Layout.preferredHeight: Math.min(root.height - 2 * Theme.rise - 3 * root.padding - footer.implicitHeight, Math.max(side.implicitHeight - footer.implicitHeight - root.padding, list.contentHeight, Notifs.entries.length === 0 ? empty.y + empty.implicitHeight : 0))
 
           ListView {
             id: list
@@ -170,6 +193,12 @@ Overlay {
 
                 function onCollapseAll(): void {
                   group.expanded = false;
+                }
+
+                // A group out of view has no slide to watch.
+                function onClearAll(): void {
+                  if (group.y + group.height > list.contentY && group.y < list.contentY + list.height) group.slideAway(false);
+                  else group.dismiss();
                 }
               }
             }
@@ -241,7 +270,7 @@ Overlay {
             y: list.headerItem?.height ?? 0
             width: parent.width
             height: parent.height - y
-            visible: Notifs.shown.length === 0
+            visible: Notifs.entries.length === 0
             glyph: Symbols.bell
             text: "No Notifications"
           }
@@ -257,7 +286,6 @@ Overlay {
           // GNOME's place for it: beside Clear, under the list it quiets.
           Row {
             spacing: Theme.padding
-            opacity: toast.shown ? 0 : 1
 
             Text {
               anchors.verticalCenter: parent.verticalCenter
@@ -271,31 +299,19 @@ Overlay {
               anchors.verticalCenter: parent.verticalCenter
               checked: Notifs.dnd
               focusable: true
-              enabled: !toast.shown
               onClicked: Notifs.dnd = !Notifs.dnd
             }
           }
 
           Item {
             Layout.fillWidth: true
-
-            Toast {
-              id: toast
-
-              // Centred on the whole footer, over the buttons it hides.
-              x: (footer.width - width) / 2 - parent.x
-              anchors.verticalCenter: parent.verticalCenter
-              text: "Notifications cleared"
-              action: "Undo"
-              onActed: Notifs.unhold()
-              onExpired: Notifs.release()
-            }
           }
 
           Button {
+            objectName: "action:Collapse All"
             text: "Collapse All"
             pill: true
-            opacity: root.expandedGroups > 0 && !toast.shown ? 1 : 0
+            opacity: root.expandedGroups > 0 ? 1 : 0
             enabled: opacity === 1
             onClicked: root.collapseAll()
           }
@@ -305,12 +321,9 @@ Overlay {
             text: "Clear"
             pill: true
             // Hidden without leaving the layout, so the footer keeps its height.
-            opacity: Notifs.shown.length > 0 && !toast.shown ? 1 : 0
+            opacity: Notifs.entries.length > 0 ? 1 : 0
             enabled: opacity === 1
-            onClicked: {
-              Notifs.hold();
-              toast.show();
-            }
+            onClicked: root.clearAll()
           }
         }
       }

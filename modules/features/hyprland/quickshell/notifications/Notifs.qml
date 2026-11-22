@@ -164,32 +164,15 @@ Singleton {
     for (const entry of entries.slice()) entry.notification.dismiss();
   }
 
-  // Cleared from the center, but dismissed only once its Undo has gone, as the HIG asks of what cannot be taken back.
-  property var held: []
-  readonly property var shown: entries.filter(entry => !held.includes(entry))
-  // Per app in the order shown, so each of the centre's groups takes its own without a pass over all.
+  // Per app, newest first, so each of the centre's groups takes its own without a pass over all.
   readonly property var byApp: {
     const groups = new Map();
-    for (const entry of shown) {
+    for (const entry of entries) {
       const key = appKey(entry);
       if (groups.has(key)) groups.get(key).push(entry);
       else groups.set(key, [entry]);
     }
     return groups;
-  }
-
-  function hold() {
-    held = entries.slice();
-  }
-
-  function unhold() {
-    held = [];
-  }
-
-  function release() {
-    const gone = held.filter(entry => entries.includes(entry));
-    held = [];
-    for (const entry of gone) entry.notification.dismiss();
   }
 
   function age(time) {

@@ -1,6 +1,7 @@
 export QS_TEST_MONITORS="DP-1:1920x1080:1"
 
 summaries() { echo "(.history | map(.summary)) == $1"; }
+press() { read -r x y _ < <(qst areas 'NotificationCenter' | awk -F'\t' -v name=":$1" 'index($3, name) && $4 == "true" { print $1, $2; exit }'); [ -n "${x:-}" ] || { echo "no $1"; exit 1; }; qst click left "$x" "$y"; }
 
 qst case "an app keeps its newest three notifications once their popups go"
 notify-send -a Mail "mail 1"
@@ -127,25 +128,50 @@ read -r x y < <(closes | head -1)
 qst click left "$x" "$y"
 qst wait '.notifications == 2 and (.history | map(.summary) | index("two") | not)'
 
-qst case "Clear in the center offers Undo for five seconds, which brings them back; left alone, or the center closed, they go"
-press() { read -r x y _ < <(qst areas 'NotificationCenter' | awk -F'\t' -v name=":$1" 'index($3, name) && $4 == "true" { print $1, $2; exit }'); [ -n "${x:-}" ] || { echo "no $1"; exit 1; }; qst click left "$x" "$y"; }
-for n in 1 2 3; do notify-send -a Chat "message $n"; done
-qst wait '.notifications == 3'
+qst case "Clear dismisses every group at once, those scrolled out of view too, with nothing to undo"
+for n in $(seq 16); do notify-send -a "App $n" "message $n" "a body long enough to take a line of its own"; done
+qst wait '.notifications == 16'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
+qst wait '.panel == "center" and (.center | length) == 16'
 press action:Clear
-qst wait '.held == 3 and .panel == "center" and (.center | length) == 0'
-press action:Undo
-qst wait '.held == 0 and .notifications == 3 and (.center | length) == 1'
-press action:Clear
-qst wait '.held == 3'
-qst wait '.notifications == 0 and .held == 0' 8
-for n in 1 2; do notify-send -a Chat "again $n"; done
-qst wait '.notifications == 2'
-press action:Clear
-qst wait '.held == 2'
+qst wait '.notifications == 0 and (.center | length) == 0' 2
+qst stays '.panel == "center" and .notifications == 0' 1
+! qst areas 'NotificationCenter' | grep -q 'action:Undo' || { echo "Clear still offers Undo"; exit 1; }
+
+qst case "a group keeps its place in the open center as its newest goes, a new app comes in on top, and the next open sorts them"
+order() { echo "(.center | sort_by(.y) | map(.app)) == $1"; }
+notify-send -a Bravo "bravo old"
+notify-send -a Alpha "alpha"
+newest=$(notify-send -p -a Bravo "bravo new")
+notify-send -a Charlie "charlie"
+qst wait '.notifications == 4'
+qst ipc panels open center > /dev/null
+qst wait "$(order '["Charlie", "Bravo", "Alpha"]')"
+busctl --user call org.freedesktop.Notifications /org/freedesktop/Notifications org.freedesktop.Notifications CloseNotification u "$newest" > /dev/null
+qst wait ".notifications == 3 and $(order '["Charlie", "Bravo", "Alpha"]')"
+qst stays "$(order '["Charlie", "Bravo", "Alpha"]')" 0.5
+notify-send -a Delta "delta"
+qst wait "$(order '["Delta", "Charlie", "Bravo", "Alpha"]')"
 qst ipc panels close > /dev/null
-qst wait '.notifications == 0 and .held == 0 and .panel == ""'
+qst wait '.panel == ""'
+qst ipc panels open center > /dev/null
+qst wait "$(order '["Delta", "Charlie", "Alpha", "Bravo"]')"
+
+qst case "Collapse All shuts a card's More along with its group, so it opens again with two actions"
+notify-send -a Mail -A one=One -A two=Two -A three=Three -A four=Four "pick one" > /dev/null &
+qst wait '.notifications == 1'
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center" and (.center | length) == 1'
+read -r cx cy _ < <(qst areas 'NotificationCenter/SwipeArea' | head -1)
+qst click left "$cx" "$cy"
+qst wait '.center[0].expanded'
+press action:More
+qst wait '.centerMore == 1'
+press 'action:Collapse All'
+qst wait '(.center[0].expanded | not) and .centerMore == 0'
+qst click left "$cx" "$cy"
+qst wait '.center[0].expanded'
+qst stays '.centerMore == 0' 0.5
 
 qst case "the keyboard reaches the center's cards: Return expands a group, Delete dismisses what it is on"
 notify-send -a Chat "alone"

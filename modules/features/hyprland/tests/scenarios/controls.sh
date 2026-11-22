@@ -244,18 +244,35 @@ qst wait '.brightness.intel_backlight.brightness < 600'
 qst wait '.osd.kind == "brightness" and .osd.level < 0.6'
 qst actions | grep -q 'brightnessctl --quiet --device intel_backlight set' || { qst actions; echo "brightnessctl was not run"; exit 1; }
 
-qst case "the centre's volume and the sound menu's microphone mute show the OSD with what they set"
+qst case "the centre's volume, and the microphone muted from elsewhere, show the OSD with what they set"
 open
 qst wait '.osdSettling == false'
 read -r x y < <(at slider:output)
 qst click left $((x - 60)) "$y"
 qst wait '.osd.kind == "volume" and .osd.level < 0.6 and .osd.screen == "DP-1"'
-qst ipc controls menu sound > /dev/null
-qst wait '.controls.menu == "sound"'
-press mute:input
-qst wait '.osd.kind == "microphone" and .osd.muted'
-press mute:input
+wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 1
+qst wait '.osd.kind == "microphone" and .osd.muted and .microphone.muted'
+wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0
 qst wait '.osd.kind == "microphone" and .osd.muted == false'
+
+qst case "the sound menu heads its outputs and inputs alike, a symbol for each device and no mute, and Audio Settings opens pwvucontrol"
+open
+qst ipc controls menu sound > /dev/null
+qst wait '.controls.menu == "sound" and (.controls.open.sound | length) == 8'
+qst wait '.controls.open.sound[0:2] == ["# Output", "Speakers (speaker)"] and .controls.open.sound[4:6] == ["# Input", "Microphone (microphone)"]'
+qst wait '(.controls.open.sound | sort) == (["# Output", "Speakers (speaker)", "Headphones (headphones)", "HDMI / DisplayPort (display)", "# Input", "Microphone (microphone)", "Headset Microphone (headset)", "Noise Cancelling (virtual)"] | sort)'
+! qst areas 'ControlsPanel' | grep -q 'mute:input' || { echo "the sound menu still mutes the microphone"; exit 1; }
+press 'action:Audio Settings'
+qst wait '.panel == ""'
+for _ in $(seq 20); do qst actions | grep -q 'systemd-run --user --scope --quiet pwvucontrol' && break; sleep 0.1; done # sleep: the launch is logged by a process the shell detached
+qst actions | grep -q 'systemd-run --user --scope --quiet pwvucontrol' || { qst actions; echo "pwvucontrol was not run"; exit 1; }
+
+qst case "without a battery the header shows the machine, and a battery takes its place back"
+qst battery remove
+open
+qst wait '.machine.header == true and .machine.hostname != "" and .machine.icon and (.machine.uptime | startswith("Up "))'
+qst battery 40 discharging 1800
+qst wait '.machine.header == false'
 
 qst case "the player that played last gets the card; stopped, it goes"
 # alone: removing a playing player races Quickshell polling its position, and a loaded machine widens the race
@@ -288,7 +305,7 @@ qst wait '.volume.output == null and .microphone.input == "Microphone"'
 open
 qst areas ControlsPanel | grep -q $'slider:output\tfalse'
 press menu:sound
-qst wait '.controls.menu == "sound" and .controls.open == { count: 3, rows: 4, first: ["Input", "Microphone", "Headset Microphone", "Noise Cancelling"] }'
+qst wait '.controls.menu == "sound" and .controls.open == { count: 3, rows: 4, first: ["Input", "Microphone", "Headset Microphone", "Noise Cancelling"], sound: ["# Input", "Microphone (microphone)", "Headset Microphone (headset)", "Noise Cancelling (virtual)"] }'
 press row:Headset
 qst wait '.microphone.input == "Headset Microphone"'
 

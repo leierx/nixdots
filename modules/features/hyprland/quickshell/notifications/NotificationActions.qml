@@ -45,6 +45,7 @@ ColumnLayout {
       Layout.preferredWidth: 1
       visible: root.overflow
       color: pressed ? Theme.messageButtonActiveBg : hovered ? Theme.messageButtonHoverBg : Theme.messageButtonBg
+      objectName: "action:More"
       text: "More"
       expander: true
       pointing: root.moreOpen ? "up" : "down"

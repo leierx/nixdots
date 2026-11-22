@@ -15,7 +15,9 @@ Item {
   // Kept once the app's last entry has gone, so the group fades out whole.
   property var shown: []
   onEntriesChanged: {
-    if (entries.length > 0) shown = entries;
+    if (entries.length === 0) return;
+    shown = entries;
+    swipe.restore();
   }
   Component.onCompleted: shown = entries
 
@@ -25,6 +27,8 @@ Item {
   readonly property var ordered: [...shown.filter(e => e.critical), ...shown.filter(e => !e.critical)]
   readonly property bool expandable: expanded || unfolded || !single || newest.buttons.length > 0 || newest.progress !== undefined || title.truncated || (root.first?.truncated ?? false)
   readonly property int iconSize: 32
+  // How far its card is off to a side, for the probe: 0 at rest.
+  readonly property real slid: card.x
   readonly property int padding: 8
   readonly property int rows: 3
   // Three lines tall however few it holds, so the stack is even.
@@ -76,6 +80,10 @@ Item {
   function slideAway(left: bool): void {
     const dismissals = root.shown.map(entry => entry.dismissal());
     swipe.slideAway(left, () => dismissals.forEach(dismiss => dismiss()));
+  }
+
+  function dismiss(): void {
+    for (const dismissal of root.shown.map(entry => entry.dismissal())) dismissal();
   }
 
   onSingleChanged: {

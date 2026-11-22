@@ -32,6 +32,11 @@ MouseArea {
     away.start();
   }
 
+  // Back in place, as a notification that arrived while it slid keeps what it slid away from.
+  function restore(): void {
+    if (target && target.x !== 0 && !away.running && !dragging) back.start();
+  }
+
   function finish(): void {
     const done = root.finished;
     root.finished = null;

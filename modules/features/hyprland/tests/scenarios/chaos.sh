@@ -262,7 +262,7 @@ done
 qst wait '.microphone.input != null' 10
 qst stays '.panel == "controls:DP-1" and (.microphone.inputs | length) == 3' 1
 qst x wpctl set-default "$(qst x pw-dump | jq '.[] | select(.info.props."node.name" == "test-headset-mic") | .id')"
-qst wait '.microphone.input == "Headset Microphone" and .microphone.adjustable'
+qst wait '.microphone.input == "Headset Microphone"'
 ids=$(qst x pw-dump | jq -r '.[] | select(.info.props."media.class" // "" | test("^Audio/Source")) | .id')
 for _ in 1 2 3 4 5; do for id in $ids; do qst x wpctl set-default "$id"; done; done
 last=$(tail -1 <<< "$ids")
@@ -287,18 +287,6 @@ done
 qst x pw-cli destroy test-headset-mic > /dev/null
 qst wait '.microphone.input == "Microphone" and .microphone.inputs == ["Microphone", "Noise Cancelling"]'
 qst stays '.panel == "controls:DP-1"' 1
-
-qst case "the microphone's mute hammered from the sound menu"
-qst ipc panels open controls:DP-1 > /dev/null
-qst ipc controls menu sound > /dev/null
-qst wait '.panel == "controls:DP-1" and .controls.menu == "sound"'
-read -r mx my < <(named mute:input)
-for _ in $(seq 20); do qst click left "$mx" "$my"; done
-qst wait '.microphone.muted | not'
-qst stays '.microphone.muted | not' 0.5
-qst click left "$mx" "$my"
-qst wait '.microphone.muted'
-qst stays '.microphone.muted and .panel == "controls:DP-1"' 1
 
 qst case "PipeWire restarting under the open sound menu brings the inputs back"
 qst ipc panels open controls:DP-1 > /dev/null
@@ -386,8 +374,8 @@ qst wait '.panel == "controls:DP-1" and .controls.menu == "sound" and .volume.ou
 first=$(qst areas 'ControlsPanel' | awk -F'\t' '$3 ~ /:row:/ { print $3; exit }')
 [[ $first == *":row:Output 601"* ]] || { echo "first row: $first"; exit 1; }
 qst stays '.panel == "controls:DP-1"' 1
-# The header counts devices, not the Input heading; a filter matching nothing says so, heading and all gone.
-qst wait '.controls.open.count == 1003 and .controls.open.rows == 1004'
+# The header counts devices, not the Output and Input headings; a filter matching nothing says so, headings and all gone.
+qst wait '.controls.open.count == 1003 and .controls.open.rows == 1005'
 read -r x y < <(qst areas ControlsPanel | awk -F'\t' '$3 ~ /TextField$/ { print $1, $2; exit }')
 qst click left "$x" "$y"
 qst type zzzz
@@ -484,17 +472,16 @@ qst stays '.controls.media.length == 284' 1
 qst player remove spotify
 qst wait '.controls.media.identity == "Player 1" and .controls.media.length == 251'
 
-qst case "the volume and the input's mute hammered from the open centre show the OSD at every change, ending on the last"
+qst case "the volume hammered from the open centre and the input's mute from wpctl show the OSD at every change, ending on the last"
 qst ipc panels open controls:DP-1 > /dev/null
 qst ipc controls menu sound > /dev/null
 qst wait '.panel == "controls:DP-1" and .controls.menu == "sound" and .osdSettling == false'
 read -r ox oy < <(named slider:output)
-read -r mx my < <(named mute:input)
 before=$(qst state .osdShown)
 # Each round sets the volume somewhere new and flips the input's mute.
 for i in $(seq 15); do
   qst click left $((ox - 100 + i * 12)) "$oy"
-  qst click left "$mx" "$my"
+  wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
 done
 qst wait '.osd.kind == "microphone" and .osd.muted and .microphone.muted'
 shows=$(($(qst state .osdShown) - before))
@@ -562,24 +549,24 @@ done
 qst wait '.field == "fierfox" and (.results | index("Firefox")) != null'
 qst stays '.panel == "apps"' 0.5
 
-qst case "Clear and Undo hammered while notifications keep arriving and the center closes and opens: what Undo brings back is what Clear took"
+qst case "Clear hammered while notifications keep arriving and the center closes and opens: every card ends in place or gone, and a last Clear takes all"
 qst ipc panels open center > /dev/null
 qst wait '.panel == "center"'
 press() { read -r x y _ < <(qst areas 'NotificationCenter' | awk -F'\t' -v name=":$1" 'index($3, name) && $4 == "true" { print $1, $2; exit }'); [ -n "${x:-}" ] && qst click left "$x" "$y"; }
 for n in $(seq 6); do notify-send -a "App $n" "first $n"; done
 qst wait '.notifications == 6'
 for round in $(seq 8); do
-  press action:Clear
+  press action:Clear || true
   notify-send -a Late "late $round" &
-  press action:Undo
+  notify-send -a "App $round" "again $round" &
+  [ $((round % 3)) -eq 0 ] && { qst ipc panels close > /dev/null; qst ipc panels open center > /dev/null; }
 done
 wait
-qst wait '.held == 0 and (.history | map(select(.app != "Late")) | length) == 6'
+qst wait '.panel == "center" and (.history | map(select(.summary | startswith("first"))) | length) == 0'
+qst wait '(.center | length) == ([.history[].app] | unique | length)'
+qst stays '(.center | map(select(.slid != 0)) | length) == 0' 0.5
 press action:Clear
-qst wait '.held > 0'
-qst ipc panels close > /dev/null
-qst ipc panels open center > /dev/null
-qst wait '.held == 0 and .notifications == 0 and .panel == "center"'
+qst wait '.notifications == 0 and (.center | length) == 0 and .panel == "center"'
 
 qst case "the pointer swept over every button in the centre faster than the delay shows only the last one's tooltip, and the centre or its monitor going takes it away"
 qst ipc panels open controls:DP-1 > /dev/null

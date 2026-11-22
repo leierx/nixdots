@@ -25,6 +25,9 @@ play	play
 pause	pause
 headphones	headphones
 speaker	speaker
+headset	headset
+speakerDisplay	monitor-speaker
+audioVirtual	waveform
 keyboard	keyboard
 mouse	mouse
 phone	cellphone

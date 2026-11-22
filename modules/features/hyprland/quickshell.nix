@@ -182,6 +182,8 @@ in
         backlightWatch
         # the control centre's brightness, set through logind
         pkgs.brightnessctl
+        # its Audio Settings
+        pkgs.pwvucontrol
       ]
       ++ lib.optionals osConfig.networking.networkmanager.enable [
         # the control centre's VPNs, and its Network Settings…
@@ -464,5 +466,7 @@ in
       checks.launcher-search = qmlTest "launcher-search" "launcher/search.js" "tst_search.qml";
       # Names from hostile networks and devices, kept to one line.
       checks.names = qmlTest "names" "controls/names.js" "tst_names.qml";
+      # What symbol a sound device gets, from what PipeWire tells of it.
+      checks.sound-devices = qmlTest "sound-devices" "controls/devices.js" "tst_devices.qml";
     };
 }
