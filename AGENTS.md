@@ -240,7 +240,8 @@ directly (the mac lacks `pkgs.unstable`). `extraPackages` suffixes `git` and
 `fd`). Writes into `config.programs.pi-coding-agent.configDir` (`~/.pi/agent` by
 default): `settings.json` (with `mutableSettings = true`, so activation merges
 declared settings in place while pi can still write its own keys like
-`defaultProjectTrust`; both hosts pin provider, model, thinking level `max`),
+`defaultProjectTrust`; both hosts pin provider, model, thinking level `max`;
+Copilot's Claude Opus 5.5 starts at `high` through `modelThinkingLevels`),
 `models.json` (DeepSeek V4.1 Flash at its agentic evals' `top_p` 0.95,
 temperature 1), `APPEND_SYSTEM.md` (`appendSystem`), the `commit-style` skill,
 a `bell` extension (BEL on finish or prompt) and `tmux-session` (session file in
