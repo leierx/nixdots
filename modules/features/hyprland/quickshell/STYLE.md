@@ -105,7 +105,7 @@ Adwaita Sans 11 pt; only these classes (gs `%title_1` … `%caption`, adw
 
 | Theme | Size, weight | Use |
 | --- | --- | --- |
-| `title1`, `title2` | 20 pt 800, 15 pt 800 | |
+| `title2` | 15 pt, 800 | The calendar's month, a monitor preview's title |
 | `title3` | 15 pt, 700 | Empty states |
 | `title4` | 13 pt, 700 | Toggle menu headers (**ours**: gs title-3, too heavy beside a 16 px symbol) |
 | `largeTitle` | 24 pt, 300 | gs `%large_title` |
@@ -212,7 +212,7 @@ to the census.
 | Bar | Distro logo (os-release's, `Machine`) at 24 px in a workspace's 26 px square, spaced as they are (does nothing), workspaces (**ours**: numbered squares, occupied by colour alone, a mark would crowd 26 px), clock, tray, status button (at least three symbols wide, an easy target; ours) | Top, edge to edge, black | 32 px; items 26 px pills, regular weight but the bold workspace numbers | Fills over `panelButtonTime`; a new status symbol fades in as the others slide aside over `popupTime` |
 | Tray (**ours**: GNOME has none) | Left of the status button, no fill (**ours**: one barely showed on the black bar), each icon hovered as a bar item: its first three icons in the order they came, then "+N" in the dim caption; under the pointer at the bar's right end, every icon, a strip the wheel scrolls sideways; lingers 600 ms; gone when empty | Bar | Three icons; at most 12 em expanded | Width eases over `popupTime`, growing leftwards |
 | Tray menu | gs popup menu, cascading | At the pointer, a pixel off (**ours**: as trays have always opened them, not a dropdown under the bar) | At least 15 em, radius 20, 6 px padding | Opens at once, goes as the pointer leaves |
-| Popover off the bar (control centre, center) | A `Card` | `rise` below the bar, centred on its button, `rise` from screen edges | See Panel sizes | Fade + `rise` slide over `popupTime` |
+| Popover off the bar (control centre, center) | A `Popover` + `Card` | `rise` below the bar, centred on its button, `rise` from screen edges | See Panel sizes | Fade + `rise` slide over `popupTime` |
 | Quick toggle | Pill, symbol, title, subtitle; a menu segment after a 1 px rule in the pill's own colour, lighter only hovered (**ours**: gs lightens it always) | Control centre grid | 48 px × 12 em | |
 | Toggle menu | Header (16 px symbol in a 32 px disc, title-4; **ours**: gs 24 in 42 and title-3 outweighed the rows in MDI's filled symbols), rows, separator, settings rows | Under the toggle row | Radius 24 on `cardBg` | Height then fade; another menu of the same row swaps in place as the slot eases to its height (ours: two slots of one row slid past each other) |
 | Sound (**ours**) | The volume's slider alone on the card; its arrow opens Sound: "Output" and "Input" captions alike (no rule), each device with a symbol for what it is, Audio Settings (pwvucontrol); no microphone level or mute (seldom touched; pwvucontrol has them) | Under the levels | As a toggle menu | As a toggle menu |

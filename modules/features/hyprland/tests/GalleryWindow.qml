@@ -451,7 +451,7 @@ Overlay {
           title: "Type"
 
           Repeater {
-            model: ["title1", "title2", "title3", "title4", "largeTitle", "heading", "body", "captionHeading", "caption", "monospace", "numeric"]
+            model: ["title2", "title3", "title4", "largeTitle", "heading", "body", "captionHeading", "caption", "monospace", "numeric"]
 
             Labelled {
               required property string modelData

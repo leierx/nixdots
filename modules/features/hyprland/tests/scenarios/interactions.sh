@@ -52,6 +52,28 @@ qst key p
 qst wait '.panel == ""'
 qst actions | grep -q 'systemctl poweroff' || { echo "two presses did not power off"; exit 1; }
 
+qst case "the keyboard reaches the power menu's buttons, and Enter confirms the one a click armed"
+# Restart to Firmware is the last button, on a UEFI machine only.
+if [ -d /sys/firmware/efi ]; then
+  qst ipc panels open power > /dev/null
+  qst wait '.panel == "power"'
+  qst key Left Return
+  qst stays '.panel == "power"' 0.5
+  qst actions | grep -q firmware-setup && { echo "one press restarted to firmware"; exit 1; }
+  qst key Return
+  qst wait '.panel == ""'
+  qst actions | grep -q 'systemctl reboot --firmware-setup' || { qst actions; echo "Left and Enter twice did not restart to firmware"; exit 1; }
+  qst ipc panels open power > /dev/null
+  qst wait '.panel == "power"'
+  read -r x y < <(qst areas PowerMenu | awk -F'\t' '$6 == "true" { x = $1; y = $2 } END { print x, y }')
+  qst click left "$x" "$y"
+  qst stays '.panel == "power"' 0.3
+  qst key Return
+  qst wait '.panel == ""'
+  qst actions | grep -q 'lock-session' && { qst actions; echo "Enter after arming Restart to Firmware locked"; exit 1; }
+  [ "$(qst actions | grep -c 'firmware-setup')" = 2 ] || { qst actions; echo "Enter did not confirm the armed button"; exit 1; }
+fi
+
 qst case "the power menu's keys are the keycaps on its tiles: O twice logs out"
 qst ipc panels open power > /dev/null
 qst wait '.panel == "power"'

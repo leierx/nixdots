@@ -35,6 +35,8 @@ Singleton {
   property string asking: ""
   property string askError: ""
   property var created: []
+  // The network a password was just sent for, until NetworkManager says how it went.
+  property string trying: ""
   // The network just tried, and what last went wrong with each.
   property string attempt: ""
   property var failures: ({})
@@ -80,7 +82,14 @@ Singleton {
     const ssid = network.name;
     root.setFailure(ssid, "");
     if (network.connected || network.state === ConnectionState.Connecting) {
-      network.disconnect();
+      if (root.trying === ssid) root.trying = "";
+      // A profile this shell saved that never connected goes with the attempt.
+      if (!network.connected && root.created.includes(ssid)) {
+        root.created = root.created.filter(other => other !== ssid);
+        network.forget();
+      } else {
+        network.disconnect();
+      }
     } else if (root.enterprise(network) && !network.known) {
       root.settings(["--create", "--type=802-11-wireless"]);
     } else if (network.known || !root.secured(network)) {
@@ -105,16 +114,17 @@ Singleton {
     }
     if (!network.known && !root.created.includes(ssid)) root.created = [...root.created, ssid];
     root.attempt = ssid;
+    root.trying = ssid;
     root.askError = "";
     network.connectWithPsk(password);
   }
 
-  // A profile saved for a password that never worked goes again, as nothing else would clean it up.
+  // A profile saved for a password that never worked goes again, as nothing else would clean it up; one still being tried waits for how it went.
   function cancel(): void {
     const ssid = root.asking;
     root.asking = "";
     root.askError = "";
-    if (!root.created.includes(ssid)) return;
+    if (!root.created.includes(ssid) || root.trying === ssid) return;
     root.created = root.created.filter(other => other !== ssid);
     const network = root.find(ssid);
     if (network && !network.connected) network.forget();
@@ -130,7 +140,16 @@ Singleton {
   function failed(network: var, reason: int): void {
     const ssid = network.name;
     if (ssid !== root.attempt && ssid !== root.asking) return;
-    if (reason === ConnectionFailReason.NoSecrets && root.secured(network) && !root.enterprise(network)) {
+    if (root.trying === ssid) root.trying = "";
+    const noSecrets = reason === ConnectionFailReason.NoSecrets && root.secured(network) && !root.enterprise(network);
+    // Its prompt shut while it was tried: nobody is there to ask again.
+    if (root.asking !== ssid && root.created.includes(ssid)) {
+      root.created = root.created.filter(other => other !== ssid);
+      network.forget();
+      root.setFailure(ssid, noSecrets ? "Wrong password" : "Couldn't connect");
+      return;
+    }
+    if (noSecrets) {
       root.askError = root.asking === ssid || root.created.includes(ssid) ? "Wrong password" : "Password needed";
       root.asking = ssid;
     } else {
@@ -218,7 +237,9 @@ Singleton {
   }
 
   Instantiator {
-    model: root.networks
+    model: ScriptModel {
+      values: root.networks
+    }
 
     Connections {
       required property var modelData
@@ -232,6 +253,7 @@ Singleton {
       function onConnectedChanged(): void {
         if (!modelData.connected) return;
         root.created = root.created.filter(ssid => ssid !== modelData.name);
+        if (root.trying === modelData.name) root.trying = "";
         root.setFailure(modelData.name, "");
         if (root.asking === modelData.name) {
           root.asking = "";
@@ -241,8 +263,12 @@ Singleton {
     }
   }
 
+  // Keyed, so an action on one profile leaves another's nmcli running.
   Instantiator {
-    model: root.operations
+    model: ScriptModel {
+      values: root.operations
+      objectProp: "key"
+    }
 
     Process {
       id: op

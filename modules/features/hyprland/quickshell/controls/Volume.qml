@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Services.Pipewire
 import qs.common
 import qs.nix
+import "devices.js" as Devices
 import "names.js" as Names
 
 // PipeWire's default output; `fake` stands in where there is no sound server, as in qs-test.
@@ -25,10 +26,18 @@ Singleton {
   readonly property int percent: Math.round(volume * 100)
   readonly property string glyph: glyphFor(volume, muted)
   // What the popup lists: every output, the one in use marked.
-  readonly property var devices: fake ? fake.devices.map((name, i) => ({ name: Names.clean(name), current: i === fake.current, index: i })) : outputs.map((node, i) => ({ name: Names.clean(node.description || node.nickname || node.name), current: node === sink, index: i, props: node.properties }))
+  readonly property var devices: fake ? fake.devices.map((name, i) => ({ name: Names.clean(name), current: i === fake.current, index: i, id: i })) : outputs.map((node, i) => ({ name: Names.clean(node.description || node.nickname || node.name), current: node === sink, index: i, id: node.id, props: node.properties }))
+  // The hardware behind them: one that also records is a headset.
+  readonly property var hardware: new Set(devices.map(device => device.props?.["device.id"]).filter(id => id !== undefined))
+  readonly property string kind: sink ? Devices.kind(sink.properties, false, Microphone.hardware.has(sink.properties["device.id"])) : "speaker"
 
   function glyphFor(level: real, silenced: bool): string {
     return silenced ? Symbols.volumeOff : level <= 0.001 ? Symbols.volumeMute : level < 0.5 ? Symbols.volumeDown : Symbols.volumeUp;
+  }
+
+  // A device's symbol by what devices.js makes of it, in the sound menu and the OSD alike.
+  function kindGlyph(kind: string): string {
+    return { headphones: Symbols.headphones, headset: Symbols.headset, display: Symbols.speakerDisplay, microphone: Symbols.mic, webcam: Symbols.camera, virtual: Symbols.audioVirtual }[kind] ?? Symbols.speaker;
   }
 
   // Up to 100 %, or as far past it as something else set it or a slider's range began, so turning it up never turns it down.

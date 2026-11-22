@@ -11,10 +11,9 @@ import qs.nix
 import qs.notifications
 import qs.weather
 
-Overlay {
+Popover {
   id: root
 
-  readonly property bool open: Panels.active === name
   // While open, a group keeps its place as its notifications go, so a dismissal never moves the one under the pointer; a new app comes in on top, and each open sorts them afresh.
   property var apps: []
   readonly property int padding: Theme.padding
@@ -22,11 +21,9 @@ Overlay {
   readonly property real room: width - 2 * Theme.rise - 4 * padding - 1 - side.implicitWidth
   readonly property bool besides: room >= Math.round(24 * Theme.em) && height - 2 * Theme.rise - 2 * padding >= calendar.implicitHeight
 
-  property real shown: 0
   // Groups expanded, for Collapse all; each counts itself in and out.
   property int expandedGroups: 0
 
-  signal hidden()
   signal collapseAll()
   signal clearAll()
 
@@ -49,27 +46,13 @@ Overlay {
   }
 
   onOpenChanged: {
-    if (open) {
-      arrange(true);
-      Notifs.hidePopups();
-    }
-    (open ? closing : opening).stop();
-    // Closed before it moved, it has nothing to animate, and would never report itself hidden.
-    if (!open && shown === 0) Qt.callLater(root.hideClosed);
-    else (open ? opening : closing).start();
+    if (!open) return;
+    arrange(true);
+    Notifs.hidePopups();
   }
-  onShownChanged: if (shown === 0 && !open) hidden()
-  // A window Hyprland has closed stays closed, so the next open needs a new one.
-  onClosed: hidden()
   Component.onCompleted: {
     arrange(true);
     Notifs.hidePopups();
-    if (open) opening.start();
-    else Qt.callLater(root.hideClosed);
-  }
-
-  function hideClosed(): void {
-    if (!root.open) root.hidden();
   }
 
   name: "center"
@@ -77,36 +60,8 @@ Overlay {
   // Below the bar rather than over it.
   exclusionMode: ExclusionMode.Normal
   exclusiveZone: 0
-  // While closing, clicks already go to the windows below.
-  mask: open ? null : nothing
 
   WlrLayershell.namespace: "quickshell:center"
-  WlrLayershell.keyboardFocus: open ? root.keyboard : WlrKeyboardFocus.None
-
-  Region {
-    id: nothing
-  }
-
-  // Not a Behavior: one whose duration follows `open` may start before that duration updates.
-  NumberAnimation {
-    id: opening
-
-    target: root
-    property: "shown"
-    to: 1
-    duration: Theme.popupTime
-    easing.type: Easing.OutQuad
-  }
-
-  NumberAnimation {
-    id: closing
-
-    target: root
-    property: "shown"
-    to: 0
-    duration: Theme.popupTime
-    easing.type: Easing.OutQuad
-  }
 
   Card {
     id: panel

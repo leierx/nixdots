@@ -62,12 +62,6 @@ Item {
     }
   }
 
-  FontMetrics {
-    id: line
-
-    font: Theme.heading
-  }
-
   Card {
     id: card
 
@@ -213,19 +207,10 @@ Item {
           }
         }
 
-        Rectangle {
+        NotificationProgress {
           Layout.fillWidth: true
           visible: root.entry.progress !== undefined
-          implicitHeight: 4
-          radius: height / 2
-          color: Theme.troughBg
-
-          Rectangle {
-            width: parent.width * Math.max(0, Math.min(100, root.entry.progress ?? 0)) / 100
-            height: parent.height
-            radius: parent.radius
-            color: Theme.accentBg
-          }
+          entry: root.entry
         }
 
         NotificationActions {

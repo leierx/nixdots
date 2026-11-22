@@ -284,7 +284,7 @@ LauncherMode {
     name: "hyprmoncfg profiles"
     quiet: !root.open || root.profilesText !== ""
     // Parted by a record separator, which JSON never holds, so a file written over several lines still reads as one.
-    command: ["sh", "-c", 'for file in "${XDG_CONFIG_HOME:-$HOME/.config}"/hyprmoncfg/profiles/*.json; do cat "$file"; printf "\\036"; done']
+    command: ["sh", "-c", 'for file in "${XDG_CONFIG_HOME:-$HOME/.config}"/hyprmoncfg/profiles/*.json; do [ -e "$file" ] || continue; cat "$file"; printf "\\036"; done']
     onDone: output => root.profilesText = output
   }
 }

@@ -295,13 +295,19 @@ Singleton {
     return `${root.clip(notification.appName, root.maxApp)}\n${root.clip(notification.summary, root.maxSummary)}\n${root.clip(notification.body, root.maxBody)}`;
   }
 
-  // A reload hands the live notifications over too; one already read back from disk becomes the live one.
+  // A reload hands the live notifications over too; one already read back from disk becomes the live one, and one handed over first takes the age and look it had.
   Connections {
     target: History
 
     function onRestored(records) {
-      const live = new Set(root.entries.map(entry => entry.key));
-      const restored = records.filter(record => !live.has(root.key(record))).map(record => {
+      const live = new Map(root.entries.map(entry => [entry.key, entry]));
+      const restored = records.filter(record => {
+        const entry = live.get(root.key(record));
+        if (!entry) return true;
+        entry.time = new Date(record.time);
+        entry.checked = record.checked;
+        return false;
+      }).map(record => {
         const notification = pastComponent.createObject(root, {
           appName: record.appName,
           appIcon: record.appIcon,
@@ -413,8 +419,12 @@ Singleton {
         });
       }
       root.watch(entry);
-      // Presenting one rebuilds the lists and walks every entry, which a client repeating itself would have done for nothing.
-      if (admitted) root.present(entry, popup);
+      // Handed over by a reload, it keeps its age and whether it was seen; presenting one rebuilds the lists and walks every entry, which a client repeating itself would have done for nothing.
+      if (notification.lastGeneration) {
+        if (!same) root.entries = [...root.entries, entry].sort((a, b) => b.time - a.time);
+      } else if (admitted) {
+        root.present(entry, popup);
+      }
     }
   }
 }

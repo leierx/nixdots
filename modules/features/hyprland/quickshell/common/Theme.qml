@@ -82,7 +82,6 @@ Singleton {
   readonly property font heading: Qt.font({ family: "Adwaita Sans", pointSize: 11, weight: Font.Bold })
   readonly property font caption: Qt.font({ family: "Adwaita Sans", pointSize: 9 })
   readonly property font captionHeading: Qt.font({ family: "Adwaita Sans", pointSize: 9, weight: Font.Bold })
-  readonly property font title1: Qt.font({ family: "Adwaita Sans", pointSize: 20, weight: Font.ExtraBold })
   readonly property font title2: Qt.font({ family: "Adwaita Sans", pointSize: 15, weight: Font.ExtraBold })
   readonly property font title3: Qt.font({ family: "Adwaita Sans", pointSize: 15, weight: Font.Bold })
   readonly property font title4: Qt.font({ family: "Adwaita Sans", pointSize: 13, weight: Font.Bold })

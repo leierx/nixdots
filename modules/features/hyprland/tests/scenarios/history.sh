@@ -25,6 +25,22 @@ qst wait '(.history | map(.summary)) == ["newest", "with a picture", "older"] an
 qst ipc panels open center > /dev/null
 qst stays '.panel == "center"' 1
 
+qst case "a reload in place keeps the live notifications' ages, and what was seen stays seen"
+notify-send -a Mail "one"
+notify-send -a Chat "two"
+qst wait '.notifications == 2'
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center" and .unchecked == 0'
+qst ipc panels close > /dev/null
+before=$(qst state '.history | map(.time)')
+qst stays '.notifications == 2' 1
+# A change to a file of the shell reloads it in place, which hands the live notifications over.
+loaded=$(grep -ac 'Configuration Loaded' "$QS_TEST_DIR/qs.log")
+echo >> "$QS_TEST_DIR/shell/shell.qml"
+for _ in $(seq 100); do [ "$(grep -ac 'Configuration Loaded' "$QS_TEST_DIR/qs.log")" -gt "$loaded" ] && qst state .notifications > /dev/null 2>&1 && break; sleep 0.1; done # sleep: the probe goes with the reload, and qs takes no queries for a while after
+qst wait '.notifications == 2 and .unchecked == 0 and (.history | map(.restored)) == [false, false]'
+qst wait "(.history | map(.time)) == $before"
+
 qst case "a cleared history leaves no saved pictures behind"
 pixel Chat "with a picture"
 qst wait 'any(.history[]; (.kept | index("image")) != null)'

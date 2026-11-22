@@ -138,6 +138,18 @@ qst wait '.notifications == 0 and (.center | length) == 0' 2
 qst stays '.panel == "center" and .notifications == 0' 1
 ! qst areas 'NotificationCenter' | grep -q 'action:Undo' || { echo "Clear still offers Undo"; exit 1; }
 
+qst case "Clear while stack-tagged notifications replace themselves mid-slide: every card ends in place or gone"
+tagged() { for n in 1 2 3 4; do notify-send -a "Level $n" -h "string:x-dunst-stack-tag:level$n" "level $n" "$1" & done; wait; }
+tagged first
+qst wait '.notifications == 4'
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center" and (.center | length) == 4'
+for round in 1 2 3 4 5; do
+  press action:Clear
+  tagged "round $round"
+  qst wait '.notifications == 4 and (.center | length) == 4 and (.center | map(select(.slid != 0)) | length) == 0'
+done
+
 qst case "a group keeps its place in the open center as its newest goes, a new app comes in on top, and the next open sorts them"
 order() { echo "(.center | sort_by(.y) | map(.app)) == $1"; }
 notify-send -a Bravo "bravo old"

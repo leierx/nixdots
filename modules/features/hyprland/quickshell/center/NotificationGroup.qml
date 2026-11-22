@@ -79,7 +79,10 @@ Item {
 
   function slideAway(left: bool): void {
     const dismissals = root.shown.map(entry => entry.dismissal());
-    swipe.slideAway(left, () => dismissals.forEach(dismiss => dismiss()));
+    swipe.slideAway(left, () => {
+      dismissals.forEach(dismiss => dismiss());
+      return root.entries.length === 0;
+    });
   }
 
   function dismiss(): void {

@@ -68,11 +68,13 @@ QtObject {
     popup = false;
   }
 
-  // Dismisses the notification shown now, after a slide, unless it has closed or been replaced since.
+  // Dismisses the notification shown now, after a slide, unless it has closed or been replaced since; false when replaced, as the entry stays (the one replaced may be gone, and calling it throws).
   function dismissal(): var {
     const shown = notification;
     return () => {
-      if (shown && !(shown === root.notification && root.lock.retained)) shown.dismiss();
+      if (shown !== root.notification) return false;
+      if (shown && !root.lock.retained) shown.dismiss();
+      return true;
     };
   }
 

@@ -39,15 +39,13 @@ Rectangle {
     });
     if (key === "bluetooth") return BluetoothDevices.devices.map(device => ({ key: device.address, glyph: BluetoothDevices.glyph(device), title: BluetoothDevices.name(device), current: device.connected, tick: false, note: BluetoothDevices.note(device), bad: (BluetoothDevices.failures[device.address] ?? "") !== "", battery: device.connected && device.batteryAvailable ? device.battery : -1, link: device.connected ? "connected" : device.paired ? "paired" : "", target: device }));
     if (key === "sound") {
-      const ids = backend => new Set(backend.devices.map(device => device.props?.["device.id"]).filter(id => id !== undefined));
-      const glyphs = { speaker: Symbols.speaker, headphones: Symbols.headphones, headset: Symbols.headset, display: Symbols.speakerDisplay, microphone: Symbols.mic, webcam: Symbols.camera, virtual: Symbols.audioVirtual };
       const devices = (backend, side, other) => backend.devices.map(device => {
-        const kind = Devices.kind(device.props, side === "input", other.has(device.props?.["device.id"]));
-        return { key: `${side}:${device.index}`, side, kind, glyph: glyphs[kind], title: device.name, current: device.current, target: device.index };
+        const kind = Devices.kind(device.props, side === "input", other.hardware.has(device.props?.["device.id"]));
+        return { key: `${side}:${device.id}`, side, kind, glyph: Volume.kindGlyph(kind), title: device.name, current: device.current, target: device.index };
       });
       const first = list => [...list.filter(device => device.current), ...list.filter(device => !device.current)];
-      const outputs = first(devices(Volume, "output", ids(Microphone)));
-      const inputs = Microphone.present ? first(devices(Microphone, "input", ids(Volume))) : [];
+      const outputs = first(devices(Volume, "output", Microphone));
+      const inputs = Microphone.present ? first(devices(Microphone, "input", Volume)) : [];
       const heading = (side, title, gap) => [{ key: `heading:${side}`, heading: true, title, gap }];
       return [...(outputs.length > 0 ? heading("output", "Output", false) : []), ...outputs, ...(inputs.length > 0 ? heading("input", "Input", outputs.length > 0) : []), ...inputs];
     }

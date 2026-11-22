@@ -4,7 +4,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import Quickshell.Services.Pipewire
 import qs.controls
 import qs.common
 
@@ -14,15 +13,12 @@ import qs.common
 Singleton {
   id: root
 
-  // { kind, title, level, muted }: kind is volume, microphone, output, input, brightness or caps.
+  // { kind, title, level, muted, glyph }: kind is volume, microphone, output, input, brightness or caps; an output or input brings its symbol.
   property var current: null
   property string screen: ""
   // Bumped on every show, so showing the same again restarts the timeout.
   property int serial: 0
 
-  readonly property PwNode source: Pipewire.defaultAudioSource
-  readonly property string sourceKey: source?.name ?? ""
-  readonly property string sourceName: source ? source.description || source.nickname || source.name : ""
   // Still taking in what it found, so a change now would not show; for tests.
   readonly property bool settling: [volumeWatch, micWatch].some(watch => watch.settle.running) || [outputWatch, inputWatch].some(watch => watch.settle.running || watch.key !== "" && watch.known === "")
 
@@ -46,11 +42,6 @@ Singleton {
 
     interval: 1500
     onTriggered: root.current = null
-  }
-
-  // A node's mute only arrives while something tracks it.
-  PwObjectTracker {
-    objects: [root.source]
   }
 
   // The values of one thing, `key`; a new key, or the thing becoming ready, starts it over.
@@ -127,24 +118,24 @@ Singleton {
   Watch {
     id: micWatch
 
-    key: root.sourceKey
-    ready: (root.source?.ready ?? false) && root.source.audio !== null
-    value: [root.source?.audio?.volume ?? 0, root.source?.audio?.muted ?? false]
-    onNoticed: root.show({ kind: "microphone", title: root.sourceName, level: root.source.audio.volume, muted: root.source.audio.muted })
+    key: Microphone.key
+    ready: Microphone.ready
+    value: [Microphone.volume, Microphone.muted]
+    onNoticed: root.show({ kind: "microphone", title: Microphone.name, level: Microphone.volume, muted: Microphone.muted })
   }
 
   DeviceWatch {
     id: outputWatch
 
     key: Volume.key
-    onSwitched: root.show({ kind: "output", title: Volume.name, level: null, muted: false })
+    onSwitched: root.show({ kind: "output", title: Volume.name, glyph: Volume.kindGlyph(Volume.kind), level: null, muted: false })
   }
 
   DeviceWatch {
     id: inputWatch
 
-    key: root.sourceKey
-    onSwitched: root.show({ kind: "input", title: root.sourceName, level: null, muted: false })
+    key: Microphone.key
+    onSwitched: root.show({ kind: "input", title: Microphone.name, glyph: Volume.kindGlyph(Microphone.kind), level: null, muted: false })
   }
 
   Connections {

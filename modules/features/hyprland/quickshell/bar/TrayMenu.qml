@@ -80,12 +80,13 @@ PanelWindow {
 
   function apply(level: int, label: string): void {
     root.pending = null;
-    const closed = root.path[level] ?? "";
-    const deeper = level + (label ? 1 : 0) > root.path.length;
-    root.path = [...root.path.slice(0, level), ...(label ? [label] : [])];
-    // The keyboard stays on the row whose submenu just shut, or starts afresh in one just opened.
-    if (deeper) root.row = -1;
-    else if (closed && !label) root.row = (root.level(level)?.entries ?? []).findIndex(entry => entry.hasChildren && entry.text === closed);
+    const opened = label !== "" && label !== (root.path[level] ?? "");
+    const next = [...root.path.slice(0, level), ...(label ? [label] : [])];
+    const shut = root.path[next.length] ?? "";
+    root.path = next;
+    // The keyboard starts afresh in a submenu just opened, or stays on the row whose submenu just shut.
+    if (opened) root.row = -1;
+    else if (shut) root.row = (root.level(next.length)?.entries ?? []).findIndex(entry => entry.hasChildren && entry.text === shut);
   }
 
   function selectable(entry: var): bool {

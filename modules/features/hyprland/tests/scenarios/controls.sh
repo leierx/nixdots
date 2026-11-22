@@ -108,6 +108,40 @@ qst wait '.controls.network.asking == null and (.controls.network.known | index(
 qst x nmcli -t -f NAME connection show | grep -qx Hvit_Monster && { echo "the profile stayed"; exit 1; }
 qst stays '.panel == "controls:DP-1"' 0.3
 
+qst case "the centre shut while a new network's password is tried keeps the profile it connects with"
+qst network delay 1500
+open wifi
+qst wait '.controls.network.networks | index("Hvit_Monster")'
+press row:Hvit_Monster
+qst wait '.controls.network.asking == "Hvit_Monster"'
+qst type monster
+qst key Return
+qst key Escape
+qst wait '.panel == ""'
+qst wait '.controls.network.connected == "Hvit_Monster" and (.controls.network.known | index("Hvit_Monster")) and .controls.network.created == []' 10
+
+qst case "the centre shut while a wrong password is tried takes the profile with it, and the row says why"
+qst network delay 1500
+open wifi
+qst wait '.controls.network.networks | index("Hvit_Monster")'
+press row:Hvit_Monster
+qst wait '.controls.network.asking == "Hvit_Monster"'
+qst type wrong
+qst key Return
+qst key Escape
+qst wait '.panel == ""'
+qst wait '.controls.network.failures.Hvit_Monster == "Wrong password" and (.controls.network.known | index("Hvit_Monster") | not) and .controls.network.created == [] and .controls.network.asking == null' 10
+
+qst case "Left and Right in a password field move its cursor, not the keyboard's place in the centre"
+open wifi
+qst wait '.controls.network.networks | index("Hvit_Monster")'
+press row:Hvit_Monster
+qst wait '.controls.network.asking == "Hvit_Monster"'
+qst type ab
+qst key Right Left Left Left
+qst type x
+qst wait '.field == "xab"'
+
 qst case "a network leaving while its password is typed keeps the row and what was typed"
 open wifi
 qst wait '.controls.network.networks | index("Hvit_Monster")'
@@ -161,6 +195,25 @@ qst wait '.controls.vpns == [{ name: "wg0", active: true, busy: null }]' 10
 press pill:vpn
 qst wait '.controls.vpns[0].active | not'
 
+qst case "a VPN clicked while another comes up leaves that one's nmcli running"
+qst network profile vpn Office
+qst network delay 1500
+open vpn
+qst wait '(.controls.vpns | length) == 2'
+press row:Office
+qst wait '.controls.vpns | map(select(.name == "Office"))[0].busy == "up"'
+press row:wg0
+qst wait '.controls.vpns == [{ name: "Office", active: true, busy: null }, { name: "wg0", active: false, busy: null }]' 10
+[ "$(qst actions | grep -c 'connection up')" = 1 ] || { qst actions; echo "the first nmcli was started again"; exit 1; }
+
+qst case "the pill takes two VPNs down at once"
+qst network profile vpn Office
+qst network up Office
+open vpn
+qst wait '.controls.vpns | all(.active)'
+press pill:vpn
+qst wait '.controls.vpns | all((.active | not) and .busy == null)' 10
+
 qst case "a VPN wanting a password asks in its row, and comes up with it"
 qst network profile vpn Office
 qst network vpn Office secrets
@@ -197,6 +250,14 @@ press row:WH-1000XM4
 qst wait '.controls.bluetooth.devices | map(select(.name == "WH-1000XM4"))[0].connected | not'
 qst ipc panels close > /dev/null
 qst wait '(.controls.bluetooth.scanning | not)'
+
+qst case "a paired device that fails to connect says so, though discovery finds another meanwhile"
+qst bluetooth add 11:22:33:44:55:04 "JBL Flip" audio-speaker crowded paired
+qst expect 'Failed to connect'
+open bluetooth
+qst wait '.controls.bluetooth.devices | map(select(.name == "JBL Flip"))[0].paired'
+press "row:JBL Flip"
+qst wait '(.controls.bluetooth.devices | map(.name) | index("Soundcore 2")) and (.controls.bluetooth.devices | map(select(.name == "JBL Flip"))[0].note == "Couldn'"'"'t connect")'
 
 qst case "Bluetooth off says so in its menu, and Bluetooth Settings opens bluetui"
 open bluetooth

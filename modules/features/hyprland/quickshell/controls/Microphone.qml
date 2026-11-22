@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Services.Pipewire
+import "devices.js" as Devices
 import "names.js" as Names
 import qs.common
 
@@ -16,10 +17,16 @@ Singleton {
   readonly property var inputs: Pipewire.nodes.values.filter(node => node.type === PwNodeType.AudioSource || node.type === PwNodeType.Untracked && !node.isStream && node.ready && /^Audio\/Source/.test(node.properties["media.class"] ?? ""))
   readonly property bool present: source !== null || inputs.length > 0
   readonly property bool muted: source?.audio?.muted ?? false
+  readonly property real volume: source?.audio?.volume ?? 0
+  // What the level belongs to, as Volume's.
+  readonly property string key: source?.name ?? ""
+  readonly property bool ready: (source?.ready ?? false) && source.audio !== null
   readonly property string name: source ? Names.clean(source.description || source.nickname || source.name) : ""
   // The next default for wpctl while it is still setting one.
   property string queued: ""
-  readonly property var devices: inputs.map((node, i) => ({ name: Names.clean(node.description || node.nickname || node.name), current: node === source, index: i, props: node.properties }))
+  readonly property var devices: inputs.map((node, i) => ({ name: Names.clean(node.description || node.nickname || node.name), current: node === source, index: i, id: node.id, props: node.properties }))
+  readonly property var hardware: new Set(devices.map(device => device.props?.["device.id"]).filter(id => id !== undefined))
+  readonly property string kind: source ? Devices.kind(source.properties, true, Volume.hardware.has(source.properties["device.id"])) : "microphone"
 
   function choose(index: int): void {
     const node = inputs[index];

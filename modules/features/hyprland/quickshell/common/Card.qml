@@ -30,6 +30,8 @@ Rectangle {
       event.accepted = false;
     } else if (event.key in steps) {
       const from = root.Window.activeFocusItem ?? root;
+      // A text field passes on Left at its start and Right at its end, which are still its own.
+      if (from instanceof TextInput && (event.key === Qt.Key_Left || event.key === Qt.Key_Right)) return;
       const next = from.nextItemInFocusChain(steps[event.key]);
       if (next) next.forceActiveFocus(Qt.TabFocusReason);
       Panels.keyboard = true;

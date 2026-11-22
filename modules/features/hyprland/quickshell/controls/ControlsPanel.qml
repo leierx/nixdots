@@ -7,7 +7,7 @@ import Quickshell.Wayland
 import qs.common
 
 // The control centre's popover under its bar button: GNOME's quick settings.
-Overlay {
+Popover {
   id: root
 
   required property real anchorX
@@ -15,8 +15,6 @@ Overlay {
   required property real top
   // The most the card may take: what the screen leaves under the bar.
   readonly property real available: height - top - 2 * Theme.rise
-  readonly property bool open: Panels.active === name
-  property real shown: 0
   // The open menu, held while the card fades out, as Controls shuts it at once.
   property string menu: ""
 
@@ -39,26 +37,6 @@ Overlay {
     return list;
   }
 
-  signal hidden()
-
-  onOpenChanged: {
-    (open ? closing : opening).stop();
-    // Closed before it moved, it has nothing to animate, and would never report itself hidden.
-    if (!open && shown === 0) Qt.callLater(root.hideClosed);
-    else (open ? opening : closing).start();
-  }
-  onShownChanged: if (shown === 0 && !open) hidden()
-  // A window Hyprland has closed stays closed, so the next open needs a new one.
-  onClosed: hidden()
-  Component.onCompleted: {
-    if (open) opening.start();
-    else Qt.callLater(root.hideClosed);
-  }
-
-  function hideClosed(): void {
-    if (!root.open) root.hidden();
-  }
-
   // Kept whole in view in the card too, which scrolls on a short screen.
   function reveal(item: Item): void {
     const top = item.mapToItem(column, 0, 0).y;
@@ -68,35 +46,7 @@ Overlay {
   }
 
   card: box
-  // While closing, clicks already go to the windows below.
-  mask: open ? null : nothing
   WlrLayershell.namespace: "quickshell:controls"
-  WlrLayershell.keyboardFocus: open ? root.keyboard : WlrKeyboardFocus.None
-
-  Region {
-    id: nothing
-  }
-
-  // Not a Behavior: one whose duration follows `open` may start before that duration updates.
-  NumberAnimation {
-    id: opening
-
-    target: root
-    property: "shown"
-    to: 1
-    duration: Theme.popupTime
-    easing.type: Easing.OutQuad
-  }
-
-  NumberAnimation {
-    id: closing
-
-    target: root
-    property: "shown"
-    to: 0
-    duration: Theme.popupTime
-    easing.type: Easing.OutQuad
-  }
 
   Card {
     id: box

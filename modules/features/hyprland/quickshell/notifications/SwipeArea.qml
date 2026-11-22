@@ -24,7 +24,7 @@ MouseArea {
   signal swiped(bool left)
   signal tapped()
 
-  // `done` runs once the target is off the edge.
+  // `done` runs once the target is off the edge, and returns false when what it slid away stays (replaced in place meanwhile), which comes back.
   function slideAway(left: bool, done: var): void {
     back.stop();
     root.finished = done ?? null;
@@ -37,10 +37,10 @@ MouseArea {
     if (target && target.x !== 0 && !away.running && !dragging) back.start();
   }
 
-  function finish(): void {
+  function finish(): bool {
     const done = root.finished;
     root.finished = null;
-    done?.();
+    return done?.() ?? true;
   }
 
   // Gone mid-slide, its panel closed or its monitor unplugged, it still dismisses what it was sliding away.
@@ -103,7 +103,7 @@ MouseArea {
     property: "x"
     duration: Theme.popupTime
     easing.type: Easing.OutQuad
-    onFinished: root.finish()
+    onFinished: if (!root.finish()) back.start()
   }
 
   NumberAnimation {

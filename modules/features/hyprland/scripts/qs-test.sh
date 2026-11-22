@@ -57,7 +57,7 @@ usage: qs-test COMMAND
   player add NAME [IDENTITY] [STATUS] [ART]   an MPRIS player (tests/mpris.py), ART an image file for its cover; status NAME Playing|Paused|Stopped, remove NAME, clear
   battery PERCENT [STATE [SECONDS]]   the session's UPower battery (charging, discharging, full, pending), or remove
   bluetooth SUB ...     the session's BlueZ (tests/bluez.py): start|stop, adapter add|remove, remove ADDRESS,
-                        add ADDRESS NAME [ICON] [ok|pin|fail] [paired] [connected] [BATTERY]
+                        add ADDRESS NAME [ICON] [ok|pin|fail|crowded] [paired] [connected] [BATTERY]
   backlight NAME VALUE [MAX]    set a fake backlight (max 100) and announce it as udev does; NAME remove unplugs it
   camera open|close NAME [DEV]  a process named NAME holding a fake camera (video0) open; add|remove DEV
                         add DEV locked plugs one in root's alone, as devtmpfs makes it; unlock DEV is udev handing it on
@@ -303,8 +303,8 @@ install_probe() {
   local file name
   while IFS= read -r file; do
     name=${file#"$T/shell/"}
-    sed -i -E -e "s#^((\\s*)(component \\w+: )?(PanelWindow|PopupWindow|FloatingWindow|Overlay) \\{)\$#\\1\\n\\2  ProbeWindow {\\n\\2    file: \"${name%.qml}\"\\n\\2  }\\n#" -e '0,/^import /s/^import /import qs.probe\nimport /' "$file"
-  done < <(grep -rlE '(PanelWindow|PopupWindow|FloatingWindow|^Overlay) \{$' "$T/shell" --include='*.qml')
+    sed -i -E -e "s#^((\\s*)(component \\w+: )?(PanelWindow|PopupWindow|FloatingWindow|Overlay|Popover) \\{)\$#\\1\\n\\2  ProbeWindow {\\n\\2    file: \"${name%.qml}\"\\n\\2  }\\n#" -e '0,/^import /s/^import /import qs.probe\nimport /' "$file"
+  done < <(grep -rlE '(PanelWindow|PopupWindow|FloatingWindow|^Overlay|^Popover) \{$' "$T/shell" --include='*.qml')
 }
 
 # Nothing in the session may reach the real machine: these log what would have run instead.
@@ -603,9 +603,9 @@ bluetooth() {
         *) die "bluetooth adapter add|remove [NAME]" ;;
       esac
       ;;
-    # ADDRESS NAME [ICON] [ok|pin|fail] [paired] [connected] [BATTERY]
+    # ADDRESS NAME [ICON] [ok|pin|fail|crowded] [paired] [connected] [BATTERY]
     add)
-      [ $# -ge 2 ] || die "bluetooth add ADDRESS NAME [ICON] [ok|pin|fail] [paired] [connected] [BATTERY]"
+      [ $# -ge 2 ] || die "bluetooth add ADDRESS NAME [ICON] [ok|pin|fail|crowded] [paired] [connected] [BATTERY]"
       bluez AddFullDevice string:hci0 "string:$1" "string:$2" "string:${3:-audio-headset}" "string:${4:-ok}" "boolean:$([ "${5:-}" = paired ] && echo true || echo false)" "boolean:$([ "${6:-}" = connected ] && echo true || echo false)" "int32:${7:--1}" > /dev/null
       ;;
     remove) bluez RemoveFullDevice string:hci0 "string:$1" > /dev/null ;;

@@ -327,8 +327,8 @@ instance in place and logs "Quickshell has crashed under pid N".
 Components: `bar/`, `center/`, `controls/`, `launcher/`, `notifications/`,
 `osd/`, `power/`, `shortcuts/`, `tooltip/`, `weather/`, `idle/`; `shell.qml`
 only instantiates them. `common/` holds what several share: the STYLE.md
-pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `ClickAway`,
-`Screens`, `Time`, `StateFile`, `Command`, `Detached`, `WheelSteps`,
+pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `Popover`,
+`ClickAway`, `Screens`, `Time`, `StateFile`, `Command`, `Detached`, `WheelSteps`,
 `WorkspaceOwners`, `Tooltips`, `Machine` (os-release's `LOGO=` through the
 icon theme, hostname, uptime).
 
@@ -342,6 +342,8 @@ icon theme, hostname, uptime).
 - **`Overlay`**: the full-screen layer a panel lives in; a click off its `card`
   or a window elsewhere taking the keyboard closes it. Exclusive keyboard only
   until it has it, or a window clicked on another monitor never got it.
+  `Popover` (the control centre, the center) is one that fades in and out,
+  letting clicks and the keyboard go as it closes, then says `hidden`.
 - **`ClickAway`**: a layer under the windows on every screen, taking input only
   while a panel is open, so bare desktop closes it.
 - **`Screens`**: screens less Hyprland's `FALLBACK`, and the focused one.
@@ -471,6 +473,10 @@ icon theme, hostname, uptime).
 - A `ScriptModel` with `objectProp` keeps a delegate whose key stays: lists
   rebuilt from bindings keep their state (an open menu, a typed password) only
   through it.
+- An `Instantiator` over a plain array rebuilds every delegate on each change
+  (a process killed and run again, a watcher's state lost): a `ScriptModel`.
+- A notification replaced in place is soon gone, and calling it throws: compare
+  it, never call it, once replaced.
 
 ### Components: what the code does not say
 
@@ -798,11 +804,11 @@ with nothing beside it. `--changed` maps changed files to scenarios
 | `binds.sh` | every global bind opens its own panel and closes it |
 | `caffeine.sh` | Caffeine's unit, pill and status cup |
 | `chaos.sh` | hostile and broken clients: floods, megabytes of text, bad icons, panel and hotplug storms, 40-window workspaces, 60 outputs, damaged state, 200 tray items, 300 hostile network names, 1000 outputs, 50 VPNs, 100 BT devices, small and 4K screens |
-| `controls.sh` | the control centre: open/close paths, status glyphs, header (battery or machine), every pill and menu against the fakes, the sound menu's headings, symbols and Audio Settings, services stopping under it |
+| `controls.sh` | the control centre: open/close paths, status glyphs, header (battery or machine), every pill and menu against the fakes, a password tried as the centre shuts, two VPNs at once, a failed connect mid-scan, the sound menu's headings, symbols and Audio Settings, services stopping under it |
 | `cursors.sh` | the bar and every panel's cursors, a closed hand mid-drag |
 | `design.sh` | every surface on screen, scaled too, for the census |
 | `failures.sh` | the shell's tools failing (`qst fail`) |
-| `history.sh` | saved history across restarts, kept pictures, damaged files |
+| `history.sh` | saved history across restarts and in-place reloads, kept pictures, damaged files |
 | `hotplug.sh` | unplug, disable, replug under every panel, menus and popups |
 | `idle.sh` | the idle dim under `motion`, clicks through it, the lock command's holds |
 | `interactions.sh` | fixes that had no case: popups, wheel past 100 %, clip scope, 1024x600, power keys, hover after a panel closes |

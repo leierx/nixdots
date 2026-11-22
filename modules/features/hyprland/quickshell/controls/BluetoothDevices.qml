@@ -24,6 +24,8 @@ Singleton {
   property var failures: ({})
   // Paired here and to be connected once it is.
   property var pairing: []
+  // Seen connecting, so going back to disconnected is a failure.
+  property var connecting: []
 
   function rank(device: var): int {
     return device.connected ? 2 : device.paired ? 1 : 0;
@@ -89,13 +91,12 @@ Singleton {
   }
 
   Instantiator {
-    model: root.adapter?.devices.values ?? []
+    model: ScriptModel {
+      values: root.adapter?.devices.values ?? []
+    }
 
     Connections {
-      id: watch
-
       required property var modelData
-      property bool connecting: false
 
       target: modelData
 
@@ -115,11 +116,13 @@ Singleton {
       }
 
       function onStateChanged(): void {
-        if (modelData.state === BluetoothDeviceState.Connecting) watch.connecting = true;
-        else if (modelData.state === BluetoothDeviceState.Connected) watch.connecting = false;
-        else if (watch.connecting && modelData.state === BluetoothDeviceState.Disconnected) {
-          watch.connecting = false;
-          root.setFailure(modelData.address, "Couldn't connect");
+        const address = modelData.address;
+        const was = root.connecting.includes(address);
+        if (modelData.state === BluetoothDeviceState.Connecting) {
+          if (!was) root.connecting = [...root.connecting, address];
+        } else if (was && (modelData.state === BluetoothDeviceState.Connected || modelData.state === BluetoothDeviceState.Disconnected)) {
+          root.connecting = root.connecting.filter(other => other !== address);
+          if (modelData.state === BluetoothDeviceState.Disconnected) root.setFailure(address, "Couldn't connect");
         }
       }
     }

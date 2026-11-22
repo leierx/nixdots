@@ -15,7 +15,6 @@ Scope {
   property var level: null
   property var tag: null
 
-
   function hasLevel(item: var): bool {
     return item?.level !== null && item?.level !== undefined;
   }
@@ -25,8 +24,8 @@ Scope {
     case undefined: return "";
     case "volume": return Volume.glyphFor(item.level, item.muted);
     case "microphone": return item.muted ? Symbols.micOff : Symbols.mic;
-    case "input": return Symbols.mic;
-    case "output": return /head/i.test(item.title) ? Symbols.headphones : Symbols.speaker;
+    case "input":
+    case "output": return item.glyph;
     case "brightness": return Symbols.brightness;
     default: return Symbols.capsLock;
     }
@@ -163,7 +162,11 @@ Scope {
         anchors.verticalCenter: parent.verticalCenter
 
         Text {
+          width: Math.min(implicitWidth, Math.round(24 * Theme.em))
           text: root.labelOf(root.tag)
+          textFormat: Text.PlainText
+          maximumLineCount: 1
+          elide: Text.ElideRight
           color: Theme.fg
           font: Theme.heading
         }

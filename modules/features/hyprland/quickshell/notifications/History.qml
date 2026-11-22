@@ -31,7 +31,8 @@ Singleton {
     root.written = text;
     file.setText(text);
     prune.command = ["sh", "-c", 'mkdir -p "$1" && cd "$1" && shift && for file in *.png; do [ -e "$file" ] || continue; case " $* " in *" ${file%%-*} "*) ;; *) rm -f "$file" ;; esac; done', "sh", root.images, ...kept.map(record => record.uid)];
-    if (!prune.running) prune.running = true;
+    if (prune.running) prune.again = true;
+    else prune.running = true;
   }
 
   FileView {
@@ -62,9 +63,17 @@ Singleton {
   Command {
     id: prune
 
+    // A save while it ran, whose list it has not seen.
+    property bool again: false
+
     name: "Pruning saved notification pictures"
     quiet: true
     command: ["mkdir", "-p", root.images]
     Component.onCompleted: running = true
+    onRunningChanged: {
+      if (running || !again) return;
+      again = false;
+      Qt.callLater(() => prune.running = true);
+    }
   }
 }

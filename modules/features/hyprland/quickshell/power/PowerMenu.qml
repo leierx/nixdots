@@ -10,8 +10,6 @@ import qs.nix
 Overlay {
   id: root
 
-  required property string host
-  required property real uptime
   required property bool firmware
 
   readonly property var tiles: [
@@ -25,20 +23,13 @@ Overlay {
     { title: "Reload Hyprland",command: ["hyprctl", "reload", "full-reset"], glyph: Symbols.reload },
     ...(root.firmware ? [{ title: "Restart to Firmware",command: ["systemctl", "reboot", "--firmware-setup"], glyph: Symbols.firmware, confirm: true }] : []),
   ]
-  readonly property var armedAction: [...root.tiles, ...root.extras].find(action => action.title === root.armed) ?? null
+  // The keyboard's order: the tiles, then the buttons under them.
+  readonly property var actions: [...root.tiles, ...root.extras]
+  readonly property var armedAction: root.actions.find(action => action.title === root.armed) ?? null
 
   property int current: 0
   // The title of the action waiting for a second press; a delegate's modelData is a copy, so actions go by title.
   property string armed: ""
-
-  readonly property string uptimeText: {
-    const minutes = Math.floor(root.uptime / 60);
-    const days = Math.floor(minutes / 1440);
-    const hours = Math.floor(minutes % 1440 / 60);
-    const plural = (count, unit) => `${count} ${unit}${count === 1 ? "" : "s"}`;
-    const parts = days > 0 ? [plural(days, "day"), plural(hours, "hour")] : hours > 0 ? [plural(hours, "hour"), plural(minutes % 60, "minute")] : [plural(minutes % 60, "minute")];
-    return `up ${parts.join(", ")}`;
-  }
 
   function select(index: int): void {
     root.current = index;
@@ -48,9 +39,7 @@ Overlay {
   // Ending the session or the machine takes a second press, so one stray key cannot.
   function trigger(action: var): void {
     if (action.confirm && root.armed !== action.title) {
-      const tile = root.tiles.findIndex(other => other.title === action.title);
-      if (tile !== -1)
-        root.current = tile;
+      root.current = root.actions.findIndex(other => other.title === action.title);
       root.armed = action.title;
       return;
     }
@@ -67,7 +56,7 @@ Overlay {
     id: surface
 
     required property var action
-    readonly property bool current: root.tiles[root.current]?.title === surface.action.title
+    readonly property bool current: root.actions[root.current]?.title === surface.action.title
     readonly property bool armed: root.armed === surface.action.title
     readonly property bool hovered: area.containsMouse
 
@@ -109,13 +98,13 @@ Overlay {
     }
 
     Keys.onPressed: event => {
-      const tiles = root.tiles.length;
+      const count = root.actions.length;
       const letter = event.text.toUpperCase();
       const action = letter === "" ? null : root.tiles.find(action => action.letter === letter);
       if (event.key === Qt.Key_Escape) Panels.close();
-      else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) root.trigger(root.tiles[root.current]);
-      else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Right) root.select((root.current + 1) % tiles);
-      else if (event.key === Qt.Key_Backtab || event.key === Qt.Key_Left) root.select((root.current + tiles - 1) % tiles);
+      else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) root.trigger(root.actions[root.current]);
+      else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Right) root.select((root.current + 1) % count);
+      else if (event.key === Qt.Key_Backtab || event.key === Qt.Key_Left) root.select((root.current + count - 1) % count);
       else if (action) root.trigger(action);
       else return;
       event.accepted = true;
@@ -202,7 +191,7 @@ Overlay {
         Text {
           Layout.alignment: Qt.AlignHCenter
           opacity: root.armedAction ? 1 : 0
-          text: !root.armedAction ? " " : root.armedAction.letter ? `Press ${root.armedAction.letter} or Enter again to ${root.armedAction.title.toLowerCase()}` : `Click again to ${root.armedAction.title.toLowerCase()}`
+          text: !root.armedAction ? " " : root.armedAction.letter ? `Press ${root.armedAction.letter} or Enter again to ${root.armedAction.title.toLowerCase()}` : `Click again or press Enter to ${root.armedAction.title.toLowerCase()}`
           color: Theme.fg
           font: Theme.body
         }
@@ -253,7 +242,7 @@ Overlay {
 
         Text {
           Layout.alignment: Qt.AlignHCenter
-          text: `${root.host} · ${root.uptimeText} · Esc to cancel`
+          text: [Machine.hostname, Machine.uptime.toLowerCase(), "Esc to cancel"].filter(part => part !== "").join(" · ")
           color: Theme.fgDim
           font: Theme.body
         }
