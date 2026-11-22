@@ -14,6 +14,7 @@ Overlay {
 
   required property LauncherMode mode
   readonly property bool previewing: mode.preview !== null
+  readonly property bool divided: previewing && matches.count > 0
 
   // Clear of the screen's edges, whatever its size and scale.
   readonly property int margin: Math.round(3 * Theme.em)
@@ -414,8 +415,8 @@ Overlay {
       ResultList {
         id: matches
 
-        Layout.fillWidth: !root.previewing
-        Layout.preferredWidth: root.previewing ? Math.round(root.cardWidth * root.mode.split) - 16 : -1
+        Layout.fillWidth: !root.divided
+        Layout.preferredWidth: root.divided ? Math.round(root.cardWidth * root.mode.split) - 16 : -1
         Layout.minimumWidth: Math.max(0, Layout.preferredWidth)
         Layout.fillHeight: true
         Layout.margins: 8
@@ -430,7 +431,7 @@ Overlay {
       }
 
       Rectangle {
-        visible: root.previewing
+        visible: root.divided
         Layout.fillHeight: true
         Layout.topMargin: Theme.padding
         Layout.bottomMargin: Theme.padding
@@ -440,7 +441,7 @@ Overlay {
 
       // Its preview's own width would otherwise move the split with every row.
       Loader {
-        visible: root.previewing
+        visible: root.divided
         clip: true
         Layout.fillWidth: true
         Layout.preferredWidth: 1

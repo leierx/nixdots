@@ -145,14 +145,15 @@ Item {
       anchors.verticalCenter: parent.verticalCenter
       spacing: 2
 
-      // It does nothing: no button, no hover. In a workspace's square, so it keeps their rhythm.
+      // It does nothing: no button, no hover. In a workspace's square, so it keeps their rhythm, set a little apart from them.
       Item {
         anchors.verticalCenter: parent.verticalCenter
-        width: Theme.barItemHeight
+        width: Theme.barItemHeight + 3
         height: Theme.barItemHeight
 
         IconImage {
-          anchors.centerIn: parent
+          x: (Theme.barItemHeight - width) / 2
+          anchors.verticalCenter: parent.verticalCenter
           implicitSize: 22
           source: Machine.icon
         }
