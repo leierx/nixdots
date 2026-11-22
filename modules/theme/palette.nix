@@ -3,18 +3,19 @@ let
   # How far below GNOME's own dark surfaces: GNOME's look, darker, its steps between surfaces kept
   depth = 28;
   channel =
-    hex:
-    lib.fixedWidthString 2 "0" (
-      lib.toLower (lib.toHexString (lib.max 0 (lib.fromHexString hex - depth)))
-    );
-  darker =
-    hex:
+    by: hex:
+    lib.fixedWidthString 2 "0" (lib.toLower (lib.toHexString (lib.max 0 (lib.fromHexString hex - by))));
+  less =
+    by: hex:
     "#"
-    + lib.concatMapStrings (i: channel (lib.substring i 2 hex)) [
+    + lib.concatMapStrings (i: channel by (lib.substring i 2 hex)) [
       1
       3
       5
     ];
+  darker = less depth;
+  # Black from edge to edge was too much for a terminal
+  terminal = less (depth / 2);
 in
 {
   options.palettes = lib.mkOption {
@@ -26,7 +27,7 @@ in
   # libadwaita 1.10's dark style under its own names (doc/css-variables.md), GNOME Shell 51's
   # surfaces under its Sass names with a shell_ prefix, and ghostty's "Adwaita Dark" terminal colours;
   # translucent ones are CSS #rrggbbaa.
-  # The opaque surfaces and the terminal background are upstream's, written as upstream has them, made `darker`
+  # The opaque surfaces and the terminal background are upstream's, written as upstream has them, made `darker` (the terminal half as much)
   config.palettes.adwaita_darker = {
     accent_bg_color = "#3584e4";
     accent_fg_color = "#ffffff";
@@ -144,10 +145,10 @@ in
     dark_4 = "#241f31";
     dark_5 = "#000000";
 
-    background = darker "#1d1d20";
+    background = terminal "#1d1d20";
     foreground = "#ffffff";
     cursor = "#ffffff";
-    cursor_text_color = darker "#1d1d20";
+    cursor_text_color = terminal "#1d1d20";
     selection_background = "#ffffff";
     selection_foreground = "#5e5c64";
     color0 = "#241f31";

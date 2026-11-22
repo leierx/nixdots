@@ -113,7 +113,7 @@ importer changes them through the aspect's options or `lib.mkForce`.
 | Option | Type | Notes |
 | --- | --- | --- |
 | `identity` | `{ username, fullName, email }` | Primary user; read by `users`, `git`, `home-manager`, profiles |
-| `palettes` | `attrsOf (attrsOf str)` | `adwaita_darker`: libadwaita 1.10's dark named colours (translucent ones as CSS `#rrggbbaa`), accents and GNOME palette, GNOME Shell 51's opaque surfaces as `shell_*`, ghostty's "Adwaita Dark" terminal colours. Opaque surfaces and the terminal background are upstream's less `depth` (28 per channel), after [Darkwaita](https://github.com/varunbpatil/Darkwaita): `view_bg_color` `#010104`, Shell's popover `#1a1a1e`. Accents, text, translucent and ANSI colours unchanged. Read by quickshell, hyprland, hyprlock, hyprtoolkit, GTK, wezterm, tmux |
+| `palettes` | `attrsOf (attrsOf str)` | `adwaita_darker`: libadwaita 1.10's dark named colours (translucent ones as CSS `#rrggbbaa`), accents and GNOME palette, GNOME Shell 51's opaque surfaces as `shell_*`, ghostty's "Adwaita Dark" terminal colours. Opaque surfaces are upstream's less `depth` (28 per channel), after [Darkwaita](https://github.com/varunbpatil/Darkwaita): `view_bg_color` `#010104`, Shell's popover `#1a1a1e`; the terminal background half as much (`#0f0f12`). Accents, text, translucent and ANSI colours unchanged. Read by quickshell, hyprland, hyprlock, hyprtoolkit, GTK, wezterm, tmux |
 | `hyprland.workspaces` | positive int | Workspaces per monitor; hyprsplit, binds, the bar |
 | `nixosHosts.<name>` | submodule `{ system }` | Drives `flake.nixosConfigurations` |
 | `systems` | `listOf str` | Default `[ ]`; `per-system.nix` sets `[ "x86_64-linux" "aarch64-darwin" ]` |
@@ -156,7 +156,7 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | --- | --- | --- | --- |
 | `bluetooth.nix` | HM | `bluetooth` | `bluetui` when the host has `hardware.bluetooth` (`osConfig`); the control centre's Bluetooth Settings |
 | `boot.nix` | nixos | `boot`, `systemd-boot` | GRUB on EFI (themed); `systemd-boot` `mkForce`s GRUB off, conflicts by design, unused |
-| `desktop-apps.nix` | HM | `desktop-apps` | GUI apps every workstation gets |
+| `desktop-apps.nix` | HM | `desktop-apps` | GUI apps every workstation gets (Celluloid, Loupe among them) |
 | `display-manager.nix` | nixos | `display-manager` | ly |
 | `doas.nix` | nixos | `doas` | doas replaces sudo (`doas-sudo-shim`); wheel `noPass`, no `keepenv`, passes only `LANG`, `NIX_PATH`, `SUDO_*` |
 | `documentation.nix` | nixos | `documentation` | NixOS manpages off |
