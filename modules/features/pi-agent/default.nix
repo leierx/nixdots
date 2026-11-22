@@ -70,7 +70,7 @@
           ];
 
           packages = [
-            "npm:@tintinweb/pi-subagents@0.23.1"
+            "npm:@tintinweb/pi-subagents@0.26.2"
             "npm:@juicesharp/rpiv-ask-user-question@2.15.0"
             "npm:@juicesharp/rpiv-todo@2.15.0"
           ];
