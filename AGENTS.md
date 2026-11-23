@@ -204,7 +204,8 @@ one Xwayland a game loses X focus to the overlay and never comes back), Deck UI
 
 Built-ins only, themed from the palette. Bare `tmux` attaches to `main` (a
 wrapper). Vim keys on `C-b` (prefix table reset, no arrows), `choose-tree` to
-jump, copy-mode selection to the clipboard via OSC 52, `prefix e` opens
+jump, copy-mode selection to the clipboard via OSC 52 (plus `pbcopy` on
+macOS, as Terminal.app ignores OSC 52), `prefix e` opens
 scrollback in nvim (only with `programs.neovim`), framed pane titles, rounded
 popups, bells from background windows marked (pi rings one), `prefix o` jumps
 to one. resurrect + continuum load last via `run-shell` (HM `plugins` load

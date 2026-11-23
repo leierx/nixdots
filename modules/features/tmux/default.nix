@@ -191,6 +191,10 @@ root: {
           bind -T copy-mode-vi Escape send -X cancel
           # tmux has no selection-changed event, so every copy-mode command sends the selection over OSC 52, without a paste buffer
           set-hook -g after-send-keys { if -F "#{selection_present}" { send -X copy-pipe-no-clear -P } }
+          ${lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+            # Terminal.app ignores OSC 52, so copy-pipe also feeds pbcopy, as extrakto's default clip tool does
+            set -g copy-command /usr/bin/pbcopy
+          ''}
           # upstream copies and drops back to the prompt; this keeps the scroll position and the highlight
           bind -T copy-mode-vi MouseDragEnd1Pane send -X copy-pipe-no-clear
           # a click drops the kept selection, so the next drag starts a new one instead of extending a word/line pick
@@ -236,8 +240,10 @@ root: {
           set -g display-panes-active-colour "${c.color4}"
           set -g clock-mode-colour "${c.color4}"
 
-          # copy through tmux, which sets the terminal clipboard over OSC 52
-          set -g @extrakto_clip_tool_run tmux_osc52
+          ${lib.optionalString (!pkgs.stdenv.hostPlatform.isDarwin) ''
+            # copy through tmux, which sets the terminal clipboard over OSC 52
+            set -g @extrakto_clip_tool_run tmux_osc52
+          ''}
 
           # last, as TPM orders them: resurrect binds into the reset prefix table, continuum hooks the final status-right
           set -g @resurrect-capture-pane-contents on
