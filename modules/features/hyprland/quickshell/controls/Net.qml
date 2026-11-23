@@ -14,6 +14,9 @@ import "names.js" as Names
 Singleton {
   id: root
 
+  // nmcli's messages are matched in English; a locale would translate them.
+  readonly property var nmcliEnvironment: ({ LC_ALL: "C" })
+
   // nmcli's word on NetworkManager, which Quickshell keeps no record of once it goes.
   property bool running: false
   readonly property bool present: running || devices.length > 0
@@ -285,9 +288,11 @@ Singleton {
       id: op
 
       required property var modelData
+      property bool exitReported: false
 
       running: true
       command: ["nmcli", "--wait", "30", "connection", modelData.action, "uuid", modelData.uuid, ...(modelData.secret ? ["passwd-file", "/dev/stdin"] : [])]
+      environment: root.nmcliEnvironment
       stdinEnabled: modelData.secret !== ""
       stderr: StdioCollector {
         id: err
@@ -296,7 +301,16 @@ Singleton {
         write(`vpn.secrets.password:${modelData.secret}\n`);
         stdinEnabled = false;
       }
-      onExited: code => root.finished(modelData.key, modelData.uuid, modelData.action, modelData.secret !== "", code === 0, err.text.trim().replace(/^Error: /, ""))
+      onExited: code => {
+        op.exitReported = true;
+        root.finished(modelData.key, modelData.uuid, modelData.action, modelData.secret !== "", code === 0, err.text.trim().replace(/^Error: /, ""));
+      }
+      // One that fails to start reports no exit, as Command's.
+      onRunningChanged: {
+        if (op.running) return;
+        if (!op.exitReported) root.finished(modelData.key, modelData.uuid, modelData.action, modelData.secret !== "", false, `${op.command[0]} could not be started`);
+        op.exitReported = false;
+      }
     }
   }
 
@@ -323,6 +337,7 @@ Singleton {
 
     name: "Signing In to Network"
     command: ["nmcli", "device", "modify", root.wifi?.name ?? "", "ipv4.ignore-auto-dns", "no", "ipv6.ignore-auto-dns", "no", "connection.dns-over-tls", "no"]
+    environment: root.nmcliEnvironment
     onDone: {
       root.relaxed = root.wifi?.name ?? "";
       Networking.checkConnectivity();
@@ -344,6 +359,7 @@ Singleton {
     name: "Network: back to its own DNS"
     quiet: true
     command: ["nmcli", "device", "reapply", root.relaxed]
+    environment: root.nmcliEnvironment
     onDone: root.relaxed = ""
     onFailed: root.relaxed = ""
   }
@@ -370,34 +386,19 @@ Singleton {
   }
 
   // Every change NetworkManager makes, and whether it runs: "is running", "has started", "is stopped", "not running".
-  Process {
+  Watcher {
     id: monitor
 
-    property int failures: 0
-
-    running: true
     command: ["nmcli", "monitor"]
-    stdout: SplitParser {
-      onRead: line => {
-        monitor.failures = 0;
-        if (/is running|has started/.test(line)) root.running = true;
-        else if (/is stopped|not running|has stopped/.test(line)) root.running = false;
-        settle.restart();
-      }
+    baseInterval: 2000
+    // A machine without nmcli would fill the log; the backoff is enough.
+    warn: false
+    environment: root.nmcliEnvironment
+    onLine: line => {
+      if (/is running|has started/.test(line)) root.running = true;
+      else if (/is stopped|not running|has stopped/.test(line)) root.running = false;
+      settle.restart();
     }
-    onRunningChanged: {
-      if (running) return;
-      // Backing off, so a machine without nmcli does not fill the log.
-      restart.interval = Math.min(2000 * 2 ** failures, 300000);
-      failures++;
-      restart.start();
-    }
-  }
-
-  Timer {
-    id: restart
-
-    onTriggered: monitor.running = true
   }
 
   // A change comes as a burst of lines.
@@ -420,6 +421,7 @@ Singleton {
 
     // The name last: -t escapes only its separator, so a name holding a newline runs on into lines that start with no UUID.
     command: ["nmcli", "-t", "-f", "UUID,TYPE,ACTIVE,STATE,NAME", "connection", "show"]
+    environment: root.nmcliEnvironment
     stdout: StdioCollector {
       onStreamFinished: {
         const records = [];

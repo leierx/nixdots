@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import Quickshell.Services.Pipewire
 import qs.common
 import qs.nix
@@ -89,36 +88,17 @@ Singleton {
     onTriggered: root.held = root.cameraHolders.length > 0
   }
 
-  Process {
+  Watcher {
     id: watcher
 
-    property int failures: 0
-
-    running: true
     command: ["camera-users"]
-    stdout: SplitParser {
-      onRead: line => {
-        watcher.failures = 0;
-        try {
-          root.holders = JSON.parse(line);
-        } catch (error) {
-          console.warn(`camera-users: ${error}`);
-        }
+    onLine: line => {
+      try {
+        root.holders = JSON.parse(line);
+      } catch (error) {
+        console.warn(`camera-users: ${error}`);
       }
     }
-    onRunningChanged: {
-      if (running) return;
-      root.holders = [];
-      restart.interval = Math.min(5000 * 2 ** failures, 300000);
-      failures++;
-      console.warn(`camera-users stopped, starting it again in ${restart.interval / 1000} s`);
-      restart.start();
-    }
-  }
-
-  Timer {
-    id: restart
-
-    onTriggered: watcher.running = true
+    onStopped: root.holders = []
   }
 }

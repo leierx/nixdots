@@ -254,6 +254,17 @@ qst click ControlsPanel:row:Broken
 qst wait 'any(.history[]; .summary == "Broken Failed to Connect")' 10
 qst wait '.controls.vpns | map(select(.name == "Broken"))[0] | (.active | not) and .busy == null'
 
+qst case "a VPN action whose nmcli cannot start fails instead of staying Connecting…"
+qst network profile vpn Office
+open vpn
+qst wait '(.controls.vpns | map(select(.name == "Office")) | length) == 1'
+qst fail nmcli missing
+qst expect 'Process failed to start, likely because the binary could not be found'
+qst click ControlsPanel:row:Office
+qst wait 'any(.history[]; .summary == "Office Failed to Connect")' 10
+qst wait '(.controls.vpns | map(select(.name == "Office"))[0].busy) == null'
+qst fail nmcli off
+
 qst case "a new headset pairs, is trusted and connects in one click; a keyboard wanting a PIN says where to go"
 qst bluetooth add 11:22:33:44:55:01 "WH-1000XM4" audio-headset ok
 qst bluetooth add 11:22:33:44:55:02 "Keychron K3" input-keyboard pin

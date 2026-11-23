@@ -334,7 +334,7 @@ Components: `bar/`, `center/`, `controls/`, `launcher/`, `notifications/`,
 `osd/`, `power/`, `shortcuts/`, `tooltip/`, `weather/`, `idle/`; `shell.qml`
 only instantiates them. `common/` holds what several share: the STYLE.md
 pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `Popover`,
-`ClickAway`, `Screens`, `Time`, `StateFile`, `Command`, `Detached`, `WheelSteps`,
+`ClickAway`, `Screens`, `Time`, `StateFile`, `Command`, `Watcher`, `Detached`, `WheelSteps`,
 `WorkspaceOwners`, `Tooltips`, `Machine` (os-release's `LOGO=` through the
 icon theme, hostname, uptime).
 
@@ -342,7 +342,9 @@ icon theme, hostname, uptime).
 
 - **`Panels`**: the one open panel by name; opening one closes the others;
   nothing opens with no monitor on (it would land on `FALLBACK` holding the
-  keyboard). IPC `panels open|close|toggle <name>`: `apps`, `clipboard`,
+  keyboard). Carries the screen name a clock opened it on, so a centred panel
+  follows its own bar rather than the focused monitor. IPC
+  `panels open|close|toggle <name>`: `apps`, `clipboard`,
   `monitors`, `windows`, `nixpkgs`, `center`, `shortcuts`, `power`, `gallery` (qs-test
   only), per screen `controls:DP-1`, `tray-menu:DP-1`.
 - **`Overlay`**: the full-screen layer a panel lives in; a click off its `card`
@@ -507,7 +509,8 @@ icon theme, hostname, uptime).
   `windows` is wlr-foreign-toplevels in Hyprland focus order with live
   previews. `nixpkgs` searches nixos-unstable's ~130 000 packages
   (`nixpkgs-index` TSV, read and refreshed on first open, columns, own loop and memo, no slip pass: it would cost
-  a pass over every row per key).
+  a pass over every row per key; the columns go a minute after the launcher closes, so the idle shell does not
+  hold them and the next open reads the list again).
 - `nixpkgs-run`: builds `github:NixOS/nixpkgs/<rev>#<attr>` with a progress card
   (`nixpkgs-progress.jq` over nix's internal-json), then runs it in a transient
   `systemd-run --user` service sandboxed by systemd: `ProtectSystem=strict`,
@@ -557,7 +560,8 @@ icon theme, hostname, uptime).
   `History` saves atomically to the state dir (no transient ones, 7 days,
   `history.js`), with copies of pictures only the server held, grabbed off
   screen once. IPC `notifications toggleDnd|setDnd|dnd|count|clear|hidePopups`.
-- `center/`: GNOME's date menu under the clock: the last-playing player's
+- `center/`: GNOME's date menu under the clock, on the monitor whose clock
+  opened it: the last-playing player's
   `MediaCard`, notifications grouped per app, calendar (ISO weeks) and weather
   where there is room. Opening it checks all, puts popups away and sorts the
   groups; while open a group keeps its place as its notifications go, a new app

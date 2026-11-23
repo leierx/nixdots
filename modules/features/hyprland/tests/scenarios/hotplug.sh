@@ -22,6 +22,17 @@ for panel in apps:launcher clipboard:launcher monitors:launcher windows:launcher
   no_problems
 done
 
+qst case "the center opens under the clock that was clicked, and stays there as focus moves"
+qst x hyprctl keyword input:follow_mouse 0 > /dev/null
+qst focus DP-1
+# DP-2's clock is centred on its bar: DP-1 is 1920 wide, DP-2 starts at 1920 and is 2048 wide at 1.25.
+qst click left 2944 16
+qst wait "$(layer "DP-2 quickshell:center") and .panel == \"center\"" 10
+qst focus DP-1
+qst stays "$(layer "DP-2 quickshell:center") and .panel == \"center\"" 0.5
+qst ipc panels close > /dev/null
+qst x hyprctl keyword input:follow_mouse 1 > /dev/null
+
 qst case "the launcher's shortcut opens it again after its monitor went"
 qst focus DP-2
 qst key super+d

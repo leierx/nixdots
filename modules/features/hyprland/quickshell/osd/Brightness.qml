@@ -59,33 +59,11 @@ Singleton {
     if (moved !== undefined) root.adjusted();
   }
 
-  Process {
+  Watcher {
     id: watcher
 
-    property int failures: 0
-
-    running: true
     command: ["backlight-watch"]
-    stdout: SplitParser {
-      onRead: line => {
-        watcher.failures = 0;
-        root.read(line);
-      }
-    }
-    onRunningChanged: {
-      if (running) return;
-      root.known = false;
-      // Backing off, so one that cannot run does not fill the log.
-      restart.interval = Math.min(5000 * 2 ** failures, 300000);
-      failures++;
-      console.warn(`backlight-watch stopped, starting it again in ${restart.interval / 1000} s`);
-      restart.start();
-    }
-  }
-
-  Timer {
-    id: restart
-
-    onTriggered: watcher.running = true
+    onLine: line => root.read(line)
+    onStopped: root.known = false
   }
 }

@@ -6,6 +6,11 @@ import qs.common
 import qs.weather
 
 Scope {
+  id: root
+
+  // The bar whose clock opened it, taken as it opens; the closing one keeps it as another screen is asked for.
+  property string screenName: ""
+
   // The forecast is fetched from the start, so the first open has it.
   Component.onCompleted: Weather.now
 
@@ -14,6 +19,7 @@ Scope {
     id: loader
 
     NotificationCenter {
+      screen: Screens.real.find(screen => screen.name === root.screenName) ?? null
       onHidden: loader.active = false
     }
   }
@@ -22,7 +28,9 @@ Scope {
     target: Panels
 
     function onActiveChanged() {
-      if (Panels.active === "center") loader.active = true;
+      if (Panels.active !== "center") return;
+      root.screenName = Panels.screen;
+      loader.active = true;
     }
   }
 }

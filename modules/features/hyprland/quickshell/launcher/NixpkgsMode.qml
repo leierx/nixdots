@@ -10,6 +10,8 @@ LauncherMode {
 
   readonly property string prefix: "nixpkgs:"
   readonly property int limit: 50
+  // The parsed columns cost a few hundred MiB; a second open within a moment keeps them, one after that reads the list again.
+  readonly property int releaseDelay: 60000
   // Columns rather than an object per package, since there are over 130 000; loaded on first open so startup stays lean.
   property bool loaded: false
   property var index: ({ rev: "", lines: [], attrs: [], names: [], texts: [] })
@@ -32,6 +34,18 @@ LauncherMode {
       texts[i] = lines[i].replace(/\t/g, " ").toLowerCase();
     }
     root.index = { rev: head[0], lines, attrs, names, texts };
+  }
+
+  function restore(): void {
+    if (!root.open || root.index.lines.length > 0) return;
+    if (list.text() !== "") root.parse(list.text());
+  }
+
+  function unload(): void {
+    root.index = ({ rev: "", lines: [], attrs: [], names: [], texts: [] });
+    root.memo.state = null;
+    // The engine holds the parsed columns' pages until asked, so the release is what gives the memory back.
+    gc();
   }
 
   function row(index: var, i: int): var {
@@ -128,14 +142,27 @@ LauncherMode {
 
   onOpened: {
     loaded = true;
+    unloadTimer.stop();
+    if (root.index.lines.length === 0) Qt.callLater(root.restore);
     refresh.running = true;
   }
   onOpenChanged: {
     if (!open) root.memo.state = null;
-    if (!open && stale) {
-      stale = false;
-      list.reload();
+    if (open) unloadTimer.stop();
+    else {
+      unloadTimer.restart();
+      if (stale) {
+        stale = false;
+        list.reload();
+      }
     }
+  }
+
+  Timer {
+    id: unloadTimer
+
+    interval: root.releaseDelay
+    onTriggered: root.unload()
   }
   onActivated: row => {
     AppUsage.launched(root.prefix + row.attr);
@@ -149,7 +176,10 @@ LauncherMode {
     path: root.loaded ? Quickshell.cachePath("nixpkgs.tsv") : ""
     // There is no file until the first fetch.
     printErrors: false
-    onLoaded: root.parse(list.text())
+    onLoaded: {
+      if (root.open) root.parse(list.text());
+      else root.unload();
+    }
   }
 
   Command {
