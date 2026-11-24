@@ -20,8 +20,15 @@ root: {
 ## Gallery
 
 The desktop is Hyprland with a [Quickshell](https://quickshell.org) shell
-modelled on GNOME. Screenshots come from `qs-test`, which runs the shell nested
-and headless against fake NetworkManager, BlueZ, UPower and MPRIS services.
+that follows GNOME 51 for the most part: gnome-shell for its surfaces,
+libadwaita for what is in them. The notable exceptions are darker surfaces,
+numbered square workspaces led by the distro's logo, a system tray, Caffeine
+beside Night Light, a launcher (apps, clipboard, windows, nixpkgs) instead of
+the overview, a full-screen power menu, and weather in MET Norway's colour
+icons; the rest are in
+[STYLE.md](./modules/features/hyprland/quickshell/STYLE.md). Screenshots come
+from `qs-test`, which runs the shell nested and headless against fake
+NetworkManager, BlueZ, UPower and MPRIS services.
 
 | | |
 | --- | --- |
