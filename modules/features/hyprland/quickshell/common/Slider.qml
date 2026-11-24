@@ -11,6 +11,17 @@ Item {
   property real heldMaximum: 1
   readonly property real span: drag.pressed ? heldMaximum : Math.max(1, maximum)
   readonly property real fraction: Math.max(0, Math.min(1, value / span))
+  // What it draws: a change from elsewhere (a key, another app) eases as the OSD does; a drag follows the pointer.
+  property real drawn: fraction
+
+  Behavior on drawn {
+    enabled: !drag.pressed
+
+    NumberAnimation {
+      duration: Theme.levelTime
+      easing.type: Easing.OutQuad
+    }
+  }
   // Where a drag began, which Escape puts back; a drag Escape cancelled moves nothing more until released.
   property real startValue: 0
   property bool cancelled: false
@@ -23,6 +34,14 @@ Item {
 
   implicitHeight: 26
   opacity: enabled ? 1 : 0.5
+
+  Behavior on opacity {
+    NumberAnimation {
+      duration: Theme.quickTime
+      easing.type: Easing.OutQuad
+    }
+  }
+
   activeFocusOnTab: enabled || activeFocus
   Keys.onLeftPressed: slider.stepped(-1)
   Keys.onRightPressed: slider.stepped(1)
@@ -39,7 +58,7 @@ Item {
   // Shell's barLevel: a 4 px trough, the level in the accent up to 100 % and red past it.
   readonly property real inner: width - 16
   readonly property real full: 8 + inner / span
-  readonly property real at: 8 + inner * fraction
+  readonly property real at: 8 + inner * drawn
 
   Rectangle {
     anchors.verticalCenter: parent.verticalCenter

@@ -58,8 +58,9 @@ Singleton {
   }
 
   function flip(toggle: var): void {
-    if (toggle.unavailable) return;
-    if (toggle.device) Net.toggleWired(toggle.device);
+    if (toggle.unavailable || toggle.inert) return;
+    if (toggle.action) toggle.action();
+    else if (toggle.device) Net.toggleWired(toggle.device);
     else if (toggle.key === "wifi") Net.toggleWifi();
     else if (toggle.key === "vpn") Net.toggleVpns();
     else if (toggle.key === "bluetooth") BluetoothDevices.toggle();

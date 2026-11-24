@@ -23,6 +23,20 @@ Rectangle {
     let inside = false;
     for (let at = item; at && !inside; at = at.parent) inside = at === root;
     root.lastFocus = inside && item !== root ? item : null;
+    if (inside && item !== root && Panels.keyboard) root.reveal(item);
+  }
+
+  // The keyboard's item kept whole in view in every list it is in, the innermost first.
+  function reveal(item: Item): void {
+    for (let at = item.parent; at && at !== root; at = at.parent) {
+      const list = at as Flickable;
+      if (!list || list.contentHeight <= list.height) continue;
+      const top = item.mapToItem(list.contentItem, 0, 0).y;
+      const bottom = top + item.height;
+      const lowest = list.originY + list.contentHeight - list.height;
+      if (top < list.contentY) list.contentY = Math.max(list.originY, top);
+      else if (bottom > list.contentY + list.height) list.contentY = Math.min(lowest, bottom - list.height);
+    }
   }
   // Tab goes on as Qt takes it; the arrows step through the same order, where nothing nearer takes them.
   Keys.onPressed: event => {
@@ -35,8 +49,8 @@ Rectangle {
       // A text field passes on Left at its start and Right at its end, which are still its own.
       if (from instanceof TextInput && (event.key === Qt.Key_Left || event.key === Qt.Key_Right)) return;
       const next = from.nextItemInFocusChain(steps[event.key]);
-      if (next) next.forceActiveFocus(Qt.TabFocusReason);
       Panels.keyboard = true;
+      if (next) next.forceActiveFocus(Qt.TabFocusReason);
       event.accepted = true;
     }
   }

@@ -64,17 +64,32 @@ ColumnLayout {
       font: Theme.heading
     }
 
+    // Back to this month, from another.
     Text {
+      id: thisMonth
+
+      function back(): void {
+        root.month = new Date(root.today.getFullYear(), root.today.getMonth(), 1);
+      }
+
       text: root.locale.toString(root.today, "d MMMM yyyy")
       color: Theme.fg
       font: Theme.title2
+      activeFocusOnTab: root.away || activeFocus
+      Keys.onReturnPressed: thisMonth.back()
+      Keys.onSpacePressed: thisMonth.back()
 
       MouseArea {
         anchors.fill: parent
         enabled: root.away
         // Disabled, it would still set a hand.
         cursorShape: root.away ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onClicked: root.month = new Date(root.today.getFullYear(), root.today.getMonth(), 1)
+        onClicked: thisMonth.back()
+      }
+
+      FocusRing {
+        corner: Theme.baseRadius
+        on: parent.activeFocus
       }
     }
   }

@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
@@ -11,25 +13,17 @@ Scope {
 
   function chord(modmask: int, key: string): var {
     const mods = [[64, "Super"], [4, "Ctrl"], [8, "Alt"], [1, "Shift"]].filter(([bit]) => modmask & bit).map(([, name]) => name);
-    const names = { Return: "Enter", ESCAPE: "Esc", Escape: "Esc", question: "?", plus: "+", space: "Space", "mouse:272": "Left click", "mouse:273": "Right click", "mouse:274": "Middle click" };
+    const names = { Return: "Enter", ESCAPE: "Esc", Escape: "Esc", plus: "+", space: "Space", "mouse:272": "Left click", "mouse:273": "Right click", "mouse:274": "Middle click" };
     return [...mods, names[key] ?? (key.length === 1 ? key.toUpperCase() : key)];
   }
 
   // Media keys are left out: they are labelled on the keyboard.
   function group(binds: var): var {
-    const described = binds.filter(bind => bind.has_description && !bind.key.startsWith("XF86"));
-    const main = described.filter(bind => bind.submap === "");
-    const normalise = text => text.toLowerCase().replace(/[^a-z]/g, "");
-
-    // A submap is entered by the bind its name begins: "system_control" by "System controls".
-    const submaps = [...new Set(described.map(bind => bind.submap).filter(name => name !== ""))].map(name => {
-      const entry = main.find(bind => normalise(bind.description).startsWith(normalise(name)));
-      return { name, entry };
-    });
-    const entries = submaps.map(submap => submap.entry).filter(entry => entry);
+    // No submaps: the config has none.
+    const main = binds.filter(bind => bind.has_description && !bind.key.startsWith("XF86") && bind.submap === "");
 
     const rows = [];
-    for (const bind of main.filter(bind => !entries.includes(bind))) {
+    for (const bind of main) {
       const numbered = /^(.*\S)\s+(\d+)$/.exec(bind.description);
       const row = numbered && numbered[2] === bind.key ? rows.find(other => other.prefix === numbered[1] && other.modmask === bind.modmask) : null;
       if (row) {
@@ -79,13 +73,6 @@ Scope {
       const index = row.mouse ? 3 : /workspace/i.test(row.title) ? 2 : /window|focus|fullscreen|maximi|float/i.test(row.title) ? 1 : 0;
       titled[index].rows.push(row);
     }
-    for (const submap of submaps) {
-      const prefix = submap.entry ? [root.chord(submap.entry.modmask, submap.entry.key)] : [];
-      titled.push({
-        title: submap.entry?.description ?? submap.name.replace(/_/g, " "),
-        rows: described.filter(bind => bind.submap === submap.name).map(bind => ({ title: bind.description, keys: [...prefix, root.chord(bind.modmask, bind.key)] })),
-      });
-    }
     return titled.filter(group => group.rows.length > 0);
   }
 
@@ -110,8 +97,9 @@ Scope {
     }
   }
 
+  // Once the binds are in, so a first open never shows a card with only its title.
   LazyLoader {
-    active: root.open
+    active: root.open && root.groups.length > 0
 
     ShortcutsWindow {
       groups: root.groups

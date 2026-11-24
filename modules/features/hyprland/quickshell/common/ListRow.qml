@@ -23,6 +23,14 @@ Rectangle {
   implicitHeight: Theme.menuRowHeight
   radius: Theme.menuItemRadius
   opacity: enabled ? 1 : 0.5
+
+  Behavior on opacity {
+    NumberAnimation {
+      duration: Theme.quickTime
+      easing.type: Easing.OutQuad
+    }
+  }
+
   // Kept while it has the keyboard: Qt refuses to take it back from the focused item, and warns.
   activeFocusOnTab: acts || activeFocus
   Keys.onReturnPressed: root.clicked()

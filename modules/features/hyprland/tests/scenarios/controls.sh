@@ -444,8 +444,8 @@ qst wait '.windows | length == 1'
 qst spawn pw-record -P "{ application.name=foot }" /dev/null
 qst wait '.privacy.mic == ["foot"]'
 open
-for _ in $(seq 30); do qst areas 'ControlsPanel' | grep -q "inuse:Microphone	true" && break; sleep 0.1; done # sleep: the window list reaches the pill through wlr-foreign-toplevel, outside the probe
-qst click ControlsPanel:inuse:Microphone
+for _ in $(seq 30); do qst areas 'ControlsPanel' | grep -q "pill:inuse:Microphone	true" && break; sleep 0.1; done # sleep: the window list reaches the pill through wlr-foreign-toplevel, outside the probe
+qst click ControlsPanel:pill:inuse:Microphone
 qst wait '.panel == ""'
 
 qst case "a Bluetooth device's charge and link are drawn in its row"

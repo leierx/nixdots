@@ -22,6 +22,13 @@ Rectangle {
   border.width: field.activeFocus ? 2 : 0
   border.color: Theme.focusRing
 
+  Behavior on color {
+    ColorAnimation {
+      duration: Theme.quickTime
+      easing.type: Easing.OutQuad
+    }
+  }
+
   HoverHandler {
     id: hover
   }
@@ -51,6 +58,7 @@ Rectangle {
     selectedTextColor: Theme.accentFg
     font: Theme.body
     clip: true
+    activeFocusOnTab: root.enabled
     onAccepted: root.accepted()
   }
 
@@ -64,27 +72,17 @@ Rectangle {
     font: Theme.body
   }
 
-  Item {
+  IconButton {
+    objectName: "reveal"
     anchors.right: parent.right
-    width: 36
-    height: parent.height
+    anchors.rightMargin: (parent.height - height) / 2
+    anchors.verticalCenter: parent.verticalCenter
     visible: root.password
-
-    Glyph {
-      anchors.centerIn: parent
-      path: root.revealed ? Symbols.visibilityOff : Symbols.visibility
-      size: 16
-      color: Theme.fgDim
-    }
-
-    MouseArea {
-      anchors.fill: parent
-      cursorShape: Qt.PointingHandCursor
-      onClicked: root.revealed = !root.revealed
-    }
-
-    TooltipArea {
-      text: root.revealed ? "Hide Password" : "Show Password"
-    }
+    small: true
+    flat: true
+    glyph: root.revealed ? Symbols.visibilityOff : Symbols.visibility
+    foreground: Theme.fgDim
+    tooltip: root.revealed ? "Hide Password" : "Show Password"
+    onClicked: root.revealed = !root.revealed
   }
 }

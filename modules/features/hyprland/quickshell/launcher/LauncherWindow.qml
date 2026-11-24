@@ -111,6 +111,9 @@ Overlay {
 
     // Keeps the selection where it is while a row goes.
     property bool removing: false
+    // The selected row and the query it was picked under: rows rebuilt under the same query (a window retitled, the clipboard's counts) keep it.
+    property string selectedKey: ""
+    property string selectedFor: ""
 
     // A long list searches a frame after the key, so the letter shows before a slow search; keys that act on the matches catch up first.
     function settle(): void {
@@ -145,7 +148,10 @@ Overlay {
     spacing: 2
     // Only ever jumps, to keep the selected row in view.
     interactive: false
-    onCurrentChanged: list.mode.selected = list.current
+    onCurrentChanged: {
+      list.mode.selected = list.current;
+      list.selectedKey = list.current?.key ?? "";
+    }
 
     Timer {
       id: settling
@@ -158,7 +164,13 @@ Overlay {
       values: list.results
       objectProp: "key"
       // A new search starts at its best match.
-      onValuesChanged: list.select(list.removing ? list.currentIndex : 0)
+      onValuesChanged: {
+        const same = list.query === list.selectedFor;
+        list.selectedFor = list.query;
+        if (list.removing) list.select(list.currentIndex);
+        else if (!same) list.select(0);
+        else list.select(Math.max(0, list.results.findIndex(row => row.key === list.selectedKey)));
+      }
     }
 
     // One hover for the list rather than each row's: it holds across the gaps between rows and a pointer leaving for a moment.
@@ -188,7 +200,7 @@ Overlay {
     EmptyState {
       width: list.width
       height: list.height
-      visible: list.count === 0
+      visible: list.count === 0 && !list.mode.loading
       text: list.query.trim() !== "" ? "No Results" : list.mode.nothing
     }
 
@@ -245,11 +257,26 @@ Overlay {
 
     width: ListView.view.width
     height: row.list.rowHeight
-    // Shell's .list-search-result.
+    // Shell's .list-search-result; the keyboard's row snaps, as keyboard selection never animates, and hover and a press ease over it.
     radius: Theme.tileRadius
-    color: row.current ? Theme.selectedBg : row.index === row.list.hovered ? Theme.menuHoverBg : "transparent"
+    color: row.current ? Theme.selectedBg : "transparent"
+
+    Rectangle {
+      anchors.fill: parent
+      radius: Theme.tileRadius
+      color: press.pressed ? Theme.menuActiveBg : row.index === row.list.hovered && !row.current ? Theme.menuHoverBg : "transparent"
+
+      Behavior on color {
+        ColorAnimation {
+          duration: Theme.quickTime
+          easing.type: Easing.OutQuad
+        }
+      }
+    }
 
     MouseArea {
+      id: press
+
       anchors.fill: parent
       cursorShape: Qt.PointingHandCursor
       onClicked: row.list.activate(row.index)

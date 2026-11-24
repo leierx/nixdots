@@ -41,6 +41,14 @@ Rectangle {
   radius: pill ? height / 2 : Theme.baseRadius
   // libadwaita's --disabled-opacity, as the panels hold app-like content.
   opacity: enabled ? 1 : 0.5
+
+  Behavior on opacity {
+    NumberAnimation {
+      duration: Theme.quickTime
+      easing.type: Easing.OutQuad
+    }
+  }
+
   color: {
     if (filled) {
       if (pressed || checked) return fillActive;

@@ -19,6 +19,8 @@ Rectangle {
 
 
   readonly property bool art: cover.status === Image.Ready
+  // The last art that loaded, kept up while the next track's loads, so a skip never blinks.
+  property url shownArt: ""
   readonly property bool playing: Media.player?.isPlaying ?? false
   readonly property real length: Media.length
 
@@ -27,12 +29,23 @@ Rectangle {
   color: Theme.messageBg
 
   Image {
+    id: coming
+
+    visible: false
+    source: Media.player?.trackArtUrl ?? ""
+    sourceSize: Qt.size(168, 168)
+    asynchronous: true
+    onStatusChanged: if (status !== Image.Loading) card.shownArt = status === Image.Ready ? source : ""
+  }
+
+  // At the cover's size, so both come from the one cached picture.
+  Image {
     id: wash
 
     anchors.fill: parent
     visible: false
-    source: cover.source
-    sourceSize: Qt.size(96, 96)
+    source: card.shownArt
+    sourceSize: Qt.size(168, 168)
     fillMode: Image.PreserveAspectCrop
     asynchronous: true
   }
@@ -101,7 +114,7 @@ Rectangle {
 
       anchors.fill: parent
       visible: card.art
-      source: Media.player?.trackArtUrl ?? ""
+      source: card.shownArt
       sourceSize: Qt.size(168, 168)
       fillMode: Image.PreserveAspectCrop
       asynchronous: true
@@ -119,21 +132,33 @@ Rectangle {
     spacing: 2
 
     Text {
+      id: title
+
       width: parent.width
       text: Media.title
       textFormat: Text.PlainText
       elide: Text.ElideRight
       color: Theme.fg
       font: Theme.heading
+      activeFocusOnTab: (Media.player?.canRaise ?? false) || activeFocus
+      Keys.onReturnPressed: title.raise()
+      Keys.onSpacePressed: title.raise()
+
+      function raise(): void {
+        Panels.close();
+        Media.player?.raise();
+      }
+
+      FocusRing {
+        corner: Theme.baseRadius
+        on: parent.activeFocus
+      }
 
       MouseArea {
         anchors.fill: parent
         enabled: Media.player?.canRaise ?? false
         cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onClicked: {
-          Panels.close();
-          Media.player?.raise();
-        }
+        onClicked: title.raise()
       }
     }
 
@@ -193,8 +218,15 @@ Rectangle {
           width: 40
           height: 40
           radius: height / 2
-          color: Theme.fg
+          color: playArea.pressed ? Theme.switchKnob : playArea.containsMouse ? Theme.sliderKnob : Theme.fg
           opacity: playArea.enabled ? 1 : 0.5
+
+          Behavior on color {
+            ColorAnimation {
+              duration: Theme.quickTime
+              easing.type: Easing.OutQuad
+            }
+          }
           activeFocusOnTab: playArea.enabled || activeFocus
           Keys.onReturnPressed: Media.player?.togglePlaying()
           Keys.onSpacePressed: Media.player?.togglePlaying()

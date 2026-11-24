@@ -39,20 +39,40 @@ LauncherMode {
         : Symbols.notes,
     }, { key: entry.id, id: entry.id, line: entry.line });
   })
-  fields: row => [[1.0, row.title], [1.0, row.subtitle]]
+  // A clip's own text; a picture's size and format too, as it has no text. A count would match every clip.
+  fields: row => row.size ? [[1.0, row.title], [0.8, row.subtitle]] : [[1.0, row.title]]
+  loading: listCommand.running
 
   // At the start too, so pictures from a history wiped at login leave the cache.
   Component.onCompleted: cacheCommand.running = true
   onOpened: listCommand.running = true
   onOpenChanged: if (!open) entries = []
   onActivated: row => {
-    // wl-copy stays behind to serve the clip.
-    Detached.run(["sh", "-c", 'cliphist decode "$1" | wl-copy', "sh", row.id], "");
+    decodeCommand.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")" && cliphist decode "$1" > "$2"', "sh", row.id, root.picked];
+    decodeCommand.running = true;
     Panels.close();
   }
   onRemoved: row => {
-    Quickshell.execDetached(["sh", "-c", 'printf "%s\\n" "$1" | cliphist delete', "sh", row.line]);
+    deleteCommand.command = ["sh", "-c", 'printf "%s\\n" "$1" | cliphist delete', "sh", row.line];
+    deleteCommand.running = true;
     root.entries = root.entries.filter(entry => entry.id !== row.id);
+  }
+
+  // Decoded first, so a clip that fails to decode says so rather than emptying the clipboard.
+  readonly property string picked: Quickshell.cachePath("clipboard-picked")
+
+  Command {
+    id: decodeCommand
+
+    name: "Copying the clip"
+    // wl-copy stays behind to serve the clip, in a scope of its own; it has read the file before it forks.
+    onDone: Detached.run(["sh", "-c", 'wl-copy < "$1"; rm -f "$1"', "sh", root.picked], "")
+  }
+
+  Command {
+    id: deleteCommand
+
+    name: "Deleting the clip"
   }
 
   // The rows show at once; what needs a clip decoded follows from the cache.
@@ -74,6 +94,8 @@ LauncherMode {
     id: cacheCommand
 
     name: "cliphist"
+    // Nobody waits on the thumbnails and counts: a failure only reaches the log.
+    quiet: true
     command: ["sh", "-c", `
       set -f
       mkdir -p "$1" && cd "$1" || exit

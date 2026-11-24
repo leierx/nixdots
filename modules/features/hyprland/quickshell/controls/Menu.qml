@@ -57,7 +57,9 @@ Rectangle {
       if (row.asking) Net.cancel();
       else if (row.target) Net.choose(row.target);
     } else if (key === "vpn") {
-      Net.toggleVpn(row.key);
+      // Asking, a click takes the question back rather than trying again without the password.
+      if (row.asking) Net.vpnAsking = "";
+      else Net.toggleVpn(row.key);
     } else if (key === "bluetooth") {
       BluetoothDevices.choose(row.target);
     } else if (row.side && !row.current) {
@@ -81,7 +83,7 @@ Rectangle {
   readonly property int count: all.filter(row => !row.heading).length
   readonly property bool filtering: count > 20
   readonly property var shown: {
-    if (filter.text === "") return all;
+    if (!filtering || filter.text === "") return all;
     const text = filter.text.toLowerCase();
     const kept = all.filter(row => row.asking || row.heading || row.title.toLowerCase().includes(text));
     // A heading only over rows that matched.
@@ -125,7 +127,20 @@ Rectangle {
     repeat: true
     running: menuBox.key === "wifi"
     triggeredOnStart: true
-    onTriggered: menuBox.settled = menuBox.rows("wifi")
+    onTriggered: menuBox.settle()
+  }
+
+  // Only when something shows differently: a scan touches every network many times over.
+  property string settledText: ""
+
+  function settle(): void {
+    const rows = menuBox.rows("wifi");
+    const text = JSON.stringify(rows, (name, value) => name === "target" ? undefined : value);
+    if (text === menuBox.settledText && rows.every((row, i) => row.target === menuBox.settled[i]?.target)) return;
+    menuBox.settledText = text;
+    menuBox.settled = rows;
+    // A ScriptModel keeps a moved row's old object until the next set (TODO.md), and a row that sorts up as it asks would never show it.
+    menuBox.settled = rows.slice();
   }
 
   Connections {
@@ -133,11 +148,11 @@ Rectangle {
     enabled: menuBox.key === "wifi"
 
     function onAskingChanged(): void {
-      menuBox.settled = menuBox.rows("wifi");
+      menuBox.settle();
     }
 
     function onAskErrorChanged(): void {
-      menuBox.settled = menuBox.rows("wifi");
+      menuBox.settle();
     }
   }
 

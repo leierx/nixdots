@@ -35,7 +35,14 @@
           "ipv4.ignore-auto-dns" = true;
           "ipv6.ignore-auto-dns" = true;
         };
-        settings.main.no-auto-default = "*";
+        settings = {
+          main.no-auto-default = "*";
+          # Off by default on NixOS; without it NetworkManager never reports a captive portal.
+          connectivity = {
+            uri = "http://ping.archlinux.org/nm-check.txt";
+            response = "NetworkManager is online";
+          };
+        };
       };
     };
   };

@@ -12,14 +12,24 @@ Rectangle {
   property bool open: false
   readonly property bool on: toggle.on
   readonly property color ink: on ? Theme.accentFg : Theme.fg
+  // Shown at full strength, but nothing to click (an In Use pill whose app has no window).
+  readonly property bool acts: !toggle.unavailable && !(toggle.inert ?? false)
 
   implicitHeight: Theme.toggleHeight
   height: Theme.toggleHeight
   radius: height / 2
-  activeFocusOnTab: !toggle.unavailable || activeFocus
+  activeFocusOnTab: acts || activeFocus
   Keys.onSpacePressed: Controls.flip(pill.toggle)
   Keys.onReturnPressed: pill.toggle.menu ? Controls.show(pill.toggle.key) : Controls.flip(pill.toggle)
   opacity: toggle.unavailable ? 0.5 : 1
+
+  Behavior on opacity {
+    NumberAnimation {
+      duration: Theme.quickTime
+      easing.type: Easing.OutQuad
+    }
+  }
+
   color: "transparent"
 
   function fill(area: MouseArea): color {
@@ -71,7 +81,7 @@ Rectangle {
       anchors.verticalCenter: parent.verticalCenter
       path: pill.toggle.glyph
       size: 16
-      color: pill.ink
+      color: pill.toggle.glyphColor ?? pill.ink
     }
 
     Column {
@@ -106,7 +116,7 @@ Rectangle {
     width: parent.width - (segment.visible ? segment.width : 0)
     height: parent.height
     hoverEnabled: true
-    enabled: !pill.toggle.unavailable
+    enabled: pill.acts
     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
     onClicked: Controls.flip(pill.toggle)
   }
@@ -123,6 +133,13 @@ Rectangle {
       width: 1
       height: parent.height
       color: pill.on ? Theme.accentSeparator : Theme.segmentSeparator
+
+      Behavior on color {
+        ColorAnimation {
+          duration: Theme.quickTime
+          easing.type: Easing.OutQuad
+        }
+      }
     }
 
     ExpanderArrow {

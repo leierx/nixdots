@@ -31,7 +31,8 @@ Popover {
       const row = Controls.toggles.slice(i, i + 2);
       list.push({ id: `toggles:${i}`, kind: "toggles", items: row });
       const keys = row.filter(toggle => toggle.menu).map(toggle => toggle.key);
-      if (keys.length > 0) list.push({ id: `menu:${keys[0]}`, kind: "menu", keys });
+      // By the row, so a slot outlives its pills moving between rows.
+      if (keys.length > 0) list.push({ id: `menu:${i}`, kind: "menu", keys });
     }
     if (Privacy.kinds.length > 0) list.push({ id: "inuse", kind: "inuse" });
     return list;

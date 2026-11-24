@@ -79,8 +79,8 @@ LauncherMode {
         // Nothing selected or not yet captured: a 16:9 screen, the shape most previews have.
         return capture.hasContent ? capture.sourceSize : Qt.size(16, 9);
       }
-      // A tile squeezed below nothing (Hyprland past a few dozen on a workspace) exports a buffer Wayland rejects, which kills the shell.
-      readonly property bool capturable: known === null || (known[0] > 0 && known[1] > 0)
+      // A tile squeezed below nothing (Hyprland past a few dozen on a workspace) exports a buffer Wayland rejects, which kills the shell; one whose size Hyprland has not said yet may be one.
+      readonly property bool capturable: known !== null && known[0] > 0 && known[1] > 0
       readonly property real ratio: frame.size ? Math.min(frame.width / frame.size.width, frame.height / frame.size.height) : 0
 
       Layout.fillWidth: true

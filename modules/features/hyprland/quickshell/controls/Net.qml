@@ -38,6 +38,8 @@ Singleton {
   readonly property bool signInOffered: connected !== null && (portal || limited)
   // The Wi-Fi device whose connection takes the network's own DNS until it is online; NetworkManager drops that with the connection. Saved, as the change outlives a shell restarted mid-sign-in.
   property alias relaxed: saved.relaxed
+  // The network it was relaxed for: on another the flag is stale, as NetworkManager dropped the change.
+  property alias relaxedFor: saved.relaxedFor
 
   // The network a password is asked for, why it is asked again, and those this shell saved a profile for that never connected.
   property string asking: ""
@@ -148,6 +150,7 @@ Singleton {
   function failed(network: var, reason: int): void {
     const ssid = network.name;
     if (ssid !== root.attempt && ssid !== root.asking) return;
+    if (root.attempt === ssid) root.attempt = "";
     if (root.trying === ssid) root.trying = "";
     const noSecrets = reason === ConnectionFailReason.NoSecrets && root.secured(network) && !root.enterprise(network);
     // Its prompt shut while it was tried: nobody is there to ask again.
@@ -266,6 +269,8 @@ Singleton {
 
       function onConnectedChanged(): void {
         if (!modelData.connected) return;
+        // Done with: a later drop is no failure of this attempt.
+        if (root.attempt === modelData.name) root.attempt = "";
         root.created = root.created.filter(ssid => ssid !== modelData.name);
         if (root.trying === modelData.name) root.trying = "";
         root.setFailure(modelData.name, "");
@@ -321,7 +326,7 @@ Singleton {
     // Its card's id, printed first, so the card goes when the portal does.
     property int card: 0
 
-    command: ["notify-send", "-p", "-a", "Network", "-i", "network-wireless", "-A", "sign-in=Sign In", "Sign In to Network", "This network wants a sign-in before it lets anything through"]
+    command: ["notify-send", "-p", "-e", "-h", "string:x-canonical-private-synchronous:network-portal", "-a", "Network", "-i", "network-wireless", "-A", "sign-in=Sign In", "Sign In to Network", "This network wants a sign-in before it lets anything through"]
     stdout: SplitParser {
       onRead: line => {
         const text = line.trim();
@@ -340,6 +345,7 @@ Singleton {
     environment: root.nmcliEnvironment
     onDone: {
       root.relaxed = root.wifi?.name ?? "";
+      root.relaxedFor = root.connected?.name ?? "";
       Networking.checkConnectivity();
       root.openPortal();
     }
@@ -352,6 +358,7 @@ Singleton {
 
   onOnlineChanged: restrict()
   onRelaxedChanged: restrict()
+  onConnectedChanged: if (root.relaxed !== "" && root.connected !== null && root.connected.name !== root.relaxedFor) root.relaxed = ""
 
   Command {
     id: strict
@@ -455,6 +462,7 @@ Singleton {
       id: saved
 
       property string relaxed: ""
+      property string relaxedFor: ""
     }
   }
 

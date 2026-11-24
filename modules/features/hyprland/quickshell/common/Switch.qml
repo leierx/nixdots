@@ -16,6 +16,14 @@ Rectangle {
   implicitHeight: 26
   radius: height / 2
   opacity: enabled ? 1 : 0.5
+
+  Behavior on opacity {
+    NumberAnimation {
+      duration: Theme.quickTime
+      easing.type: Easing.OutQuad
+    }
+  }
+
   activeFocusOnTab: focusable && enabled || activeFocus
   Keys.onReturnPressed: toggle.clicked()
   Keys.onSpacePressed: toggle.clicked()
@@ -38,6 +46,13 @@ Rectangle {
     height: 20
     radius: width / 2
     color: toggle.checked ? Theme.fg : Theme.switchKnob
+
+    Behavior on color {
+      ColorAnimation {
+        duration: Theme.quickTime
+        easing.type: Easing.OutQuad
+      }
+    }
 
     Behavior on x {
       NumberAnimation {

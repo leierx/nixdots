@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Wayland
 import qs.common
 
-// GNOME's "In use": a pill per kind of recording, naming the apps; a click raises the first one's window.
 Column {
   id: inUse
 
@@ -21,11 +20,10 @@ Column {
     return null;
   }
 
-
   spacing: 8
 
   Text {
-    leftPadding: 4
+    leftPadding: Theme.baseMargin
     text: "In Use"
     color: Theme.fgDim
     font: Theme.heading
@@ -33,8 +31,8 @@ Column {
 
   Grid {
     columns: 2
-    columnSpacing: 12
-    rowSpacing: 12
+    columnSpacing: Theme.padding
+    rowSpacing: Theme.padding
 
     Repeater {
       model: ScriptModel {
@@ -42,74 +40,30 @@ Column {
         objectProp: "name"
       }
 
-      Rectangle {
+      // A quick toggle that raises the app's window, dim where it has none.
+      Pill {
         id: use
 
         required property var modelData
         readonly property var window: inUse.windowOf(modelData.apps)
-        readonly property var names: modelData.apps.map(app => DesktopEntries.heuristicLookup(app)?.name ?? app)
 
         width: (inUse.width - Theme.padding) / 2
-        height: Theme.toggleHeight
-        radius: height / 2
-        color: area.containsMouse && area.enabled ? Theme.buttonHoverBg : Theme.buttonBg
-
-        Behavior on color {
-          ColorAnimation {
-            duration: Theme.quickTime
-            easing.type: Easing.OutQuad
-          }
-        }
-
-        Glyph {
-          id: chip
-
-          x: 15
-          anchors.verticalCenter: parent.verticalCenter
-          path: use.modelData.glyph
-          size: 16
-          color: Theme.inUse
-        }
-
-        Column {
-          anchors.left: chip.right
-          anchors.leftMargin: 10
-          anchors.right: parent.right
-          anchors.rightMargin: 14
-          anchors.verticalCenter: parent.verticalCenter
-
-          Text {
-            width: parent.width
-            text: use.modelData.name === "Screen" ? "Screen Sharing" : use.modelData.name
-            textFormat: Text.PlainText
-            elide: Text.ElideRight
-            color: Theme.fg
-            font: Theme.heading
-          }
-
-          Text {
-            width: parent.width
-            text: use.names.join(", ") || "Through the screen sharing portal"
-            textFormat: Text.PlainText
-            elide: Text.ElideRight
-            color: Theme.fgDim
-            font: Theme.caption
-          }
-        }
-
-        MouseArea {
-          id: area
-
-          objectName: `inuse:${use.modelData.name}`
-          anchors.fill: parent
-          hoverEnabled: true
-          enabled: use.window !== null
-          cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-          onClicked: {
+        toggle: ({
+          key: `inuse:${use.modelData.name}`,
+          title: use.modelData.name === "Screen" ? "Screen Sharing" : use.modelData.name,
+          subtitle: use.modelData.apps.map(app => DesktopEntries.heuristicLookup(app)?.name ?? app).join(", ") || "Through the screen sharing portal",
+          glyph: use.modelData.glyph,
+          glyphColor: Theme.inUse,
+          on: false,
+          menu: false,
+          unavailable: false,
+          inert: use.window === null,
+          action: () => {
+            const window = use.window;
             Panels.close();
-            use.window?.activate();
+            window?.activate();
           }
-        }
+        })
       }
     }
   }

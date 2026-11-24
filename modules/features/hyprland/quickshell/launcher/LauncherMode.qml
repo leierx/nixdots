@@ -20,6 +20,8 @@ Scope {
   property Component preview: null
   property var selected: null
   property var find: null
+  // Its rows are still coming: nothing is said in their place yet.
+  property bool loading: false
 
   readonly property bool open: Panels.active === name
 
