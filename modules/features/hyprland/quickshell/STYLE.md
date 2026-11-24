@@ -180,7 +180,7 @@ to the census.
   in a row, `tiny` 24 inline with a line of text, costing it no height (a
   notification's close and expander); the calendar's arrows are its day cells'
   size. Always a `tooltip` (lint fails one without).
-- `BarButton` (`bar/`): gs `.panel-button`, bold pill 26 px in the bar's 32,
+- `BarButton` (`bar/`): gs `.panel-button`, regular-weight pill 26 px in the bar's 32,
   filled only hovered or open.
 - `Switch`: gs `.toggle-switch`. In a row the row takes the keyboard; alone,
   `focusable`.

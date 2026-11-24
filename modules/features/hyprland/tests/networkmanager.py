@@ -555,7 +555,6 @@ def drop_active(path, reason):
         update(dev["path"], DEVICE_IFACE, {"ActiveConnection": dbus.ObjectPath("/")})
         if dev["type"] == "wifi":
             update(dev["path"], WIRELESS_IFACE, {"ActiveAccessPoint": dbus.ObjectPath("/")})
-        p = state["profiles"].get(a["uuid"])
         if dev["type"] == "wireguard":
             remove_device(iface)
         elif obj(dev["path"]).props[DEVICE_IFACE]["State"] not in (FAILED, UNAVAILABLE):

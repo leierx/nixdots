@@ -691,8 +691,8 @@ Checks (`modules/flake/checks.nix`): `format` (`nixfmt --check` everywhere),
   name, a title) without `textFormat` (markup could load a URL).
   Deliberate exceptions are listed in the script with why.
 - `notification-markup`, `notification-history`, `launcher-search`, `names`,
-  `sound-devices`: `qmltestrunner` over
-  `tests/tst_{markup,history,search,names,devices}.qml`, each with
+  `sound-devices`, `keep`: `qmltestrunner` over
+  `tests/tst_{markup,history,search,names,devices,keep}.qml`, each with
   only its script beside it (`qmlTest`).
 - `qs-test`: builds the package, so shellcheck runs over `scripts/qs-test.sh`.
 

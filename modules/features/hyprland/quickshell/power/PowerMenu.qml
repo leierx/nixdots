@@ -21,8 +21,8 @@ Popover {
     { title: "Power Off", letter: "P", command: ["systemctl", "poweroff"], glyph: Symbols.power, confirm: true, destructive: true },
   ]
   readonly property var extras: [
-    { title: "Reload Hyprland",command: ["hyprctl", "reload", "full-reset"], glyph: Symbols.reload },
-    ...(root.firmware ? [{ title: "Restart to Firmware",command: ["systemctl", "reboot", "--firmware-setup"], glyph: Symbols.firmware, confirm: true }] : []),
+    { title: "Reload Hyprland", command: ["hyprctl", "reload", "full-reset"], glyph: Symbols.reload },
+    ...(root.firmware ? [{ title: "Restart to Firmware", command: ["systemctl", "reboot", "--firmware-setup"], glyph: Symbols.firmware, confirm: true }] : []),
   ]
   // The keyboard's order: the tiles, then the buttons under them.
   readonly property var actions: [...root.tiles, ...root.extras]

@@ -69,7 +69,7 @@ usage: qs-test COMMAND
   spawn CMD...          start CMD in the session, detached (output in spawn.log)
   tray [log]            add a test tray item with submenus (tests/tray.qml), or show what it was told
   tray add NAME [COUNT [ENTRIES]]  COUNT items under the app id NAME, menus ENTRIES long (tests/trays.qml); remove NAME, clear
-  flood COUNT [OPTIONS] COUNT notifications as fast as the bus takes them (qs-flood --help)
+  flood COUNT [OPTIONS]   COUNT notifications as fast as the bus takes them (qs-flood --help)
   x CMD...              run CMD in the session (notify-send, hyprctl, ...)
 
   log                   qs's whole log
@@ -1935,7 +1935,7 @@ case $cmd in
         qs-tray > "$T/tray.log" 2>&1 < /dev/null &
         echo $! > "$T/tray.pid"
         ;;
-      *) die "tray [log|add NAME [COUNT]|remove NAME|clear]" ;;
+      *) die "tray [log|add NAME [COUNT [ENTRIES]]|remove NAME|clear]" ;;
     esac
     ;;
   x) need_up; enter; exec "$@" ;;

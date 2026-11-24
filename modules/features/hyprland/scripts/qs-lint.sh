@@ -61,6 +61,6 @@ jq -r --arg work "$work/" '
   | "\($file):\(.line // 0):\(.column // 0): \(.message) [\(.id // .type)]"
 ' "$work/lint.json"
 
-# The design standards in AGENTS.md, as far as the source shows them.
+# The design standards in quickshell/STYLE.md, as far as the source shows them.
 qs-design-lint "$work/qs" || status=1
 exit "$status"

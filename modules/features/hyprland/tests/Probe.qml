@@ -380,7 +380,6 @@ Scope {
           height: s.height,
           monitor: Hyprland.monitors.values.find(m => m.name === s.name)?.id ?? null
         })),
-        focused: Hyprland.focusedMonitor?.name ?? null,
         monitors: Hyprland.monitors.values.map(m => ({
           id: m.id,
           name: m.name,

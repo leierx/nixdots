@@ -1,6 +1,6 @@
 Button {
   property bool small: false
-  // Inline with a line of text, costing it no height: a notification's close and expander, the calendar's arrows.
+  // Inline with a line of text, costing it no height: a notification's close and expander.
   property bool tiny: false
 
   implicitWidth: implicitHeight

@@ -71,7 +71,7 @@ Singleton {
     Detached.run(["wezterm", "start", "--", "bluetui"], "");
   }
 
-  // Material Symbols by the freedesktop icon BlueZ names the device with.
+  // Material Design Icons by the freedesktop icon BlueZ names the device with.
   function glyph(device: var): string {
     const icon = device.icon ?? "";
     if (/headset|headphone/.test(icon)) return Symbols.headphones;
