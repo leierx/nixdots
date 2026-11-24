@@ -98,6 +98,7 @@ Item {
     Behavior on color {
       ColorAnimation {
         duration: Theme.panelButtonTime
+        easing.type: Easing.OutQuad
       }
     }
 

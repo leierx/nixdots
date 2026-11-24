@@ -3,7 +3,7 @@ export QS_TEST_MONITORS="DP-1:1920x1080:1"
 # What the shell runs failing as it can: the shell stays up, says so where someone waits on it, and its panel still opens and closes.
 reopens() {
   qst ipc panels open "$1" > /dev/null
-  qst wait ".panel == \"$1\""
+  qst wait "(.panel | startswith(\"$1\"))"
   qst ipc panels close > /dev/null
   qst wait '.panel == ""'
 }

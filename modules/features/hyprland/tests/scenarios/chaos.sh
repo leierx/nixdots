@@ -35,15 +35,15 @@ qst flood 3000 --apps 3000
 qst flood 150 --apps 150 --app Slow --rate 25
 qst wait '.notifications >= 100'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
-qst stays '.panel == "center"' 1
+qst wait '.panel == "center:DP-1"'
+qst stays '.panel == "center:DP-1"' 1
 
 qst case "megabytes of text cost no more than a line"
 qst flood 2 --apps 2 --summary 2000000 --body 10000000
 qst wait '.notifications == 2 and all(.history[]; (.summary | length) < 600)'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
-qst stays '.panel == "center"' 1
+qst wait '.panel == "center:DP-1"'
+qst stays '.panel == "center:DP-1"' 1
 
 qst case "an icon that is no picture gives way to the app's initial"
 junk=$(mktemp -p "$QS_TEST_DIR")
@@ -438,7 +438,7 @@ QS_TEST_MONITORS="DP-1:3840x2160:2" QS_TEST_SCALE=1.2 qst case "on a 4K monitor 
 qst network wifi many 40
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
-for menu in wifi output input bluetooth vpn night; do
+for menu in wifi sound bluetooth vpn night; do
   qst ipc controls menu "$menu" > /dev/null
   qst stays ".controls.menu == \"$menu\" and .panel == \"controls:DP-1\"" 0.6
 done
@@ -447,7 +447,7 @@ qst case "a player skipping and pausing faster than the card draws keeps the len
 for n in 1 2 3 4 5; do qst player add "p$n" "Player $n" Paused; done
 qst player add spotify Spotify
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center" and .controls.media.identity == "Spotify"'
+qst wait '.panel == "center:DP-1" and .controls.media.identity == "Spotify"'
 call() { dbus-send --session --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 "org.mpris.MediaPlayer2.Player.$1" > /dev/null; }
 # Forty tracks on, a pause or play every second one: the last pause sent the third track's length, the last two skips dropped theirs.
 for i in $(seq 40); do
@@ -480,7 +480,7 @@ qst stays '.panel == "controls:DP-1"' 1
 
 qst case "criticals arriving among twelve apps under the open center always lead their groups"
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
+qst wait '.panel == "center:DP-1"'
 for round in 1 2 3; do
   sleep 1 # sleep: past 30 a second the flood guard turns them away
   for app in $(seq 12); do
@@ -541,7 +541,7 @@ qst stays '.panel == "apps"' 0.5
 
 qst case "Clear hammered while notifications keep arriving and the center closes and opens: every card ends in place or gone, and a last Clear takes all"
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
+qst wait '.panel == "center:DP-1"'
 for n in $(seq 6); do notify-send -a "App $n" "first $n"; done
 qst wait '.notifications == 6'
 for round in $(seq 8); do
@@ -551,11 +551,11 @@ for round in $(seq 8); do
   [ $((round % 3)) -eq 0 ] && { qst ipc panels close > /dev/null; qst ipc panels open center > /dev/null; }
 done
 wait
-qst wait '.panel == "center" and (.history | map(select(.summary | startswith("first"))) | length) == 0'
+qst wait '.panel == "center:DP-1" and (.history | map(select(.summary | startswith("first"))) | length) == 0'
 qst wait '(.center | length) == ([.history[].app] | unique | length)'
 qst stays '(.center | map(select(.slid != 0)) | length) == 0' 0.5
 qst click NotificationCenter:action:Clear
-qst wait '.notifications == 0 and (.center | length) == 0 and .panel == "center"'
+qst wait '.notifications == 0 and (.center | length) == 0 and .panel == "center:DP-1"'
 
 qst case "the pointer swept over every button in the centre faster than the delay shows only the last one's tooltip, and the centre or its monitor going takes it away"
 qst ipc panels open controls:DP-1 > /dev/null

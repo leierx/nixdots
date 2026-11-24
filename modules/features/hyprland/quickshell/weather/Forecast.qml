@@ -133,6 +133,7 @@ Rectangle {
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
             text: Qt.locale().toString(hour.modelData.time, "HH")
+            textFormat: Text.PlainText
             color: Theme.fgStrong
             font: Theme.caption
           }
@@ -147,6 +148,7 @@ Rectangle {
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
             text: Weather.degrees(hour.modelData.temperature)
+            textFormat: Text.PlainText
             color: Theme.fg
             font: Theme.body
           }

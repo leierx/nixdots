@@ -118,4 +118,4 @@ qst wait '.trayMenu == null and .panel == ""'
 qst click right "$x" "$y"
 qst wait '.trayMenu != null'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center" and .trayMenu == null'
+qst wait '.panel == "center:DP-1" and .trayMenu == null'

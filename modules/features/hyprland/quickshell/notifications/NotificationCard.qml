@@ -11,36 +11,17 @@ Item {
 
   required property NotifEntry entry
 
-  property bool expanded: false
-  // Shown whole until a collapse has eased the card down, so collapsing animates as expanding does.
-  property bool full: false
-  readonly property bool expandable: expanded || full || summary.truncated || body.truncated
-  readonly property int summaryLines: 2
-  readonly property int bodyLines: 4
-  // What the text loses on collapsing, worked out from its lines while it is still whole.
-  readonly property real excess: {
-    if (expanded || !full) return 0;
-    const cut = (text, lines) => text.lineCount > lines ? text.implicitHeight * (1 - lines / text.lineCount) : 0;
-    return cut(summary, summaryLines) + cut(body, bodyLines);
-  }
-
-  onExpandedChanged: {
-    fold.stop();
-    if (expanded) full = true;
-    else fold.start();
-  }
-
   implicitHeight: card.height
 
   HoverHandler {
     id: hover
   }
 
-  Timer {
-    id: fold
-
-    interval: 200
-    onTriggered: root.full = false
+  // The pointer resting on it holds its timeout, so it stays while read.
+  Binding {
+    target: root.entry
+    property: "hovered"
+    value: hover.hovered
   }
 
   SwipeArea {
@@ -49,14 +30,13 @@ Item {
     anchors.fill: parent
     target: card
     rightOnly: true
-    // A hand where the click expands or opens, as in the center; an arrow where it only puts the popup away.
-    restCursor: root.expandable || root.entry.defaultAction || root.entry.buttons.length === 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
+    // A hand where the click runs something; an arrow where it only puts the popup away.
+    restCursor: root.entry.defaultAction || root.entry.buttons.length === 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
     onSwiped: left => {
       if (!left) swipe.slideAway(false, root.entry.dismissal());
     }
     onTapped: {
-      if (root.expandable) root.expanded = !root.expanded;
-      else if (root.entry.defaultAction) root.entry.invoke(root.entry.defaultAction);
+      if (root.entry.defaultAction) root.entry.invoke(root.entry.defaultAction);
       else if (root.entry.buttons.length === 1) root.entry.invoke(root.entry.buttons[0]);
       else root.entry.popup = false;
     }
@@ -66,7 +46,7 @@ Item {
     id: card
 
     width: root.width
-    height: content.implicitHeight + 2 * Theme.padding - root.excess
+    height: content.implicitHeight + 2 * Theme.padding
     radius: Theme.messageRadius
     color: hover.hovered ? Theme.bannerHoverBg : Theme.bannerBg
     border.color: root.entry.critical ? Theme.destructive : Theme.popupBorder
@@ -75,6 +55,7 @@ Item {
     Behavior on color {
       ColorAnimation {
         duration: Theme.quickTime
+        easing.type: Easing.OutQuad
       }
     }
     opacity: 1 - x / width
@@ -116,7 +97,7 @@ Item {
         }
         spacing: Theme.basePadding
 
-        // Shell's banner header: the app, the age, then expand and close; no app icon (ours), as the body shows it already, whole or as the picture's badge.
+        // Shell's banner header: the app, the age, then close; no app icon (ours), as the body shows it already, whole or as the picture's badge.
         RowLayout {
           Layout.fillWidth: true
           spacing: Theme.basePadding
@@ -135,15 +116,9 @@ Item {
             entry: root.entry
           }
 
-          ExpanderArrow {
-            visible: root.expandable
-            pointing: root.expanded ? "up" : "down"
-            color: Theme.fgDim
-          }
-
           IconButton {
             objectName: "popup:close"
-            small: true
+            tiny: true
             flat: true
             glyph: Symbols.close
             tooltip: "Close"
@@ -164,44 +139,28 @@ Item {
           }
 
           ColumnLayout {
-            id: texts
-
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignTop
             Layout.topMargin: Math.max(0, (icon.height - implicitHeight) / 2)
             spacing: 2
 
-            RowLayout {
-              id: summaryRow
-
+            Text {
               Layout.fillWidth: true
-              visible: summary.text !== ""
-              spacing: 6
-
-              Text {
-                id: summary
-
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignTop
-                text: root.entry.summary
-                textFormat: Text.PlainText
-                color: Theme.fg
-                wrapMode: Text.Wrap
-                maximumLineCount: root.full ? 6 : root.summaryLines
-                elide: Text.ElideRight
-                font: Theme.heading
-              }
-
+              visible: text !== ""
+              text: root.entry.summary
+              textFormat: Text.PlainText
+              color: Theme.fg
+              wrapMode: Text.Wrap
+              maximumLineCount: 2
+              elide: Text.ElideRight
+              font: Theme.heading
             }
 
-            // Expanded, still short enough that a popup always fits on the screen.
             NotificationText {
-              id: body
-
               Layout.fillWidth: true
               visible: text !== ""
               text: root.entry.body
-              maximumLineCount: root.full ? 15 : root.bodyLines
+              maximumLineCount: 4
               onLinkOpened: root.entry.popup = false
             }
           }

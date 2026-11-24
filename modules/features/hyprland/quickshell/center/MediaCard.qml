@@ -195,7 +195,7 @@ Rectangle {
           radius: height / 2
           color: Theme.fg
           opacity: playArea.enabled ? 1 : 0.5
-          activeFocusOnTab: playArea.enabled
+          activeFocusOnTab: playArea.enabled || activeFocus
           Keys.onReturnPressed: Media.player?.togglePlaying()
           Keys.onSpacePressed: Media.player?.togglePlaying()
           Glyph {

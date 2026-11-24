@@ -17,7 +17,7 @@ qst ipc idle fade 1 0.4
 qst wait "$(shown 2)"
 read -r x y _ < <(qst areas 'BarWindow/QQuickMouseArea' | awk -F '\t' '$1 == 960')
 qst click left "$x" "$y"
-qst wait '.panel == "center"'
+qst wait '.panel == "center:DP-1"'
 
 qst case "cancel brings the screens back at once, and a dim can start again"
 qst ipc idle fade 10 0.4

@@ -58,6 +58,7 @@ Rectangle {
   Behavior on color {
     ColorAnimation {
       duration: Theme.quickTime
+      easing.type: Easing.OutQuad
     }
   }
 
@@ -81,6 +82,8 @@ Rectangle {
       anchors.verticalCenter: parent.verticalCenter
       width: Math.min(implicitWidth, root.width - 2 * root.padding - (root.glyph !== "" ? root.glyphSize + row.spacing : 0) - (arrow.visible ? arrow.width + row.spacing : 0))
       visible: text !== ""
+      // Often an app's own words (a notification's actions): never markup, which could load a URL or blow up the layout.
+      textFormat: Text.PlainText
       color: root.foreground
       elide: Text.ElideRight
       font: Theme.heading

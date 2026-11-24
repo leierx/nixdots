@@ -41,11 +41,11 @@ qst wait '.unchecked == 2 and .status[0].glyphs[0] == "bell"'
 qst ipc notifications hidePopups
 # The clock, in the middle of the bar.
 qst click left 960 17
-qst wait '.panel == "center" and .unchecked == 0 and .notifications == 2 and (.status[0].glyphs | index("bell") | not)'
+qst wait '.panel == "center:DP-1" and .unchecked == 0 and .notifications == 2 and (.status[0].glyphs | index("bell") | not)'
 
 qst case "one arriving while the center is open is checked, one after it closes is not"
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
+qst wait '.panel == "center:DP-1"'
 notify-send -a Chat "seen"
 qst wait '.notifications == 1'
 qst stays '.unchecked == 0' 1
@@ -102,10 +102,10 @@ read -r x y _ < <(qst areas 'NotificationPopups/SwipeArea' | head -1)
 qst click right "$x" "$y"
 qst stays '(.popups | length) == 1' 0.6
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
+qst wait '.panel == "center:DP-1"'
 read -r x y _ < <(qst areas 'NotificationCenter/SwipeArea' | head -1)
 qst click right "$x" "$y"
-qst stays '.notifications == 1 and .panel == "center"' 0.6
+qst stays '.notifications == 1 and .panel == "center:DP-1"' 0.6
 
 qst case "the center's close buttons show without the pointer: a lone card's, a group's, and each card's once it expands, each closing its own"
 notify-send -a Chat "alone"
@@ -113,7 +113,7 @@ notify-send -a Mail "one"
 notify-send -a Mail "two"
 qst wait '.notifications == 3'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
+qst wait '.panel == "center:DP-1"'
 qst pointer 1800 900
 closes() { qst areas 'NotificationCenter' | awk -F'\t' 'index($3, ":close") { print $1, $2 }' | sort -n -k2; }
 for _ in $(seq 20); do [ "$(closes | wc -l)" -eq 2 ] && break; sleep 0.1; done # sleep: the areas come from the window walk, outside the probe
@@ -131,10 +131,10 @@ qst case "Clear dismisses every group at once, those scrolled out of view too, w
 for n in $(seq 16); do notify-send -a "App $n" "message $n" "a body long enough to take a line of its own"; done
 qst wait '.notifications == 16'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center" and (.center | length) == 16'
+qst wait '.panel == "center:DP-1" and (.center | length) == 16'
 qst click NotificationCenter:action:Clear
 qst wait '.notifications == 0 and (.center | length) == 0' 2
-qst stays '.panel == "center" and .notifications == 0' 1
+qst stays '.panel == "center:DP-1" and .notifications == 0' 1
 ! qst areas 'NotificationCenter' | grep -q 'action:Undo' || { echo "Clear still offers Undo"; exit 1; }
 
 qst case "Clear while stack-tagged notifications replace themselves mid-slide: every card ends in place or gone"
@@ -142,7 +142,7 @@ tagged() { for n in 1 2 3 4; do notify-send -a "Level $n" -h "string:x-dunst-sta
 tagged first
 qst wait '.notifications == 4'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center" and (.center | length) == 4'
+qst wait '.panel == "center:DP-1" and (.center | length) == 4'
 for round in 1 2 3 4 5; do
   qst click NotificationCenter:action:Clear
   tagged "round $round"
@@ -172,7 +172,7 @@ qst case "Collapse All shuts a card's More along with its group, so it opens aga
 notify-send -a Mail -A one=One -A two=Two -A three=Three -A four=Four "pick one" > /dev/null &
 qst wait '.notifications == 1'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center" and (.center | length) == 1'
+qst wait '.panel == "center:DP-1" and (.center | length) == 1'
 read -r cx cy _ < <(qst areas 'NotificationCenter/SwipeArea' | head -1)
 qst click left "$cx" "$cy"
 qst wait '.center[0].expanded'
@@ -190,7 +190,7 @@ notify-send -a Mail "one"
 notify-send -a Mail "two"
 qst wait '.notifications == 3'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
+qst wait '.panel == "center:DP-1"'
 qst key Tab
 qst wait '.focused != null and .ring'
 for _ in $(seq 6); do
@@ -206,7 +206,7 @@ qst wait '.notifications == 1 and .history[0].app == "Chat"'
 
 qst case "Do Not Disturb is a switch in the center's footer, as GNOME's, and the bar strikes the bell while it is on"
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
+qst wait '.panel == "center:DP-1"'
 read -r x y _ < <(qst areas NotificationCenter | awk -F'\t' 'index($3, "switch:dnd") { print $1, $2; exit }')
 [ -n "$x" ] || { echo "no Do Not Disturb switch in the center"; exit 1; }
 qst click left "$x" "$y"
@@ -222,7 +222,7 @@ qst player add spotify Spotify Playing
 notify-send -a Chat "Lunch at noon" "Meet at the usual place"
 qst wait '.notifications == 1 and .controls.media.identity == "Spotify"'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
+qst wait '.panel == "center:DP-1"'
 read -r media _ < <(qst areas NotificationCenter | awk -F'\t' 'index($3, "media:play") { print $2; exit }')
 read -r first _ < <(qst areas NotificationCenter | awk -F'\t' '$3 ~ /SwipeArea|NotificationGroup/ { print $2; exit }')
 [ -n "$media" ] && [ -n "$first" ] && [ "$media" -lt "$first" ] || { echo "the player is not above the notifications ($media, $first)"; exit 1; }

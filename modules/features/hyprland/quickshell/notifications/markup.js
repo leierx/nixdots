@@ -4,12 +4,9 @@
 function markup(body) {
   const anchors = [];
   return body.split(/(<\/?[a-zA-Z][^>]*>)/).map(part => {
-    if (!part.startsWith("<")) {
-      return part.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-    const tag = /^<\s*(\/?)\s*([a-zA-Z]+)([^>]*)>$/.exec(part);
+    const tag = /^<\s*(\/?)\s*([a-zA-Z]+)(\s[^>]*|\/)?>$/.exec(part);
     if (!tag) {
-      return "";
+      return text(part);
     }
     const closing = tag[1] === "/";
     const name = tag[2].toLowerCase();
@@ -25,11 +22,20 @@ function markup(body) {
     if (closing) {
       return anchors.pop() ? "</a>" : "";
     }
-    const href = /href\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(tag[3]);
+    const href = /href\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(tag[3] ?? "");
     const url = href ? href[1] ?? href[2] : "";
     anchors.push(safeLink(url));
     return safeLink(url) ? `<a href="${url.replace(/"/g, "&quot;")}">` : "";
   }).join("");
+}
+
+// StyledText reads a bare & as an entity up to the next ; or space, and folds newlines into spaces.
+function text(part) {
+  return part
+    .replace(/&(?!(?:amp|lt|gt|quot|apos|nbsp|#[0-9]+|#[xX][0-9a-fA-F]+);)/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
 }
 
 // Others (file:, an app's own schemes) are not for a notification to open.

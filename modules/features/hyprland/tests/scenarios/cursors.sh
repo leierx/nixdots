@@ -31,7 +31,7 @@ qst cursors BarWindow
 qst cursors NotificationPopups
 for panel in apps:LauncherWindow clipboard:LauncherWindow monitors:LauncherWindow windows:LauncherWindow center:NotificationCenter shortcuts:ShortcutsWindow power:PowerMenu; do
   qst ipc panels open "${panel%%:*}" > /dev/null
-  qst wait ".panel == \"${panel%%:*}\""
+  qst wait "(.panel | startswith(\"${panel%%:*}\"))"
   qst cursors "${panel#*:}"
 done
 
@@ -91,5 +91,5 @@ qst cursors GalleryWindow
 qst case "a hand over everything clickable in the center with a player in"
 qst player add spotify Spotify
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center" and .controls.media != null'
+qst wait '.panel == "center:DP-1" and .controls.media != null'
 qst cursors NotificationCenter

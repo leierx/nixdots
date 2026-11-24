@@ -20,6 +20,8 @@ Item {
   property bool settled: true
 
   signal closed()
+  // Its first line's arrow, for the group.
+  signal toggled()
 
   readonly property bool boxed: expanded && !single
   readonly property bool truncated: line.truncated
@@ -70,11 +72,11 @@ Item {
     from: 0
     to: 1
     duration: root.settled ? Theme.popupTime : 0
-    easing.type: Easing.OutCubic
+    easing.type: Easing.OutQuad
   }
 
   implicitHeight: box.height
-  activeFocusOnTab: boxed
+  activeFocusOnTab: boxed || activeFocus
   Keys.onReturnPressed: swipe.tapped()
   Keys.onSpacePressed: swipe.tapped()
   Keys.onDeletePressed: swipe.slideAway(false, root.entry.dismissal())
@@ -82,7 +84,7 @@ Item {
   Timer {
     id: fold
 
-    interval: 200
+    interval: Theme.popupTime
     onTriggered: root.whole = false
   }
 
@@ -97,11 +99,11 @@ Item {
     restCursor: !root.boxed ? undefined : root.openable || root.entry.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     onSwiped: left => swipe.slideAway(left, root.entry.dismissal())
     onTapped: {
-      if (root.openable) {
-        root.open = !root.open;
-      } else if (root.entry.defaultAction) {
-        root.entry.defaultAction.invoke();
+      if (root.entry.defaultAction) {
+        root.entry.invoke(root.entry.defaultAction);
         Panels.close();
+      } else if (root.openable) {
+        root.open = !root.open;
       } else {
         swipe.slideAway(false, root.entry.dismissal());
       }
@@ -125,6 +127,7 @@ Item {
     Behavior on color {
       ColorAnimation {
         duration: Theme.quickTime
+        easing.type: Easing.OutQuad
       }
     }
 
@@ -174,7 +177,7 @@ Item {
           id: line
 
           Layout.fillWidth: true
-          text: root.entry.body.replace(/\n/g, " ")
+          text: root.entry.body.replace(/<br>/g, " ")
           // Eliding StyledText takes a line limit.
           maximumLineCount: root.single ? root.lines : 1
           onLinkOpened: Panels.close()
@@ -186,6 +189,7 @@ Item {
           closable: root.closable
           expandable: root.expander
           onClosed: root.closed()
+          onToggled: root.toggled()
         }
       }
 
@@ -240,6 +244,7 @@ Item {
               expandable: root.openable
               pointing: root.open ? "up" : "down"
               onClosed: swipe.slideAway(false, root.entry.dismissal())
+              onToggled: root.open = !root.open
             }
           }
 

@@ -21,6 +21,8 @@ QtObject {
   // Below the screen's edge until there is room for it; this, or no monitor on to show it, holds the timeout.
   property bool waiting: false
   readonly property bool unseen: waiting || !Screens.has(screen)
+  // Under the pointer, being read, as GNOME holds a banner.
+  property bool hovered: false
 
   readonly property bool critical: notification.urgency === NotificationUrgency.Critical
   readonly property string appIcon: Notifs.appIcon(notification)
@@ -58,8 +60,10 @@ QtObject {
     if (countdown.running) countdown.restart();
   }
 
+  // Closed in the same tick as an update, it is not put back; past the flood limit an update only changes its card.
   function reshow(): void {
-    Notifs.present(root, Notifs.wantsPopup(critical));
+    if (root.lock.retained || !Notifs.entries.includes(root)) return;
+    if (Notifs.admit(root.notification, true)) Notifs.present(root, Notifs.wantsPopup(critical));
   }
 
   // A resident notification stays open once invoked, so its popup goes by hand, as GNOME's does.
@@ -84,7 +88,7 @@ QtObject {
   onPopupChanged: {
     if (popup) return;
     // Transient notifications stay out of the history.
-    if (notification.transient) notification.expire();
+    if (notification.transient && !lock.retained) notification.expire();
     else Notifs.trimHistory();
   }
 
@@ -94,7 +98,7 @@ QtObject {
     locked: true
   }
 
-  // The share of the timeout left, which the popup's bar shows; paused while unseen, so it carries on after.
+  // The share of the timeout left, which the popup's bar shows; paused while unseen or under the pointer, so it carries on after.
   property real remaining: 1
   property NumberAnimation countdown: NumberAnimation {
     target: root
@@ -103,7 +107,7 @@ QtObject {
     to: 0
     duration: root.timeout
     running: root.popup && root.timeout > 0 && !root.lock.retained
-    paused: running && root.unseen
+    paused: running && (root.unseen || root.hovered)
     onFinished: root.popup = false
   }
 

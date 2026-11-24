@@ -23,19 +23,27 @@ Rectangle {
   implicitHeight: Theme.menuRowHeight
   radius: Theme.menuItemRadius
   opacity: enabled ? 1 : 0.5
-  activeFocusOnTab: acts
+  // Kept while it has the keyboard: Qt refuses to take it back from the focused item, and warns.
+  activeFocusOnTab: acts || activeFocus
   Keys.onReturnPressed: root.clicked()
   Keys.onSpacePressed: root.clicked()
-  color: {
-    if (!acts || !enabled) return "transparent";
-    if (pressed) return Theme.menuActiveBg;
-    if (selected) return Theme.selectedBg;
-    return hovered ? Theme.menuHoverBg : "transparent";
-  }
+  // The keyboard's row snaps, as keyboard selection never animates; hover and a press ease over it.
+  color: acts && enabled && selected ? Theme.selectedBg : "transparent"
 
-  Behavior on color {
-    ColorAnimation {
-      duration: Theme.quickTime
+  Rectangle {
+    anchors.fill: parent
+    radius: root.radius
+    color: {
+      if (!root.acts || !root.enabled) return "transparent";
+      if (root.pressed) return Theme.menuActiveBg;
+      return root.hovered && !root.selected ? Theme.menuHoverBg : "transparent";
+    }
+
+    Behavior on color {
+      ColorAnimation {
+        duration: Theme.quickTime
+        easing.type: Easing.OutQuad
+      }
     }
   }
 

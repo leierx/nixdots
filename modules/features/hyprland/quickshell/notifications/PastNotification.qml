@@ -11,7 +11,7 @@ QtObject {
   property string image: ""
   property int urgency: 1
   readonly property var actions: []
-  readonly property var hints: ({})
+  property var hints: ({})
   readonly property int expireTimeout: -1
 
   signal closed()

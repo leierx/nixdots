@@ -4,8 +4,9 @@ def real: [.screens[].name | select(. != "FALLBACK")];
 def wanted:
   if .panel == "" then null
   elif (.panel | startswith("controls:")) then "controls"
+  elif (.panel | startswith("center:")) then "center"
   elif (.panel | startswith("tray-menu:")) then "menu"
-  else { apps: "launcher", clipboard: "launcher", monitors: "launcher", windows: "launcher", nixpkgs: "launcher", center: "center", shortcuts: "shortcuts", power: "power", gallery: "gallery" }[.panel]
+  else { apps: "launcher", clipboard: "launcher", monitors: "launcher", windows: "launcher", nixpkgs: "launcher", shortcuts: "shortcuts", power: "power", gallery: "gallery" }[.panel]
   end;
 
 . as $s

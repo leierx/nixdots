@@ -36,6 +36,7 @@ usage: qs-test COMMAND
   jobs [FILE[:REGEX]...]  the jobs a run would take, in its order
   timings               the last run's slowest cases and where the time went
   key COMBO...          press keys in turn (ctrl+n, super+d, shift+Tab, Escape)
+  hold COMBO MS         hold a key down for MS, so the client repeats it
   type TEXT             type TEXT into the focused surface
   pointer X Y           put the pointer at X Y in layout coordinates (hover)
   move DX DY            move the pointer by DX DY
@@ -595,7 +596,7 @@ network_start() {
 }
 
 # Fresh fakes for a case: NetworkManager as network_default, a battery at 76 % so the bar shows all it can,
-# and BlueZ with an adapter and nothing paired; QS_TEST_NETWORK or QS_TEST_BLUETOOTH set to none leaves that one out.
+# BlueZ with an adapter and nothing paired, and logind offering a firmware restart; QS_TEST_NETWORK or QS_TEST_BLUETOOTH set to none leaves that one out.
 services_reset() {
   local fakes=() fake
   {
@@ -607,6 +608,8 @@ services_reset() {
     mock_start power org.freedesktop.UPower "$tests/upower.py"
     battery 76 discharging 9600
   } &
+  fakes+=($!)
+  owned org.freedesktop.login1 || mock_start logind org.freedesktop.login1 "$tests/logind.py" &
   fakes+=($!)
   {
     mock_stop bluetooth
@@ -1329,6 +1332,7 @@ changed_scenarios() {
       modules/features/hyprland/tests/networkmanager.py | modules/features/hyprland/tests/upower.py) picked+=(controls chaos) ;;
       modules/features/hyprland/tests/bluez.py | modules/features/hyprland/tests/mpris.py) picked+=(controls chaos cursors design) ;;
       modules/features/hyprland/tests/tray.qml | modules/features/hyprland/tests/trays.qml) picked+=(tray cursors design hotplug chaos) ;;
+      modules/features/hyprland/tests/logind.py) picked+=(interactions) ;;
       modules/features/hyprland/scripts/camera-users.c) picked+=(privacy design) ;;
       modules/features/hyprland/scripts/backlight-watch.sh) picked+=(osd controls design) ;;
       modules/features/hyprland/quickshell/common/*.qml)
@@ -1827,6 +1831,7 @@ case $cmd in
   timings) report "$T/timings.tsv" ;;
   jobs) [ $# -gt 0 ] || set -- "$tests"/scenarios/*.sh; select_jobs "$@" | order_jobs all | awk -F"\t" '{ sub(/.*\//, "", $1); printf "%s:%d-%d (prelude 1-%d)%s  %s\n", $1, $3, $4, $2, $5 ? ", alone" : "", $6 }' ;;
   key) need_up; input key "$@" ;;
+  hold) need_up; input hold "$1" "$2" ;;
   type) need_up; input type "$*" ;;
   pointer) need_up; pointer "$1" "$2" ;;
   move) need_up; input move "$1" "$2" ;;

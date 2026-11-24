@@ -1,13 +1,12 @@
 import QtQuick
-import Quickshell
 import qs.common
 
 BarButton {
-  required property ShellScreen screen
+  required property string screenName
 
-  checked: Panels.active === "center"
-  text: Qt.locale().toString(Time.now, "ddd dd MMMM ‧ HH:mm")
+  checked: Panels.active === `center:${screenName}`
+  text: Qt.locale().toString(Time.now, "ddd d MMMM ‧ HH:mm")
   tooltip: "Notifications and Calendar"
   font: Theme.numericSemiBold
-  onClicked: Panels.toggle("center", screen?.name ?? "")
+  onClicked: Panels.toggle(`center:${screenName}`)
 }

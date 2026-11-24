@@ -99,6 +99,7 @@ Overlay {
                 Text {
                   Layout.bottomMargin: 6
                   text: group.modelData.title
+                  textFormat: Text.PlainText
                   color: Theme.fgDim
                   font: Theme.heading
                 }
@@ -118,6 +119,7 @@ Overlay {
                     Text {
                       Layout.fillWidth: true
                       text: row.modelData.title
+                      textFormat: Text.PlainText
                       color: Theme.fg
                       font: Theme.body
                       elide: Text.ElideRight

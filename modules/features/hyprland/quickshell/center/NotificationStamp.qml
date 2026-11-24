@@ -3,7 +3,7 @@ import qs.common
 import qs.nix
 import qs.notifications
 
-// The age, the expander and the close button, in gs MessageHeader's order; the close there without the pointer as the HIG asks of actions.
+// gs MessageHeader's order: the age, expand, close; close without the pointer as the HIG asks of actions.
 Item {
   id: root
 
@@ -13,6 +13,7 @@ Item {
   property string pointing: "down"
 
   signal closed()
+  signal toggled()
 
   // Room for all three on every line, so the ages line up.
   implicitWidth: age.implicitWidth + arrow.width + close.width
@@ -26,6 +27,7 @@ Item {
     entry: root.entry
   }
 
+  // Both overhang the line, so they cost it no height.
   Item {
     id: arrow
 
@@ -33,24 +35,27 @@ Item {
     width: 24
     height: parent.height
 
-    ExpanderArrow {
+    IconButton {
+      objectName: "expand"
       anchors.centerIn: parent
       visible: root.expandable
+      tiny: true
+      flat: true
+      expander: true
       pointing: root.pointing
+      tooltip: root.pointing === "up" ? "Collapse" : "Expand"
+      onClicked: root.toggled()
     }
   }
 
-  // Overhanging the line, so it costs the line no height.
   IconButton {
     id: close
 
     objectName: "close"
-    implicitWidth: 24
-    implicitHeight: 24
+    tiny: true
     flat: true
     glyph: Symbols.close
-    glyphSize: 16
-    tooltip: "Dismiss"
+    tooltip: "Close"
     anchors {
       right: parent.right
       rightMargin: -4

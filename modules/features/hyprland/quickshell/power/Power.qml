@@ -9,7 +9,6 @@ import qs.common
 Scope {
   id: root
 
-  readonly property bool open: Panels.active === "power"
   property bool firmware: false
 
   GlobalShortcut {
@@ -18,18 +17,42 @@ Scope {
     onPressed: Panels.toggle("power")
   }
 
-  // Firmware setup is a UEFI variable; a BIOS machine has no such restart.
+  // logind knows whether the firmware takes a reboot into its setup; a UEFI directory alone does not.
   Process {
     running: true
-    command: ["test", "-d", "/sys/firmware/efi"]
-    onExited: code => root.firmware = code === 0
+    command: ["busctl", "call", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", "CanRebootToFirmwareSetup"]
+    stdout: StdioCollector {
+      onStreamFinished: root.firmware = /"(yes|challenge)"/.test(text)
+    }
   }
 
+  // Out here, as the menu goes with its panel while the command still runs.
+  Component {
+    id: action
+
+    Command {
+      running: true
+      onDone: destroy()
+      onFailed: destroy()
+    }
+  }
+
+  // Unloaded once it has faded out.
   LazyLoader {
-    active: root.open
+    id: loader
 
     PowerMenu {
       firmware: root.firmware
+      onChosen: command => action.createObject(root, { command })
+      onHidden: loader.active = false
+    }
+  }
+
+  Connections {
+    target: Panels
+
+    function onActiveChanged() {
+      if (Panels.active === "power") loader.active = true;
     }
   }
 }

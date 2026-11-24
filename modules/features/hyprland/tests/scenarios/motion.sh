@@ -7,16 +7,16 @@ notify-send -a Chat "first" "$(printf 'A body long enough to be cut short on its
 notify-send -a Chat "second" "another"
 qst wait '.notifications == 2'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
-qst stays '.panel == "center"' 0.5
+qst wait '.panel == "center:DP-1"'
+qst stays '.panel == "center:DP-1"' 0.5
 read -r x y _ < <(qst areas 'NotificationCenter/SwipeArea' | head -1)
 qst motion start
 qst click left "$x" "$y"
-qst stays '.panel == "center"' 0.6
+qst stays '.panel == "center:DP-1"' 0.6
 qst motion stop > /dev/null
 qst motion start
 qst click left "$x" "$y"
-qst stays '.panel == "center"' 0.6
+qst stays '.panel == "center:DP-1"' 0.6
 qst motion stop > /dev/null
 
 qst case "the OSD fades out over Shell's 100 ms, not in a moment"

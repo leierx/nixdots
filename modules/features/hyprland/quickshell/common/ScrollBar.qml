@@ -18,6 +18,7 @@ QQC.ScrollIndicator {
     Behavior on opacity {
       NumberAnimation {
         duration: Theme.settle
+        easing.type: Easing.OutCubic
       }
     }
   }

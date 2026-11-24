@@ -16,7 +16,7 @@ Rectangle {
   implicitHeight: 26
   radius: height / 2
   opacity: enabled ? 1 : 0.5
-  activeFocusOnTab: focusable && enabled
+  activeFocusOnTab: focusable && enabled || activeFocus
   Keys.onReturnPressed: toggle.clicked()
   Keys.onSpacePressed: toggle.clicked()
   color: {
@@ -27,6 +27,7 @@ Rectangle {
   Behavior on color {
     ColorAnimation {
       duration: Theme.quickTime
+      easing.type: Easing.OutQuad
     }
   }
 

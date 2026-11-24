@@ -16,7 +16,7 @@ Rectangle {
   implicitHeight: Theme.toggleHeight
   height: Theme.toggleHeight
   radius: height / 2
-  activeFocusOnTab: !toggle.unavailable
+  activeFocusOnTab: !toggle.unavailable || activeFocus
   Keys.onSpacePressed: Controls.flip(pill.toggle)
   Keys.onReturnPressed: pill.toggle.menu ? Controls.show(pill.toggle.key) : Controls.flip(pill.toggle)
   opacity: toggle.unavailable ? 0.5 : 1
@@ -41,6 +41,7 @@ Rectangle {
       Behavior on color {
         ColorAnimation {
           duration: Theme.quickTime
+          easing.type: Easing.OutQuad
         }
       }
     }
@@ -54,6 +55,7 @@ Rectangle {
       Behavior on color {
         ColorAnimation {
           duration: Theme.quickTime
+          easing.type: Easing.OutQuad
         }
       }
     }

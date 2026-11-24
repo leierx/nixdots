@@ -46,9 +46,18 @@ Singleton {
     root.failures = next;
   }
 
+  // What a click on its row does: nothing while it connects or disconnects, which Quickshell cannot cancel.
+  function busy(device: var): bool {
+    return device.state === BluetoothDeviceState.Connecting || device.state === BluetoothDeviceState.Disconnecting;
+  }
+
   function choose(device: var): void {
+    if (root.busy(device)) return;
     root.setFailure(device.address, "");
-    if (device.connected || device.state === BluetoothDeviceState.Connecting) {
+    if (device.pairing) {
+      root.pairing = root.pairing.filter(address => address !== device.address);
+      device.cancelPair();
+    } else if (device.connected) {
       device.disconnect();
     } else if (device.paired) {
       device.connect();
@@ -105,7 +114,8 @@ Singleton {
         root.pairing = root.pairing.filter(address => address !== modelData.address);
         // So it comes back by itself next time, as any pairing dialog does.
         modelData.trusted = true;
-        modelData.connect();
+        // A classic device brings its link up while it pairs.
+        if (!modelData.connected && modelData.state !== BluetoothDeviceState.Connecting) modelData.connect();
       }
 
       function onPairingChanged(): void {
@@ -118,6 +128,7 @@ Singleton {
       function onStateChanged(): void {
         const address = modelData.address;
         const was = root.connecting.includes(address);
+        if (modelData.state === BluetoothDeviceState.Connected) root.setFailure(address, "");
         if (modelData.state === BluetoothDeviceState.Connecting) {
           if (!was) root.connecting = [...root.connecting, address];
         } else if (was && (modelData.state === BluetoothDeviceState.Connected || modelData.state === BluetoothDeviceState.Disconnected)) {

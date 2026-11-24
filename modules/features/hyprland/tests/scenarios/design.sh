@@ -20,8 +20,8 @@ for monitor in DP-1 DP-2; do
   qst stays '(.popups | length) > 0' 1
   for panel in apps clipboard monitors windows nixpkgs center shortcuts power; do
     qst ipc panels open "$panel" > /dev/null
-    qst wait ".panel == \"$panel\""
-    qst stays ".panel == \"$panel\"" 0.6
+    qst wait "(.panel | startswith(\"$panel\"))"
+    qst stays "(.panel | startswith(\"$panel\"))" 0.6
   done
   qst ipc panels close > /dev/null
   qst wait '.panel == ""'
@@ -33,7 +33,7 @@ qst player add spotify Spotify Playing "$QS_TEST_DIR/shell/weather/icons/clearsk
 qst backlight intel_backlight 600 1000
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1" and .controls.media != null'
-for menu in output input wifi vpn bluetooth night; do
+for menu in sound wifi vpn bluetooth night; do
   qst ipc controls menu "$menu" > /dev/null
   qst stays ".controls.menu == \"$menu\" and .panel == \"controls:DP-1\"" 0.6
 done
@@ -76,5 +76,5 @@ qst player add spotify Spotify Playing "$QS_TEST_DIR/shell/weather/icons/clearsk
 notify-send -a Chat "Lunch at noon" "Meet at the usual place"
 qst wait '.notifications == 1'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center" and .controls.media != null'
-qst stays '.panel == "center"' 0.6
+qst wait '.panel == "center:DP-1" and .controls.media != null'
+qst stays '.panel == "center:DP-1"' 0.6

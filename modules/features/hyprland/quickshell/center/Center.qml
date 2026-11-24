@@ -6,31 +6,43 @@ import qs.common
 import qs.weather
 
 Scope {
-  id: root
-
-  // The bar whose clock opened it, taken as it opens; the closing one keeps it as another screen is asked for.
-  property string screenName: ""
-
   // The forecast is fetched from the start, so the first open has it.
   Component.onCompleted: Weather.now
 
-  // Created as it opens, so every group starts collapsed, and unloaded once it has animated closed.
-  LazyLoader {
-    id: loader
+  // One per screen, so a clock opens its own and another screen's never moves a window that is still fading out.
+  Variants {
+    model: Screens.real
 
-    NotificationCenter {
-      screen: Screens.real.find(screen => screen.name === root.screenName) ?? null
-      onHidden: loader.active = false
-    }
-  }
+    Scope {
+      id: one
 
-  Connections {
-    target: Panels
+      required property ShellScreen modelData
+      // Taken once: the screen object dangles while its monitor goes.
+      property string panel: ""
 
-    function onActiveChanged() {
-      if (Panels.active !== "center") return;
-      root.screenName = Panels.screen;
-      loader.active = true;
+      Component.onCompleted: {
+        panel = `center:${modelData.name}`;
+        loader.active = Panels.active === panel;
+      }
+
+      // Created as it opens, so every group starts collapsed, and unloaded once it has animated closed.
+      LazyLoader {
+        id: loader
+
+        NotificationCenter {
+          screen: one.modelData
+          name: one.panel
+          onHidden: loader.active = false
+        }
+      }
+
+      Connections {
+        target: Panels
+
+        function onActiveChanged() {
+          if (Panels.active === one.panel) loader.active = true;
+        }
+      }
     }
   }
 }

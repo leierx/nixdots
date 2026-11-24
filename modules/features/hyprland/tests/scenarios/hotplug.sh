@@ -2,6 +2,7 @@ export QS_TEST_MONITORS="DP-1:1920x1080:1 DP-2:2560x1440:1.25"
 
 layer() { echo "(.layers | index(\"$1\")) != null"; }
 no_layer() { echo "(.layers | map(select(endswith(\" $1\"))) | length) == 0"; }
+no_layer_on() { echo "(.layers | index(\"$1 $2\")) == null"; }
 no_problems() {
   local found
   found=$(qst problems)
@@ -14,11 +15,11 @@ for panel in apps:launcher clipboard:launcher monitors:launcher windows:launcher
   qst case "$name closes with its monitor and opens again with one press"
   qst focus DP-2
   qst ipc panels toggle "$name"
-  qst wait "$(layer "DP-2 $namespace") and .panel == \"$name\""
+  qst wait "$(layer "DP-2 $namespace") and (.panel | startswith(\"$name\"))"
   qst monitor remove DP-2
   qst wait "$(no_layer "$namespace") and .panel == \"\""
   qst ipc panels toggle "$name"
-  qst wait "$(layer "DP-1 $namespace") and .panel == \"$name\""
+  qst wait "$(layer "DP-1 $namespace") and (.panel | startswith(\"$name\"))"
   no_problems
 done
 
@@ -27,10 +28,23 @@ qst x hyprctl keyword input:follow_mouse 0 > /dev/null
 qst focus DP-1
 # DP-2's clock is centred on its bar: DP-1 is 1920 wide, DP-2 starts at 1920 and is 2048 wide at 1.25.
 qst click left 2944 16
-qst wait "$(layer "DP-2 quickshell:center") and .panel == \"center\"" 10
+qst wait "$(layer "DP-2 quickshell:center") and .panel == \"center:DP-2\"" 10
 qst focus DP-1
-qst stays "$(layer "DP-2 quickshell:center") and .panel == \"center\"" 0.5
+qst stays "$(layer "DP-2 quickshell:center") and .panel == \"center:DP-2\"" 0.5
 qst ipc panels close > /dev/null
+qst x hyprctl keyword input:follow_mouse 1 > /dev/null
+
+qst case "another screen's clock moves the center there, each clock pressed only for its own, and one reopened as it fades stays open"
+qst x hyprctl keyword input:follow_mouse 0 > /dev/null
+qst focus DP-1
+qst click left 960 16
+qst wait "$(layer "DP-1 quickshell:center") and .panel == \"center:DP-1\""
+qst stays '.clocks == ["DP-1"]' 0.3
+qst click left 2944 16
+qst wait "$(layer "DP-2 quickshell:center") and .panel == \"center:DP-2\" and $(no_layer_on DP-1 quickshell:center) and .clocks == [\"DP-2\"]"
+qst click left 2944 16
+qst click left 2944 16
+qst stays "$(layer "DP-2 quickshell:center") and .panel == \"center:DP-2\"" 0.5
 qst x hyprctl keyword input:follow_mouse 1 > /dev/null
 
 qst case "the launcher's shortcut opens it again after its monitor went"
@@ -152,5 +166,5 @@ qst ipc panels open center
 qst wait "$(layer "DP-1 quickshell:center")"
 qst output 1280x720 1
 qst wait '.screens[0].width <= 1280'
-qst stays "$(layer "DP-1 quickshell:center") and .panel == \"center\""
+qst stays "$(layer "DP-1 quickshell:center") and .panel == \"center:DP-1\""
 no_problems

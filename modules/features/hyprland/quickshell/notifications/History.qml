@@ -30,7 +30,8 @@ Singleton {
     if (text === root.written) return;
     root.written = text;
     file.setText(text);
-    prune.command = ["sh", "-c", 'mkdir -p "$1" && cd "$1" && shift && for file in *.png; do [ -e "$file" ] || continue; case " $* " in *" ${file%%-*} "*) ;; *) rm -f "$file" ;; esac; done', "sh", root.images, ...kept.map(record => record.uid)];
+    // A picture saved since this list was made may be one it has not seen yet.
+    prune.command = ["sh", "-c", 'mkdir -p "$1" && cd "$1" && since=$2 && shift 2 && find . -maxdepth 1 -name "*.png" ! -newermt "@$since" | while read -r file; do file=${file#./}; case " $* " in *" ${file%%-*} "*) ;; *) rm -f "$file" ;; esac; done', "sh", root.images, String(Date.now() / 1000), ...kept.map(record => record.uid)];
     if (prune.running) prune.again = true;
     else prune.running = true;
   }

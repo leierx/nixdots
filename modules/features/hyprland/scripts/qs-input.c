@@ -138,7 +138,8 @@ static bool modifier_mask(const char *name, xkb_mod_mask_t *mask) {
   return fail("unknown modifier %s", name);
 }
 
-static bool press_with(xkb_keycode_t code, xkb_mod_mask_t mods) {
+// Held for MS before letting go, so the client repeats it as a held key does.
+static bool press_with(xkb_keycode_t code, xkb_mod_mask_t mods, long ms) {
   xkb_keycode_t held[MAX_MODS];
   int count = 0;
   for (xkb_mod_index_t mod = 0; mod < MAX_MODS; mod++) {
@@ -151,13 +152,15 @@ static bool press_with(xkb_keycode_t code, xkb_mod_mask_t mods) {
   for (int i = 0; i < count; i++)
     send_key(held[i], true);
   send_key(code, true);
+  if (ms > 0)
+    pause_ms(ms);
   send_key(code, false);
   for (int i = count - 1; i >= 0; i--)
     send_key(held[i], false);
   return true;
 }
 
-static bool key(char *combo) {
+static bool key(char *combo, long ms) {
   xkb_mod_mask_t mods = 0, level_mods = 0;
   char *name = combo, *plus;
   while ((plus = strchr(name, '+')) && plus[1]) {
@@ -174,7 +177,7 @@ static bool key(char *combo) {
     return fail("unknown key %s", name);
   if (!find_key(sym, &code, &level_mods))
     return fail("no key types %s in the keymap", name);
-  return press_with(code, mods | level_mods);
+  return press_with(code, mods | level_mods, ms);
 }
 
 static bool type(const char *text) {
@@ -192,7 +195,7 @@ static bool type(const char *text) {
     memcpy(ch, p, n < sizeof ch ? n : sizeof ch - 1);
     if (!find_key(sym, &code, &mods))
       return fail("no key types %s in the keymap", ch);
-    if (!press_with(code, mods))
+    if (!press_with(code, mods, 0))
       return false;
   }
   return true;
@@ -291,10 +294,12 @@ static bool run(int argc, char **argv) {
     return number(argv[1], &x) && (spin((int)x), true);
   if (!strcmp(cmd, "key") && argc >= 2) {
     for (int i = 1; i < argc; i++)
-      if (!key(argv[i]))
+      if (!key(argv[i], 0))
         return false;
     return true;
   }
+  if (!strcmp(cmd, "hold") && argc == 3)
+    return number(argv[2], &ms) && key(argv[1], (long)ms);
   if (!strcmp(cmd, "type") && argc == 2)
     return type(argv[1]);
   return fail("unknown command: %s", cmd);

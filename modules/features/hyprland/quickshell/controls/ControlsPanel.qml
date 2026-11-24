@@ -77,7 +77,8 @@ Popover {
         x: box.width - width - 3
         y: Theme.quickSettingsPadding
         height: scroller.height
-        held: true
+        // Once it has opened: the column measures itself a frame in, and meanwhile looked taller than the card, flashing the bar.
+        held: root.shown === 1
       }
       anchors.fill: parent
       anchors.margins: Theme.quickSettingsPadding

@@ -57,6 +57,7 @@ Column {
         Behavior on color {
           ColorAnimation {
             duration: Theme.quickTime
+            easing.type: Easing.OutQuad
           }
         }
 
@@ -80,6 +81,7 @@ Column {
           Text {
             width: parent.width
             text: use.modelData.name === "Screen" ? "Screen Sharing" : use.modelData.name
+            textFormat: Text.PlainText
             elide: Text.ElideRight
             color: Theme.fg
             font: Theme.heading

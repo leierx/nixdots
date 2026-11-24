@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls.Basic as QQC
 import QtQuick.Layouts
 import QtQuick.Shapes
 import Quickshell
@@ -141,6 +142,10 @@ PanelWindow {
       if (depth > 0) root.apply(depth - 1, "");
       return true;
     case Qt.Key_Escape:
+      // A submenu first, as every menu goes back.
+      if (depth > 0) root.apply(depth - 1, "");
+      else root.dismissed();
+      return true;
     case Qt.Key_Menu:
       root.dismissed();
       return true;
@@ -183,8 +188,9 @@ PanelWindow {
 
   WlrLayershell.layer: WlrLayer.Overlay
   WlrLayershell.namespace: "quickshell:menu"
-  // The keyboard while it is up: the arrows, Return and Escape walk it.
-  WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+  // The keyboard while it is up: the arrows, Return and Escape walk it. Exclusive only until it has it, as an Overlay, so a window clicked elsewhere gets it.
+  property bool focused: false
+  WlrLayershell.keyboardFocus: focused ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive
 
   // Hyprland closes it with its monitor.
   onClosed: if (Panels.active === root.name) Panels.close()
@@ -211,6 +217,10 @@ PanelWindow {
   Item {
     anchors.fill: parent
     focus: true
+    Window.onActiveChanged: {
+      if (Window.active) root.focused = true;
+      else if (root.focused) root.dismissed();
+    }
     Keys.onPressed: event => {
       event.accepted = root.key(event);
       if (event.accepted) root.keyed = true;
@@ -261,7 +271,15 @@ PanelWindow {
 
         function rowY(entry: var): real {
           const row = card.built > 0 ? rowsRepeater.itemAt(entries.indexOf(entry)) : null;
-          return rows.y + (row?.y ?? 0);
+          return root.padding + (row?.y ?? 0) - scroller.contentY;
+        }
+
+        // The keyboard's row kept in view, in a card cut to the screen.
+        function reveal(index: int): void {
+          const row = rowsRepeater.itemAt(index);
+          if (!row) return;
+          if (row.y < scroller.contentY) scroller.contentY = row.y;
+          else if (row.y + row.height > scroller.contentY + scroller.height) scroller.contentY = row.y + row.height - scroller.height;
         }
 
         x: {
@@ -270,9 +288,9 @@ PanelWindow {
           return Math.max(Theme.rise, Math.min(beside, root.width - width - Theme.rise));
         }
         y: Math.max(Theme.rise, Math.min((parentCard ? parentCard.y + openerY - root.padding : root.anchor.y), root.height - height - Theme.rise))
-        // Shell's .popup-menu: at least 15 em.
-        width: Math.max(Math.round(15 * Theme.em), rows.implicitWidth) + root.padding * 2
-        height: rows.implicitHeight + root.padding * 2
+        // Shell's .popup-menu: at least 15 em; at most what the screen leaves, the rest eliding and scrolling.
+        width: Math.min(Math.max(Math.round(15 * Theme.em), rows.implicitWidth) + root.padding * 2, Math.round(34 * Theme.em), root.width - 2 * Theme.rise)
+        height: Math.min(rows.implicitHeight + root.padding * 2, root.height - 2 * Theme.rise)
         radius: Theme.popoverRadius
 
         Component.onCompleted: {
@@ -289,134 +307,180 @@ PanelWindow {
           }
         }
 
+        Connections {
+          target: root
+
+          function onRowChanged(): void {
+            if (card.index === root.path.length && root.row >= 0) card.reveal(root.row);
+          }
+        }
+
         QsMenuOpener {
           id: opener
 
           menu: card.handle
         }
 
-        ColumnLayout {
-          id: rows
+        Flickable {
+          id: scroller
 
+          QQC.ScrollIndicator.vertical: ScrollBar {}
           anchors {
             fill: parent
             margins: root.padding
           }
-          spacing: 0
+          contentHeight: rows.implicitHeight
+          interactive: contentHeight > height
+          boundsBehavior: Flickable.StopAtBounds
+          clip: true
 
-          Repeater {
-            id: rowsRepeater
+          ColumnLayout {
+            id: rows
 
-            onItemAdded: card.built++
-            model: ScriptModel {
-              values: card.entries
-            }
+            width: scroller.width
+            spacing: 0
 
-            Item {
-              id: entry
+            Repeater {
+              id: rowsRepeater
 
-              required property QsMenuEntry modelData
-              required property int index
-              readonly property bool opened: (modelData?.hasChildren ?? false) && root.path[card.index] === modelData.text
-              readonly property bool picked: root.keyed && card.index === root.path.length && root.row === index
-              // Room for the arrows, which point right whichever side the submenu opens, as GTK's do.
-              readonly property int arrowSpace: card.cascades ? 24 : 0
-
-              Layout.fillWidth: true
-              implicitWidth: modelData?.isSeparator ? 0 : content.implicitWidth + 24 + arrowSpace
-              implicitHeight: modelData?.isSeparator ? 13 : Theme.menuRowHeight
-
-              Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                height: 1
-                visible: entry.modelData?.isSeparator ?? false
-                color: Theme.separator
+              onItemAdded: card.built++
+              model: ScriptModel {
+                values: card.entries
               }
 
-              Rectangle {
-                anchors.fill: parent
-                visible: !entry.modelData?.isSeparator
-                radius: Theme.menuItemRadius
-                color: {
-                  if (!entry.modelData?.enabled) return "transparent";
-                  if (entry.picked) return Theme.selectedBg;
-                  return entryHover.hovered || entry.opened ? Theme.menuHoverBg : "transparent";
-                }
+              Item {
+                id: entry
 
-                Row {
-                  id: content
+                required property QsMenuEntry modelData
+                required property int index
+                readonly property bool opened: (modelData?.hasChildren ?? false) && root.path[card.index] === modelData.text
+                readonly property bool picked: root.keyed && card.index === root.path.length && root.row === index
+                // Room for the arrows, which point right whichever side the submenu opens, as GTK's do.
+                readonly property int arrowSpace: card.cascades ? 24 : 0
+                readonly property bool checkable: (modelData?.buttonType ?? QsMenuButtonType.None) !== QsMenuButtonType.None
+                readonly property bool iconed: !!modelData?.icon
+                // What comes before the label, which elides in a card cut to the screen.
+                readonly property real lead: (checkable ? 16 + content.spacing : 0) + (iconed ? 16 + content.spacing : 0)
 
-                  x: 12
+                Layout.fillWidth: true
+                implicitWidth: modelData?.isSeparator ? 0 : lead + label.implicitWidth + 2 * Theme.padding + arrowSpace
+                implicitHeight: modelData?.isSeparator ? 13 : Theme.menuRowHeight
+
+                Rectangle {
                   anchors.verticalCenter: parent.verticalCenter
-                  spacing: 8
-                  opacity: entry.modelData?.enabled ? 1 : 0.5
-
-                  Item {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 16
-                    height: 16
-                    visible: (entry.modelData?.buttonType ?? QsMenuButtonType.None) !== QsMenuButtonType.None
-
-                    CheckIndicator {
-                      anchors.centerIn: parent
-                      radio: entry.modelData?.buttonType === QsMenuButtonType.RadioButton
-                      checkState: entry.modelData?.checkState ?? Qt.Unchecked
-                    }
-                  }
-
-                  Item {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 16
-                    height: 16
-                    visible: !!entry.modelData?.icon
-
-                    IconImage {
-                      anchors.fill: parent
-                      source: entry.modelData ? entry.modelData.icon : ""
-                    }
-                  }
-
-                  Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: entry.modelData?.text ?? ""
-                    color: Theme.fg
-                    font: Theme.body
-                  }
+                  width: parent.width
+                  height: 1
+                  visible: entry.modelData?.isSeparator ?? false
+                  color: Theme.separator
                 }
 
-                ExpanderArrow {
-                  x: parent.width - width - 8
-                  anchors.verticalCenter: parent.verticalCenter
-                  visible: entry.modelData?.hasChildren ?? false
-                  pointing: "right"
-                }
-
-                HoverHandler {
-                  id: entryHover
-
-                  onHoveredChanged: {
-                    if (!hovered || !entry.modelData || entry.modelData.isSeparator) return;
-                    if (!entry.modelData.enabled || !entry.modelData.hasChildren) root.apply(card.index, "");
-                    root.row = entry.modelData.enabled ? entry.index : -1;
-                    if (!entry.modelData.enabled || !entry.modelData.hasChildren) return;
-                    root.pending = { level: card.index, label: entry.modelData.text };
-                    hoverDelay.restart();
-                  }
-                }
-
-                MouseArea {
+                Rectangle {
                   anchors.fill: parent
-                  enabled: entry.modelData?.enabled ?? false
-                  // Disabled, it would still set a hand.
-                  cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                  onClicked: {
-                    if (!entry.modelData) return;
-                    if (entry.modelData.hasChildren) {
-                      root.apply(card.index, entry.opened ? "" : entry.modelData.text);
-                    } else {
-                      entry.modelData.triggered();
-                      Panels.close();
+                  visible: !entry.modelData?.isSeparator
+                  radius: Theme.menuItemRadius
+                  // The keyboard's row snaps, as keyboard selection never animates; hover and a press ease over it.
+                  color: entry.modelData?.enabled && entry.picked ? Theme.selectedBg : "transparent"
+
+                  Rectangle {
+                    anchors.fill: parent
+                    radius: Theme.menuItemRadius
+                    color: {
+                      if (!entry.modelData?.enabled) return "transparent";
+                      if (press.pressed) return Theme.menuActiveBg;
+                      return (entryHover.hovered || entry.opened) && !entry.picked ? Theme.menuHoverBg : "transparent";
+                    }
+
+                    Behavior on color {
+                      ColorAnimation {
+                        duration: Theme.quickTime
+                        easing.type: Easing.OutQuad
+                      }
+                    }
+                  }
+
+                  Row {
+                    id: content
+
+                    x: Theme.padding
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Theme.basePadding
+                    opacity: entry.modelData?.enabled ? 1 : 0.5
+
+                    Item {
+                      anchors.verticalCenter: parent.verticalCenter
+                      width: 16
+                      height: 16
+                      visible: entry.checkable
+
+                      CheckIndicator {
+                        anchors.centerIn: parent
+                        radio: entry.modelData?.buttonType === QsMenuButtonType.RadioButton
+                        checkState: entry.modelData?.checkState ?? Qt.Unchecked
+                      }
+                    }
+
+                    Item {
+                      anchors.verticalCenter: parent.verticalCenter
+                      width: 16
+                      height: 16
+                      visible: entry.iconed
+
+                      IconImage {
+                        anchors.fill: parent
+                        source: entry.modelData ? entry.modelData.icon : ""
+                      }
+                    }
+
+                    Text {
+                      id: label
+
+                      anchors.verticalCenter: parent.verticalCenter
+                      width: Math.min(implicitWidth, entry.width - entry.lead - 2 * Theme.padding - entry.arrowSpace)
+                      text: entry.modelData?.text ?? ""
+                      // An app's own words, never markup.
+                      textFormat: Text.PlainText
+                      maximumLineCount: 1
+                      elide: Text.ElideRight
+                      color: Theme.fg
+                      font: Theme.body
+                    }
+                  }
+
+                  ExpanderArrow {
+                    x: parent.width - width - Theme.basePadding
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: entry.modelData?.hasChildren ?? false
+                    pointing: "right"
+                  }
+
+                  HoverHandler {
+                    id: entryHover
+
+                    onHoveredChanged: {
+                      if (!hovered || !entry.modelData || entry.modelData.isSeparator) return;
+                      if (!entry.modelData.enabled || !entry.modelData.hasChildren) root.apply(card.index, "");
+                      root.row = entry.modelData.enabled ? entry.index : -1;
+                      if (!entry.modelData.enabled || !entry.modelData.hasChildren) return;
+                      root.pending = { level: card.index, label: entry.modelData.text };
+                      hoverDelay.restart();
+                    }
+                  }
+
+                  MouseArea {
+                    id: press
+
+                    anchors.fill: parent
+                    enabled: entry.modelData?.enabled ?? false
+                    // Disabled, it would still set a hand.
+                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    onClicked: {
+                      if (!entry.modelData) return;
+                      if (entry.modelData.hasChildren) {
+                        root.apply(card.index, entry.opened ? "" : entry.modelData.text);
+                      } else {
+                        entry.modelData.triggered();
+                        Panels.close();
+                      }
                     }
                   }
                 }

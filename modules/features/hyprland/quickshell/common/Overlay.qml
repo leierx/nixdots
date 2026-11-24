@@ -9,7 +9,7 @@ PanelWindow {
   // A click anywhere but on it closes the panel.
   property Item card: null
 
-  // No screen is set, so Hyprland opens it on the focused monitor.
+  // Without a screen set, Hyprland opens it on the focused monitor.
   color: "transparent"
   anchors {
     top: true
@@ -33,8 +33,13 @@ PanelWindow {
   // The keyboard gone to a window elsewhere is a click outside it.
   Item {
     Window.onActiveChanged: {
-      if (Window.active) root.focused = true;
-      else if (root.focused && Panels.active === root.name) Panels.close();
+      if (Window.active) {
+        root.focused = true;
+        return;
+      }
+      if (root.focused && Panels.active === root.name) Panels.close();
+      // Reopened as it fades, it has to ask for the keyboard again.
+      root.focused = false;
     }
   }
 

@@ -1,9 +1,10 @@
-// Shell's .icon-button: a circle round a 16 px symbol, 36 px as in quick settings, 28 px beside a slider or in a row.
 Button {
   property bool small: false
+  // Inline with a line of text, costing it no height: a notification's close and expander, the calendar's arrows.
+  property bool tiny: false
 
   implicitWidth: implicitHeight
-  implicitHeight: small ? 28 : Theme.iconButtonSize
+  implicitHeight: tiny ? 24 : small ? 28 : Theme.iconButtonSize
   pill: true
   padding: 0
   glyphSize: 16

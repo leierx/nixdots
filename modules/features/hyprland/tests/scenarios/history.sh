@@ -27,7 +27,7 @@ notify-send -a Mail "older"
 pixel Chat "with a picture"
 qst wait '.notifications == 2 and any(.history[]; .summary == "with a picture" and (.kept | index("image")) != null)'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center" and .unchecked == 0'
+qst wait '.panel == "center:DP-1" and .unchecked == 0'
 qst ipc panels close > /dev/null
 notify-send -a Mail "newest"
 qst wait '.notifications == 3 and .unchecked == 1'
@@ -36,15 +36,15 @@ qst restart > /dev/null
 qst wait '(.history | map(.summary)) == ["newest", "with a picture", "older"] and all(.history[]; .restored) and .unchecked == 1 and (.popups | length) == 0'
 # The census checks the saved picture loads while the center shows it.
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
-qst stays '.panel == "center"' 0.3
+qst wait '.panel == "center:DP-1"'
+qst stays '.panel == "center:DP-1"' 0.3
 
 qst case "a reload in place keeps the live notifications' ages, and what was seen stays seen"
 notify-send -a Mail "one"
 notify-send -a Chat "two"
 qst wait '.notifications == 2'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center" and .unchecked == 0'
+qst wait '.panel == "center:DP-1" and .unchecked == 0'
 qst ipc panels close > /dev/null
 before=$(qst state '.history | map(.time)')
 wait_saved '(.notifications | length) == 2 and all(.notifications[]; .checked)'

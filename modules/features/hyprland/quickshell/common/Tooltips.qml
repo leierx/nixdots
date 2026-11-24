@@ -21,12 +21,15 @@ Singleton {
 
   function request(item: Item, text: string, window: var): void {
     if (owner === item) return;
+    // GTK's browse mode: from one tooltip to the next, the next shows at once.
+    const browsing = shown || browse.running;
     hide();
     pending = item;
     pendingText = text;
     // Now, while its screen is surely there.
     pendingScreen = window?.screen?.name ?? "";
     pendingOrigin = origin(window);
+    delay.interval = browsing ? 0 : 500;
     delay.restart();
   }
 
@@ -50,14 +53,20 @@ Singleton {
   }
 
   function hide(): void {
+    if (shown) browse.restart();
     owner = null;
     text = "";
   }
 
   Timer {
-    id: delay
+    id: browse
 
     interval: 500
+  }
+
+  Timer {
+    id: delay
+
     onTriggered: {
       const item = root.pending;
       root.pending = null;
@@ -76,6 +85,7 @@ Singleton {
 
     function onActiveChanged(): void {
       root.hide();
+      browse.stop();
       root.pending = null;
       delay.stop();
     }

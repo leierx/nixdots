@@ -121,7 +121,7 @@ Singleton {
   Binding {
     target: Media
     property: "watched"
-    value: Panels.active === "center"
+    value: Panels.center
   }
 
   // Once the centre has faded, so the frozen screen is without it.

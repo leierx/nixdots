@@ -68,6 +68,7 @@ Item {
           Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: output.modelData.enabled ? output.modelData.number : "off"
+            textFormat: Text.PlainText
             color: output.modelData.enabled ? Theme.popoverBg : Theme.fgDim
             font.family: Theme.body.family
             font.weight: Font.Bold
@@ -78,6 +79,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: text !== "" && output.height >= 60 && implicitWidth <= output.width - 8
             text: output.modelData.connector ?? ""
+            textFormat: Text.PlainText
             color: output.modelData.enabled ? Theme.popoverBg : Theme.fgDim
             font: Theme.caption
           }

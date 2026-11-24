@@ -37,7 +37,7 @@ Rectangle {
       const asking = Net.vpnAsking === vpn.uuid;
       return { key: vpn.uuid, glyph: Symbols.vpn, title: Names.clean(vpn.name), toggle: vpn.active, note: busy === "up" || vpn.state === "activating" ? "Connecting…" : busy === "down" ? "Disconnecting…" : asking ? Net.vpnError || "Password needed" : "", bad: asking && Net.vpnError !== "", asking, target: vpn };
     });
-    if (key === "bluetooth") return BluetoothDevices.devices.map(device => ({ key: device.address, glyph: BluetoothDevices.glyph(device), title: BluetoothDevices.name(device), current: device.connected, tick: false, note: BluetoothDevices.note(device), bad: (BluetoothDevices.failures[device.address] ?? "") !== "", battery: device.connected && device.batteryAvailable ? device.battery : -1, link: device.connected ? "connected" : device.paired ? "paired" : "", target: device }));
+    if (key === "bluetooth") return BluetoothDevices.devices.map(device => ({ key: device.address, glyph: BluetoothDevices.glyph(device), title: BluetoothDevices.name(device), current: device.connected, tick: false, busy: BluetoothDevices.busy(device), note: BluetoothDevices.note(device), bad: (BluetoothDevices.failures[device.address] ?? "") !== "", battery: device.connected && device.batteryAvailable ? device.battery : -1, link: device.connected ? "connected" : device.paired ? "paired" : "", target: device }));
     if (key === "sound") {
       const devices = (backend, side, other) => backend.devices.map(device => {
         const kind = Devices.kind(device.props, side === "input", other.hardware.has(device.props?.["device.id"]));
@@ -165,6 +165,7 @@ Rectangle {
         Behavior on color {
           ColorAnimation {
             duration: Theme.quickTime
+            easing.type: Easing.OutQuad
           }
         }
 
@@ -181,6 +182,7 @@ Rectangle {
         anchors.leftMargin: Theme.padding
         anchors.verticalCenter: chip.verticalCenter
         text: menuBox.title
+        textFormat: Text.PlainText
         color: Theme.fg
         font: Theme.title4
       }
@@ -296,6 +298,7 @@ Rectangle {
             visible: row.heading
             verticalAlignment: Text.AlignVCenter
             text: row.modelData.title
+            textFormat: Text.PlainText
             color: Theme.fgDim
             font: Theme.captionHeading
           }
@@ -308,7 +311,7 @@ Rectangle {
             title: row.modelData.title
             strong: row.modelData.current === true
             // An asking row is filled already; a hover on top would sink its note below 3:1.
-            acts: !(row.sound && row.modelData.current) && !row.asking
+            acts: !(row.sound && row.modelData.current) && !row.asking && !row.modelData.busy
             onClicked: menuBox.choose(menuBox.key, row.modelData)
 
             Text {
@@ -340,6 +343,7 @@ Rectangle {
               anchors.verticalCenter: parent.verticalCenter
               visible: (row.modelData.battery ?? -1) >= 0
               text: Theme.unit(Math.round((row.modelData.battery ?? 0) * 100), "%")
+              textFormat: Text.PlainText
               color: Theme.fgDim
               font: Theme.caption
             }

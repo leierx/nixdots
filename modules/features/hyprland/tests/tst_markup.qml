@@ -19,6 +19,11 @@ TestCase {
       { tag: "drops links without href", body: "<a>p</a>", expected: "p" },
       { tag: "escapes quotes in links", body: `<a href='https://a/"b'>p</a>`, expected: '<a href="https://a/&quot;b">p</a>' },
       { tag: "escapes stray brackets", body: "1 < 2 > 0", expected: "1 &lt; 2 &gt; 0" },
+      { tag: "keeps an address in brackets", body: "From <john@x.com>", expected: "From &lt;john@x.com&gt;" },
+      { tag: "breaks lines", body: "a\nb", expected: "a<br>b" },
+      { tag: "escapes a bare ampersand", body: "Q&A", expected: "Q&amp;A" },
+      { tag: "escapes an ampersand reading as an unknown entity", body: "a&b; c", expected: "a&amp;b; c" },
+      { tag: "keeps entities", body: "&lt;&amp;&#233;&#xe9;", expected: "&lt;&amp;&#233;&#xe9;" },
     ];
   }
 

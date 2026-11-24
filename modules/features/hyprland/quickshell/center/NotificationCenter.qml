@@ -55,7 +55,6 @@ Popover {
     Notifs.hidePopups();
   }
 
-  name: "center"
   card: panel
   // Below the bar rather than over it.
   exclusionMode: ExclusionMode.Normal
@@ -164,6 +163,7 @@ Popover {
                 from: 0
                 to: 1
                 duration: Theme.popupTime
+                easing.type: Easing.OutQuad
               }
 
               NumberAnimation {
@@ -180,6 +180,7 @@ Popover {
                 property: "opacity"
                 to: 0
                 duration: Theme.quickTime
+                easing.type: Easing.OutQuad
               }
             }
 

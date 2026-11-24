@@ -30,5 +30,8 @@ Scope {
     }
   }
 
+  // Reads Notifs from the start, so its server runs with no monitor on to show a popup.
+  PictureCopies {}
+
   NotificationPopups {}
 }

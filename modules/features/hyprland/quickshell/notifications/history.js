@@ -9,7 +9,7 @@ function valid(record) {
   const strings = ["appName", "appIcon", "desktopEntry", "summary", "body", "image"];
   return record !== null && typeof record === "object" && typeof record.uid === "string" && /^[a-z0-9]+$/.test(record.uid)
     && Number.isFinite(record.time) && typeof record.checked === "boolean" && Number.isInteger(record.urgency)
-    && strings.every(name => typeof record[name] === "string");
+    && strings.every(name => typeof record[name] === "string") && ["string", "undefined"].includes(typeof record.tag);
 }
 
 // The newest within the limits, newest first, as saved.

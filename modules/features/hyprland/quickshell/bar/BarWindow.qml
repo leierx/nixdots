@@ -42,7 +42,7 @@ PanelWindow {
   Clock {
     id: clock
 
-    screen: root.screen
+    screenName: root.screenName
     anchors.centerIn: parent
   }
 

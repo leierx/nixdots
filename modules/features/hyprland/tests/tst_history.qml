@@ -12,7 +12,7 @@ TestCase {
   }
 
   function test_round_trip() {
-    const records = [record("a", 1000), record("b", 2000)];
+    const records = [record("a", 1000), Object.assign(record("b", 2000), { tag: "volume" })];
     compare(Saved.parse(Saved.serialise(records), now), { records, problem: "" });
   }
 
@@ -26,7 +26,7 @@ TestCase {
 
   function test_bad_records_dropped() {
     const good = record("a", 1000);
-    const text = JSON.stringify({ notifications: [good, null, 3, "x", Object.assign({}, good, { uid: "../x" }), Object.assign({}, good, { time: "1" }), Object.assign({}, good, { summary: 4 })] });
+    const text = JSON.stringify({ notifications: [good, null, 3, "x", Object.assign({}, good, { uid: "../x" }), Object.assign({}, good, { time: "1" }), Object.assign({}, good, { summary: 4 }), Object.assign({}, good, { tag: 5 })] });
     compare(Saved.parse(text, now).records, [good]);
   }
 

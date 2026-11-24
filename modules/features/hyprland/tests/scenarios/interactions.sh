@@ -2,14 +2,19 @@ export QS_TEST_MONITORS="DP-1:1920x1080:1"
 
 # Behaviour that broke once and had no case of its own.
 
-qst case "a click expands a long popup, a second collapses it, and neither puts it away"
-notify-send -t 0 -a Chat "A long one" "$(printf 'A line that goes on and on, long enough to wrap and then some. %.0s' 1 2 3 4 5 6)"
+qst case "a click on a popup runs its one action, as a banner never expands, and one without puts it away"
+answer=$(mktemp)
+notify-send -t 0 -a Chat -A reply=Reply "A long one" "$(printf 'A line that goes on and on, long enough to wrap and then some. %.0s' 1 2 3 4 5 6)" > "$answer" &
 qst wait '(.popups | length) == 1'
 read -r x y _ < <(qst areas 'NotificationPopups/SwipeArea' | head -1)
 qst click left "$x" "$y"
-qst stays '(.popups | length) == 1' 0.5
+qst wait '(.popups | length) == 0'
+wait
+grep -qx reply "$answer" || { echo "the click did not run the popup's one action"; exit 1; }
+notify-send -t 0 -a Chat "A long one" "$(printf 'A line that goes on and on, long enough to wrap and then some. %.0s' 1 2 3 4 5 6)"
+qst wait '(.popups | length) == 1'
 qst click left "$x" "$y"
-qst stays '(.popups | length) == 1' 1
+qst wait '(.popups | length) == 0 and .notifications == 1'
 
 qst case "the wheel over the volume never turns down a level another app set past 100 %"
 qst x wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.3
@@ -33,7 +38,7 @@ qst actions | grep -q 'systemd-run.*--scope.*wl-copy' || { qst actions; echo "th
 qst case "every panel fits a 1024x600 screen"
 qst output 1024x600 1
 qst wait '.screens[0].width <= 1024'
-for panel in apps clipboard monitors windows nixpkgs center shortcuts power controls:DP-1; do
+for panel in apps clipboard monitors windows nixpkgs center:DP-1 shortcuts power controls:DP-1; do
   qst ipc panels open "$panel" > /dev/null
   qst wait ".panel == \"$panel\""
   qst stays ".panel == \"$panel\"" 0.6
@@ -53,26 +58,52 @@ qst wait '.panel == ""'
 qst actions | grep -q 'systemctl poweroff' || { echo "two presses did not power off"; exit 1; }
 
 qst case "the keyboard reaches the power menu's buttons, and Enter confirms the one a click armed"
-# Restart to Firmware is the last button, on a UEFI machine only.
-if [ -d /sys/firmware/efi ]; then
-  qst ipc panels open power > /dev/null
-  qst wait '.panel == "power"'
-  qst key Left Return
-  qst stays '.panel == "power"' 0.5
-  qst actions | grep -q firmware-setup && { echo "one press restarted to firmware"; exit 1; }
-  qst key Return
-  qst wait '.panel == ""'
-  qst actions | grep -q 'systemctl reboot --firmware-setup' || { qst actions; echo "Left and Enter twice did not restart to firmware"; exit 1; }
-  qst ipc panels open power > /dev/null
-  qst wait '.panel == "power"'
-  read -r x y < <(qst areas PowerMenu | awk -F'\t' '$6 == "true" { x = $1; y = $2 } END { print x, y }')
-  qst click left "$x" "$y"
-  qst stays '.panel == "power"' 0.3
-  qst key Return
-  qst wait '.panel == ""'
-  qst actions | grep -q 'lock-session' && { qst actions; echo "Enter after arming Restart to Firmware locked"; exit 1; }
-  [ "$(qst actions | grep -c 'firmware-setup')" = 2 ] || { qst actions; echo "Enter did not confirm the armed button"; exit 1; }
-fi
+# Restart to Firmware is the last button, as the session's logind offers it.
+qst ipc panels open power > /dev/null
+qst wait '.panel == "power"'
+qst key Left Return
+qst stays '.panel == "power"' 0.5
+qst actions | grep -q firmware-setup && { echo "one press restarted to firmware"; exit 1; }
+qst key Return
+qst wait '.panel == ""'
+qst actions | grep -q 'systemctl reboot --firmware-setup' || { qst actions; echo "Left and Enter twice did not restart to firmware"; exit 1; }
+qst ipc panels open power > /dev/null
+qst wait '.panel == "power"'
+read -r x y < <(qst areas PowerMenu | awk -F'\t' '$6 == "true" { x = $1; y = $2 } END { print x, y }')
+qst click left "$x" "$y"
+qst stays '.panel == "power"' 0.3
+qst key Return
+qst wait '.panel == ""'
+qst actions | grep -q 'lock-session' && { qst actions; echo "Enter after arming Restart to Firmware locked"; exit 1; }
+[ "$(qst actions | grep -c 'firmware-setup')" = 2 ] || { qst actions; echo "Enter did not confirm the armed button"; exit 1; }
+
+qst case "a key held in the power menu arms its action and never confirms it"
+qst ipc panels open power > /dev/null
+qst wait '.panel == "power"'
+qst hold p 1500
+qst stays '.panel == "power"' 0.5
+qst key Escape
+qst wait '.panel == ""'
+qst ipc panels open power > /dev/null
+qst wait '.panel == "power"'
+qst key Right Right Right Right
+qst hold Return 1500
+qst stays '.panel == "power"' 0.5
+qst actions | grep -q poweroff && { qst actions; echo "a held key powered off"; exit 1; }
+qst key Return
+qst wait '.panel == ""'
+qst actions | grep -q 'systemctl poweroff' || { qst actions; echo "a second press did not power off"; exit 1; }
+
+qst case "arming another action gives it the whole five seconds"
+qst ipc panels open power > /dev/null
+qst wait '.panel == "power"'
+qst key o
+qst stays '.panel == "power"' 3
+qst key p
+qst stays '.panel == "power"' 3
+qst key p
+qst wait '.panel == ""'
+qst actions | grep -q 'systemctl poweroff' || { qst actions; echo "Power Off was disarmed with the time Log Out had left"; exit 1; }
 
 qst case "the power menu's keys are the keycaps on its tiles: O twice logs out"
 qst ipc panels open power > /dev/null
@@ -141,7 +172,7 @@ at "$x" "$y" Close
 qst ipc notifications clear > /dev/null
 qst wait '.notifications == 0'
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center"'
+qst wait '.panel == "center:DP-1"'
 read -r x y _ < <(qst areas NotificationCenter | awk -F'\t' '$2 < 200 && $4 == "true" && $6 == "true"' | sort -n | head -1)
 at "$x" "$y" "Previous Month"
 
@@ -158,7 +189,7 @@ qst pointer 300 700
 qst pointer 960 16
 qst wait '.hovered == ["BarWindow/Clock"]'
 qst click
-qst wait '.panel == "center"'
+qst wait '.panel == "center:DP-1"'
 qst pointer 300 700
 qst click
 qst wait '.panel == "" and .hovered == []'
@@ -173,7 +204,7 @@ qst key Escape
 qst wait '.panel == "" and .hovered == []'
 qst pointer 960 16
 qst click
-qst wait '.panel == "center"'
+qst wait '.panel == "center:DP-1"'
 qst pointer 960 16
 qst click
 qst wait '.panel == ""'

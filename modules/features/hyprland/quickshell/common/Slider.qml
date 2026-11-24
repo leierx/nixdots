@@ -23,7 +23,7 @@ Item {
 
   implicitHeight: 26
   opacity: enabled ? 1 : 0.5
-  activeFocusOnTab: enabled
+  activeFocusOnTab: enabled || activeFocus
   Keys.onLeftPressed: slider.stepped(-1)
   Keys.onRightPressed: slider.stepped(1)
 
@@ -57,6 +57,7 @@ Item {
       Behavior on color {
         ColorAnimation {
           duration: Theme.quickTime
+          easing.type: Easing.OutQuad
         }
       }
     }

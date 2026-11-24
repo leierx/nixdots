@@ -14,8 +14,8 @@ import "names.js" as Names
 Singleton {
   id: root
 
-  // nmcli's messages are matched in English; a locale would translate them.
-  readonly property var nmcliEnvironment: ({ LC_ALL: "C" })
+  // nmcli's messages are matched in English; plain C would print every name past ASCII as "?".
+  readonly property var nmcliEnvironment: ({ LC_ALL: "C.UTF-8" })
 
   // nmcli's word on NetworkManager, which Quickshell keeps no record of once it goes.
   property bool running: false

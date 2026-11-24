@@ -52,7 +52,11 @@ Singleton {
   }
 
   function appKey(entry) {
-    return root.clip(entry.notification.desktopEntry || entry.notification.appName, root.maxApp);
+    return root.app(entry.notification);
+  }
+
+  function app(notification) {
+    return root.clip(notification.desktopEntry || notification.appName, root.maxApp);
   }
 
   function nextUid() {
@@ -102,17 +106,17 @@ Singleton {
       const total = root.flood.total;
       root.flood.total = 0;
       root.flood.dropped = {};
-      Quickshell.execDetached(["notify-send", "-a", "Notifications", "-i", "dialog-warning", `${total.toLocaleString(Qt.locale(), "f", 0)} Notifications Dropped`, `${from} sent more than ${root.floodLimit} a second`]);
+      Quickshell.execDetached(["notify-send", "-a", "Notifications", "-i", "dialog-warning", `${total.toLocaleString(Qt.locale(), "f", 0)} ${total === 1 ? "Notification" : "Notifications"} Dropped`, `${from} sent more than ${root.floodLimit} a second`]);
     }
   }
 
-  // Volume and brightness scripts send one of these so a new value replaces the last.
+  // Volume and brightness scripts send one of these so a new value replaces the last; an app's tag is its own.
   function tag(notification) {
-    return notification.hints["x-canonical-private-synchronous"] || notification.hints["x-dunst-stack-tag"] || "";
+    return String(notification.hints["x-canonical-private-synchronous"] || notification.hints["x-dunst-stack-tag"] || "");
   }
 
   function wantsPopup(critical) {
-    return Panels.active !== "center" && (critical || (!dnd && !fullscreen));
+    return !Panels.center && (critical || (!dnd && !fullscreen));
   }
 
   // First in the list, on the focused monitor once it pops up again, with its sound, within the limit.
@@ -121,7 +125,7 @@ Singleton {
     root.entries = [entry, ...root.entries.filter(e => e !== entry)];
     entry.time = new Date();
     if (popup && !wasShown) entry.screen = Screens.focused;
-    entry.checked = Panels.active === "center";
+    entry.checked = Panels.center;
     entry.popup = popup;
     entry.restartTimeout();
     root.trimPopups(entry);
@@ -193,7 +197,7 @@ Singleton {
   function cleanBody(body) {
     const origin = /^<a href="([^"]*)">([^<]*)<\/a>(?:\n|$)/.exec(body);
     if (origin && origin[1].includes(origin[2])) body = body.slice(origin[0].length);
-    return Markup.markup(body).trim().replace(/\n{3,}/g, "\n\n");
+    return Markup.markup(body.trim().replace(/\n{3,}/g, "\n\n"));
   }
 
   function appIcon(notification) {
@@ -273,7 +277,8 @@ Singleton {
       summary: root.clip(notification.summary, root.maxSummary),
       body: root.clip(notification.body, root.maxBody),
       image: lasting("image", notification.image),
-      urgency: notification.urgency
+      urgency: notification.urgency,
+      tag: root.clip(root.tag(notification), root.maxApp)
     };
   }
 
@@ -300,9 +305,11 @@ Singleton {
     target: History
 
     function onRestored(records) {
-      const live = new Map(root.entries.map(entry => [entry.key, entry]));
+      // Each live one takes one record, so two alike stay two.
+      const live = new Map();
+      for (const entry of root.entries) live.set(entry.key, [...(live.get(entry.key) ?? []), entry]);
       const restored = records.filter(record => {
-        const entry = live.get(root.key(record));
+        const entry = live.get(root.key(record))?.shift();
         if (!entry) return true;
         entry.time = new Date(record.time);
         entry.checked = record.checked;
@@ -315,7 +322,8 @@ Singleton {
           summary: record.summary,
           body: record.body,
           image: record.image,
-          urgency: record.urgency
+          urgency: record.urgency,
+          hints: record.tag ? { "x-canonical-private-synchronous": record.tag } : {}
         });
         const entry = entryComponent.createObject(root, {
           notification,
@@ -336,7 +344,7 @@ Singleton {
     target: Panels
 
     function onActiveChanged(): void {
-      if (Panels.active !== "center") return;
+      if (!Panels.center) return;
       for (const entry of root.entries) entry.checked = true;
     }
   }
@@ -386,9 +394,11 @@ Singleton {
       const tag = root.tag(notification);
       const key = root.key(notification);
       const now = Date.now();
-      const same = (tag ? root.entries.find(entry => root.tag(entry.notification) === tag) : null)
+      const app = root.app(notification);
+      // A reload hands alike ones over in a burst, which are not repeats.
+      const same = (tag ? root.entries.find(entry => root.tag(entry.notification) === tag && root.appKey(entry) === app) : null)
         ?? (notification.lastGeneration ? root.entries.find(entry => entry.restored && entry.key === key) : null)
-        ?? root.entries.find(entry => !entry.restored && now - entry.time.getTime() < root.repeatWindow && entry.key === key)
+        ?? (notification.lastGeneration ? null : root.entries.find(entry => !entry.restored && now - entry.time.getTime() < root.repeatWindow && entry.key === key))
         ?? null;
       const admitted = !!notification.lastGeneration || root.admit(notification, same !== null);
       if (!same && !admitted) {

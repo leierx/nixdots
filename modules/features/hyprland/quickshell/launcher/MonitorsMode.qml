@@ -179,6 +179,7 @@ LauncherMode {
       Layout.fillWidth: true
       horizontalAlignment: Text.AlignHCenter
       text: preview.row?.title ?? ""
+      textFormat: Text.PlainText
       color: Theme.fg
       font: Theme.title2
       elide: Text.ElideRight
@@ -231,6 +232,7 @@ LauncherMode {
             anchors.centerIn: parent
             visible: output.modelData.enabled
             text: output.modelData.number
+            textFormat: Text.PlainText
             color: Theme.popoverBg
             font: Theme.captionHeading
           }
@@ -239,6 +241,7 @@ LauncherMode {
         Text {
           visible: text !== ""
           text: output.modelData.connector
+          textFormat: Text.PlainText
           color: output.modelData.enabled ? Theme.fg : Theme.fgDim
           font: Theme.heading
         }
@@ -246,6 +249,7 @@ LauncherMode {
         Text {
           Layout.fillWidth: true
           text: [output.modelData.name, output.modelData.inches > 0 ? `${output.modelData.inches}″` : ""].filter(part => part).join(" · ")
+          textFormat: Text.PlainText
           color: output.modelData.enabled ? Theme.fg : Theme.fgDim
           font: Theme.body
           elide: Text.ElideRight
@@ -254,6 +258,7 @@ LauncherMode {
         // The position tells apart two of one model that are not plugged in.
         Text {
           text: output.modelData.enabled ? [output.modelData.mode, output.modelData.scale !== 1 ? `×${output.modelData.scale}` : "", output.modelData.connector ? "" : `at ${output.modelData.position}`].filter(part => part).join(" · ") : "off"
+          textFormat: Text.PlainText
           color: Theme.fgDim
           font: Theme.body
         }

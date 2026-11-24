@@ -52,7 +52,7 @@ Item {
   }
 
   Timer {
-    interval: 250
+    interval: Theme.popupTime + Theme.quickTime
     running: true
     onTriggered: root.settled = true
   }
@@ -60,7 +60,7 @@ Item {
   Timer {
     id: fold
 
-    interval: 200
+    interval: Theme.popupTime
     onTriggered: root.unfolded = false
   }
 
@@ -97,6 +97,19 @@ Item {
     if (expanded) unfolded = true;
     else fold.start();
   }
+  // Its lines change as it unfolds and folds back, so they fade in rather than pop.
+  onUnfoldedChanged: if (settled) swap.restart()
+
+  NumberAnimation {
+    id: swap
+
+    target: column
+    property: "opacity"
+    from: 0
+    to: 1
+    duration: Theme.popupTime
+    easing.type: Easing.OutQuad
+  }
 
   FontMetrics {
     id: heading
@@ -118,14 +131,15 @@ Item {
     target: card
     swipeEnabled: !root.expanded || root.single
     // A hand only where the click opens something, an arrow where it only dismisses.
-    restCursor: root.expandable || root.newest?.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
+    restCursor: root.expandable || root.single && root.newest?.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     onSwiped: left => root.slideAway(left)
+    // A lone one runs its default action as a banner does, and expands from its arrow; a group expands.
     onTapped: {
-      if (root.expandable) {
-        root.expanded = !root.expanded;
-      } else if (root.newest.defaultAction) {
-        root.newest.defaultAction.invoke();
+      if (root.single && root.newest.defaultAction) {
+        root.newest.invoke(root.newest.defaultAction);
         Panels.close();
+      } else if (root.expandable) {
+        root.expanded = !root.expanded;
       } else {
         root.slideAway(false);
       }
@@ -159,6 +173,7 @@ Item {
     Behavior on color {
       ColorAnimation {
         duration: Theme.quickTime
+        easing.type: Easing.OutQuad
       }
     }
 
@@ -252,6 +267,7 @@ Item {
             expandable: root.expandable
             pointing: root.expanded ? "up" : "down"
             onClosed: root.slideAway(false)
+            onToggled: root.expanded = !root.expanded
           }
         }
 
@@ -277,22 +293,23 @@ Item {
             expander: root.expandable && !root.unfolded && index === 0
             settled: root.settled
             onClosed: root.slideAway(false)
+            onToggled: root.expanded = !root.expanded
           }
         }
       }
 
       // An expanded group's way back, beside its first card; collapsed, its first line's stamp holds the arrow.
-      Item {
+      IconButton {
+        objectName: "collapse"
         Layout.alignment: Qt.AlignTop
         Layout.topMargin: root.textOffset
         visible: root.unfolded && !root.single
-        implicitWidth: 24
-        implicitHeight: heading.height
-
-        ExpanderArrow {
-          anchors.centerIn: parent
-          pointing: "up"
-        }
+        tiny: true
+        flat: true
+        expander: true
+        pointing: "up"
+        tooltip: "Collapse"
+        onClicked: root.expanded = false
       }
     }
   }

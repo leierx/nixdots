@@ -12,7 +12,7 @@ open() {
 # The center, where the player's card is.
 center() {
   qst ipc panels open center > /dev/null
-  qst wait '.panel == "center"'
+  qst wait '.panel == "center:DP-1"'
 }
 
 # The bar's status button, the last on the bar that asks for a hand while there is no tray.
