@@ -10,10 +10,12 @@
     }:
     let
       cfgDir = config.programs.pi-coding-agent.configDir;
-      unstablePkgs = import inputs.nixpkgs-unstable {
-        inherit (pkgs.stdenv.hostPlatform) system;
-        config.allowUnfree = true;
-      };
+      # the mac has no unstable overlay
+      unstablePkgs =
+        pkgs.unstable or (import inputs.nixpkgs-unstable {
+          inherit (pkgs.stdenv.hostPlatform) system;
+          config.allowUnfree = true;
+        });
       # drop when github:nix-community/home-manager/release-26.11 ships programs.pi-coding-agent
       piCodingAgentModule =
         args@{
@@ -62,6 +64,9 @@
         mutableSettings = true;
 
         settings = {
+          defaultProvider = lib.mkDefault "claude-bridge";
+          defaultModel = lib.mkDefault "claude-opus-5-5";
+          defaultThinkingLevel = lib.mkDefault "high";
           enableInstallTelemetry = false;
           collapseChangelog = true;
           quietStartup = true;

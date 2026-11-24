@@ -235,16 +235,16 @@ committed `nvim-pack-lock.json`:
 
 Configures HM's `programs.pi-coding-agent` (imported from
 `inputs.home-manager-unstable` with its `modules/lib` overlay until
-`release-26.11` ships it) with `pi-coding-agent` from `inputs.nixpkgs-unstable`
-imported directly with `allowUnfree` (the mac lacks `pkgs.unstable`, and
-`claude-code` is unfree). `extraPackages` suffixes `git`, `nodejs`,
+`release-26.11` ships it) with `pi-coding-agent` from `pkgs.unstable`, or on
+the mac (no overlay) `inputs.nixpkgs-unstable` imported with `allowUnfree`
+(`claude-code` is unfree). `extraPackages` suffixes `git`, `nodejs`,
 `claude-code` and what agents reach for (python3 with pyyaml, yq-go, dig,
 `file`, openssl, unzip, xxd) so a project shell's win (nixpkgs' wrapper already
 prefixes `rg` and `fd`); these are on pi's PATH only, never the user's. Writes into
 `config.programs.pi-coding-agent.configDir` (`~/.pi/agent` by default):
 `settings.json` (with `mutableSettings = true`, so activation merges declared
 settings in place while pi can still write its own keys like
-`defaultProjectTrust`; both hosts pin provider, model, thinking level —
+`defaultProjectTrust`; provider, model and thinking level `mkDefault`s —
 `pi-claude-bridge`'s Claude Opus 5.5 at `high`; Copilot's Claude Opus 5.5
 through `modelThinkingLevels`), `models.json` (DeepSeek V4.1 Flash at its
 agentic evals' `top_p` 0.95, temperature 1), `APPEND_SYSTEM.md`

@@ -8,11 +8,6 @@ root: {
       ];
       # the shell a size up on the 27" 1440p monitors, which run at scale 1
       quickshell.scale = 1.2;
-      programs.pi-coding-agent.settings = {
-        defaultProvider = "claude-bridge";
-        defaultModel = "claude-opus-5-5";
-        defaultThinkingLevel = "high";
-      };
       programs.ssh.settings = {
         "github.com" = {
           HostName = "github.com";
