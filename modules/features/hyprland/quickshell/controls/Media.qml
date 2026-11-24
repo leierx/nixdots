@@ -90,6 +90,16 @@ Singleton {
     root.choose();
   }
 
+  // The wheel on the card: the next or previous of two or three, pinned as a click on its button would.
+  function cycle(by: int): void {
+    if (!root.switchable || by === 0) return;
+    const at = root.live.findIndex(p => p.dbusName === root.shown);
+    const next = root.live[((at + by) % root.live.length + root.live.length) % root.live.length];
+    root.pinned = next.dbusName;
+    root.pinnedAt = Date.now();
+    root.choose();
+  }
+
   function cover(): void {
     const art = root.art;
     if (art.startsWith("file://")) root.artFile = art;

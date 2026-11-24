@@ -66,6 +66,12 @@ Scope {
     return null;
   }
 
+  // A line of the open center's media card: whether it slides, how far it is cut short, and where its text is.
+  function mediaLine(name: string): var {
+    for (const entry of windows()) for (const { item } of entry.items) if (item.objectName === name) return { rolling: item.rolling, overflow: Math.round(item.overflow), x: Math.round(item.children[0].x) };
+    return null;
+  }
+
   // Each visible window with its visible items, their opacity on screen and their place in the window.
   function windows(): var {
     return ProbeWindows.windows.filter(({ window }) => window.visible && window.contentItem).map(({ window, name }) => {
@@ -452,7 +458,7 @@ Scope {
           vpnAsking: Net.vpnAsking || null,
           bluetooth: { present: BluetoothDevices.present, on: BluetoothDevices.on, scanning: BluetoothDevices.scanning, devices: BluetoothDevices.devices.map(d => ({ name: d.name, address: d.address, paired: d.paired, connected: d.connected, trusted: d.trusted, note: BluetoothDevices.note(d) || null, battery: d.batteryAvailable ? Math.round(d.battery * 100) : null })) },
           night: { present: NightLight.present, on: NightLight.on, temperature: NightLight.temperature },
-          media: Media.player ? { title: Media.title, artist: Media.artist, playing: Media.player.isPlaying, identity: Media.player.identity, position: Math.round(Media.player.position), length: Math.round(Media.length), pinned: Media.pinned !== "" ? Media.player.identity : null, switcher: Media.switchable ? Media.live.map(p => p.identity) : [], tint: Media.tint, art: probe.mediaArt()?.width ?? null, artY: probe.mediaArt()?.y ?? null } : null
+          media: Media.player ? { title: Media.title, artist: Media.artist, playing: Media.player.isPlaying, identity: Media.player.identity, position: Math.round(Media.player.position), length: Math.round(Media.length), pinned: Media.pinned !== "" ? Media.player.identity : null, switcher: Media.switchable ? Media.live.map(p => p.identity) : [], tint: Media.tint, art: probe.mediaArt()?.width ?? null, artY: probe.mediaArt()?.y ?? null, titleLine: probe.mediaLine("media:title"), artistLine: probe.mediaLine("media:artist") } : null
         },
         tray: SystemTray.items.values.filter(item => item.status !== Status.Passive).map(item => item.id),
         // Each bar's status button, what it shows by name, and its battery.

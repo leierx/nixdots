@@ -98,6 +98,7 @@ Item {
     // Even disabled it would set its arrow over the group's hand.
     restCursor: !root.boxed ? undefined : root.openable || root.entry.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     onSwiped: left => swipe.slideAway(left, root.entry.dismissal())
+    onDismissed: swipe.slideAway(false, root.entry.dismissal())
     onTapped: {
       if (root.entry.defaultAction) {
         root.entry.invoke(root.entry.defaultAction);
@@ -242,6 +243,7 @@ Item {
               entry: root.entry
               closable: true
               expandable: root.openable
+              reserved: false
               pointing: root.open ? "up" : "down"
               onClosed: swipe.slideAway(false, root.entry.dismissal())
               onToggled: root.open = !root.open

@@ -23,6 +23,8 @@ MouseArea {
 
   signal swiped(bool left)
   signal tapped()
+  // A right click: the user's, over the HIG's menu-only secondary click.
+  signal dismissed()
 
   // `done` runs once the target is off the edge, and returns false when what it slid away stays (replaced in place meanwhile), which comes back.
   function slideAway(left: bool, done: var): void {
@@ -46,8 +48,7 @@ MouseArea {
   // Gone mid-slide, its panel closed or its monitor unplugged, it still dismisses what it was sliding away.
   Component.onDestruction: finish()
 
-  // The HIG keeps the secondary click for a menu, never another way to dismiss.
-  acceptedButtons: Qt.LeftButton
+  acceptedButtons: Qt.LeftButton | Qt.RightButton
   preventStealing: dragging
   cursorShape: dragging ? Qt.ClosedHandCursor : restCursor
 
@@ -92,7 +93,9 @@ MouseArea {
     back.start();
   }
   onClicked: mouse => {
-    if (!dragged) tapped();
+    if (dragged || away.running) return;
+    if (mouse.button === Qt.RightButton) dismissed();
+    else tapped();
   }
 
   // Fast first, carrying on from the drag rather than starting again from rest.

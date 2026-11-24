@@ -609,8 +609,8 @@ icon theme, hostname, uptime).
   the shell for seconds); newest three per app, 100 in all. Body markup filtered
   to the spec (`markup.js`). elementary OS sounds via `pw-play`, one per 300 ms.
   A banner never expands: a click runs its default action, else its one
-  button, else puts it away; the pointer on it holds its timeout; it goes as
-  it came. An update closed in the same turn is not put back.
+  button, else puts it away; a right click dismisses it (the user's, over the
+  HIG); the pointer on it holds its timeout; it goes as it came. An update closed in the same turn is not put back.
   `History` saves atomically to the state dir (no transient ones, 7 days,
   `history.js`), with copies in the cache dir of pictures only the server held,
   grabbed off screen once in a window of their own (`PictureCopies`, a 1 px
@@ -624,8 +624,10 @@ icon theme, hostname, uptime).
   comes in on top. Clear slides every group in view off at once (each its own
   swipe) and dismisses the rest unanimated, no Undo; a card whose group gained
   one mid-slide comes back. Collapse All also shuts each card's More. A click
-  runs a lone card's default action; its arrow (a button) expands it. Do Not
-  Disturb is a switch in its footer.
+  runs a lone card's default action; its arrow (a button) expands it; a right
+  click dismisses a card or group. The list's wheel glides, but over the media
+  card the card's own wheel goes first. Do Not Disturb is a switch in its
+  footer.
 - `controls/` (SUPER+A): GNOME's quick settings: `Header` (the battery, or
   without one the machine), `Levels` (the volume, its arrow
   opening Sound: Output and Input, a symbol per device from its PipeWire
@@ -649,6 +651,9 @@ icon theme, hostname, uptime).
   a button each in arrival order, and a click pins that one: it holds while
   its player plays, and goes when it is clicked again, the choice goes (one
   player, or a fourth), or its player has stopped playing and another plays.
+  The wheel on the card steps through them, pinning each, round and back; on
+  its seek bar it seeks. A title or artist cut short slides to its end and
+  back while the pointer is on the card.
   The card is the cover's colour, `Theme.cover` over `ColorQuantizer`'s eight:
   OKLab 0.40, the seek bar and play button 0.84, white on a grey cover; the
   art square, or as wide as 16:9 for a video's thumbnail. Art is
@@ -792,7 +797,7 @@ qst network wifi add Cafe 40 open # the fake NetworkManager: wifi add SSID [STRE
                                # connectivity none|portal|limited|full, switch on|off, delay MS, dump, stop|start|restart
 qst battery 15 discharging 1800             # PERCENT [charging|discharging|full|pending [SECONDS]], or remove
 qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70   # behaviour ok, pin, fail, slow (a connect taking 1.5 s) or crowded
-qst player add spotify Spotify Playing [ART]   # MPRIS, ART a file or an http(s) URL; status NAME STATE, remove NAME, clear
+qst player add spotify Spotify Playing [ART]   # MPRIS, ART a file or an http(s) URL; status NAME STATE, track NAME TITLE [ARTIST], remove NAME, clear
 qst sync                       # copy edited QML in, restart qs, print warnings
 qst problems                   # warnings less tests/known-warnings and this case's expects
 qst census                     # what the probe finds wrong on screen

@@ -133,6 +133,7 @@ Item {
     // A hand only where the click opens something, an arrow where it only dismisses.
     restCursor: root.expandable || root.single && root.newest?.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
     onSwiped: left => root.slideAway(left)
+    onDismissed: root.slideAway(false)
     // A lone one runs its default action as a banner does, and expands from its arrow; a group expands.
     onTapped: {
       if (root.single && root.newest.defaultAction) {
@@ -265,6 +266,7 @@ Item {
             entry: root.newest
             closable: true
             expandable: root.expandable
+            reserved: false
             pointing: root.expanded ? "up" : "down"
             onClosed: root.slideAway(false)
             onToggled: root.expanded = !root.expanded

@@ -100,3 +100,10 @@ def load(mock, parameters):
 @dbus.service.method(MOCK_IFACE, in_signature="s", out_signature="")
 def SetStatus(self, value):
     status(self, str(value))
+
+
+@dbus.service.method(MOCK_IFACE, in_signature="ss", out_signature="")
+def SetTrack(self, title, artist):
+    _, _, seconds = player["tracks"][player["index"]]
+    player["tracks"][player["index"]] = (str(title), str(artist), seconds)
+    changed(self, {"Metadata": metadata(player["index"])})

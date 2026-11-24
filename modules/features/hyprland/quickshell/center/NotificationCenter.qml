@@ -238,7 +238,9 @@ Popover {
             // A MouseArea sets an arrow of its own, which would hide the cursors of everything under it.
             cursorShape: list.dragging ? Qt.ClosedHandCursor : undefined
             onWheel: wheel => {
-              if (Math.abs(wheel.angleDelta.y) < 120) {
+              // The media card's own: its seek bar seeks, and the card steps through players.
+              const header = list.headerItem;
+              if (Math.abs(wheel.angleDelta.y) < 120 || (header && header.contains(mapToItem(header, wheel.x, wheel.y)))) {
                 wheel.accepted = false;
                 return;
               }

@@ -738,12 +738,13 @@ player() {
       die "the fake player $name did not start, see $T/players/$name.log"
       ;;
     status) dbus-send --session --print-reply --dest="org.mpris.MediaPlayer2.$name" /org/mpris/MediaPlayer2 org.freedesktop.DBus.Mock.SetStatus "string:$3" > /dev/null ;;
+    track) dbus-send --session --print-reply --dest="org.mpris.MediaPlayer2.$name" /org/mpris/MediaPlayer2 org.freedesktop.DBus.Mock.SetTrack "string:$3" "string:${4:-}" > /dev/null ;;
     remove)
       [ -s "$T/players/$name.pid" ] && kill "$(cat "$T/players/$name.pid")" 2> /dev/null
       rm -f "$T/players/$name.pid"
       ;;
     clear) players_reset ;;
-    *) die "player add NAME [IDENTITY] [STATUS] [ART], status NAME STATUS, remove NAME, clear" ;;
+    *) die "player add NAME [IDENTITY] [STATUS] [ART], status NAME STATUS, track NAME TITLE [ARTIST], remove NAME, clear" ;;
   esac
 }
 

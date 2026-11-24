@@ -10,12 +10,14 @@ Item {
   property bool closable: false
   property bool expandable: false
   property string pointing: "down"
+  // The arrow's room kept with no arrow, so the ages of a group's lines line up.
+  property bool reserved: true
 
   signal closed()
   signal toggled()
 
-  // Room for all three on every line, so the ages line up.
-  implicitWidth: age.implicitWidth + arrow.width + close.width
+  // The close overhangs the right edge by 4, so its symbol lines up with the card's padding; the arrow is as far from the age as from the close.
+  implicitWidth: age.implicitWidth + 4 + arrow.width + close.width - 4
   implicitHeight: age.implicitHeight
 
   NotificationAge {
@@ -30,8 +32,8 @@ Item {
   Item {
     id: arrow
 
-    x: age.implicitWidth
-    width: 24
+    x: age.implicitWidth + 4
+    width: root.expandable || root.reserved ? 24 : 0
     height: parent.height
 
     IconButton {

@@ -572,6 +572,87 @@ qst drag "$x" $((y - 40)) 0 200 800 &
 qst stays ".controls.media.artY == $top" 1.2
 wait
 
+qst case "the wheel on the card steps through two or three players, pinning each, round and back; with one it does nothing, and on the seek bar it seeks"
+qst player add spotify Spotify Playing
+qst player add firefox Firefox Paused
+qst player add mpv mpv Paused
+center
+qst wait '.controls.media.identity == "Spotify" and .controls.media.switcher == ["Spotify", "Firefox", "mpv"]'
+read -r x y < <(qst area NotificationCenter:media:wheel)
+# Over the art, clear of the seek bar's own wheel.
+qst pointer $((x - 230)) "$y"
+qst wheel 1
+qst wait '.controls.media.identity == "Firefox" and .controls.media.pinned == "Firefox"'
+qst wheel 1
+qst wait '.controls.media.identity == "mpv"'
+qst wheel 1
+qst wait '.controls.media.identity == "Spotify" and .controls.media.pinned == "Spotify"'
+qst wheel -1
+qst wait '.controls.media.identity == "mpv"'
+qst player remove firefox
+qst player remove mpv
+qst wait '.controls.media.identity == "Spotify" and .controls.media.switcher == []'
+qst wheel 2
+qst stays '.controls.media.identity == "Spotify" and .controls.media.pinned == null and .panel == "center:DP-1"' 0.5
+# The seek bar's wheel seeks, under the list's own.
+qst player status spotify Paused
+read -r sx sy < <(qst area NotificationCenter:slider:media)
+qst pointer "$sx" "$sy"
+before=$(qst state .controls.media.position)
+qst wheel -4
+qst wait ".controls.media.position >= $((before + 15))"
+
+qst case "a title or artist cut short slides to its end and back while the pointer is on the card, and rests cut short"
+qst player add spotify Spotify Playing
+qst player track spotify "Everything In Its Right Place (Live From the Basement, Remastered 2025, Extended Version)" "Radiohead, Thom Yorke, Jonny Greenwood, Colin Greenwood, Ed O'Brien, Philip Selway"
+center
+qst wait '.controls.media.titleLine.overflow > 0 and .controls.media.artistLine.overflow > 0 and .controls.media.titleLine.rolling == false'
+read -r x y < <(qst area NotificationCenter:media:wheel)
+qst pointer $((x - 230)) "$y"
+qst wait '.controls.media.titleLine.rolling and .controls.media.artistLine.rolling'
+qst wait '.controls.media.titleLine.x < -40 and .controls.media.artistLine.x < -40' 8
+qst pointer 1900 1000
+qst wait '.controls.media.titleLine.rolling == false and .controls.media.titleLine.x == 0 and .controls.media.artistLine.x == 0'
+qst player track spotify "Airbag" "Radiohead"
+qst pointer $((x - 230)) "$y"
+qst stays '.controls.media.titleLine.overflow == 0 and .controls.media.titleLine.rolling == false and .controls.media.titleLine.x == 0' 1.5
+
+qst case "odd art: broken, see-through, huge, a panorama and a single pixel each leave a card that reads"
+# A PNG of one colour, WIDTH HEIGHT R G B A.
+png() {
+  python3 -c 'import struct, sys, zlib
+w, h, *rgba = map(int, sys.argv[2:])
+row = b"\0" + bytes(rgba) * w
+chunk = lambda kind, data: struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
+open(sys.argv[1], "wb").write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(row * h, 9)) + chunk(b"IEND", b""))' "$@"
+}
+art=$QS_TEST_DIR/odd
+mkdir -p "$art"
+head -c 4096 /dev/urandom > "$art/broken.png"
+png "$art/clear.png" 64 64 0 0 0 0
+png "$art/huge.png" 6000 6000 214 49 29 255
+png "$art/panorama.png" 2000 200 29 111 214 255
+png "$art/pixel.png" 1 1 29 214 111 255
+qst expect 'Failed to load image'
+qst expect --may 'Error decoding'
+qst player add broken Broken Playing "$art/broken.png"
+center
+qst wait '.controls.media.identity == "Broken" and .controls.media.art == 84'
+qst stays '.controls.media.tint == null' 0.5
+qst player remove broken
+qst player add clear Clear Playing "$art/clear.png"
+qst wait '.controls.media.identity == "Clear" and .controls.media.art == 84'
+qst stays '.controls.media.tint == null' 0.5
+qst player remove clear
+qst player add huge Huge Playing "$art/huge.png"
+qst wait '.controls.media.identity == "Huge" and .controls.media.art == 84 and .controls.media.tint.accent != null and .controls.media.tint.accent != ""' 10
+qst player remove huge
+qst player add panorama Panorama Playing "$art/panorama.png"
+qst wait '.controls.media.identity == "Panorama" and .controls.media.art == 149 and .controls.media.tint.accent != ""'
+qst player remove panorama
+qst player add pixel Pixel Playing "$art/pixel.png"
+qst wait '.controls.media.identity == "Pixel" and .controls.media.art == 84 and .controls.media.tint.accent != ""'
+
 qst case "remote art is downloaded once, in the background, and kept for the next time it shows"
 mkdir -p "$QS_TEST_DIR/art"
 printf '%s' '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="#1d6fd6"/></svg>' > "$QS_TEST_DIR/art/cover.svg"

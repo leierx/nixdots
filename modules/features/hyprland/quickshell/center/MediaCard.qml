@@ -16,6 +16,58 @@ Rectangle {
     return s >= 3600 ? `${Math.floor(s / 3600)}:${pad(Math.floor(s % 3600 / 60))}:${pad(s % 60)}` : `${Math.floor(s / 60)}:${pad(s % 60)}`;
   }
 
+  // A line cut short slides to its end and back while the pointer is on the card.
+  component Marquee: Item {
+    id: line
+
+    property alias text: label.text
+    property alias font: label.font
+    property alias color: label.color
+    readonly property real overflow: Math.max(0, label.implicitWidth - width)
+    readonly property bool rolling: hover.hovered && overflow > 0
+
+    implicitHeight: label.implicitHeight
+    clip: true
+
+    Text {
+      id: label
+
+      width: line.rolling ? implicitWidth : line.width
+      textFormat: Text.PlainText
+      elide: line.rolling ? Text.ElideNone : Text.ElideRight
+    }
+
+    SequentialAnimation {
+      running: line.rolling
+      loops: Animation.Infinite
+      onRunningChanged: if (!running) label.x = 0
+
+      PauseAnimation {
+        duration: Theme.settle * 2
+      }
+
+      NumberAnimation {
+        target: label
+        property: "x"
+        to: -line.overflow
+        duration: line.overflow * 30
+        easing.type: Easing.InOutSine
+      }
+
+      PauseAnimation {
+        duration: Theme.settle * 3
+      }
+
+      NumberAnimation {
+        target: label
+        property: "x"
+        to: 0
+        duration: line.overflow * 30
+        easing.type: Easing.InOutSine
+      }
+    }
+  }
+
 
   readonly property bool art: cover.status === Image.Ready
   // The art's own shape from square to 16:9, a video's thumbnail (YouTube) whole; taller art is cropped square.
@@ -33,6 +85,29 @@ Rectangle {
     ColorAnimation {
       duration: Theme.settle
       easing.type: Easing.OutCubic
+    }
+  }
+
+  HoverHandler {
+    id: hover
+  }
+
+  // Under the rest, so the seek bar's wheel still seeks; with one player the wheel scrolls the list.
+  MouseArea {
+    objectName: "media:wheel"
+    anchors.fill: parent
+    acceptedButtons: Qt.NoButton
+    cursorShape: undefined
+    onWheel: event => {
+      if (!Media.switchable) {
+        event.accepted = false;
+        return;
+      }
+      Media.cycle(-notches.steps(event));
+    }
+
+    WheelSteps {
+      id: notches
     }
   }
 
@@ -98,13 +173,12 @@ Rectangle {
     anchors.verticalCenter: parent.verticalCenter
     spacing: 2
 
-    Text {
+    Marquee {
       id: title
 
+      objectName: "media:title"
       width: parent.width - (switcher.visible ? switcher.width + Theme.basePadding : 0)
       text: Media.title
-      textFormat: Text.PlainText
-      elide: Text.ElideRight
       color: Theme.fg
       font: Theme.heading
       activeFocusOnTab: (Media.player?.canRaise ?? false) || activeFocus
@@ -129,12 +203,11 @@ Rectangle {
       }
     }
 
-    Text {
+    Marquee {
+      objectName: "media:artist"
       width: parent.width
       visible: text !== ""
       text: Media.artist
-      textFormat: Text.PlainText
-      elide: Text.ElideRight
       color: Theme.fgStrong
       font: Theme.body
     }

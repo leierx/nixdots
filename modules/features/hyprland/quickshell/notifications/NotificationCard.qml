@@ -34,6 +34,7 @@ Item {
     onSwiped: left => {
       if (!left) swipe.slideAway(false, root.entry.dismissal());
     }
+    onDismissed: swipe.slideAway(false, root.entry.dismissal())
     onTapped: {
       if (root.entry.defaultAction) root.entry.invoke(root.entry.defaultAction);
       else if (root.entry.buttons.length === 1) root.entry.invoke(root.entry.buttons[0]);

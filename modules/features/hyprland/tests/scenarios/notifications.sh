@@ -115,16 +115,21 @@ qst wait '.notifications == 3'
 qst ipc panels open center > /dev/null
 qst wait '(.center | map(select(.app == "Mail")) | .[0].lines | map(.summary)) == ["disk almost full", "third", "second"]'
 
-qst case "a right click on a popup or a center card leaves it be"
-notify-send -t 0 -a Chat "stays"
+qst case "a right click dismisses a popup, and a center card, never opening it or closing the center"
+notify-send -t 0 -a Chat "gone"
 qst wait '(.popups | length) == 1'
 read -r x y _ < <(qst areas 'NotificationPopups/SwipeArea' | head -1)
 qst click right "$x" "$y"
-qst stays '(.popups | length) == 1' 0.6
+qst wait '(.popups | length) == 0 and .notifications == 0'
+notify-send -a Chat "first"
+notify-send -a Mail "second"
+qst wait '.notifications == 2'
+qst ipc notifications hidePopups > /dev/null
 qst ipc panels open center > /dev/null
-qst wait '.panel == "center:DP-1"'
+qst wait '.panel == "center:DP-1" and (.center | length) == 2'
 read -r x y _ < <(qst areas 'NotificationCenter/SwipeArea' | head -1)
 qst click right "$x" "$y"
+qst wait '.notifications == 1'
 qst stays '.notifications == 1 and .panel == "center:DP-1"' 0.6
 
 qst case "the center's close buttons show without the pointer: a lone card's, a group's, and each card's once it expands, each closing its own"
