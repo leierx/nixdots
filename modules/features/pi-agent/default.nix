@@ -10,6 +10,10 @@
     }:
     let
       cfgDir = config.programs.pi-coding-agent.configDir;
+      unstablePkgs = import inputs.nixpkgs-unstable {
+        inherit (pkgs.stdenv.hostPlatform) system;
+        config.allowUnfree = true;
+      };
       # drop when github:nix-community/home-manager/release-26.11 ships programs.pi-coding-agent
       piCodingAgentModule =
         args@{
@@ -40,11 +44,12 @@
 
       programs.pi-coding-agent = {
         enable = true;
-        package = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pi-coding-agent;
+        package = unstablePkgs.pi-coding-agent;
         # suffixed so a project shell's git and node win; nixpkgs' wrapper already prefixes rg and fd
         extraPackages = [
           pkgs.git
           pkgs.nodejs
+          unstablePkgs.claude-code
         ];
         appendSystem = ./APPEND_SYSTEM.md;
         mutableSettings = true;
@@ -74,6 +79,7 @@
             "npm:@tintinweb/pi-subagents@0.26.2"
             "npm:@juicesharp/rpiv-ask-user-question@2.15.0"
             "npm:@juicesharp/rpiv-todo@2.15.0"
+            "npm:pi-claude-bridge@0.13.0"
           ];
         };
 
@@ -86,6 +92,12 @@
 
       home.file = {
         "${cfgDir}/skills/commit-style/SKILL.md".source = ./skills/commit-style/SKILL.md;
+
+        "${cfgDir}/skills/design-board".source = ./skills/design-board;
+
+        "${cfgDir}/claude-bridge.json".text = builtins.toJSON {
+          provider.pathToClaudeCodeExecutable = lib.getExe unstablePkgs.claude-code;
+        };
 
         "${cfgDir}/extensions/bell.ts".source = ./extensions/bell.ts;
 

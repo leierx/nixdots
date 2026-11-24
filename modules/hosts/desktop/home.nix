@@ -6,13 +6,12 @@ root: {
         homelab
         nix-index
       ];
-      home.packages = [ pkgs.unstable.claude-code ];
       # the shell a size up on the 27" 1440p monitors, which run at scale 1
       quickshell.scale = 1.2;
       programs.pi-coding-agent.settings = {
-        defaultProvider = "opencode-go";
-        defaultModel = "deepseek-v4.1-flash";
-        defaultThinkingLevel = "max";
+        defaultProvider = "claude-bridge";
+        defaultModel = "claude-opus-5-5";
+        defaultThinkingLevel = "high";
       };
       programs.ssh.settings = {
         "github.com" = {

@@ -236,22 +236,32 @@ committed `nvim-pack-lock.json`:
 Configures HM's `programs.pi-coding-agent` (imported from
 `inputs.home-manager-unstable` with its `modules/lib` overlay until
 `release-26.11` ships it) with `pi-coding-agent` from `inputs.nixpkgs-unstable`
-directly (the mac lacks `pkgs.unstable`). `extraPackages` suffixes `git` and
-`nodejs` so a project shell's win (nixpkgs' wrapper already prefixes `rg` and
-`fd`). Writes into `config.programs.pi-coding-agent.configDir` (`~/.pi/agent` by
-default): `settings.json` (with `mutableSettings = true`, so activation merges
-declared settings in place while pi can still write its own keys like
-`defaultProjectTrust`; both hosts pin provider, model, thinking level `max`;
-Copilot's Claude Opus 5.5 starts at `high` through `modelThinkingLevels`),
-`models.json` (DeepSeek V4.1 Flash at its agentic evals' `top_p` 0.95,
-temperature 1), `APPEND_SYSTEM.md` (`appendSystem`), the `commit-style` skill,
-a `bell` extension (BEL on finish or prompt) and `tmux-session` (session file in
-pane option `@pi_session`). pi packages are pinned in `settings.packages`,
-installed by pi with nixpkgs' `npm` into `~/.pi/agent/npm`.
+imported directly with `allowUnfree` (the mac lacks `pkgs.unstable`, and
+`claude-code` is unfree). `extraPackages` suffixes `git`, `nodejs` and
+`claude-code` so a project shell's win (nixpkgs' wrapper already prefixes `rg`
+and `fd`); `claude` is on pi's PATH only, never the user's. Writes into
+`config.programs.pi-coding-agent.configDir` (`~/.pi/agent` by default):
+`settings.json` (with `mutableSettings = true`, so activation merges declared
+settings in place while pi can still write its own keys like
+`defaultProjectTrust`; both hosts pin provider, model, thinking level —
+`pi-claude-bridge`'s Claude Opus 5.5 at `high`; Copilot's Claude Opus 5.5
+through `modelThinkingLevels`), `models.json` (DeepSeek V4.1 Flash at its
+agentic evals' `top_p` 0.95, temperature 1), `APPEND_SYSTEM.md`
+(`appendSystem`), `claude-bridge.json` (its `pathToClaudeCodeExecutable` is the
+store's `claude-code`, since the Agent SDK's bundled CLI cannot exec on NixOS),
+the `commit-style` and `design-board` skills, a `bell` extension (BEL on finish
+or prompt) and `tmux-session` (session file in pane option `@pi_session`). pi
+packages are pinned in `settings.packages`, installed by pi with nixpkgs' `npm`
+into `~/.pi/agent/npm`.
 
 Sharp edges: with `mutableSettings = true`, removing a declared key from
 `settings` does not delete it from the existing `settings.json`; delete it by
 hand. pi themes cannot paint the background (no global token); it is wezterm's.
+The bridge spends Claude Code's login, not pi's: `claude auth login` per
+machine, then `claude-bridge/...` models (never `anthropic/...`, which is pi's
+own provider and does not use the subscription). Skill boards are plain
+`file://` pages in `~/.local/share/design-board/`, so Copy falls back to
+selecting the textarea there (`navigator.clipboard` needs a secure context).
 
 ### `hyprland/`
 
