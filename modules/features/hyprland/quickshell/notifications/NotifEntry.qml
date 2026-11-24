@@ -98,7 +98,7 @@ QtObject {
     locked: true
   }
 
-  // The share of the timeout left, which the popup's bar shows; paused while unseen or under the pointer, so it carries on after.
+  // The share of the timeout left; paused while unseen or under the pointer, so it carries on after.
   property real remaining: 1
   property NumberAnimation countdown: NumberAnimation {
     target: root

@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import Quickshell.Widgets
 import qs.common
 import qs.nix
 
@@ -64,20 +63,6 @@ Item {
       NumberAnimation {
         duration: Theme.popupTime
         easing.type: Easing.OutQuad
-      }
-    }
-
-    ClippingRectangle {
-      anchors.fill: parent
-      radius: card.radius
-      color: "transparent"
-      visible: root.entry.timeout > 0
-
-      Rectangle {
-        anchors.bottom: parent.bottom
-        width: parent.width * root.entry.remaining
-        height: 3
-        color: Theme.accentBg
       }
     }
 
