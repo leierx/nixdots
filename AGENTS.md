@@ -136,7 +136,8 @@ definitions merge. Don't redeclare `systems`.
 - **`nixos-hosts.nix`**: `nixosHosts.<name>` → `lib.nixosSystem`. `mkDefault`s:
   `networking.hostId` (first 8 chars of `sha256(hostname)`, so a rename changes
   it), `networking.hostName`, `nixpkgs.hostPlatform`, `system.stateVersion` =
-  `lib.trivial.release` (don't bump without knowing the migrations). Imports
+  `lib.trivial.release`, home-manager's too: a deliberate exception, so a
+  release bump also bumps both, migrations included. Imports
   `flake.modules.nixos."nixosConfigurations/<name>"`.
 - **`offline-installer.nix`**: per host, `nixosConfigurations.offlineInstaller-<host>`:
   an install CD carrying the host's `toplevel` and disko `destroyFormatMount`,

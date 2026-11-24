@@ -12,6 +12,7 @@ root@{ inputs, lib, ... }:
         backupFileExtension = "hm-bak";
 
         users.${root.config.identity.username}.imports = [
+          # follows nixpkgs on purpose, as system.stateVersion does
           { home.stateVersion = lib.mkDefault lib.trivial.release; }
           (root.config.flake.modules.homeManager."nixosConfigurations/${config.networking.hostName}/home"
             or { }
