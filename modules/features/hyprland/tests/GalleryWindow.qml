@@ -452,14 +452,14 @@ Overlay {
           title: "Type"
 
           Repeater {
-            model: ["title2", "title3", "title4", "largeTitle", "heading", "body", "captionHeading", "caption", "monospace", "numeric"]
+            model: ["title2", "title3", "title4", "largeTitle", "heading", "body", "captionHeading", "caption", "numeric", "numericSemiBold"]
 
             Labelled {
               required property string modelData
 
               label: modelData
               Text {
-                text: parent.parent.modelData === "monospace" ? "nixpkgs#firefox" : parent.parent.modelData === "numeric" ? "10:41 76 %" : "Quick Settings"
+                text: parent.parent.modelData.startsWith("numeric") ? "10:41 76 %" : "Quick Settings"
                 color: Theme.fg
                 font: Theme[parent.parent.modelData]
               }

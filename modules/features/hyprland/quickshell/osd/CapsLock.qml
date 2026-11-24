@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 
-// Hyprland's keyboards' lock state, read when Hyprland says the Caps Lock key went up (quickshell.nix).
 Singleton {
   id: root
 

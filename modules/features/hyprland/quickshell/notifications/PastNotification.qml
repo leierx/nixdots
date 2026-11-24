@@ -1,6 +1,5 @@
 import QtQuick
 
-// A notification read back from the saved history: what the views read of a live one, with nothing left to invoke.
 QtObject {
   readonly property bool past: true
   property string appName: ""

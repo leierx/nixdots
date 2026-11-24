@@ -7,7 +7,6 @@ import qs.controls
 import qs.common
 import qs.nix
 
-// What just changed on the focused screen, gone in a moment; clicks go through it.
 Scope {
   id: root
 

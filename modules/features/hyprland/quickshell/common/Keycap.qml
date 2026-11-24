@@ -1,6 +1,5 @@
 import QtQuick
 
-// libadwaita's .keycap: the foreground at 10 % over a 2 px shade along its foot.
 Rectangle {
   id: root
 

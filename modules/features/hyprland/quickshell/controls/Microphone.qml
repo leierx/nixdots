@@ -7,7 +7,6 @@ import "devices.js" as Devices
 import "names.js" as Names
 import qs.common
 
-// PipeWire's default input, and the sources to pick it from.
 Singleton {
   id: root
 

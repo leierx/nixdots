@@ -6,7 +6,6 @@ import qs.common
 import qs.controls
 import qs.nix
 
-// The player that played last, first in the center as GNOME shows media: a message card washed in its album art, a big white play.
 Rectangle {
   id: card
 

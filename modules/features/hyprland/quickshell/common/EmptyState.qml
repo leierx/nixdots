@@ -1,6 +1,5 @@
 import QtQuick
 
-// What an empty panel list says, in the middle of the room the list takes: a dim 64 px symbol over a title-3 line (gs .message-list-placeholder; its 96 px bell is 64 here: ours).
 Item {
   id: root
 

@@ -1,6 +1,5 @@
 import QtQuick
 
-// Shell's .toggle-switch: 46 by 26, a 20 px knob 3 px in.
 Rectangle {
   id: toggle
 

@@ -1,7 +1,6 @@
 import QtQuick
 import qs.nix
 
-// Shell's %entry, or as `search` its search entry: a pill led by the search symbol; ringed while it has the keyboard, and a password one has an eye to show it.
 Rectangle {
   id: root
 

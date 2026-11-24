@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell
 import qs.common
 
-// Every backlight's level from backlight-watch, which hears each change however it was made.
 Singleton {
   id: root
 

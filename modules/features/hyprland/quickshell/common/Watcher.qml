@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell.Io
 
-// A long-lived command that starts again when it stops, backing off while it keeps failing; a minute's run resets the wait.
 QtObject {
   id: root
 

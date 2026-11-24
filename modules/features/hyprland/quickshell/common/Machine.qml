@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// The machine itself: the distro's logo, its hostname and how long it has been up, for the bar and the control centre.
 Singleton {
   id: root
 

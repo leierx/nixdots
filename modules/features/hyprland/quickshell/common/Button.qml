@@ -1,6 +1,5 @@
 import QtQuick
 
-// Shell's %button: 8 px or a pill, bold, the foreground's shades; flat on a surface of its own, suggested in the accent, destructive in red.
 Rectangle {
   id: root
 

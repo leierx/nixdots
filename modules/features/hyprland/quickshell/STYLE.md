@@ -24,7 +24,7 @@ nixpkgs-unstable#gnome-shell.src`, `#libadwaita.src`): `gs` is
 | A panel of its own | `Overlay` + `Card`, through `Panels` | width in em (Panel sizes), height to content, capped at the screen |
 | A row in a list or menu | `ListRow` | 36 px, radius 12, 16 px symbol in its own column |
 | An action | `Button` | 34 px, radius 8 or `pill`, bold |
-| An action that is only a symbol | `IconButton` | 36 px circle (28 `small`), 16 px symbol, always a `tooltip` |
+| An action that is only a symbol | `IconButton` | 36 px circle (28 `small`, 24 `tiny`), 16 px symbol, always a `tooltip` |
 | On or off | `Switch` | 46 × 26 |
 | A level | `Slider` | 4 px trough, 16 px knob |
 | Text in | `TextField` | 8 px, or `search`: a pill led by a symbol |
@@ -32,7 +32,7 @@ nixpkgs-unstable#gnome-shell.src`, `#libadwaita.src`): `gs` is
 | Nothing to show, a panel | `EmptyState` | dim 64 px symbol (or none) over title-3, centred |
 | Nothing to show, a menu | `EmptyLine` | one dim line where the first row would be |
 | A symbol | `Glyph` + `Symbols.<name>` | 16 px; 32 and 64 only where Symbols (below) says |
-| A tooltip | `TooltipArea` in the owner | half a second after the pointer rests |
+| A tooltip | `TooltipArea` in the owner | half a second after the pointer rests, at once from another (GTK's browse mode), fading in over `quickTime` |
 | Anything else | a new token in `Theme`, a row here | |
 
 Then:
@@ -112,8 +112,7 @@ Adwaita Sans 11 pt; only these classes (gs `%title_1` … `%caption`, adw
 | `heading` | 11 pt, 700 | Row, card and toggle titles, buttons |
 | `body` | 11 pt, 400 | Everything else |
 | `captionHeading`, `caption` | 9 pt 700, 9 pt 400 | Badges; toggle subtitles, ages |
-| `monospace` | Adwaita Mono 11 pt | Code only: attributes, versions, paths, clipboard text |
-| `numeric`, `numericSemiBold`, `numericHeading` | 11 pt, tabular (400, 600, 700) | Numbers that change in place (gs `%numeric`); `numeric` for the bar's clock and battery (**ours**: regular, gs `#panel` bold read heavy), `numericSemiBold` (**ours**: `Font.DemiBold`) for its workspace numbers, `numericHeading` for OSD levels |
+| `numeric`, `numericSemiBold`, `numericHeading` | 11 pt, tabular (400, 600, 700) | Numbers that change in place (gs `%numeric`); `numeric` for the bar's battery (**ours**: regular, gs `#panel` bold read heavy), `numericSemiBold` (**ours**: `Font.DemiBold`) for its clock and workspace numbers, `numericHeading` for OSD levels |
 | `display` | 64 pt, 700 | **ours**: the power menu's clock only |
 
 ## Radii
@@ -162,7 +161,10 @@ Adwaita Sans 11 pt; only these classes (gs `%title_1` … `%caption`, adw
 
 The OSD hides 1500 ms after its last change (gs `HIDE_TIMEOUT`). Keyboard
 selection never animates. No press bounce (gs dropped it): the pressed colour
-is the feedback.
+is the feedback. Every animation names its easing, the table's for its duration
+(lint), and what appears eases in rather than pops: a disabled control's fade,
+a field's, switch's or separator's colour, an empty state once the last row
+has gone.
 
 ## Pieces
 
@@ -175,19 +177,23 @@ to the census.
   opens is open; `glyph` before the text, `expander` after. Bold, 34 px.
   Disabled: the whole at 50 % (adw).
 - `IconButton`: gs `.icon-button`. 36 px circle, `small` 28 beside a slider or
-  in a row or banner header. Always a `tooltip` (lint fails one without).
+  in a row, `tiny` 24 inline with a line of text, costing it no height (a
+  notification's close and expander); the calendar's arrows are its day cells'
+  size. Always a `tooltip` (lint fails one without).
 - `BarButton` (`bar/`): gs `.panel-button`, bold pill 26 px in the bar's 32,
   filled only hovered or open.
 - `Switch`: gs `.toggle-switch`. In a row the row takes the keyboard; alone,
   `focusable`.
 - `Slider`: gs barLevel. 4 px trough, accent to 100 %, red past it after a 1 px
   gap, a 1 px mark at 100 % while below, 16 px knob. Range reaches past 1 while
-  the level does, holds still for a drag; Escape puts it back.
+  the level does, holds still for a drag; Escape puts it back. A change from
+  elsewhere (a key, another app) eases over `levelTime`, a drag follows the pointer.
 - `TextField`: gs `%entry` (8 px) for a password or name; `search` a pill led
   by the search symbol. The launcher draws its own in that shape, led by the
   mode's symbol.
 - `ListRow`: gs `.popup-menu-item`. 36 px, radius 12, 16 px symbol column. The
-  keyboard's row is `selectedBg`, never a ring.
+  keyboard's row is `selectedBg`, never a ring, and snaps; hover and a press
+  ease over it (the launcher's and tray menu's rows alike).
 - `ExpanderArrow`: MDI `chevron-down`, turned by `pointing`, never by hand:
   down→up expands in place, right→down opens a menu under it.
 - `Keycap`: adw `.keycap`.
@@ -201,6 +207,8 @@ to the census.
 - `EmptyLine`: one dim line where the first row would be, for menus (**ours**
   over gs `.bt-menu-placeholder`: the toggle and header already show the
   symbol twice).
+- `BatteryGlyph`: GNOME's battery, an upright cell filled to its charge: green,
+  yellow at 25 % and below, red at 10 % and below, green with a bolt while charging.
 - `ScrollBar`, `FocusRing`, `Glyph`, `TooltipArea` (with `tooltip/`): the
   scroll handle, the keyboard's 2 px ring, a `Symbols` path, a tooltip whose
   `HoverHandler` sits on its owner.
@@ -209,22 +217,22 @@ to the census.
 
 | Surface | Anatomy | Place | Size | Motion |
 | --- | --- | --- | --- | --- |
-| Bar | Distro logo (os-release's, `Machine`) at 22 px in a workspace's 26 px square, spaced as they are (does nothing), workspaces (**ours**: numbered squares, occupied by colour alone, a mark would crowd 26 px), clock, tray, status button (at least three symbols wide, an easy target; ours) | Top, edge to edge, black | 32 px; items 26 px pills, regular weight, SemiBold workspace numbers | Fills over `panelButtonTime`; a new status symbol fades in as the others slide aside over `popupTime` |
+| Bar | Distro logo (os-release's, `Machine`) at 22 px in a workspace's 26 px square, 3 px further from them than they are from each other (does nothing; **ours**: set apart, it reads as the machine's, not a workspace), workspaces (**ours**: numbered squares, occupied by colour alone, a mark would crowd 26 px), clock, tray, status button (at least three symbols wide, an easy target; ours) | Top, edge to edge, black | 32 px; items 26 px pills, regular weight, SemiBold workspace numbers | Fills over `panelButtonTime`, a workspace's number with its square; status symbols are laid from the right edge, a new one fading in as the others slide aside, a leaving one fading before they close up, over `popupTime` |
 | Tray (**ours**: GNOME has none) | Left of the status button, no fill (**ours**: one barely showed on the black bar), each icon hovered as a bar item: its first three icons in the order they came, then "+N" in the dim caption; under the pointer at the bar's right end, every icon, a strip the wheel scrolls sideways; lingers 600 ms; gone when empty | Bar | Three icons; at most 12 em expanded | Width eases over `popupTime`, growing leftwards |
-| Tray menu | gs popup menu, cascading | At the pointer, a pixel off (**ours**: as trays have always opened them, not a dropdown under the bar) | At least 15 em, radius 20, 6 px padding | Opens at once, goes as the pointer leaves |
+| Tray menu | gs popup menu, cascading | At the pointer, a pixel off (**ours**: as trays have always opened them, not a dropdown under the bar) | At least 15 em, at most 34 em and the screen, the rest eliding and scrolling; radius 20, 6 px padding | Opens at once, goes as the pointer leaves; keys hold it, and it lets the keyboard go to a window clicked elsewhere |
 | Popover off the bar (control centre, center) | A `Popover` + `Card` | `rise` below the bar, centred on its button, `rise` from screen edges | See Panel sizes | Fade + `rise` slide over `popupTime` |
 | Quick toggle | Pill, symbol, title, subtitle; a menu segment after a 1 px rule in the pill's own colour, lighter only hovered (**ours**: gs lightens it always) | Control centre grid | 48 px × 12 em | |
-| Toggle menu | Header (16 px symbol in a 32 px disc, title-4; **ours**: gs 24 in 42 and title-3 outweighed the rows in MDI's filled symbols), rows, separator, settings rows | Under the toggle row | Radius 24 on `cardBg` | Height then fade; another menu of the same row swaps in place as the slot eases to its height (ours: two slots of one row slid past each other) |
+| Toggle menu | Header (16 px symbol in a 32 px disc, title-4; **ours**: gs 24 in 42 and title-3 outweighed the rows in MDI's filled symbols), rows, separator, settings rows | Under the toggle row | Radius 24 on `cardBg` | The slot eases open, then the menu fades in; it fades out, then the slot eases shut; another menu of the same row fades out, the slot eases to its height and it fades in (ours: two slots of one row slid past each other). Rows come and go by their height, then fade, and keep the order they came in while it is open (ours: a row clicked never sorts away from the pointer) |
 | Sound (**ours**) | The volume's slider alone on the card; its arrow opens Sound: "Output" and "Input" captions alike (no rule), each device with a symbol for what it is, Audio Settings (pwvucontrol); no microphone level or mute (seldom touched; pwvucontrol has them) | Under the levels | As a toggle menu | As a toggle menu |
 | Control centre header | The battery's pill (gs); without one the machine, bare (**ours**): 24 px os-release logo, hostname bold, uptime dim; then screenshot, lock, power | Top of the control centre | 36 px | |
 | Caffeine (**ours**: GNOME has none) | A toggle beside Night Light; a cup in the status button while on | Control centre | | |
 | Centred panel (launcher, shortcuts, gallery) | A `Card` over a 0.6 dim (gs) | Centre of the focused screen | Widths in em | Opens in place |
-| Banner (popup) | Header line (app name, age, expand, close; no app icon, **ours**: the body shows it, whole or as the picture's badge), 48 px icon or picture, summary, body, actions | Top right, under the status area | 34 em, radius 16, `bannerBg`, `popupBorder` edge | Fade and growth from 90 % over `bannerTime` |
-| Center | Media card (gs place), groups per app on `messageBg`, each header age, expand, close (gs `MessageHeader`), a lone one folding without its text moving, calendar, weather; Do Not Disturb switch and Clear in the footer (gs); Clear slides every group off at once, no Undo (**ours**); groups hold their places while it is open | Under the clock | See Panel sizes | |
+| Banner (popup) | Never expands (**ours**: the center is where a long one is read); a click runs its default action, else its one button, else puts it away; held while the pointer is on it. Header line (app name, age, close; no app icon, **ours**: the body shows it, whole or as the picture's badge), 48 px icon or picture, summary, body, actions | Top right, under the status area | 34 em, radius 16, `bannerBg`, `popupBorder` edge | Fade and growth from 90 % over `bannerTime`, back the same way as it goes; a queued one arrives as it gets room |
+| Center | Media card (gs place), groups per app on `messageBg`, each header age, expand, close (gs `MessageHeader`), a lone one folding without its text moving, calendar, weather; Do Not Disturb switch and Clear in the footer (gs); a click runs a lone card's default action, its arrow expands it; Clear slides every group off at once, no Undo (**ours**); groups hold their places while it is open | Under the clock that opened it, one per screen | See Panel sizes | The list eases its height, so the footer moves; a group's lines fade in as it unfolds and folds |
 | Media card | Album art in colour, blurred and darkened, text held to 3:1 (**ours**: the user asked for colour) | Heads the center's list | | |
 | Weather card | MET Norway's own colour icons (**ours**: the service's, not Adwaita's), the sky as a gradient (`skies`) | Beside the calendar | | |
 | OSD | Symbol, 160 px level (white, red past 100 %), number; or symbol and a word | Bottom centre, 4 em up | 56 px pill on `osdBg` | `quickTime` fade, gone 1.5 s after the last change |
-| Power menu (**ours** throughout) | Own backdrop, `display` clock, five 148 px tiles radius 28 with 64 px symbols, each key a `Keycap` 12 px in from the top-right corner (GNOME's end-session dialog shows none), pressed without Alt | Full screen | | Backdrop fades over `quickTime` |
+| Power menu (**ours** throughout) | Own backdrop, `display` clock, five 148 px tiles radius 28 with 64 px symbols, each key a `Keycap` 12 px in from the top-right corner (GNOME's end-session dialog shows none), pressed without Alt | Full screen | | Fades in and out over `popupTime`, as a popover |
 
 ## Panel sizes
 
@@ -239,7 +247,7 @@ rest scrolls. Narrower where the screen is, never wider.
 | Banner | 34 em | gs `.notification-banner` |
 | Launcher | 48 em, 68 with a preview | ours |
 | Shortcuts | columns of 24 em | ours |
-| Tray menu | at least 15 em | gs `.popup-menu` |
+| Tray menu | at least 15 em, at most 34 em | gs `.popup-menu`; a banner's at most (ours) |
 | Tray strip | at most 12 em | ours |
 
 ## Symbols
@@ -255,7 +263,8 @@ App icons are Papirus-Dark's; tray items draw what they send.
 GNOME's HIG: header capitals for titles, buttons, pills, menu items, empty
 states and our notifications' summaries ("Collapse All", "No Results");
 sentence case for subtitles, states, placeholders, menu empty lines and bind
-descriptions. "…" only where more input follows, never on a settings item;
+descriptions. "…" only where more input follows, or ends a state still under
+way ("Connecting…", as GNOME's), never on a settings item;
 the monitors mode's placeholder names what it lists ("Monitor layout…", ours).
 An estimate says about ("About 2 h 40 min left"). No full stops. A narrow
 no-break space (`Theme.unit`) before % and units ("76 %", "1 Gb/s"), none
@@ -273,7 +282,8 @@ unpadded.
 - The keyboard reaches every control in panels and menus: Tab and arrows move,
   Return and Space act, a `FocusRing` shows once keys have moved it (the bar has
   no keyboard focus; panels open from global shortcuts).
-- The wheel steps in notches (`WheelSteps`); only the center's list glides.
+- The wheel steps a level or a row in notches (`WheelSteps`); a list scrolls as
+  Qt's does, the center's easing each notch.
 - Only centred panels dim what is behind them.
 - Every icon-only control has a tooltip.
 - A critical notification: a 1 px red edge on its own card or box, never its

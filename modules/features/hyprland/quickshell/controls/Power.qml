@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Services.UPower
 import qs.common
 
-// UPower's display device combines the laptop batteries and leaves out mice and UPSes.
 Singleton {
   readonly property UPowerDevice device: UPower.displayDevice
   // Until UPower has answered, its values are zeros.

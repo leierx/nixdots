@@ -445,7 +445,7 @@ Scope {
           media: Media.player ? { title: Media.title, artist: Media.artist, playing: Media.player.isPlaying, identity: Media.player.identity, position: Math.round(Media.player.position), length: Math.round(Media.length) } : null
         },
         tray: SystemTray.items.values.filter(item => item.status !== Status.Passive).map(item => item.id),
-        // Each bar's status button, what it shows by name, and its tray: how many icons wait behind the chevron.
+        // Each bar's status button, what it shows by name, and its battery.
         status: probe.windows().filter(entry => entry.type === "BarWindow").map(entry => ({ screen: entry.screen, glyphs: entry.items.find(({ item }) => "glyphs" in item && "panel" in item)?.item.glyphs.map(glyph => glyph.name) ?? [], battery: Power.present ? Power.percent : null })),
         // The screens whose clock shows pressed, as its center is open.
         clocks: probe.windows().filter(entry => entry.type === "BarWindow" && entry.items.some(({ item }) => "screenName" in item && "checked" in item && item.checked)).map(entry => entry.screen),

@@ -368,7 +368,7 @@ in
           exec ${qtdeclarative}/bin/qml ${tray}/tray.qml
         '';
 
-      # fakes of NetworkManager, UPower and BlueZ on the session's own system bus (tests/*.py, or dbusmock's templates)
+      # fakes of NetworkManager, UPower, BlueZ and logind on the session's own system bus (tests/*.py, or dbusmock's templates)
       qsDbusmock = pkgs.writeShellScriptBin "qs-dbusmock" ''
         exec ${
           pkgs.python3.withPackages (ps: [

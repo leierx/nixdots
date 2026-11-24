@@ -9,7 +9,6 @@ import qs.common
 import qs.nix
 import "names.js" as Names
 
-// The control centre's own state: which of its menus is open, kept by name so it outlives a rebuilt list.
 Singleton {
   id: root
 

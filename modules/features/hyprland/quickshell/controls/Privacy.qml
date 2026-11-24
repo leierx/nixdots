@@ -7,8 +7,6 @@ import Quickshell.Services.Pipewire
 import qs.common
 import qs.nix
 
-// Who is recording: a microphone through PipeWire, the screen through the portal's PipeWire
-// streams, and a camera through PipeWire or straight from /dev (camera-users).
 Singleton {
   id: root
 

@@ -10,7 +10,6 @@ import qs.nix
 import qs.notifications
 import "names.js" as Names
 
-// NetworkManager: Wi-Fi and wired through Quickshell, and through nmcli what Quickshell lacks (VPNs, whether it runs at all).
 Singleton {
   id: root
 

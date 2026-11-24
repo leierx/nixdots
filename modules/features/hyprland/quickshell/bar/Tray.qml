@@ -6,7 +6,6 @@ import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import qs.common
 
-// The tray on the bar itself, left of the status button, a quiet pill: its first three icons always, a count of the rest, and all of them as the pointer reaches the bar's right end, a strip that scrolls sideways past 12 em, lingering a moment after the pointer leaves so a near miss still finds it.
 Item {
   id: root
 

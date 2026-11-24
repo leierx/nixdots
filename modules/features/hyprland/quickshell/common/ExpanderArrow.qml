@@ -1,7 +1,6 @@
 import QtQuick
 import qs.nix
 
-// Adwaita's pan-down, turned to point as it says: the one chevron.
 Glyph {
   id: root
 

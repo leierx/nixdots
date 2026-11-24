@@ -3,7 +3,6 @@ import qs.common
 import qs.nix
 import qs.notifications
 
-// gs MessageHeader's order: the age, expand, close; close without the pointer as the HIG asks of actions.
 Item {
   id: root
 

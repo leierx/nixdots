@@ -1,7 +1,6 @@
 import QtQuick
 import qs.common
 
-// The `value` hint, 0 to 100.
 Rectangle {
   id: root
 

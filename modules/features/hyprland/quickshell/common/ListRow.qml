@@ -1,6 +1,5 @@
 import QtQuick
 
-// Shell's .popup-menu-item: a row of a panel's list, its 16 px symbol in a column of its own, the name beside it, and what it says on the right.
 Rectangle {
   id: root
 

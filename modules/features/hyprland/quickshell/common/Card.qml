@@ -1,6 +1,5 @@
 import QtQuick
 
-// What floats: Shell's popover surface, its 1 px edge and its shadow.
 Rectangle {
   id: root
 

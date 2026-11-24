@@ -6,7 +6,6 @@ import Quickshell
 import Quickshell.Services.Mpris
 import "names.js" as Names
 
-// The MPRIS player worth a card: the one that started playing last, else one paused.
 Singleton {
   id: root
 

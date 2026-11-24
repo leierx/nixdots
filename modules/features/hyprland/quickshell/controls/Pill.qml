@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell.Widgets
 import qs.common
 
-// Shell's .quick-toggle: a pill, its menu arrow a segment of its own after a rule, in the pill's colour, lighter only under the pointer (ours: Shell lightens it always).
 Rectangle {
   id: pill
 

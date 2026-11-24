@@ -6,7 +6,6 @@ import Quickshell
 import Quickshell.Wayland
 import qs.common
 
-// The control centre's popover under its bar button: GNOME's quick settings.
 Popover {
   id: root
 

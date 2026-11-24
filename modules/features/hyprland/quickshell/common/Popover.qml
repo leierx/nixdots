@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// A popover off the bar: `shown` eases in and out over popupTime, clicks and the keyboard go elsewhere while it closes, and `hidden` says it has gone.
 Overlay {
   id: root
 

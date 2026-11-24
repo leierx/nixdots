@@ -8,7 +8,6 @@ import qs.nix
 import "devices.js" as Devices
 import "names.js" as Names
 
-// An open menu, GNOME's: a header (its symbol in a chip, blue while on, and its title), a filter once the list is long, the list, and what it leads on to.
 Rectangle {
   id: menuBox
 

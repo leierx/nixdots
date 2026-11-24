@@ -3,7 +3,6 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-// The one tooltip on screen: what it says, on which screen and under what, shown once the pointer has rested half a second, as GTK's.
 Singleton {
   id: root
 

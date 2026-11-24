@@ -1,7 +1,6 @@
 import QtQuick
 import qs.common
 
-// Shell's .panel-button: a pill inset 3 px, filled only under the pointer or while what it opens is open; regular weight (ours: Shell's bold read heavy).
 Button {
   implicitHeight: Theme.barItemHeight
   pill: true

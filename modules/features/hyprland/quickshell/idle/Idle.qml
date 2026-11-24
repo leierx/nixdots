@@ -6,7 +6,6 @@ import Quickshell.Io
 import Quickshell.Wayland
 import qs.common
 
-// The screens dimming before hyprlock: hypridle starts it and, on any input, cancels it, so its timers stay the only ones.
 Scope {
   id: root
 

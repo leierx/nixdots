@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
 
-// A Symbols path: Material Design Icons draw in a 24 px box, scaled to the size asked.
 Item {
   id: glyph
 

@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 
-// Asks for the tooltip while the pointer rests on what it is in, and lets it go as the pointer leaves, presses or it goes.
 Item {
   id: root
 

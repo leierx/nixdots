@@ -6,7 +6,6 @@ import Quickshell.Io
 import qs.common
 import "history.js" as Saved
 
-// The notification history on disk, so a restart of the shell keeps it, with the pictures only the server held.
 Singleton {
   id: root
 

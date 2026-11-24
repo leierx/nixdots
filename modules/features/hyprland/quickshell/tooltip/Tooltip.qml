@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Wayland
 import qs.common
 
-// Shell's %tooltip, under what it names, or above it where there is no room below; a layer of its own on each screen, taking no input.
 Scope {
   Variants {
     model: Screens.real

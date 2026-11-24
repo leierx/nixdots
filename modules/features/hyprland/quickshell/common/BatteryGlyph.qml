@@ -1,7 +1,6 @@
 import QtQuick
 import qs.nix
 
-// GNOME's battery: an upright cell filled to its charge, green, yellow from 25 %, red from 10 %, with a bolt while charging.
 Item {
   id: root
 

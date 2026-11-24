@@ -5,7 +5,6 @@ import Quickshell.Widgets
 import qs.common
 import qs.nix
 
-// GNOME's top row: the battery on the left, or the machine without one, then a screenshot, the lock and the power menu.
 Item {
   id: header
 
