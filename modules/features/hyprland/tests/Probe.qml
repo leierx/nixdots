@@ -60,9 +60,9 @@ Scope {
     return allowedColors.has(key(color)) || Object.values(Media.tint ?? {}).includes(String(color));
   }
 
-  // The open center's media art, its width as drawn; null with none.
+  // The open center's media art as drawn, its width and its top in the window; null with none.
   function mediaArt(): var {
-    for (const entry of windows()) for (const { item } of entry.items) if (item.objectName === "media:art") return Math.round(item.width);
+    for (const entry of windows()) for (const { item } of entry.items) if (item.objectName === "media:art") return { width: Math.round(item.width), y: Math.round(item.mapToItem(null, 0, 0).y) };
     return null;
   }
 
@@ -452,7 +452,7 @@ Scope {
           vpnAsking: Net.vpnAsking || null,
           bluetooth: { present: BluetoothDevices.present, on: BluetoothDevices.on, scanning: BluetoothDevices.scanning, devices: BluetoothDevices.devices.map(d => ({ name: d.name, address: d.address, paired: d.paired, connected: d.connected, trusted: d.trusted, note: BluetoothDevices.note(d) || null, battery: d.batteryAvailable ? Math.round(d.battery * 100) : null })) },
           night: { present: NightLight.present, on: NightLight.on, temperature: NightLight.temperature },
-          media: Media.player ? { title: Media.title, artist: Media.artist, playing: Media.player.isPlaying, identity: Media.player.identity, position: Math.round(Media.player.position), length: Math.round(Media.length), pinned: Media.pinned !== "" ? Media.player.identity : null, switcher: Media.switchable ? Media.live.map(p => p.identity) : [], tint: Media.tint, art: probe.mediaArt() } : null
+          media: Media.player ? { title: Media.title, artist: Media.artist, playing: Media.player.isPlaying, identity: Media.player.identity, position: Math.round(Media.player.position), length: Math.round(Media.length), pinned: Media.pinned !== "" ? Media.player.identity : null, switcher: Media.switchable ? Media.live.map(p => p.identity) : [], tint: Media.tint, art: probe.mediaArt()?.width ?? null, artY: probe.mediaArt()?.y ?? null } : null
         },
         tray: SystemTray.items.values.filter(item => item.status !== Status.Passive).map(item => item.id),
         // Each bar's status button, what it shows by name, and its battery.

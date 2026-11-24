@@ -120,6 +120,9 @@ Popover {
             spacing: Theme.padding
             clip: true
             flickableDirection: Flickable.VerticalFlick
+            // Held still until it has more than fits, and never pulled past its ends.
+            interactive: contentHeight > height
+            boundsBehavior: Flickable.StopAtBounds
             maximumFlickVelocity: 3500
             QQC.ScrollIndicator.vertical: ScrollBar {
               held: scroll.running

@@ -546,6 +546,16 @@ qst player remove spotify
 qst player add tall Tall Playing "$QS_TEST_DIR/tall.svg"
 qst wait '.controls.media.identity == "Tall" and .controls.media.art == 84 and .controls.media.tint != null'
 
+qst case "a list that fits holds still: dragging the player down neither moves nor bounces it"
+qst player add spotify Spotify Playing
+center
+qst wait '.controls.media.artY != null'
+top=$(qst state .controls.media.artY)
+read -r x y < <(qst area NotificationCenter:slider:media)
+qst drag "$x" $((y - 40)) 0 200 800 &
+qst stays ".controls.media.artY == $top" 1.2
+wait
+
 qst case "remote art is downloaded once, in the background, and kept for the next time it shows"
 mkdir -p "$QS_TEST_DIR/art"
 printf '%s' '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="#1d6fd6"/></svg>' > "$QS_TEST_DIR/art/cover.svg"
