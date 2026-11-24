@@ -5,6 +5,7 @@ import QtQuick.Controls.Basic as QQC
 import Quickshell
 import Quickshell.Wayland
 import qs.common
+import "../common/keep.js" as Keep
 
 Popover {
   id: root
@@ -23,6 +24,8 @@ Popover {
     restoreMode: Binding.RestoreNone
   }
 
+  // The sections as last built, for Keep.
+  readonly property var kept: ({})
   // What the card stacks, a menu slot under each row that opens one: menus of different rows ease shut and open apart, the same row's swap in one slot that eases to the new height; by id, so an open menu outlives every change around it.
   readonly property var sections: {
     const list = [{ id: "header", kind: "header" }, { id: "levels", kind: "levels" }, { id: "menu:levels", kind: "menu", keys: ["sound"] }];
@@ -34,7 +37,7 @@ Popover {
       if (keys.length > 0) list.push({ id: `menu:${i}`, kind: "menu", keys });
     }
     if (Privacy.kinds.length > 0) list.push({ id: "inuse", kind: "inuse" });
-    return list;
+    return Keep.keep(root.kept, list, "id");
   }
 
   // Kept whole in view in the card too, which scrolls on a short screen.

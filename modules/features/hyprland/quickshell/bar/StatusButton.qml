@@ -28,41 +28,61 @@ BarButton {
     return glyphs.length > 0 || Power.present ? glyphs : [{ name: "settings", path: Symbols.settings, color: Theme.fg }];
   }
 
-  // What it draws: the glyphs, and those just gone where they were, fading before the rest close up.
+  // What it draws, by name: the glyphs, and those just gone where they were, fading before the rest close up.
   property var drawn: []
+  // One object per name, kept: a ScriptModel replaces rows in place for as long as the old and new objects differ, past rows whose names do not match (TODO.md), so an unchanged glyph must stay the very same object.
+  readonly property var kept: ({})
+
+  function entry(name: string): var {
+    return root.kept[name] ?? (root.kept[name] = { name });
+  }
 
   onGlyphsChanged: {
     const names = new Set(root.glyphs.map(glyph => glyph.name));
-    const result = root.glyphs.slice();
+    const result = root.glyphs.map(glyph => root.entry(glyph.name));
     let after = -1;
     for (const old of root.drawn) {
       const at = result.findIndex(glyph => glyph.name === old.name);
       if (at >= 0) {
         after = at;
       } else if (!names.has(old.name)) {
-        result.splice(after + 1, 0, Object.assign({}, old, { leaving: true }));
+        // Drawn as it last was while it fades.
+        const last = root.shown[old.name] ?? {};
+        result.splice(after + 1, 0, old.leaving ? old : { name: old.name, leaving: true, path: last.path, color: last.color });
+        delete root.kept[old.name];
         after++;
       }
     }
     root.drawn = result;
     if (result.some(glyph => glyph.leaving)) gone.restart();
+    root.shown = root.byName(root.glyphs);
+  }
+
+  // The glyphs by name, as last shown, for one fading out.
+  property var shown: ({})
+
+  function byName(glyphs: var): var {
+    const found = {};
+    for (const glyph of glyphs) found[glyph.name] = glyph;
+    return found;
   }
 
   Timer {
     id: gone
 
     interval: Theme.popupTime
-    onTriggered: root.drawn = root.glyphs
+    onTriggered: root.drawn = root.glyphs.map(glyph => root.entry(glyph.name))
   }
 
   Component.onCompleted: {
-    drawn = glyphs;
+    drawn = glyphs.map(glyph => entry(glyph.name));
+    shown = byName(glyphs);
     panel = `controls:${screen.name}`;
     loader.active = Panels.active === panel;
   }
 
   // At least three symbols wide, so it is always an easy target; it eases as one comes or goes.
-  implicitWidth: Math.max(icons.implicitWidth, 3 * 16 + 2 * Theme.basePadding) + 2 * Theme.padding
+  implicitWidth: Math.max(icons.content, icons.least) + 2 * Theme.padding
 
   Behavior on implicitWidth {
     NumberAnimation {
@@ -74,32 +94,21 @@ BarButton {
   tooltip: "Quick Settings"
   onClicked: Panels.toggle(root.panel)
 
-  // From the right edge, so the glyphs already there hold still as one comes; centred while the button is at its least.
-  Row {
+  // Laid from the right edge by hand, which holds still as the button grows leftwards: a glyph keeps its place unless one comes or goes to its left, and only those move, eased. A Row laid them from its left, so each change jumped the others before they slid.
+  Item {
     id: icons
 
-    property real inset: Theme.padding + Math.max(0, (root.width - 2 * Theme.padding - icons.implicitWidth) / 2)
+    readonly property int step: 16 + Theme.basePadding
+    readonly property int count: root.drawn.length
+    readonly property real battery: Power.present ? power.implicitWidth : 0
+    readonly property real content: count * 16 + battery + Math.max(0, count + (Power.present ? 1 : 0) - 1) * Theme.basePadding
+    readonly property real least: 3 * 16 + 2 * Theme.basePadding
+    // Centred while the button is at its least.
+    readonly property real inset: Theme.padding + Math.max(0, (least - content) / 2)
 
     anchors.right: parent.right
-    anchors.rightMargin: inset
-    anchors.verticalCenter: parent.verticalCenter
-
-    Behavior on inset {
-      NumberAnimation {
-        duration: Theme.popupTime
-        easing.type: Easing.OutQuad
-      }
-    }
-    spacing: Theme.basePadding
-
-    // The others make room for a new one, which fades in on its own: a positioner's add transition cut short leaves its item where it stopped.
-    move: Transition {
-      NumberAnimation {
-        property: "x"
-        duration: Theme.popupTime
-        easing.type: Easing.OutQuad
-      }
-    }
+    width: 0
+    height: parent.height
 
     Repeater {
       // Keyed by name, so a symbol that stays keeps its delegate and only the new one arrives.
@@ -112,10 +121,17 @@ BarButton {
         id: glyph
 
         required property var modelData
+        // From the list itself rather than the delegate's index, which updates apart from the count.
+        readonly property int after: root.drawn.length - 1 - root.drawn.findIndex(other => other.name === glyph.modelData.name)
 
-        path: modelData.path
+        x: -(icons.inset + (Power.present ? icons.battery + Theme.basePadding : 0) + glyph.after * icons.step + 16)
+        y: (icons.height - height) / 2
+        // The glyph as it is now, or as it was while it fades out.
+        readonly property var look: glyph.leaving ? glyph.modelData : root.glyphs.find(other => other.name === glyph.modelData.name) ?? glyph.modelData
+
+        path: glyph.look.path ?? ""
         size: 16
-        color: modelData.color
+        color: glyph.look.color ?? Theme.fg
         opacity: 0
         Component.onCompleted: arrive.start()
         // Read off its own data: a ScriptModel row that stays in place takes the new object.
@@ -123,6 +139,13 @@ BarButton {
         onLeavingChanged: if (leaving) {
           arrive.stop();
           leave.start();
+        }
+
+        Behavior on x {
+          NumberAnimation {
+            duration: Theme.popupTime
+            easing.type: Easing.OutQuad
+          }
         }
 
         NumberAnimation {
@@ -135,22 +158,39 @@ BarButton {
           easing.type: Easing.OutQuad
         }
 
-        NumberAnimation {
+        // Once those to its left have made half the room, so it never shows over one still moving.
+        SequentialAnimation {
           id: arrive
 
-          target: glyph
-          property: "opacity"
-          to: 1
-          duration: Theme.popupTime
-          easing.type: Easing.OutQuad
+          PauseAnimation {
+            duration: Theme.popupTime / 2
+          }
+
+          NumberAnimation {
+            target: glyph
+            property: "opacity"
+            to: 1
+            duration: Theme.popupTime
+            easing.type: Easing.OutQuad
+          }
         }
       }
     }
 
     Row {
+      id: power
+
+      x: -(icons.inset + width)
       anchors.verticalCenter: parent.verticalCenter
       visible: Power.present
       spacing: 3
+
+      Behavior on x {
+        NumberAnimation {
+          duration: Theme.popupTime
+          easing.type: Easing.OutQuad
+        }
+      }
 
       BatteryGlyph {
         anchors.verticalCenter: parent.verticalCenter

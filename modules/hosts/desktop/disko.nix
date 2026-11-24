@@ -3,6 +3,8 @@
   flake.modules.nixos."nixosConfigurations/desktop" = {
     imports = [ inputs.disko.nixosModules.disko ];
 
+    services.lvm.enable = false;
+
     disko.devices.disk = {
       nvme1 = {
         device = "/dev/disk/by-id/nvme-Samsung_SSD_980_PRO_1TB_S5GXNF0W216969K";

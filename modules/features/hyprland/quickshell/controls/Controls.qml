@@ -8,12 +8,15 @@ import Quickshell.Networking
 import qs.common
 import qs.nix
 import "names.js" as Names
+import "../common/keep.js" as Keep
 
 Singleton {
   id: root
 
   readonly property bool open: Panels.active.startsWith("controls:")
   property string menu: ""
+  // The pills as last built, for Keep.
+  readonly property var kept: ({})
   // The pills, those the machine has: hardware that is missing leaves none, a service that is missing a dim one.
   readonly property var toggles: {
     const list = [];
@@ -34,7 +37,7 @@ Singleton {
     }
     if (NightLight.present) list.push({ key: "night", title: "Night Light", subtitle: NightLight.on ? Theme.unit(NightLight.temperature, "K") : "Off", glyph: Symbols.nightLight, on: NightLight.on, menu: true });
     list.push({ key: "caffeine", title: "Caffeine", subtitle: Caffeine.active ? "On" : "Off", glyph: Symbols.cup, on: Caffeine.active, menu: false });
-    return list;
+    return Keep.keep(root.kept, list, "key");
   }
   function wiredState(device: var): string {
     if (!device.hasLink) return "Cable unplugged";

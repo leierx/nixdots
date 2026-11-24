@@ -344,7 +344,7 @@ in
         meta.mainProgram = "qs-input";
       };
 
-      # tray items whose menus can be clicked through without touching anything real: one with submenus, or `qs-tray NAME COUNT`
+      # tray items whose menus can be clicked through without touching anything real: one with submenus, or `qs-tray NAME COUNT [ENTRIES]`
       qsTray =
         let
           tray = pkgs.runCommand "qs-tray-qml" { } ''
@@ -468,5 +468,7 @@ in
       checks.names = qmlTest "names" "controls/names.js" "tst_names.qml";
       # What symbol a sound device gets, from what PipeWire tells of it.
       checks.sound-devices = qmlTest "sound-devices" "controls/devices.js" "tst_devices.qml";
+      # Rebuilt rows kept the same objects where unchanged, which a ScriptModel needs to diff them.
+      checks.keep = qmlTest "keep" "common/keep.js" "tst_keep.qml";
     };
 }

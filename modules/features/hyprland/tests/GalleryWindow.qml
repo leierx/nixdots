@@ -358,6 +358,15 @@ Overlay {
             }
           }
           Labelled {
+            label: "entry focused"
+            TextField {
+              width: 220
+              text: "hunter22"
+              password: true
+              focused: true
+            }
+          }
+          Labelled {
             label: "entry hover"
             TextField {
               width: 220

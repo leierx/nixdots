@@ -7,6 +7,7 @@ import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.common
 import qs.nix
+import "../common/keep.js" as Keep
 import "search.js" as Search
 
 Overlay {
@@ -14,7 +15,6 @@ Overlay {
 
   required property LauncherMode mode
   readonly property bool previewing: mode.preview !== null
-  readonly property bool divided: previewing && matches.count > 0
 
   // Clear of the screen's edges, whatever its size and scale.
   readonly property int margin: Math.round(3 * Theme.em)
@@ -105,7 +105,9 @@ Overlay {
     property string typed: ""
     property string query: ""
     property int rowHeight: 50
-    readonly property var results: list.mode.search(list.query)
+    readonly property var results: Keep.keep(list.kept, list.mode.search(list.query), "key")
+    // The rows as last built, for Keep.
+    readonly property var kept: ({})
     readonly property var current: list.results[list.currentIndex] ?? null
     readonly property int page: Math.max(1, Math.floor((list.height + list.spacing) / (list.rowHeight + list.spacing)))
 
@@ -442,8 +444,8 @@ Overlay {
       ResultList {
         id: matches
 
-        Layout.fillWidth: !root.divided
-        Layout.preferredWidth: root.divided ? Math.round(root.cardWidth * root.mode.split) - 16 : -1
+        Layout.fillWidth: !root.previewing
+        Layout.preferredWidth: root.previewing ? Math.round(root.cardWidth * root.mode.split) - 16 : -1
         Layout.minimumWidth: Math.max(0, Layout.preferredWidth)
         Layout.fillHeight: true
         Layout.margins: 8
@@ -458,7 +460,7 @@ Overlay {
       }
 
       Rectangle {
-        visible: root.divided
+        visible: root.previewing
         Layout.fillHeight: true
         Layout.topMargin: Theme.padding
         Layout.bottomMargin: Theme.padding
@@ -466,14 +468,16 @@ Overlay {
         color: Theme.separator
       }
 
-      // Its preview's own width would otherwise move the split with every row.
+      // Its preview's own width would otherwise move the split with every row; there whether or not anything matches, so the card never changes shape under the keys.
       Loader {
-        visible: root.divided
+        visible: root.previewing
         clip: true
         Layout.fillWidth: true
         Layout.preferredWidth: 1
         Layout.fillHeight: true
         Layout.margins: 20
+        // An empty pane while nothing matches.
+        active: root.mode.selected !== null
         sourceComponent: root.mode.preview
       }
     }

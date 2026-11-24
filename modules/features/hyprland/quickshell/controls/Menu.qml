@@ -7,6 +7,7 @@ import qs.common
 import qs.nix
 import "devices.js" as Devices
 import "names.js" as Names
+import "../common/keep.js" as Keep
 
 Rectangle {
   id: menuBox
@@ -87,7 +88,9 @@ Rectangle {
   readonly property int askingHeight: 2 * rowHeight + 12
   // Night light's menu is its strength rather than a list.
   readonly property bool tint: key === "night"
-  readonly property var all: key === "wifi" ? settled : tint ? [] : menuBox.rows(key)
+  readonly property var all: key === "wifi" ? settled : tint ? [] : Keep.keep(menuBox.kept, menuBox.rows(key), "key")
+  // The rows as last built, for Keep.
+  readonly property var kept: ({})
   // Wi-Fi's rows, built every 150 ms while it is open: a binding would rebuild them for each of the hundreds of changes a scan makes.
   property var settled: []
   readonly property int count: all.filter(row => !row.heading).length
@@ -156,9 +159,7 @@ Rectangle {
     const text = JSON.stringify(rows, (name, value) => name === "target" ? undefined : value);
     if (text === menuBox.settledText && rows.every((row, i) => row.target === menuBox.settled[i]?.target)) return;
     menuBox.settledText = text;
-    menuBox.settled = rows;
-    // A ScriptModel keeps a moved row's old object until the next set (TODO.md), and a row that sorts up as it asks would never show it.
-    menuBox.settled = rows.slice();
+    menuBox.settled = Keep.keep(menuBox.kept, rows, "key");
   }
 
   Connections {

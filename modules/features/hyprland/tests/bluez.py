@@ -1,10 +1,12 @@
 """BlueZ for qs-test: dbusmock's bluez5 template, with devices that look like real ones.
 
 A device has an icon, a battery and a way of pairing: "ok" pairs without a code, "pin" wants
-one (which nothing here can answer, as in the shell), "fail" refuses to connect, "crowded" refuses
+one (which nothing here can answer, as in the shell), "fail" refuses to connect, "slow" takes a moment to, "crowded" refuses
 as another device turns up nearby.
 qs-test drives it through the org.bluez.Mock methods below (`qst bluetooth`).
 """
+
+import time
 
 import dbus
 
@@ -24,6 +26,9 @@ def pair(device):
 
 def connect(device):
     behaviour = BEHAVIOUR.get(device.path)
+    if behaviour == "slow":
+        # The reply held back, as a real link takes a moment: the shell shows it connecting meanwhile.
+        time.sleep(1.5)
     if behaviour == "crowded":
         # Announced before the error goes back, as discovery finds one while a connect is under way.
         bluez5.AddDevice(mockobject.objects["/"], device.path.split("/")[3], "11:22:33:44:55:EE", "Soundcore 2")

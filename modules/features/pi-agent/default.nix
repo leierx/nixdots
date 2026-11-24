@@ -50,6 +50,13 @@
           pkgs.git
           pkgs.nodejs
           unstablePkgs.claude-code
+          (pkgs.python3.withPackages (ps: [ ps.pyyaml ]))
+          pkgs.yq-go
+          pkgs.dnsutils
+          pkgs.file
+          pkgs.openssl
+          pkgs.unzip
+          pkgs.xxd
         ];
         appendSystem = ./APPEND_SYSTEM.md;
         mutableSettings = true;

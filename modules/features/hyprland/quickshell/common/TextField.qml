@@ -11,14 +11,16 @@ Rectangle {
   property bool search: false
   // The mouse's, unless something (the gallery) holds a look.
   property bool hovered: hover.hovered
+  // The keyboard's, unless the gallery holds the look.
+  property bool focused: field.activeFocus
   readonly property alias input: field
 
   signal accepted()
 
   implicitHeight: 36
   radius: search ? height / 2 : Theme.baseRadius
-  color: hovered && !field.activeFocus ? Theme.buttonHoverBg : Theme.buttonBg
-  border.width: field.activeFocus ? 2 : 0
+  color: hovered && !focused ? Theme.buttonHoverBg : Theme.buttonBg
+  border.width: focused ? 2 : 0
   border.color: Theme.focusRing
 
   Behavior on color {

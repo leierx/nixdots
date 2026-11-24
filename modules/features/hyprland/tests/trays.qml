@@ -2,7 +2,7 @@ import QtQuick
 import QtQml.Models
 import Qt.labs.platform
 
-// `qs-tray NAME COUNT`: COUNT items under the app NAME, each with a short menu.
+// `qs-tray NAME COUNT [ENTRIES]`: COUNT items under the app NAME, each with a short menu, or one ENTRIES long.
 QtObject {
   id: root
 
@@ -21,9 +21,19 @@ QtObject {
       tooltip: `${root.name} ${index}`
 
       menu: Menu {
+        id: menu
+
         MenuItem {
           text: `Open ${root.name}`
           onTriggered: console.info(`triggered Open ${root.name}`)
+        }
+        Instantiator {
+          model: Number(root.args[2] ?? 0)
+          delegate: MenuItem {
+            required property int index
+            text: `Entry ${index + 1}`
+          }
+          onObjectAdded: (index, item) => menu.insertItem(index + 1, item)
         }
         MenuItem {
           text: "Quit"

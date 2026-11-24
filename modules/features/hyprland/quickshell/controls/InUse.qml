@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.common
+import "../common/keep.js" as Keep
 
 Column {
   id: inUse
@@ -19,6 +20,9 @@ Column {
     }
     return null;
   }
+
+  // The kinds as last built, for Keep.
+  readonly property var kept: ({})
 
   spacing: 8
 
@@ -36,7 +40,7 @@ Column {
 
     Repeater {
       model: ScriptModel {
-        values: Privacy.kinds
+        values: Keep.keep(inUse.kept, Privacy.kinds, "name")
         objectProp: "name"
       }
 

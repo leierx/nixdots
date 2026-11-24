@@ -20,8 +20,11 @@ QtObject {
     onTriggered: root.process.running = true
   }
 
+  // Started by hand, as the restart does, rather than a binding the first restart would break.
+  onCommandChanged: if (root.process && root.command.length > 0 && !root.process.running) root.process.running = true
+  Component.onCompleted: if (root.command.length > 0) root.process.running = true
+
   property Process process: Process {
-    running: root.command.length > 0
     command: root.command
     environment: root.environment
     stdout: SplitParser {

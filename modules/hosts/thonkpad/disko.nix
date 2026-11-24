@@ -3,6 +3,8 @@
   flake.modules.nixos."nixosConfigurations/thonkpad" = {
     imports = [ inputs.disko.nixosModules.disko ];
 
+    services.lvm.enable = false;
+
     disko.devices.disk = {
       nvme1 = {
         device = "/dev/disk/by-id/nvme-SKHynix_HFS512GEJ9X164N_4YC6N036115206S22";

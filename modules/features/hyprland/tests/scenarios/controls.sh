@@ -289,6 +289,16 @@ qst wait '.controls.bluetooth.devices | map(select(.name == "JBL Flip"))[0].pair
 qst click "ControlsPanel:row:JBL Flip"
 qst wait '(.controls.bluetooth.devices | map(.name) | index("Soundcore 2")) and (.controls.bluetooth.devices | map(select(.name == "JBL Flip"))[0].note == "Couldn'"'"'t connect")'
 
+qst case "clicks on a device still connecting do nothing, as Quickshell cannot cancel one, and it connects"
+qst bluetooth add 11:22:33:44:55:05 "Slow Speaker" audio-speaker slow paired
+open bluetooth
+qst wait '.controls.bluetooth.devices | map(select(.name == "Slow Speaker"))[0].paired'
+qst click "ControlsPanel:row:Slow Speaker"
+qst wait '.controls.bluetooth.devices | map(select(.name == "Slow Speaker"))[0].note == "Connecting…"'
+qst click "ControlsPanel:row:Slow Speaker"
+qst click "ControlsPanel:row:Slow Speaker"
+qst wait '.controls.bluetooth.devices | map(select(.name == "Slow Speaker"))[0].connected' 10
+
 qst case "Bluetooth off says so in its menu, and Bluetooth Settings opens bluetui"
 open bluetooth
 qst click ControlsPanel:pill:bluetooth

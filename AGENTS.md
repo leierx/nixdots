@@ -160,7 +160,7 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | `desktop-apps.nix` | HM | `desktop-apps` | GUI apps every workstation gets; Loupe and Celluloid the default image viewer and video player through `~/.local/share/applications/mimeapps.list` (below the mutable `~/.config/mimeapps.list`, which apps write and "Open With" overrides); Celluloid on an mpv.conf (`hwdec=auto-safe`, its default is software; `profile=fast`) and graphics offload via dconf |
 | `display-manager.nix` | nixos | `display-manager` | ly |
 | `doas.nix` | nixos | `doas` | doas replaces sudo (`doas-sudo-shim`); wheel `noPass`, no `keepenv`, passes only `LANG`, `NIX_PATH`, `SUDO_*` |
-| `documentation.nix` | nixos | `documentation` | NixOS manpages off |
+| `documentation.nix` | nixos | `documentation` | NixOS manual, info pages and `/share/doc` off; man pages kept |
 | `gaming.nix` | nixos | `gaming` | Steam + proton-ge |
 | `git.nix` | nixos, HM | `git` | git, identity from `identity` |
 | `home-manager.nix` | nixos | `home-manager` | HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<host>/home` |
@@ -174,7 +174,7 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | `nix.nix` | nixos | `nix` | GC, `auto-optimise-store`, flakes, cache, no global registry; `nixpkgs` registry/`NIX_PATH` from `nixpkgs.flake.source` |
 | `nix-index.nix` | HM | `nix-index` | small prebuilt DB + wrapped comma |
 | `nixpkgs.nix` | nixos | `nixpkgs`, `unstable-nixpkgs` | `allowUnfree`; overlay `pkgs.unstable`. Prefer default `pkgs` unless a package needs unstable |
-| `packages.nix` | nixos | `packages` | jq, fzf, fastfetch, tree, kubectl |
+| `packages.nix` | nixos | `packages` | jq, fzf, fastfetch, tree, kubectl; NixOS' `defaultPackages` (perl, rsync, strace) off |
 | `pi-agent/` | HM | `pi-agent` (imports `programs.pi-coding-agent`) | below |
 | `plymouth.nix` | nixos | `plymouth` | plymouth + quiet boot |
 | `podman.nix` | nixos | `podman` | docker compat, DNS on `podman0` |
@@ -237,9 +237,10 @@ Configures HM's `programs.pi-coding-agent` (imported from
 `inputs.home-manager-unstable` with its `modules/lib` overlay until
 `release-26.11` ships it) with `pi-coding-agent` from `inputs.nixpkgs-unstable`
 imported directly with `allowUnfree` (the mac lacks `pkgs.unstable`, and
-`claude-code` is unfree). `extraPackages` suffixes `git`, `nodejs` and
-`claude-code` so a project shell's win (nixpkgs' wrapper already prefixes `rg`
-and `fd`); `claude` is on pi's PATH only, never the user's. Writes into
+`claude-code` is unfree). `extraPackages` suffixes `git`, `nodejs`,
+`claude-code` and what agents reach for (python3 with pyyaml, yq-go, dig,
+`file`, openssl, unzip, xxd) so a project shell's win (nixpkgs' wrapper already
+prefixes `rg` and `fd`); these are on pi's PATH only, never the user's. Writes into
 `config.programs.pi-coding-agent.configDir` (`~/.pi/agent` by default):
 `settings.json` (with `mutableSettings = true`, so activation merges declared
 settings in place while pi can still write its own keys like
@@ -269,7 +270,9 @@ Files: `default.nix` (nixos + HM base), `bindings.nix`, `rules.nix`,
 `hypridle.nix`, `hyprlock.nix`, `hyprmoncfg.nix`, `hyprtoolkit.nix`,
 `plugins.nix`, `quickshell.nix`, `assets/`, `scripts/`, `tests/`,
 `quickshell/`. The HM half reads `osConfig` (compositor package, xkb,
-fprintd, NetworkManager), so it needs the NixOS half.
+fprintd, NetworkManager), so it needs the NixOS half. The NixOS half turns off
+speech-dispatcher: `programs.hyprland` sets `services.graphical-desktop`,
+which defaults it on (~0.7 GiB of voices, for browser text-to-speech only).
 
 - **Lua settings API** of the pinned Hyprland: binds and events via
   `lib.generators.mkLuaInline` and `_args`. `bindings.nix`' `mkBind` gives every
@@ -477,9 +480,11 @@ icon theme, hostname, uptime).
 - `RectangularShadow` leaks an inner `ShaderEffect` per instance (Qt 6.11 and
   6.12, TODO.md): `Shadow` is a `ShaderEffect` on Qt's own shadow shader.
 - A QML `Timer` at interval 0 never fires: 1 is the next turn.
-- A `ScriptModel` with `objectProp` moves a row whose key moved but keeps its
-  old object, so the delegate reads stale `modelData` until the next set
-  (TODO.md): `Menu`'s Wi-Fi rows set twice.
+- A `ScriptModel` with `objectProp` mis-diffs rows rebuilt as new objects
+  (TODO.md): a moved row keeps its old object, and from a row whose key matches
+  but whose object differs it replaces row after row in place, so an insertion
+  renames every row after it and appends one. Rows a binding rebuilds go
+  through `common/keep.js`, which keeps each unchanged row the same object.
 - A `Singleton` is created on first use, so an unread one's `IpcHandler` does
   not exist, and `qs ipc` says "Target not found." with exit 0.
 - A value at the moment a state flips depends on binding order: derive it from
@@ -529,7 +534,7 @@ icon theme, hostname, uptime).
   characters (a picture's size and format too, never the counts under it); a
   clip is decoded to a file before wl-copy takes it, so one that fails says so.
   Rows rebuilt under the same query (a retitled window, the counts) keep the
-  selection by key; while its rows load a mode says nothing (`loading`). `monitors` lists the profile hyprmoncfgd would apply
+  selection by key; while its rows load a mode says nothing (`loading`). A mode with a preview keeps its pane, empty while nothing matches, so the card never changes shape under the keys. `monitors` lists the profile hyprmoncfgd would apply
   next first (`Recommended`), reloading a second after hotplug bursts.
   `windows` is wlr-foreign-toplevels in Hyprland focus order with live
   previews, none of a window whose size Hyprland has not given. `nixpkgs` searches nixos-unstable's ~130 000 packages
@@ -756,7 +761,7 @@ qst jobs [FILE[:REGEX]...]     # what a run would take, in order
 qst timings                    # last run's slowest cases and phases
 qst trace                      # this case's qst calls, by seconds into it
 qst flood 3000 --urgency 2     # notifications over D-Bus (--apps N, --summary/--body LENGTH, --rate N)
-qst tray                       # a tray item with nested submenus; `tray log`, `tray add first 4`, `tray remove first`, `tray clear`
+qst tray                       # a tray item with nested submenus; `tray log`, `tray add first 4` (`tray add long 1 80`: a menu 80 entries long), `tray remove first`, `tray clear`
 qst x notify-send -a Discord loft01 hello   # anything inside the session
 qst pipewire restart           # or stop, start
 qst backlight intel_backlight 40 [MAX]      # fake backlight; `NAME remove`
@@ -766,7 +771,7 @@ qst network wifi add Cafe 40 open # the fake NetworkManager: wifi add SSID [STRE
                                # profile wifi|ethernet|wireguard|vpn NAME [SSID PSK], vpn NAME ok|fail|secrets, up NAME,
                                # connectivity none|portal|limited|full, switch on|off, delay MS, dump, stop|start|restart
 qst battery 15 discharging 1800             # PERCENT [charging|discharging|full|pending [SECONDS]], or remove
-qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70
+qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70   # behaviour ok, pin, fail, slow (a connect taking 1.5 s) or crowded
 qst player add spotify Spotify Playing [ART]   # MPRIS; status NAME STATE, remove NAME, clear
 qst sync                       # copy edited QML in, restart qs, print warnings
 qst problems                   # warnings less tests/known-warnings and this case's expects
@@ -940,10 +945,10 @@ What Hyprland does that tests run into:
   `…/home`. Hardware stays per host (`hardware.nix`) even when repeated. Both
   homes import `homelab`.
   - `thonkpad`: `base workstation gaming`; Intel laptop, `thermald`, TLP
-    thresholds, UPower, disko, `treefmt`; for Chromecast 5353 and, for 10 s, the
+    thresholds, UPower, disko (ext4, LVM off), `treefmt`; for Chromecast 5353 and, for 10 s, the
     port an outgoing mDNS or SSDP query left from (nftables set `discovery`).
   - `desktop`: `base workstation gaming moonshine`; AMD, RX 6700 XT, ZSA udev
-    rules, disko, hyprmoncfg profiles `default`/`left-only`/`right-only`,
+    rules, disko (ext4, LVM off), hyprmoncfg profiles `default`/`left-only`/`right-only`,
     nix-index, startup apps pinned to monitors, `quickshell.scale = 1.2`.
 - **Profiles**: `base` (nixos: `boot doas documentation git home-manager
   journald locale network neovim nix nixpkgs packages podman unstable-nixpkgs

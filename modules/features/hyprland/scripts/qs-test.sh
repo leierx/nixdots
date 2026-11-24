@@ -62,13 +62,13 @@ usage: qs-test COMMAND
   player add NAME [IDENTITY] [STATUS] [ART]   an MPRIS player (tests/mpris.py), ART an image file for its cover; status NAME Playing|Paused|Stopped, remove NAME, clear
   battery PERCENT [STATE [SECONDS]]   the session's UPower battery (charging, discharging, full, pending), or remove
   bluetooth SUB ...     the session's BlueZ (tests/bluez.py): start|stop, adapter add|remove, remove ADDRESS,
-                        add ADDRESS NAME [ICON] [ok|pin|fail|crowded] [paired] [connected] [BATTERY]
+                        add ADDRESS NAME [ICON] [ok|pin|fail|slow|crowded] [paired] [connected] [BATTERY]
   backlight NAME VALUE [MAX]    set a fake backlight (max 100) and announce it as udev does; NAME remove unplugs it
   camera open|close NAME [DEV]  a process named NAME holding a fake camera (video0) open; add|remove DEV
                         add DEV locked plugs one in root's alone, as devtmpfs makes it; unlock DEV is udev handing it on
   spawn CMD...          start CMD in the session, detached (output in spawn.log)
   tray [log]            add a test tray item with submenus (tests/tray.qml), or show what it was told
-  tray add NAME [COUNT] COUNT items under the app id NAME (tests/trays.qml); remove NAME, clear
+  tray add NAME [COUNT [ENTRIES]]  COUNT items under the app id NAME, menus ENTRIES long (tests/trays.qml); remove NAME, clear
   flood COUNT [OPTIONS] COUNT notifications as fast as the bus takes them (qs-flood --help)
   x CMD...              run CMD in the session (notify-send, hyprctl, ...)
 
@@ -663,9 +663,9 @@ bluetooth() {
         *) die "bluetooth adapter add|remove [NAME]" ;;
       esac
       ;;
-    # ADDRESS NAME [ICON] [ok|pin|fail|crowded] [paired] [connected] [BATTERY]
+    # ADDRESS NAME [ICON] [ok|pin|fail|slow|crowded] [paired] [connected] [BATTERY]
     add)
-      [ $# -ge 2 ] || die "bluetooth add ADDRESS NAME [ICON] [ok|pin|fail|crowded] [paired] [connected] [BATTERY]"
+      [ $# -ge 2 ] || die "bluetooth add ADDRESS NAME [ICON] [ok|pin|fail|slow|crowded] [paired] [connected] [BATTERY]"
       bluez AddFullDevice string:hci0 "string:$1" "string:$2" "string:${3:-audio-headset}" "string:${4:-ok}" "boolean:$([ "${5:-}" = paired ] && echo true || echo false)" "boolean:$([ "${6:-}" = connected ] && echo true || echo false)" "int32:${7:--1}" > /dev/null
       ;;
     remove) bluez RemoveFullDevice string:hci0 "string:$1" > /dev/null ;;
@@ -1917,10 +1917,10 @@ case $cmd in
     case "${1:-}" in
       log) grep -o 'qml: .*' "$T/tray.log" ;;
       add)
-        [ $# -ge 2 ] || die "tray add NAME [COUNT]"
+        [ $# -ge 2 ] || die "tray add NAME [COUNT [ENTRIES]]"
         enter
         mkdir -p "$T/trays"
-        qs-tray "$2" "${3:-1}" >> "$T/tray.log" 2>&1 < /dev/null &
+        qs-tray "$2" "${3:-1}" ${4:+"$4"} >> "$T/tray.log" 2>&1 < /dev/null &
         echo $! > "$T/trays/$2.pid"
         ;;
       remove)

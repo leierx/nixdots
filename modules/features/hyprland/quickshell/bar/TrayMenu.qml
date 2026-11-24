@@ -247,6 +247,8 @@ PanelWindow {
         readonly property QsMenuHandle handle: index === 0 ? root.menu : parentCard?.entries.find(entry => entry.hasChildren && entry.text === root.path[index - 1]) ?? null
         // Bumped as rows are made, which itemAt() does not report.
         property int built: 0
+        // How far its rows are scrolled, for the probe.
+        readonly property real offset: scroller.contentY
 
         readonly property Region region: Region {
           item: card

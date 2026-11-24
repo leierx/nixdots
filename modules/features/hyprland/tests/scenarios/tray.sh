@@ -138,3 +138,18 @@ qst stays '.panel == "tray-menu:DP-1"' 0.3
 qst click left 400 600
 qst wait '.panel == "" and .trayMenu == null'
 [ "$(hyprctl activewindow -j | jq -r .class)" = target ] || { hyprctl activewindow -j; echo "the window clicked did not get the keyboard"; exit 1; }
+
+qst case "a tray menu longer than the screen fits it and scrolls, keeping the keyboard's row in view"
+qst output 640x480 1
+qst wait '.screens[0].width <= 640'
+qst tray add long 1 80
+qst wait '.tray | index("long") != null'
+# The one tray cell, left of the status button at the narrow bar's right end.
+read -r x y < <(qst areas BarWindow | awk -F'\t' '$1 > 300 && $5 == "true" && $6 == "false" && $2 < 32' | sort -n | tail -1 | awk -F'\t' '{ print $1, $2 }')
+qst pointer "$x" "$y"
+qst click right "$x" "$y"
+qst wait '.trayMenu != null'
+qst key End
+qst wait '.trayMenu.selected == "Quit" and .trayMenu.scrolled > 0'
+qst key Home
+qst wait '.trayMenu.selected == "Open long" and .trayMenu.scrolled == 0'

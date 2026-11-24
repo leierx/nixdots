@@ -97,8 +97,8 @@ Item {
     if (expanded) unfolded = true;
     else fold.start();
   }
-  // Its lines change as it unfolds and folds back, so they fade in rather than pop.
-  onUnfoldedChanged: if (settled) swap.restart()
+  // A group's lines change as it unfolds and folds back, so they fade in rather than pop; a lone one's text stays put, and a fade would only flicker it.
+  onUnfoldedChanged: if (settled && !single) swap.restart()
 
   NumberAnimation {
     id: swap
