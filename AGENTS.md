@@ -481,7 +481,11 @@ icon theme, hostname, uptime).
   `qrc:` file exists only once `QtQuick.Effects` is imported somewhere, so
   `Shadow` imports it itself.
 - `ColorQuantizer` reads only local files (`QUrl::toLocalFile`), and an empty
-  `source` keeps the last colours: `Media` downloads remote art first.
+  `source` keeps the last colours: `Media` downloads remote art first, and
+  takes colours only for the file it asked about.
+- Qt's pixmap cache keys a picture by URL, size, `fillMode` and the window's
+  device pixel ratio: an `Image` kept to warm another's must match all of them
+  (`Media`'s held cover).
 - A QML `Timer` at interval 0 never fires: 1 is the next turn.
 - A `ScriptModel` with `objectProp` mis-diffs rows rebuilt as new objects
   (TODO.md): a moved row keeps its old object, and from a row whose key matches
@@ -638,14 +642,18 @@ icon theme, hostname, uptime).
   not the profile, DHCP DNS without TLS, `device reapply` once online), `BluetoothDevices` (pair, trust, connect in one click; a
   PIN device goes to bluetui), `Volume`, `Microphone`, `NightLight`
   (hyprsunset, state kept and restored when hyprsunset restarts), `Media`
-  (the card's player: kept while it plays and 2 s after it pauses, so a
-  YouTube hover preview never takes it; else the last to start, else the one
-  shown, paused. With two or three players playing or paused the card has a
-  button each in arrival order, and a click pins that one until it goes, is
-  clicked again or a fourth comes. The card is the cover's colour,
-  `Theme.cover` over `ColorQuantizer`'s eight: OKLab 0.40, the seek bar and
-  play button 0.84, white on a grey cover; remote art is downloaded to the
-  cache dir first),
+  (the card's player: kept while it plays and 2 s after it pauses or stops,
+  so a YouTube hover preview never takes it; else the last to start, else the
+  one shown, paused. With two or three players playing or paused the card has
+  a button each in arrival order, and a click pins that one: it holds while
+  its player plays, and goes when it is clicked again, the choice goes (one
+  player, or a fourth), or its player has stopped playing and another plays.
+  The card is the cover's colour, `Theme.cover` over `ColorQuantizer`'s eight:
+  OKLab 0.40, the seek bar and play button 0.84, white on a grey cover; the
+  art square, or as wide as 16:9 for a video's thumbnail. Art is
+  read from a local file, from the start rather than as the center opens:
+  remote art downloaded to the cache dir in the background, kept by URL (the
+  last 32, pictures only), and held decoded so the card has it at once),
   `Power` (UPower display device), `Privacy` (a capture stream from a mic while
   audio flows, meters and passive filters aside; any `Video/Source` without a `device.api` (a portal's screen cast, or another); a camera
   via PipeWire or open on `/dev/video*` for half a second, `camera-users`).
@@ -783,7 +791,7 @@ qst network wifi add Cafe 40 open # the fake NetworkManager: wifi add SSID [STRE
                                # connectivity none|portal|limited|full, switch on|off, delay MS, dump, stop|start|restart
 qst battery 15 discharging 1800             # PERCENT [charging|discharging|full|pending [SECONDS]], or remove
 qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70   # behaviour ok, pin, fail, slow (a connect taking 1.5 s) or crowded
-qst player add spotify Spotify Playing [ART]   # MPRIS; status NAME STATE, remove NAME, clear
+qst player add spotify Spotify Playing [ART]   # MPRIS, ART a file or an http(s) URL; status NAME STATE, remove NAME, clear
 qst sync                       # copy edited QML in, restart qs, print warnings
 qst problems                   # warnings less tests/known-warnings and this case's expects
 qst census                     # what the probe finds wrong on screen

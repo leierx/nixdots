@@ -18,6 +18,8 @@ Rectangle {
 
 
   readonly property bool art: cover.status === Image.Ready
+  // The art's own shape from square to 16:9, a video's thumbnail (YouTube) whole; taller art is cropped square.
+  readonly property real aspect: art && cover.implicitHeight > 0 ? Math.max(1, Math.min(16 / 9, cover.implicitWidth / cover.implicitHeight)) : 1
   // The last art that loaded, kept up while the next track's loads, so a skip never blinks.
   property url shownArt: ""
   readonly property bool playing: Media.player?.isPlaying ?? false
@@ -38,8 +40,9 @@ Rectangle {
     id: coming
 
     visible: false
-    source: Media.player?.trackArtUrl ?? ""
+    source: Media.artShown
     sourceSize: Qt.size(168, 168)
+    fillMode: Image.PreserveAspectCrop
     asynchronous: true
     onStatusChanged: if (status !== Image.Loading) card.shownArt = status === Image.Ready ? source : ""
   }
@@ -47,9 +50,10 @@ Rectangle {
   Rectangle {
     id: artwork
 
+    objectName: "media:art"
     x: Theme.padding
     anchors.verticalCenter: parent.verticalCenter
-    width: 84
+    width: Math.round(84 * card.aspect)
     height: 84
     radius: Theme.baseRadius
     color: Theme.buttonBg
@@ -264,11 +268,11 @@ Rectangle {
         required property var modelData
         readonly property string icon: Quickshell.iconPath(DesktopEntries.heuristicLookup(modelData.desktopEntry || modelData.identity)?.icon ?? "", true)
 
-        objectName: `media:player:${modelData.identity}`
+        objectName: `media:player:${modelData.identity || modelData.dbusName}`
         tiny: true
         checked: modelData.dbusName === Media.shown
         glyph: icon === "" ? Symbols.music : ""
-        tooltip: modelData.identity
+        tooltip: modelData.identity || modelData.dbusName
         onClicked: Media.pin(modelData.dbusName)
 
         Image {

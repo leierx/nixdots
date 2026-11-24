@@ -3,11 +3,15 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import qs.common
+import qs.controls
 import qs.weather
 
 Scope {
-  // The forecast is fetched from the start, so the first open has it.
-  Component.onCompleted: Weather.now
+  // The forecast and the player's art are fetched from the start, so the first open has them.
+  Component.onCompleted: {
+    Weather.now;
+    Media.player;
+  }
 
   // One per screen, so a clock opens its own and another screen's never moves a window that is still fading out.
   Variants {

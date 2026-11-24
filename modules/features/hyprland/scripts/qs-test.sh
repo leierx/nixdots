@@ -729,7 +729,7 @@ player() {
   case $sub in
     add)
       [ -n "$name" ] || die "player add NAME [IDENTITY] [STATUS] [ART]"
-      QS_MPRIS_NAME=$name setsid qs-dbusmock --session --template "$tests/mpris.py" -p "$(jq -cn --arg identity "${3:-$name}" --arg status "${4:-Playing}" --arg art "${5:+file://$(realpath "$5")}" '{ identity: $identity, status: $status, art: $art }')" > "$T/players/$name.log" 2>&1 < /dev/null &
+      QS_MPRIS_NAME=$name setsid qs-dbusmock --session --template "$tests/mpris.py" -p "$(jq -cn --arg identity "${3:-$name}" --arg status "${4:-Playing}" --arg art "$(case ${5:-} in "") ;; http://* | https://*) echo "$5" ;; *) echo "file://$(realpath "$5")" ;; esac)" '{ identity: $identity, status: $status, art: $art }')" > "$T/players/$name.log" 2>&1 < /dev/null &
       echo $! > "$T/players/$name.pid"
       for _ in $(seq 250); do
         dbus-send --session --print-reply --dest=org.freedesktop.DBus / org.freedesktop.DBus.NameHasOwner "string:org.mpris.MediaPlayer2.$name" 2> /dev/null | grep -q 'boolean true' && return

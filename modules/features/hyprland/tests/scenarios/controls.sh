@@ -481,9 +481,9 @@ center
 qst wait '.controls.media.identity == "Spotify" and .controls.media.switcher == ["Spotify", "Firefox"]'
 qst click NotificationCenter:media:player:Firefox
 qst wait '.controls.media.identity == "Firefox" and .controls.media.pinned == "Firefox"'
+qst player status firefox Playing
 qst player status spotify Paused
 qst player status spotify Playing
-qst player status firefox Playing
 qst stays '.controls.media.identity == "Firefox" and .controls.media.switcher == ["Spotify", "Firefox"]' 1
 qst click NotificationCenter:media:player:Firefox
 qst wait '.controls.media.pinned == null'
@@ -494,6 +494,90 @@ qst wait '.controls.media.switcher == ["Spotify", "Firefox", "mpv"]'
 qst player add vlc VLC Paused
 qst wait '.controls.media.switcher == [] and .controls.media.pinned == null'
 qst stays '.controls.media.identity == "Spotify"' 0.5
+
+qst case "a pinned player that stops playing hands the card back to the one still playing, or to the next to start; alone, it keeps it"
+qst player add spotify Spotify Playing
+qst player add firefox Firefox Playing
+center
+qst wait '.controls.media.identity == "Spotify" and .controls.media.switcher == ["Spotify", "Firefox"]'
+qst click NotificationCenter:media:player:Firefox
+qst wait '.controls.media.identity == "Firefox" and .controls.media.pinned == "Firefox"'
+qst player status firefox Paused
+qst stays '.controls.media.identity == "Firefox"' 1.5
+qst wait '.controls.media.identity == "Spotify" and .controls.media.pinned == null'
+qst click NotificationCenter:media:player:Firefox
+qst wait '.controls.media.identity == "Firefox" and .controls.media.pinned == "Firefox"'
+qst player status spotify Paused
+qst stays '.controls.media.identity == "Firefox" and .controls.media.pinned == "Firefox"' 2.5
+qst player status firefox Paused
+qst player status spotify Playing
+qst wait '.controls.media.identity == "Spotify" and .controls.media.pinned == null'
+
+qst case "a player stopping between tracks keeps the card through the moment it is stopped"
+qst player add a A Playing
+qst player add b B Playing
+center
+qst wait '.controls.media.identity == "A"'
+qst player status a Stopped
+qst player status a Playing
+qst stays '.controls.media.identity == "A"' 2.5
+
+qst case "a pin goes with the choice: one player left, it is dropped"
+qst player add spotify Spotify Playing
+qst player add firefox Firefox Paused
+center
+qst wait '.controls.media.switcher == ["Spotify", "Firefox"]'
+qst click NotificationCenter:media:player:Firefox
+qst wait '.controls.media.pinned == "Firefox"'
+qst player remove spotify
+qst wait '.controls.media.identity == "Firefox" and .controls.media.pinned == null and .controls.media.switcher == []'
+
+qst case "a video's 16:9 thumbnail shows whole, the art as wide as it; square art is square, tall art cropped square"
+printf '%s' '<svg xmlns="http://www.w3.org/2000/svg" width="336" height="188"><rect width="336" height="188" fill="#d6311d"/></svg>' > "$QS_TEST_DIR/video.svg"
+printf '%s' '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="#1d6fd6"/></svg>' > "$QS_TEST_DIR/square.svg"
+printf '%s' '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="400"><rect width="200" height="400" fill="#1dd66f"/></svg>' > "$QS_TEST_DIR/tall.svg"
+qst player add firefox Firefox Playing "$QS_TEST_DIR/video.svg"
+center
+qst wait '.controls.media.art == 149'
+qst player remove firefox
+qst player add spotify Spotify Playing "$QS_TEST_DIR/square.svg"
+qst wait '.controls.media.identity == "Spotify" and .controls.media.art == 84'
+qst player remove spotify
+qst player add tall Tall Playing "$QS_TEST_DIR/tall.svg"
+qst wait '.controls.media.identity == "Tall" and .controls.media.art == 84 and .controls.media.tint != null'
+
+qst case "remote art is downloaded once, in the background, and kept for the next time it shows"
+mkdir -p "$QS_TEST_DIR/art"
+printf '%s' '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="#1d6fd6"/></svg>' > "$QS_TEST_DIR/art/cover.svg"
+port=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
+qst spawn python3 -m http.server "$port" --bind 127.0.0.1 --directory "$QS_TEST_DIR/art"
+for _ in $(seq 50); do (: > "/dev/tcp/127.0.0.1/$port") 2> /dev/null && break; sleep 0.1; done # sleep: the server is outside the probe
+url=http://127.0.0.1:$port/cover.svg
+fetches() { qst actions | grep -c "curl .*$url" || true; }
+qst player add web Web Playing "$url"
+# Before the center ever opens.
+qst wait '.controls.media.identity == "Web" and .controls.media.tint.accent != null and .controls.media.tint.accent != ""'
+center
+qst ipc panels close > /dev/null
+qst wait '.panel == ""'
+center
+qst player remove web
+qst wait '.controls.media == null'
+qst player add web Web Playing "$url"
+qst wait '.controls.media.identity == "Web" and .controls.media.tint.accent != ""'
+[ "$(fetches)" = 1 ] || { echo "the art was fetched $(fetches) times"; exit 1; }
+
+qst case "remote art that is not a picture, a captive portal's page, is not kept, and the card stays plain"
+mkdir -p "$QS_TEST_DIR/art"
+printf '%s' '<html><body>Sign in to the network</body></html>' > "$QS_TEST_DIR/art/portal.html"
+port=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
+qst spawn python3 -m http.server "$port" --bind 127.0.0.1 --directory "$QS_TEST_DIR/art"
+for _ in $(seq 50); do (: > "/dev/tcp/127.0.0.1/$port") 2> /dev/null && break; sleep 0.1; done # sleep: the server is outside the probe
+qst expect 'Cover art: not a picture: text/html'
+qst player add web Web Playing "http://127.0.0.1:$port/portal.html"
+qst wait '.controls.media.identity == "Web"'
+for _ in $(seq 50); do qst actions | grep -q "curl .*portal.html" && break; sleep 0.1; done # sleep: the download is a process the shell runs
+qst stays '.controls.media.tint == null' 1
 
 qst case "a cover's colour fills the card at a lightness white reads on, a black cover with a bright centre too; a grey one keeps white controls"
 # A black cover with a small bright centre: the picture today's wash took to black.
