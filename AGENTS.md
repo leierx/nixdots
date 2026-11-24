@@ -270,9 +270,7 @@ Files: `default.nix` (nixos + HM base), `bindings.nix`, `rules.nix`,
 `hypridle.nix`, `hyprlock.nix`, `hyprmoncfg.nix`, `hyprtoolkit.nix`,
 `plugins.nix`, `quickshell.nix`, `assets/`, `scripts/`, `tests/`,
 `quickshell/`. The HM half reads `osConfig` (compositor package, xkb,
-fprintd, NetworkManager), so it needs the NixOS half. The NixOS half turns off
-speech-dispatcher: `programs.hyprland` sets `services.graphical-desktop`,
-which defaults it on (~0.7 GiB of voices, for browser text-to-speech only).
+fprintd, NetworkManager), so it needs the NixOS half.
 
 - **Lua settings API** of the pinned Hyprland: binds and events via
   `lib.generators.mkLuaInline` and `_args`. `bindings.nix`' `mkBind` gives every
