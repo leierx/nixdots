@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Effects
+import Quickshell
 import qs.common
 import qs.controls
 import qs.nix
@@ -25,7 +25,14 @@ Rectangle {
 
   implicitHeight: info.implicitHeight + 2 * Theme.padding
   radius: Theme.messageRadius
-  color: Theme.messageBg
+  color: Media.tint?.card ?? Theme.messageBg
+
+  Behavior on color {
+    ColorAnimation {
+      duration: Theme.settle
+      easing.type: Easing.OutCubic
+    }
+  }
 
   Image {
     id: coming
@@ -35,49 +42,6 @@ Rectangle {
     sourceSize: Qt.size(168, 168)
     asynchronous: true
     onStatusChanged: if (status !== Image.Loading) card.shownArt = status === Image.Ready ? source : ""
-  }
-
-  // At the cover's size, so both come from the one cached picture.
-  Image {
-    id: wash
-
-    anchors.fill: parent
-    visible: false
-    source: card.shownArt
-    sourceSize: Qt.size(168, 168)
-    fillMode: Image.PreserveAspectCrop
-    asynchronous: true
-  }
-
-  Rectangle {
-    id: shape
-
-    anchors.fill: parent
-    visible: false
-    radius: parent.radius
-    layer.enabled: true
-  }
-
-  MultiEffect {
-    anchors.fill: parent
-    opacity: card.art && wash.status === Image.Ready ? 1 : 0
-    source: wash
-    autoPaddingEnabled: false
-    blurEnabled: true
-    blur: 1
-    blurMax: 64
-    // The art's colour kept, as the user asked, and darkened enough to read over.
-    saturation: 0.9
-    brightness: -0.5
-    maskEnabled: true
-    maskSource: shape
-
-    Behavior on opacity {
-      NumberAnimation {
-        duration: Theme.settle
-        easing.type: Easing.OutCubic
-      }
-    }
   }
 
   Rectangle {
@@ -133,7 +97,7 @@ Rectangle {
     Text {
       id: title
 
-      width: parent.width
+      width: parent.width - (switcher.visible ? switcher.width + Theme.basePadding : 0)
       text: Media.title
       textFormat: Text.PlainText
       elide: Text.ElideRight
@@ -175,6 +139,7 @@ Rectangle {
     Slider {
       objectName: "slider:media"
       width: parent.width
+      fill: !Media.tint ? Theme.accentBg : Media.tint.accent || Theme.fg
       visible: card.length > 0
       enabled: Media.player?.canSeek ?? false
       value: card.length > 0 ? (Media.player?.position ?? 0) / card.length : 0
@@ -217,7 +182,7 @@ Rectangle {
           width: 40
           height: 40
           radius: height / 2
-          color: playArea.pressed ? Theme.switchKnob : playArea.containsMouse ? Theme.sliderKnob : Theme.fg
+          color: playArea.pressed ? Media.tint?.accentPressed || Theme.switchKnob : playArea.containsMouse ? Media.tint?.accentHover || Theme.sliderKnob : Media.tint?.accent || Theme.fg
           opacity: playArea.enabled ? 1 : 0.5
 
           Behavior on color {
@@ -274,6 +239,47 @@ Rectangle {
         text: card.clock(card.length)
         color: Theme.fgStrong
         font: Theme.caption
+      }
+    }
+  }
+
+  // Two or three players: one button each, in the order they came; a click shows that one and pins it there.
+  Row {
+    id: switcher
+
+    anchors.right: parent.right
+    anchors.rightMargin: Theme.padding
+    y: info.y + title.y + (title.height - height) / 2
+    spacing: Theme.baseMargin
+    visible: Media.switchable
+
+    Repeater {
+      model: ScriptModel {
+        values: Media.switchable ? Media.live : []
+      }
+
+      IconButton {
+        id: choice
+
+        required property var modelData
+        readonly property string icon: Quickshell.iconPath(DesktopEntries.heuristicLookup(modelData.desktopEntry || modelData.identity)?.icon ?? "", true)
+
+        objectName: `media:player:${modelData.identity}`
+        tiny: true
+        checked: modelData.dbusName === Media.shown
+        glyph: icon === "" ? Symbols.music : ""
+        tooltip: modelData.identity
+        onClicked: Media.pin(modelData.dbusName)
+
+        Image {
+          anchors.centerIn: parent
+          width: 16
+          height: 16
+          visible: choice.icon !== ""
+          source: choice.icon
+          sourceSize: Qt.size(16, 16)
+          asynchronous: true
+        }
       }
     }
   }

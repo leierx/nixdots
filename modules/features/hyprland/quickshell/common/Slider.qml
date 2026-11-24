@@ -7,6 +7,7 @@ Item {
   // The top of the range: past 1 while the level is beyond 100 %, which is marked then.
   property real maximum: 1
   property bool dim: false
+  property color fill: Theme.accentBg
   // The range as a drag began, so the slider does not rescale under it.
   property real heldMaximum: 1
   readonly property real span: drag.pressed ? heldMaximum : Math.max(1, maximum)
@@ -71,7 +72,7 @@ Item {
       width: Math.min(slider.at, slider.span > 1 ? slider.full - 0.5 : slider.at)
       height: parent.height
       radius: parent.radius
-      color: slider.dim ? Theme.fgDim : Theme.accentBg
+      color: slider.dim ? Theme.fgDim : slider.fill
 
       Behavior on color {
         ColorAnimation {

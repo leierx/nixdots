@@ -381,7 +381,7 @@ qst wait '.machine.header == true and .machine.hostname != "" and .machine.icon 
 qst battery 40 discharging 1800
 qst wait '.machine.header == false'
 
-qst case "the player that played last gets the card; stopped, it goes"
+qst case "a paused player hands the card to one playing, after a moment; stopped, it goes"
 # alone: removing a playing player races Quickshell polling its position, and a loaded machine widens the race
 # The race can lose the poll's reply as the player leaves the bus.
 qst expect --may 'Error updating property org.mpris.MediaPlayer2.firefox'
@@ -463,6 +463,53 @@ qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70
 qst wait '.controls.bluetooth.devices[0].battery == 70'
 open bluetooth
 qst area ControlsPanel:row:Headset > /dev/null
+
+qst case "a player starting elsewhere, a hover preview, leaves the card on the one playing"
+qst player add spotify Spotify Playing
+qst player add firefox Firefox Paused
+center
+qst wait '.controls.media.identity == "Spotify"'
+qst player status firefox Playing
+qst player status firefox Paused
+qst player status firefox Playing
+qst stays '.controls.media.identity == "Spotify"' 2.5
+
+qst case "two or three players get a button each, in the order they came, and a click pins one; a fourth takes the buttons and the pin away"
+qst player add spotify Spotify Playing
+qst player add firefox Firefox Paused
+center
+qst wait '.controls.media.identity == "Spotify" and .controls.media.switcher == ["Spotify", "Firefox"]'
+qst click NotificationCenter:media:player:Firefox
+qst wait '.controls.media.identity == "Firefox" and .controls.media.pinned == "Firefox"'
+qst player status spotify Paused
+qst player status spotify Playing
+qst player status firefox Playing
+qst stays '.controls.media.identity == "Firefox" and .controls.media.switcher == ["Spotify", "Firefox"]' 1
+qst click NotificationCenter:media:player:Firefox
+qst wait '.controls.media.pinned == null'
+qst click NotificationCenter:media:player:Spotify
+qst wait '.controls.media.identity == "Spotify" and .controls.media.pinned == "Spotify"'
+qst player add mpv mpv Paused
+qst wait '.controls.media.switcher == ["Spotify", "Firefox", "mpv"]'
+qst player add vlc VLC Paused
+qst wait '.controls.media.switcher == [] and .controls.media.pinned == null'
+qst stays '.controls.media.identity == "Spotify"' 0.5
+
+qst case "a cover's colour fills the card at a lightness white reads on, a black cover with a bright centre too; a grey one keeps white controls"
+# A black cover with a small bright centre: the picture today's wash took to black.
+printf '%s' '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="#08080d"/><circle cx="150" cy="150" r="58" fill="#ff3fa4"/></svg>' > "$QS_TEST_DIR/cover-night.svg"
+printf '%s' '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="#eeeae1"/><rect x="30" y="40" width="200" height="4" fill="#1b1b1b"/></svg>' > "$QS_TEST_DIR/cover-paper.svg"
+qst player add spotify Spotify Playing "$QS_TEST_DIR/cover-night.svg"
+center
+qst wait '.controls.media.tint.card != null and .controls.media.tint.accent != ""'
+# Pink at OKLab 0.40, not the black around it.
+qst wait '(.controls.media.tint.card[1:3] | ascii_downcase) > (.controls.media.tint.card[5:7] | ascii_downcase)'
+qst player remove spotify
+qst player add paper Paper Playing "$QS_TEST_DIR/cover-paper.svg"
+qst wait '.controls.media.identity == "Paper" and .controls.media.tint.card != null and .controls.media.tint.accent == ""'
+qst player remove paper
+qst player add radio Radio Playing
+qst wait '.controls.media.identity == "Radio" and .controls.media.tint == null'
 
 qst case "the player's progress shows where the track is as the center opens, and seeks where it is clicked"
 qst player add spotify Spotify

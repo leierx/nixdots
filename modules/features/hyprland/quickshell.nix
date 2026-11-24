@@ -470,5 +470,7 @@ in
       checks.sound-devices = qmlTest "sound-devices" "controls/devices.js" "tst_devices.qml";
       # Rebuilt rows kept the same objects where unchanged, which a ScriptModel needs to diff them.
       checks.keep = qmlTest "keep" "common/keep.js" "tst_keep.qml";
+      # The media card's colour, which must read white on any cover.
+      checks.cover = qmlTest "cover" "common/cover.js" "tst_cover.qml";
     };
 }

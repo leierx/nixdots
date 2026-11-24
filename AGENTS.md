@@ -477,7 +477,11 @@ icon theme, hostname, uptime).
   (`QQuickItemGrabResult::render`): a copy goes only once its grab is back
   (`NotificationPopups`).
 - `RectangularShadow` leaks an inner `ShaderEffect` per instance (Qt 6.11 and
-  6.12, TODO.md): `Shadow` is a `ShaderEffect` on Qt's own shadow shader.
+  6.12, TODO.md): `Shadow` is a `ShaderEffect` on Qt's own shadow shader, whose
+  `qrc:` file exists only once `QtQuick.Effects` is imported somewhere, so
+  `Shadow` imports it itself.
+- `ColorQuantizer` reads only local files (`QUrl::toLocalFile`), and an empty
+  `source` keeps the last colours: `Media` downloads remote art first.
 - A QML `Timer` at interval 0 never fires: 1 is the next turn.
 - A `ScriptModel` with `objectProp` mis-diffs rows rebuilt as new objects
   (TODO.md): a moved row keeps its old object, and from a row whose key matches
@@ -609,8 +613,8 @@ icon theme, hostname, uptime).
   overlay on the first screen, moved rather than destroyed as monitors go);
   a prune spares pictures newer than its list. `Notifs` is read at start, so
   the server runs with no monitor on. IPC `notifications toggleDnd|setDnd|dnd|count|clear|hidePopups`.
-- `center/`: GNOME's date menu under the clock, one per screen (`center:DP-1`): the last-playing player's
-  `MediaCard`, notifications grouped per app, calendar (ISO weeks) and weather
+- `center/`: GNOME's date menu under the clock, one per screen (`center:DP-1`): `Media`'s
+  player's `MediaCard`, notifications grouped per app, calendar (ISO weeks) and weather
   where there is room. Opening it checks all, puts popups away and sorts the
   groups; while open a group keeps its place as its notifications go, a new app
   comes in on top. Clear slides every group in view off at once (each its own
@@ -633,7 +637,15 @@ icon theme, hostname, uptime).
   blocking DoT reads as limited: `nmcli device modify` gives the connection,
   not the profile, DHCP DNS without TLS, `device reapply` once online), `BluetoothDevices` (pair, trust, connect in one click; a
   PIN device goes to bluetui), `Volume`, `Microphone`, `NightLight`
-  (hyprsunset, state kept and restored when hyprsunset restarts), `Media`,
+  (hyprsunset, state kept and restored when hyprsunset restarts), `Media`
+  (the card's player: kept while it plays and 2 s after it pauses, so a
+  YouTube hover preview never takes it; else the last to start, else the one
+  shown, paused. With two or three players playing or paused the card has a
+  button each in arrival order, and a click pins that one until it goes, is
+  clicked again or a fourth comes. The card is the cover's colour,
+  `Theme.cover` over `ColorQuantizer`'s eight: OKLab 0.40, the seek bar and
+  play button 0.84, white on a grey cover; remote art is downloaded to the
+  cache dir first),
   `Power` (UPower display device), `Privacy` (a capture stream from a mic while
   audio flows, meters and passive filters aside; any `Video/Source` without a `device.api` (a portal's screen cast, or another); a camera
   via PipeWire or open on `/dev/video*` for half a second, `camera-users`).
@@ -692,8 +704,8 @@ Checks (`modules/flake/checks.nix`): `format` (`nixfmt --check` everywhere),
   name, a title) without `textFormat` (markup could load a URL).
   Deliberate exceptions are listed in the script with why.
 - `notification-markup`, `notification-history`, `launcher-search`, `names`,
-  `sound-devices`, `keep`: `qmltestrunner` over
-  `tests/tst_{markup,history,search,names,devices,keep}.qml`, each with
+  `sound-devices`, `keep`, `cover`: `qmltestrunner` over
+  `tests/tst_{markup,history,search,names,devices,keep,cover}.qml`, each with
   only its script beside it (`qmlTest`).
 - `qs-test`: builds the package, so shellcheck runs over `scripts/qs-test.sh`.
 
@@ -865,7 +877,8 @@ Every snapshot also checks the whole shell:
 
 - `problems` (the census): text with no room or under 8 pt, contrast below 3:1
   (Theme's faint colour and fading text aside), colours and radii not Theme's
-  (a running `Behavior on color` is held to its target),
+  (the media card's `Media.tint` counts as Theme's; a running `Behavior on
+  color` is held to its target),
   images without source or failing, a disabled area setting a hand, a card off
   its window, text over text, a window that is not a layer surface.
 - `invariants` (`tests/invariants.jq`): an open panel has its layer and vice
@@ -898,8 +911,8 @@ own `qst areas` filter: a missing name then says what is there.
 | --- | --- |
 | `binds.sh` | every global bind opens its own panel and closes it |
 | `caffeine.sh` | Caffeine's unit, pill and status cup |
-| `chaos.sh` | hostile and broken clients: floods, megabytes of text, bad icons, panel and hotplug storms, 40-window workspaces, 60 outputs, damaged state, 200 tray items, 300 hostile network names, 1000 outputs, 50 VPNs, 100 BT devices, small and 4K screens |
-| `controls.sh` | the control centre: open/close paths, status glyphs, header (battery or machine), every pill and menu against the fakes, a password tried as the centre shuts, two VPNs at once, a failed connect mid-scan, the sound menu's headings, symbols and Audio Settings, services stopping under it, Return on a sound output |
+| `chaos.sh` | hostile and broken clients: floods, megabytes of text, bad icons, panel and hotplug storms, 40-window workspaces, 60 outputs, damaged state, 200 tray items, 300 hostile network names, 1000 outputs, 50 VPNs, 100 BT devices, 30 players, small and 4K screens |
+| `controls.sh` | the control centre: open/close paths, status glyphs, header (battery or machine), every pill and menu against the fakes, a password tried as the centre shuts, two VPNs at once, a failed connect mid-scan, the sound menu's headings, symbols and Audio Settings, services stopping under it, Return on a sound output, the player the center's card shows, its buttons and pin, the cover's colour |
 | `cursors.sh` | the bar and every panel's cursors, a closed hand mid-drag |
 | `design.sh` | every surface on screen, scaled too, for the census |
 | `failures.sh` | the shell's tools failing (`qst fail`), the cached forecast |

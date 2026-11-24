@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import qs.nix
+import "cover.js" as Cover
 
 // GNOME Shell 51 and libadwaita 1.10 on the darker palette; STYLE.md says where each value comes from.
 Singleton {
@@ -140,6 +141,11 @@ Singleton {
     snow: ["#3e4a5a", "#5a6878"],
     storm: ["#2a2438", "#443a58"]
   })
+
+  // The media card in its cover's colour, from ColorQuantizer's: { card, accent, accentHover, accentPressed }, the accents empty for a grey cover; null without colours.
+  function cover(colors: var): var {
+    return Cover.cover(colors);
+  }
 
   // A number and its unit kept together by a narrow no-break space, as the HIG writes them ("76 %", "1 Gb/s").
   function unit(value: var, unit: string): string {

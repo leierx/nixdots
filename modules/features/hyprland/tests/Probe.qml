@@ -55,6 +55,11 @@ Scope {
     allowedColors = allowed;
   }
 
+  // Theme's, or the media card's from its cover (Theme.cover).
+  function themed(color: color): bool {
+    return allowedColors.has(key(color)) || Object.values(Media.tint ?? {}).includes(String(color));
+  }
+
   // Each visible window with its visible items, their opacity on screen and their place in the window.
   function windows(): var {
     return ProbeWindows.windows.filter(({ window }) => window.visible && window.contentItem).map(({ window, name }) => {
@@ -181,7 +186,7 @@ Scope {
             const ratio = (lighter + 0.05) / (darker + 0.05);
             if (ratio < 3) problems.push(`${label(entry, item)} has a contrast of ${ratio.toFixed(2)}:1 against what is behind it`);
           }
-          if (!allowedColors.has(key(item.color))) problems.push(`${label(entry, item)} is coloured ${item.color}, which is not Theme's`);
+          if (!themed(item.color)) problems.push(`${label(entry, item)} is coloured ${item.color}, which is not Theme's`);
         } else if (isImage(item)) {
           const source = String(item.source);
           if (source === "") problems.push(`${label(entry, item)} is shown without a source`);
@@ -194,8 +199,8 @@ Scope {
           if (!own && !inherited && !roles.includes(radius) && Math.abs(radius - half) > 0.6) problems.push(`${label(entry, item)} has a radius of ${radius}: neither Theme's nor half its size`);
           const behavior = ProbeWindows.colorBehaviors.get(item);
           const shownColor = behavior?.animation?.running ? behavior.targetValue : item.color;
-          if (!own && shownColor.a > 0 && !allowedColors.has(key(shownColor))) problems.push(`${label(entry, item)} is coloured ${shownColor}, which is not Theme's`);
-          if (!own && item.border.width > 0 && !allowedColors.has(key(item.border.color))) problems.push(`${label(entry, item)} has a border coloured ${item.border.color}, which is not Theme's`);
+          if (!own && shownColor.a > 0 && !themed(shownColor)) problems.push(`${label(entry, item)} is coloured ${shownColor}, which is not Theme's`);
+          if (!own && item.border.width > 0 && !themed(item.border.color)) problems.push(`${label(entry, item)} has a border coloured ${item.border.color}, which is not Theme's`);
         } else if (isMouseArea(item) && !item.enabled && item.cursorShape === Qt.PointingHandCursor) {
           problems.push(`${label(entry, item)} is disabled but still sets a pointing hand`);
         }
@@ -441,7 +446,7 @@ Scope {
           vpnAsking: Net.vpnAsking || null,
           bluetooth: { present: BluetoothDevices.present, on: BluetoothDevices.on, scanning: BluetoothDevices.scanning, devices: BluetoothDevices.devices.map(d => ({ name: d.name, address: d.address, paired: d.paired, connected: d.connected, trusted: d.trusted, note: BluetoothDevices.note(d) || null, battery: d.batteryAvailable ? Math.round(d.battery * 100) : null })) },
           night: { present: NightLight.present, on: NightLight.on, temperature: NightLight.temperature },
-          media: Media.player ? { title: Media.title, artist: Media.artist, playing: Media.player.isPlaying, identity: Media.player.identity, position: Math.round(Media.player.position), length: Math.round(Media.length) } : null
+          media: Media.player ? { title: Media.title, artist: Media.artist, playing: Media.player.isPlaying, identity: Media.player.identity, position: Math.round(Media.player.position), length: Math.round(Media.length), pinned: Media.pinned !== "" ? Media.player.identity : null, switcher: Media.switchable ? Media.live.map(p => p.identity) : [], tint: Media.tint } : null
         },
         tray: SystemTray.items.values.filter(item => item.status !== Status.Passive).map(item => item.id),
         // Each bar's status button, what it shows by name, and its battery.

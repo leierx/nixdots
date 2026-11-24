@@ -1,4 +1,6 @@
 import QtQuick
+// Its plugin carries the shader in its resources.
+import QtQuick.Effects // qmllint disable unused-imports
 
 ShaderEffect {
   id: root

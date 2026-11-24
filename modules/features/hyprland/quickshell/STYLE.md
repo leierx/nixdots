@@ -97,6 +97,7 @@ popover, so they hold on any surface.
 | `recording`, `bell`, `inUse`, `warning`, `success` | palette red, yellow, orange… | ours | Status glyphs |
 | `backdrop`, `idle` | black 88 %, `#000000` | ours | Power menu backdrop; the idle fade |
 | `skies` | gradients per sky | **ours**: colour on the weather card | Weather card: day, night, cloud, rain, snow, storm |
+| `cover()` | the cover's main hue at OKLab 0.40, chroma at most 0.12; accent 0.84 (hover 0.80, pressed 0.76), none for a grey cover | **ours**: colour on the media card, white text past 7:1 on any hue | Media card; its seek bar and play button |
 
 ## Type
 
@@ -229,7 +230,7 @@ to the census.
 | Centred panel (launcher, shortcuts, gallery) | A `Card` over a 0.6 dim (gs) | Centre of the focused screen | Widths in em | Opens in place |
 | Banner (popup) | Never expands (**ours**: the center is where a long one is read); a click runs its default action, else its one button, else puts it away; held while the pointer is on it. Header line (app name, age, close; no app icon, **ours**: the body shows it, whole or as the picture's badge), 48 px icon or picture, summary, body, actions | Top right, under the status area | 34 em, radius 16, `bannerBg`, `popupBorder` edge | Fade and growth from 90 % over `bannerTime`, back the same way as it goes; a queued one arrives as it gets room |
 | Center | Media card (gs place), groups per app on `messageBg`, each header age, expand, close (gs `MessageHeader`), a lone one folding without its text moving, calendar, weather; Do Not Disturb switch and Clear in the footer (gs); a click runs a lone card's default action, its arrow expands it; Clear slides every group off at once, no Undo (**ours**); groups hold their places while it is open | Under the clock that opened it, one per screen | See Panel sizes | The list eases its height, so the footer moves; a group's lines fade in as it unfolds and folds |
-| Media card | Album art in colour, blurred and darkened, text held to 3:1 (**ours**: the user asked for colour) | Heads the center's list | | |
+| Media card | The cover's colour (`cover`), white text; with two or three players a `tiny` button each at its corner, in the order they came, the one shown checked (**ours**: the user asked for colour) | Heads the center's list | | The colour settles over `settle` |
 | Weather card | MET Norway's own colour icons (**ours**: the service's, not Adwaita's), the sky as a gradient (`skies`) | Beside the calendar | | |
 | OSD | Symbol, 160 px level (white, red past 100 %), number; or symbol and a word | Bottom centre, 4 em up | 56 px pill on `osdBg` | `quickTime` fade, gone 1.5 s after the last change |
 | Power menu (**ours** throughout) | Own backdrop, `display` clock, five 148 px tiles radius 28 with 64 px symbols, each key a `Keycap` 12 px in from the top-right corner (GNOME's end-session dialog shows none), pressed without Alt | Full screen | | Fades in and out over `popupTime`, as a popover |
