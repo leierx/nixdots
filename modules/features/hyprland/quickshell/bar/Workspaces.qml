@@ -185,8 +185,11 @@ Item {
       anchors.verticalCenter: parent.verticalCenter
       spacing: 4
 
+      // A ScriptModel, so one coming or going leaves the others' squares, and their fades, alone.
       Repeater {
-        model: root.foreign
+        model: ScriptModel {
+          values: root.foreign
+        }
 
         Workspace {
           required property HyprlandWorkspace modelData

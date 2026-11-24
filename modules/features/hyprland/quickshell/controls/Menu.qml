@@ -226,7 +226,7 @@ Rectangle {
         anchors.rightMargin: Theme.padding
         anchors.verticalCenter: chip.verticalCenter
         visible: menuBox.filtering || menuBox.tint
-        text: menuBox.tint ? `${NightLight.temperature} K` : `${menuBox.count}`
+        text: menuBox.tint ? Theme.unit(NightLight.temperature, "K") : `${menuBox.count}`
         color: Theme.fgDim
         font: Theme.caption
       }

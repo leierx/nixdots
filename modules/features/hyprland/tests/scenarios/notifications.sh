@@ -54,7 +54,7 @@ qst wait '.panel == ""'
 notify-send -a Chat "new"
 qst wait '.unchecked == 1 and .notifications == 2'
 
-qst case "a popup under the pointer times out as any other, and those above it too"
+qst case "a popup under the pointer holds while it is read and times out once the pointer leaves, and the others time out as any other"
 notify-send -t 1500 -a Chat "bottom"
 qst wait '(.popups | length) == 1'
 notify-send -t 1500 -a Chat "middle"
@@ -63,7 +63,27 @@ qst wait '(.popups | map(.summary)) == ["top", "middle", "bottom"]'
 # The second card from the top of DP-1's stack.
 qst pointer 1640 160
 qst pointer 1642 162
+qst wait '(.popups | map(.summary)) == ["middle"]' 4
+qst stays '(.popups | map(.summary)) == ["middle"]' 1
+qst pointer 900 600
 qst wait '(.popups | length) == 0' 4
+
+qst case "an update by id closed in the same breath stays closed, and the bell does not stick"
+qst flood 0 --app Chat --updates 1 --close > /dev/null
+qst stays '.notifications == 0 and .unchecked == 0 and (.status[0].glyphs | index("bell") | not)' 2
+
+qst case "updates by id past the flood limit only update their card"
+qst flood 0 --app Chat --updates 300 > /dev/null
+qst wait '.notifications == 1 and (.popups | length) == 1'
+qst stays '.notifications == 1 and (.popups | length) == 1' 1
+
+qst case "markup an app sends is never drawn: a bare ampersand, an unknown entity, an image in an action's label"
+notify-send -a Chat "Q&A" 'a&b; c'
+notify-send -a Mail -A 'x=<img src="file:///nope">' -A 'y=<font size="72">big</font>' "labels" > /dev/null &
+qst wait '(.popups | length) == 2'
+qst stays '(.popups | length) == 2' 0.5
+qst ipc notifications clear > /dev/null
+wait
 
 qst case "a flood plays a sound at most every 300 ms, and an app saying the same again is one card"
 start=$(date +%s%N)

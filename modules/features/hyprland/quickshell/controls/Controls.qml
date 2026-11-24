@@ -7,7 +7,6 @@ import Quickshell.Io
 import Quickshell.Networking
 import qs.common
 import qs.nix
-import qs.notifications
 import "names.js" as Names
 
 // The control centre's own state: which of its menus is open, kept by name so it outlives a rebuilt list.
@@ -34,7 +33,7 @@ Singleton {
       const count = BluetoothDevices.connected.length;
       list.push({ key: "bluetooth", title: "Bluetooth", subtitle: !BluetoothDevices.on ? "Off" : count === 1 ? BluetoothDevices.name(BluetoothDevices.connected[0]) : count > 1 ? `${count} connected` : "On", glyph: BluetoothDevices.on ? Symbols.bluetooth : Symbols.bluetoothOff, on: BluetoothDevices.on, menu: true });
     }
-    if (NightLight.present) list.push({ key: "night", title: "Night Light", subtitle: NightLight.on ? `${NightLight.temperature} K` : "Off", glyph: Symbols.nightLight, on: NightLight.on, menu: true });
+    if (NightLight.present) list.push({ key: "night", title: "Night Light", subtitle: NightLight.on ? Theme.unit(NightLight.temperature, "K") : "Off", glyph: Symbols.nightLight, on: NightLight.on, menu: true });
     list.push({ key: "caffeine", title: "Caffeine", subtitle: Caffeine.active ? "On" : "Off", glyph: Symbols.cup, on: Caffeine.active, menu: false });
     return list;
   }
@@ -129,7 +128,7 @@ Singleton {
   Timer {
     id: shot
 
-    interval: 250
+    interval: Theme.popupTime + Theme.quickTime
     onTriggered: Detached.run(["freeze-region", "copy"], "")
   }
 

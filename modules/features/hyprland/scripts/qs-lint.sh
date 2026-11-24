@@ -52,6 +52,7 @@ qmllint \
   -I "$work" -I "$work/qml" -I "$qtQml" \
   --max-warnings 0 \
   --uncreatable-type disable \
+  --unused-imports warning \
   --json "$work/lint.json" \
   "${files[@]}" || status=$?
 jq -r --arg work "$work/" '

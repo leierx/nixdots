@@ -79,7 +79,8 @@
             "npm:@tintinweb/pi-subagents@0.26.2"
             "npm:@juicesharp/rpiv-ask-user-question@2.15.0"
             "npm:@juicesharp/rpiv-todo@2.15.0"
-            "npm:pi-claude-bridge@0.13.0"
+            # fork for provider.waitForUsageReset until elidickinson/pi-claude-bridge#289 is released
+            "git:github.com/leierx/pi-claude-bridge@6f67f622c96de0237888d87c4cd213e393375e2f"
           ];
         };
 
@@ -97,6 +98,7 @@
 
         "${cfgDir}/claude-bridge.json".text = builtins.toJSON {
           provider.pathToClaudeCodeExecutable = lib.getExe unstablePkgs.claude-code;
+          provider.waitForUsageReset = true;
         };
 
         "${cfgDir}/extensions/bell.ts".source = ./extensions/bell.ts;

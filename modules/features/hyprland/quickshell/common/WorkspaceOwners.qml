@@ -39,7 +39,11 @@ Singleton {
   // A change handler misses the monitors already there when this is first read.
   Component.onCompleted: remember()
 
+  // The saved names are read before any are written: the read is async even with blockLoading, as an adapter has it.
+  property bool loaded: false
+
   function remember(): void {
+    if (!root.loaded) return;
     const names = Object.assign({}, typeof state.names === "object" && !Array.isArray(state.names) ? state.names : {});
     for (const [id, name] of live) names[id] = name;
     for (const id of Object.keys(names).filter(id => names[id] === Screens.fallback)) delete names[id];
@@ -47,14 +51,28 @@ Singleton {
   }
 
   StateFile {
+    id: file
+
     name: "monitors.json"
-    // Read before the first monitor arrives, which would otherwise overwrite it.
-    blockLoading: true
+    onLoaded: {
+      root.loaded = true;
+      root.remember();
+    }
 
     JsonAdapter {
       id: state
 
       property var names: ({})
+    }
+  }
+
+  // No file yet: nothing to keep.
+  Connections {
+    target: file
+
+    function onLoadFailed(): void {
+      root.loaded = true;
+      root.remember();
     }
   }
 }

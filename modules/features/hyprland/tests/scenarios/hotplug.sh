@@ -168,3 +168,11 @@ qst output 1280x720 1
 qst wait '.screens[0].width <= 1280'
 qst stays "$(layer "DP-1 quickshell:center") and .panel == \"center:DP-1\""
 no_problems
+
+qst case "with no monitor on as it starts, the shell still serves notifications"
+qst monitor remove DP-2
+qst monitor remove DP-1
+qst restart > /dev/null
+# Before any probe: the probe itself reads Notifs, which would start the server.
+for _ in $(seq 50); do qst x busctl --user status org.freedesktop.Notifications > /dev/null 2>&1 && break; sleep 0.1; done # sleep: the bus name comes from qs, outside the probe
+qst x busctl --user status org.freedesktop.Notifications > /dev/null || { echo "no notification server without a monitor"; exit 1; }

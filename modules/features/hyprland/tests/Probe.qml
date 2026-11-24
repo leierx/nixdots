@@ -9,6 +9,7 @@ import qs.center
 import qs.common
 import qs.notifications
 import qs.osd
+import qs.weather
 
 // qs-test adds this to the session's copy of the shell only: `qst state` is its `state`.
 Scope {
@@ -318,6 +319,21 @@ Scope {
     }
   }
 
+  // Only in the session's copy, so the live shell carries no test hooks.
+  IpcHandler {
+    target: "bar"
+
+    // COUNT outputs, the one in use well down the list and some with hostile names, as no real sound server would have.
+    function fakeOutputs(count: int): void {
+      const names = Array.from({ length: count }, (_, i) => i === 3 ? "A sink with a name a kilobyte long ".repeat(30) : i === 5 ? "Right\u202eto left\nand two lines\u200b" : `Output ${i + 1}`);
+      Volume.fake = { volume: 0.64, muted: false, current: Math.floor(count * 0.6), devices: names };
+    }
+
+    function realVolume(): void {
+      Volume.fake = null;
+    }
+  }
+
   IpcHandler {
     target: "probe"
 
@@ -447,8 +463,12 @@ Scope {
         trayMenu: (menu => menu ? { path: menu.path, keyed: menu.keyed, selected: menu.level(menu.path.length)?.entries[menu.row]?.text ?? null } : null)(probe.windows().find(entry => entry.type === "TrayMenu")?.window ?? null),
         // The launcher's first ten results by title, best first.
         results: (probe.windows().map(entry => entry.items.find(({ item }) => "results" in item && "query" in item && "mode" in item)).find(found => found)?.item.results ?? []).slice(0, 10).map(row => row.title ?? row.key ?? null),
+        // The launcher's selected row by key, which a retitled window keeps.
+        selected: (probe.windows().map(entry => entry.items.find(({ item }) => "results" in item && "query" in item && "mode" in item)).find(found => found)?.item.current?.key ?? null),
         // The text field being typed into, or else the first one up: the launcher's search.
         field: (probe.windows().map(entry => entry.items.find(({ item }) => "cursorPosition" in item && "echoMode" in item && item.activeFocus)).find(found => found) ?? probe.windows().map(entry => entry.items.find(({ item }) => "cursorPosition" in item && "echoMode" in item)).find(found => found))?.item.text ?? null,
+        // The forecast the center shows: how many hours, the first symbol, and the place.
+        weather: { place: Weather.place, hours: Weather.hours.length, now: Weather.now?.symbol ?? null },
         problems: probe.census()
       });
     }

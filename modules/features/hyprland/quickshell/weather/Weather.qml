@@ -16,6 +16,8 @@ Singleton {
   readonly property var hours: series.filter(hour => hour.time.getTime() > Time.now.getTime() - 60 * 60 * 1000)
   readonly property var now: hours[0] ?? null
   property real attempted: 0
+  // The zone whose missing coordinates were said, so they are said once.
+  property string unplaced: ""
 
   // MET's terms ask for a User-Agent naming the app.
   readonly property string userAgent: "nixdots-quickshell github.com/leierx/nixdots"
@@ -52,12 +54,21 @@ Singleton {
     locate.running = true;
   }
 
+  // Saved hours as the card reads them.
+  function revive(series: var): var {
+    return series.map(hour => ({ time: new Date(hour.time), temperature: hour.temperature, symbol: hour.symbol, icon: root.icon(hour.symbol) }));
+  }
+
+  // The next look once MET's forecast expires, from ten minutes to two hours on.
+  function later(expires: real): void {
+    refresh.interval = Math.max(10 * 60 * 1000, Math.min(2 * 60 * 60 * 1000, expires - Date.now() + 60 * 1000));
+    refresh.restart();
+  }
+
   function retrySoon(): void {
     refresh.interval = 5 * 60 * 1000;
     refresh.restart();
   }
-
-  Component.onCompleted: update()
 
   FileView {
     path: Quickshell.shellPath("weather/icons/legend.csv")
@@ -99,15 +110,27 @@ Singleton {
       // ISO 6709, as zone.tab writes it: +DDMM+DDDMM, seconds after each where known.
       const parts = /^([+-])(\d{2})(\d{2})(\d{2})?([+-])(\d{3})(\d{2})(\d{2})?$/.exec(coordinates ?? "");
       if (!parts) {
-        locate.fail(`no coordinates for ${zone}`);
+        // Said once: the zone will not gain coordinates by asking again, and the half-hourly look notices a new one.
+        if (root.unplaced !== zone) console.warn(`Weather: no coordinates for ${zone}`);
+        root.unplaced = zone;
         return;
       }
+      root.unplaced = "";
       const angle = (sign, degrees, minutes, seconds) => (sign === "-" ? -1 : 1) * (Number(degrees) + Number(minutes) / 60 + Number(seconds ?? 0) / 3600);
       // About a kilometre; MET asks for at most four decimals, and fewer share its cache.
       const lat = angle(parts[1], parts[2], parts[3], parts[4]).toFixed(2);
       const lon = angle(parts[5], parts[6], parts[7], parts[8]).toFixed(2);
       root.place = zone.split("/").pop().replace(/_/g, " ");
-      forecast.command = ["curl", "--fail", "--silent", "--max-time", "20", "--user-agent", root.userAgent, `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`];
+      const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`;
+      // MET's terms: nothing asked again before its Expires, and asked again only if modified since.
+      const same = cache.url === url;
+      if (same && cache.expires > Date.now() && cache.series.length > 0) {
+        root.series = root.revive(cache.series);
+        root.later(cache.expires);
+        return;
+      }
+      forecast.url = url;
+      forecast.command = ["curl", "--fail", "--silent", "--show-error", "--max-time", "20", "--dump-header", "-", "--user-agent", root.userAgent, ...(same && cache.modified ? ["--header", `If-Modified-Since: ${cache.modified}`] : []), url];
       forecast.running = true;
     }
   }
@@ -115,25 +138,59 @@ Singleton {
   Command {
     id: forecast
 
+    property string url: ""
+
     name: "Weather: fetching the forecast"
     quiet: true
-    onFailed: root.retrySoon()
+    onFailed: {
+      // The last forecast, however old, until it ages out by the clock.
+      if (root.series.length === 0) root.series = root.revive(cache.series);
+      root.retrySoon();
+    }
     onDone: output => {
+      // The headers come first, then a blank line, then the body; a 304 has none.
+      const split = output.search(/\r?\n\r?\n/);
+      const head = split < 0 ? output : output.slice(0, split);
+      const body = split < 0 ? "" : output.slice(split).trim();
+      const header = name => new RegExp(`^${name}:\\s*(.+?)\\s*$`, "im").exec(head)?.[1] ?? "";
+      const expires = Date.parse(header("expires"));
       try {
-        root.series = JSON.parse(output).properties.timeseries
-          .filter(entry => entry.data.next_1_hours)
-          .map(entry => {
-            const symbol = entry.data.next_1_hours.summary.symbol_code;
-            return {
-              time: new Date(entry.time),
-              temperature: entry.data.instant.details.air_temperature,
-              symbol,
-              icon: root.icon(symbol),
-            };
-          });
+        if (!/^HTTP\/\S+ 304/.test(head)) {
+          const series = JSON.parse(body).properties.timeseries
+            .filter(entry => entry.data.next_1_hours)
+            .map(entry => ({ time: entry.time, temperature: entry.data.instant.details.air_temperature, symbol: entry.data.next_1_hours.summary.symbol_code }));
+          cache.series = series;
+          cache.modified = header("last-modified");
+          cache.url = forecast.url;
+        }
+        cache.expires = Number.isFinite(expires) ? expires : Date.now() + 30 * 60 * 1000;
+        root.series = root.revive(cache.series);
+        root.later(cache.expires);
       } catch (error) {
         forecast.fail(String(error));
       }
+    }
+  }
+
+  // The last forecast and what MET said of it, so a restart asks nothing before it expires and a failed fetch keeps it.
+  FileView {
+    id: file
+
+    path: Quickshell.cachePath("weather.json")
+    // There is no file until the first fetch.
+    printErrors: false
+    onAdapterUpdated: Qt.callLater(writeAdapter)
+    // The first look waits for it, once.
+    onLoaded: if (root.attempted === 0) root.update()
+    onLoadFailed: if (root.attempted === 0) root.update()
+
+    JsonAdapter {
+      id: cache
+
+      property string url: ""
+      property string modified: ""
+      property real expires: 0
+      property var series: []
     }
   }
 }

@@ -67,7 +67,7 @@ Item {
 
           Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: output.modelData.enabled ? output.modelData.number : "off"
+            text: output.modelData.enabled ? output.modelData.number : "Off"
             textFormat: Text.PlainText
             color: output.modelData.enabled ? Theme.popoverBg : Theme.fgDim
             font.family: Theme.body.family

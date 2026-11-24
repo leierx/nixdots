@@ -14,6 +14,8 @@ Scope {
   // hyprlock's screenshot takes in the dim, so it stays put from the lock command asking until the session is locked.
   property bool held: false
   property bool locked: false
+  // Apart from the level, so the windows are not looked at again every frame of the fade.
+  readonly property bool dimmed: level > 0
 
   NumberAnimation {
     id: dimming
@@ -21,6 +23,13 @@ Scope {
     target: root
     property: "level"
     easing.type: Easing.InQuad
+  }
+
+  // A fade whose lock or cancel never came (hypridle restarted mid-fade) lifts, rather than leave the screens dark.
+  Timer {
+    interval: 10000
+    running: root.dimmed && !dimming.running && !root.held && !root.locked
+    onTriggered: root.level = 0
   }
 
   IpcHandler {
@@ -61,7 +70,7 @@ Scope {
   }
 
   Variants {
-    model: root.level > 0 ? Screens.real : []
+    model: root.dimmed ? Screens.real : []
 
     PanelWindow {
       required property ShellScreen modelData

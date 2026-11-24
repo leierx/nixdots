@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls.Basic as QQC
 import QtQuick.Layouts
 import Quickshell.Wayland
 import qs.common
@@ -496,6 +497,36 @@ Overlay {
               Glyph {
                 path: Symbols.bell
                 size: parent.parent.modelData
+              }
+            }
+          }
+          Repeater {
+            model: [
+              { label: "battery full", level: 1 },
+              { label: "battery low", level: 0.2 },
+              { label: "battery empty", level: 0.05 },
+              { label: "charging", level: 0.4, charging: true }
+            ]
+
+            Labelled {
+              required property var modelData
+
+              label: modelData.label
+              BatteryGlyph {
+                level: parent.parent.modelData.level
+                charging: parent.parent.modelData.charging ?? false
+              }
+            }
+          }
+          Labelled {
+            label: "scroll bar"
+            Flickable {
+              width: 72
+              height: 40
+              contentHeight: 120
+              clip: true
+              QQC.ScrollIndicator.vertical: ScrollBar {
+                held: true
               }
             }
           }

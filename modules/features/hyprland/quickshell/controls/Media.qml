@@ -40,13 +40,18 @@ Singleton {
     }
   }
 
+  // A ScriptModel, so a player coming or going leaves the others' watch alone.
   Instantiator {
-    model: root.players
+    model: ScriptModel {
+      values: root.players
+    }
 
     Connections {
       required property var modelData
 
       target: modelData
+      // One that arrives already playing is the last to have started.
+      Component.onCompleted: if (modelData.isPlaying) root.last = modelData.dbusName
 
       function onIsPlayingChanged(): void {
         if (modelData.isPlaying) root.last = modelData.dbusName;

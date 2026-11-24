@@ -162,7 +162,8 @@ LauncherMode {
   Timer {
     id: parser
 
-    interval: 0
+    // A QML Timer at 0 never fires.
+    interval: 1
     repeat: true
     onTriggered: {
       const job = root.parsing;

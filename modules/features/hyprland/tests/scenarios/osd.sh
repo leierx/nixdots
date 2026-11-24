@@ -89,10 +89,19 @@ qst wait '.osd.kind == "microphone" and .osd.title == "Microphone" and .osd.mute
 wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0
 qst wait '.osd.kind == "microphone" and .osd.muted == false and (.osd.level * 100 | round) == 100'
 
-qst case "the microphone's level shows as a level"
+qst case "the microphone's level moving, as a call's automatic gain moves it, shows nothing"
 settled
 wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 0.4
-qst wait '.osd.kind == "microphone" and (.osd.level * 100 | round) == 40 and .osd.muted == false'
+qst wait '.microphone.muted == false'
+qst stays '.osd == null' 1
+
+qst case "the volume key past 100 % leaves the level where another app set it"
+settled
+wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.3
+qst wait '.volume.percent == 130'
+qst key XF86AudioRaiseVolume
+qst wait '.osd.kind == "volume"'
+qst stays '.volume.percent == 130' 0.5
 
 qst case "switching the default input shows the new one"
 settled

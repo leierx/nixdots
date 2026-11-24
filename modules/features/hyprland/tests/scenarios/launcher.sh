@@ -51,3 +51,44 @@ done
 qst key ctrl+a BackSpace
 qst type fire
 qst wait '.field == "fire" and .results[0] == "Firefox"'
+
+qst case "nixpkgs searches the package list by name first, a narrower query within the last, and Return runs the best match"
+export QS_TEST_MONITORS="DP-1:1920x1080:1"
+qst reset > /dev/null
+qst key super+n
+qst wait '.panel == "nixpkgs" and (.results | length) == 0'
+qst type fire
+qst wait '(.results | sort) == ["firefox", "firefox-esr", "firejail"] and .results[0] == "firefox"' 10
+qst type f
+qst wait '.results == ["firefox", "firefox-esr"]'
+qst key BackSpace BackSpace BackSpace BackSpace BackSpace
+qst wait '.field == ""'
+qst type browser
+qst wait '.results == ["firefox"]'
+qst key Return
+qst wait '.panel == ""'
+qst actions | grep -q 'nixpkgs-run qs-test firefox firefox$' || { qst actions; echo "Return did not run firefox"; exit 1; }
+
+qst case "the window switcher keeps its selection while a window retitles under it"
+export QS_TEST_MONITORS="DP-1:1920x1080:1"
+qst reset > /dev/null
+qst spawn foot -a one sleep 600
+qst spawn foot -a two sh -c 'while :; do printf "\033]2;%s\007" "$(date +%N)"; sleep 0.2; done' # sleep: the window retitles itself, as a terminal or a browser tab does
+qst spawn foot -a three sleep 600
+qst wait '(.windows | length) == 3' 10
+qst key super+Tab
+qst wait '.panel == "windows" and (.results | length) == 3'
+qst key Down
+picked=$(qst state .selected)
+qst stays ".selected == $picked" 1.5
+
+qst case "the clipboard searches a clip's own text, never the counts under it"
+export QS_TEST_MONITORS="DP-1:1920x1080:1"
+qst reset > /dev/null
+echo "a clip to find" | cliphist store
+qst key super+v
+qst wait '.panel == "clipboard" and (.results | index("a clip to find")) != null'
+# The cache pass that counts each clip's characters and lines.
+qst stays '.panel == "clipboard"' 0.5
+qst type character
+qst stays '.panel == "clipboard" and all(.results[]; test("character"; "i"))' 0.5

@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import Quickshell.Io
 import qs.common
 import qs.controls
 
@@ -12,21 +11,7 @@ Scope {
     windowsSettled.restart();
   }
 
-  IpcHandler {
-    target: "bar"
-
-    // COUNT outputs, the one in use well down the list and some with hostile names, as no real sound server would have.
-    function fakeOutputs(count: int): void {
-      const names = Array.from({ length: count }, (_, i) => i === 3 ? "A sink with a name a kilobyte long ".repeat(30) : i === 5 ? "Right\u202eto left\nand two lines\u200b" : `Output ${i + 1}`);
-      Volume.fake = { volume: 0.64, muted: false, current: Math.floor(count * 0.6), devices: names };
-    }
-
-    function realVolume(): void {
-      Volume.fake = null;
-    }
-  }
-
-  // Quickshell ignores renamed and moved workspaces.
+  // Quickshell looks a renamed workspace up by the address the event does not carry (it sends the id), so misses it.
   Connections {
     target: Hyprland
 
@@ -37,7 +22,7 @@ Scope {
         windowsSettled.restart();
         return;
       }
-      if (["changeworkspaceid", "renameworkspace"].includes(event.name)) Hyprland.refreshWorkspaces();
+      if (event.name === "renameworkspace") Hyprland.refreshWorkspaces();
     }
   }
 

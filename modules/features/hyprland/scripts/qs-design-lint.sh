@@ -28,7 +28,7 @@ findings() {
     grep -nP 'glyphSize: (?!(16|32|64|128)\s*$)[0-9]+' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: a symbol at a size Adwaita's do not draw at\ticon|" || true
     grep -nP '^(?!\s*//).*["\x60][^"\x60]*[A-Za-z)]\.["\x60]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: text ending in a full stop, which the HIG leaves off\twords|" || true
     grep -nP '(Settings|Preferences|Properties)…["\x60]' "$file" | sed "s|^\([0-9]*\):.*|$file:\1: an ellipsis on a settings item, which asks for no more input\twords|" || true
-    grep -nP '^(?!\s*//).*["\x60][^"\x60]*(\}|\d) (%|h|min|s|ms|Hz|[KMGT]i?B|[KMG]b/s)(?![A-Za-z0-9.])' "$file" | grep -v -e 'console\.' -e 'path: "' | sed "s|^\([0-9]*\):.*|$file:\1: a plain space before a unit rather than Theme.unit's narrow no-break space\twords|" || true
+    grep -nP '^(?!\s*//).*["\x60][^"\x60]*(\}|\d) (%|h|min|s|ms|Hz|K|[KMGT]i?B|[KMG]b/s)(?![A-Za-z0-9.])' "$file" | grep -v -e 'console\.' -e 'path: "' | sed "s|^\([0-9]*\):.*|$file:\1: a plain space before a unit rather than Theme.unit's narrow no-break space\twords|" || true
   done
   # A component drawn twice drifts apart: one in common/, or one name per thing.
   for file in $files; do grep -oP '^\s*component \K\w+' "$file" | sed "s|$|\t$file|" || true; done |

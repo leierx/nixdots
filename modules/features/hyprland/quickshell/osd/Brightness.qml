@@ -2,7 +2,6 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import qs.common
 
 // Every backlight's level from backlight-watch, which hears each change however it was made.
@@ -41,8 +40,9 @@ Singleton {
     name: "Brightness"
     // A drag runs one per step: a failure shows as the slider going back to the level backlight-watch hears.
     quiet: true
-    onDone: root.flush()
-    onFailed: root.flush()
+    // Once it has stopped running: started from its own exit, the next would be dropped, or fail unreported.
+    onDone: Qt.callLater(root.flush)
+    onFailed: Qt.callLater(root.flush)
   }
 
   function read(line: string): void {

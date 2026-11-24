@@ -36,6 +36,12 @@ root: {
 
       wpctl = lib.getExe' osConfig.services.pipewire.wireplumber.package "wpctl";
       brightnessctl = lib.getExe pkgs.brightnessctl;
+      # Up to 100 %, never down from past it: `-l 1` would clamp a level another app set to 130 % back to 100 %.
+      volumeUp = pkgs.writeShellScript "volume-up" ''
+        level=$(${wpctl} get-volume @DEFAULT_AUDIO_SINK@) || exit
+        set -- $level
+        case $2 in 0.*) exec ${wpctl} set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+ ;; esac
+      '';
       playerctl = lib.getExe pkgs.playerctl;
 
       freezeRegion = pkgs.writeShellApplication {
@@ -218,7 +224,7 @@ root: {
             )
             {
               XF86AudioRaiseVolume = {
-                cmd = "${wpctl} set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+";
+                cmd = "${volumeUp}";
                 desc = "Volume up";
                 repeating = true;
                 osd = "volume";
@@ -238,6 +244,7 @@ root: {
                 cmd = "${wpctl} set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
                 desc = "Mute microphone";
                 repeating = false;
+                osd = "microphone";
               };
               XF86MonBrightnessUp = {
                 cmd = "${brightnessctl} set 5%+";

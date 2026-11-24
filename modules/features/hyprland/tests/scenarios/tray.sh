@@ -119,3 +119,22 @@ qst click right "$x" "$y"
 qst wait '.trayMenu != null'
 qst ipc panels open center > /dev/null
 qst wait '.panel == "center:DP-1" and .trayMenu == null'
+
+qst case "Escape in a tray submenu goes back to its parent, and a window clicked after the keys gets the keyboard"
+qst spawn foot -a target sleep 600
+qst wait '(.windows | length) == 1' 10
+qst tray
+qst wait '.tray | length > 0'
+reveal
+read -r x y < <(cell 1)
+qst pointer "$x" "$y"
+qst click right "$x" "$y"
+qst wait '.panel == "tray-menu:DP-1" and .trayMenu != null'
+qst key Up Up Up Right
+qst wait '.trayMenu.path == ["Networks"]'
+qst key Escape
+qst wait '.trayMenu.path == [] and .trayMenu.selected == "Networks"'
+qst stays '.panel == "tray-menu:DP-1"' 0.3
+qst click left 400 600
+qst wait '.panel == "" and .trayMenu == null'
+[ "$(hyprctl activewindow -j | jq -r .class)" = target ] || { hyprctl activewindow -j; echo "the window clicked did not get the keyboard"; exit 1; }

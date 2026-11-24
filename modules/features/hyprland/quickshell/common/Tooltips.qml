@@ -2,7 +2,6 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Wayland
 
 // The one tooltip on screen: what it says, on which screen and under what, shown once the pointer has rested half a second, as GTK's.
 Singleton {
@@ -29,7 +28,8 @@ Singleton {
     // Now, while its screen is surely there.
     pendingScreen = window?.screen?.name ?? "";
     pendingOrigin = origin(window);
-    delay.interval = browsing ? 0 : 500;
+    // Not 0: a QML Timer at 0 never fires.
+    delay.interval = browsing ? 1 : 500;
     delay.restart();
   }
 

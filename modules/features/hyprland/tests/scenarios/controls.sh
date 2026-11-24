@@ -517,3 +517,15 @@ qst key Escape
 qst wait '.controls.menu == "" and .panel == "controls:DP-1"'
 qst key Escape
 qst wait '.panel == ""'
+
+qst case "Return on a sound output makes it current and keeps the keyboard there, with no warning as the row stops taking clicks"
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+qst ipc controls menu sound > /dev/null
+qst stays '.controls.menu == "sound"' 0.6
+# The header's three, the mute, the slider and the menu's arrow, then the first output that is not current.
+qst key Tab Tab Tab Tab Tab Tab Tab
+qst wait '.focused == "ControlsPanel/ListRow" and .volume.output == "Speakers"'
+qst key Return
+qst wait '.volume.output == "Headphones"'
+qst stays '.focused == "ControlsPanel/ListRow" and .panel == "controls:DP-1"' 0.5

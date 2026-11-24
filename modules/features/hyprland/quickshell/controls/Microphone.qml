@@ -20,6 +20,8 @@ Singleton {
   readonly property real volume: source?.audio?.volume ?? 0
   // What the level belongs to, as Volume's.
   readonly property string key: source?.name ?? ""
+  // The device rather than its node, as Volume's.
+  readonly property string deviceKey: source?.properties["device.api"] === "bluez5" ? `device:${source.properties["device.id"]}` : key
   readonly property bool ready: (source?.ready ?? false) && source.audio !== null
   readonly property string name: source ? Names.clean(source.description || source.nickname || source.name) : ""
   // The next default for wpctl while it is still setting one.
@@ -56,8 +58,9 @@ Singleton {
     id: pick
 
     name: "Input"
-    onDone: root.next()
-    onFailed: root.next()
+    // Once it has stopped running: started from its own exit, the next would be dropped, or fail unreported.
+    onDone: Qt.callLater(root.next)
+    onFailed: Qt.callLater(root.next)
   }
 
   PwObjectTracker {

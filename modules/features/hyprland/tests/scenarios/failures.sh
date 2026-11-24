@@ -40,6 +40,16 @@ qst fail camera-users crash
 qst fail curl exit
 qst restart > /dev/null
 qst expect 'camera-users stopped, starting it again'
-qst expect 'Weather: fetching the forecast'
+# The forecast fetched at the start is cached, so the restart may not ask again.
+qst expect --may 'Weather: fetching the forecast'
 qst stays '.privacy.camera == null' 1
 reopens center
+
+qst case "the forecast is kept: a restart asks MET nothing before it expires, and with curl failing the last one shows"
+qst wait '.weather.hours > 0 and .weather.now == "clearsky_day"' 10
+[ "$(qst actions | grep -c 'api.met.no')" = 1 ] || { qst actions; echo "the forecast was not fetched once"; exit 1; }
+qst fail curl exit
+qst restart > /dev/null
+qst wait '.weather.hours > 0' 10
+qst actions | grep -q 'api.met.no.*(failing)' && { qst actions; echo "a restart asked MET again before the forecast expired"; exit 1; }
+true

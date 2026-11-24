@@ -120,21 +120,22 @@ Singleton {
 
     key: Microphone.key
     ready: Microphone.ready
-    value: [Microphone.volume, Microphone.muted]
+    // Muting only: a call's automatic gain moves the level all the while.
+    value: [Microphone.muted]
     onNoticed: root.show({ kind: "microphone", title: Microphone.name, level: Microphone.volume, muted: Microphone.muted })
   }
 
   DeviceWatch {
     id: outputWatch
 
-    key: Volume.key
+    key: Volume.deviceKey
     onSwitched: root.show({ kind: "output", title: Volume.name, glyph: Volume.kindGlyph(Volume.kind), level: null, muted: false })
   }
 
   DeviceWatch {
     id: inputWatch
 
-    key: Microphone.key
+    key: Microphone.deviceKey
     onSwitched: root.show({ kind: "input", title: Microphone.name, glyph: Volume.kindGlyph(Microphone.kind), level: null, muted: false })
   }
 
@@ -163,5 +164,30 @@ Singleton {
   GlobalShortcut {
     name: "osd-brightness"
     onPressed: root.showBrightness()
+  }
+
+  // The mute key on any input: a virtual one (a noise filter) has no level Quickshell reads, so wpctl says, a moment after the key's own wpctl.
+  GlobalShortcut {
+    name: "osd-microphone"
+    onPressed: micRead.restart()
+  }
+
+  Timer {
+    id: micRead
+
+    interval: 150
+    onTriggered: micState.running = true
+  }
+
+  Command {
+    id: micState
+
+    name: "Microphone"
+    quiet: true
+    command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SOURCE@"]
+    onDone: output => {
+      const level = /Volume:\s*([0-9.]+)/.exec(output);
+      if (level) root.show({ kind: "microphone", title: Microphone.name, level: Number(level[1]), muted: output.includes("[MUTED]") });
+    }
   }
 }

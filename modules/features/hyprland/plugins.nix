@@ -1,7 +1,8 @@
 root@{ inputs, lib, ... }:
 {
   options.hyprland.workspaces = lib.mkOption {
-    type = lib.types.ints.positive;
+    # One digit key each: the binds are SUPER+1 to SUPER+n.
+    type = lib.types.ints.between 1 9;
     description = "Number of workspaces on each monitor";
   };
 

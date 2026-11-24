@@ -257,7 +257,7 @@ LauncherMode {
 
         // The position tells apart two of one model that are not plugged in.
         Text {
-          text: output.modelData.enabled ? [output.modelData.mode, output.modelData.scale !== 1 ? `×${output.modelData.scale}` : "", output.modelData.connector ? "" : `at ${output.modelData.position}`].filter(part => part).join(" · ") : "off"
+          text: output.modelData.enabled ? [output.modelData.mode, output.modelData.scale !== 1 ? `×${output.modelData.scale}` : "", output.modelData.connector ? "" : `at ${output.modelData.position}`].filter(part => part).join(" · ") : "Off"
           textFormat: Text.PlainText
           color: Theme.fgDim
           font: Theme.body

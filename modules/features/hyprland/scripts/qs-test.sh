@@ -170,17 +170,6 @@ enter() {
 
 shell_id() { printf '%s' "$T/shell/shell.qml" | md5sum | cut -d' ' -f1; }
 
-# The nixpkgs list another shell already fetched, so a new session's skips the 400 MB download unless the channel moved.
-seed_cache() {
-  local cache newest
-  cache=$HOME/.cache/quickshell/by-shell/$(shell_id)
-  [ -e "$cache/nixpkgs.tsv" ] && return
-  newest=$(find "$HOME/.cache/quickshell/by-shell" -name nixpkgs.tsv -printf '%T@ %p\n' 2> /dev/null | sort -rn | awk 'NR == 1 { sub(/^[^ ]* /, ""); print }')
-  [ -n "$newest" ] || return 0
-  mkdir -p "$cache"
-  cp "$newest" "$cache/nixpkgs.tsv"
-}
-
 # By config path, since setsid may fork and leave no pid to remember.
 testqs() {
   (
@@ -368,10 +357,37 @@ EOF
 echo "systemd-run \$*" >> "$T/actions.log"
 case " \$* " in *' --scope '*) ;; *) exit ;; esac
 while [ "\${1#-}" != "\$1" ]; do shift; done
-case "\$1" in nixpkgs-run | xdg-open | freeze-region) exit ;; esac
+case "\$1" in nixpkgs-run | xdg-open | freeze-region) exit ;; nixpkgs-index) exec "\$@" ;; esac
 # Its own process group, which reset kills: a window still starting has no client to kill yet.
 echo \$\$ >> "$T/launched"
 exec setsid "\$@"
+EOF
+  # The package list, a handful of packages rather than the channel's 400 MB, written once per session.
+  cat > "$T/bin/nixpkgs-index" << EOF
+#!/bin/sh
+echo "nixpkgs-index \$*" >> "$T/actions.log"
+head -n 1 "\$1" 2> /dev/null | grep -q '^qs-test' && exit
+mkdir -p "\$(dirname "\$1")"
+printf '%s\t%s\t%s\t%s\t%s\n' qs-test qs-test '' '' '' \\
+  firefox firefox 140.0 '' 'A web browser built from Firefox source tree' \\
+  firefox-esr firefox 128.0 '' 'Extended support release of Firefox' \\
+  firejail firejail 0.9.74 '' 'Namespace-based sandboxing tool for Linux' \\
+  hello hello 2.12.2 '' 'Program that produces a familiar, friendly greeting' \\
+  steam steam 1.0.0.85 unfree 'Digital distribution platform' > "\$1"
+echo updated
+EOF
+  # MET Norway answers from here: twelve hours from this one, expiring in an hour, and unmodified to If-Modified-Since.
+  cat > "$T/bin/curl" << EOF
+#!/bin/sh
+echo "curl \$*" >> "$T/actions.log"
+case "\$*" in *api.met.no*) ;; *) exec "$(command -v curl)" "\$@" ;; esac
+modified="Mon, 01 Jan 2024 00:00:00 GMT"
+expires=\$(date -u -d '+1 hour' '+%a, %d %b %Y %H:%M:%S GMT')
+case "\$*" in
+  *"If-Modified-Since: \$modified"*) printf 'HTTP/2 304\r\nexpires: %s\r\n\r\n' "\$expires"; exit ;;
+esac
+printf 'HTTP/2 200\r\nexpires: %s\r\nlast-modified: %s\r\n\r\n' "\$expires" "\$modified"
+"$(command -v jq)" -cn --argjson now "\$(date -u +%s)" '{ properties: { timeseries: [range(12) as \$h | { time: ((\$now / 3600 | floor) + \$h) * 3600 | todate, data: { instant: { details: { air_temperature: (5 + \$h) } }, next_1_hours: { summary: { symbol_code: (if \$h % 2 == 0 then "clearsky_day" else "rain" end) } } } }] } }'
 EOF
   # systemctl keeps the state of the units it starts and stops, as the shell reads it back.
   cat > "$T/bin/systemctl" << EOF
@@ -391,7 +407,7 @@ EOF
   printf '#!/bin/sh\nexec tail -n0 -F "%s/udev"\n' "$T" > "$T/bin/udevadm"
   printf '#!/bin/sh\nexec %s "%s/backlight"\n' "$(command -v backlight-watch)" "$T" > "$T/bin/backlight-watch"
   printf '#!/bin/sh\nexec %s "%s/dev"\n' "$(command -v camera-users)" "$T" > "$T/bin/camera-users"
-  for entry in loginctl pw-play xdg-open nixpkgs-run nixpkgs-index freeze-region; do
+  for entry in loginctl pw-play xdg-open nixpkgs-run freeze-region; do
     printf '#!/bin/sh\necho "%s $*" >> "%s/actions.log"\n' "$entry" "$T" > "$T/bin/$entry"
   done
   # libnm will not register its secret agent with a NetworkManager not run by root, so the fake brings a profile up.
@@ -942,7 +958,6 @@ up() {
   chmod -R u+w "$T/shell"
   rm -f "$T/ipc-checked"
   install_probe
-  seed_cache
   fakes "$build"
   hypr_config "$build"
   # Hyprland's sockets go in here, and their paths must stay under 108 bytes.
@@ -1202,6 +1217,8 @@ reset() {
   done
   phase pipewire+services+monitors
   rm -rf "$HOME/.local/state/quickshell/by-shell/$(shell_id)"
+  # The forecast is a cache the shell keeps across restarts; each case fetches its own.
+  rm -f "$HOME/.cache/quickshell/by-shell/$(shell_id)/weather.json"
   : > "$T/actions.log"
   restore_tools
   start_qs > /dev/null

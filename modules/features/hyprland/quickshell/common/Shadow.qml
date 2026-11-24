@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 
 // Shell's one shadow, 0 2px 4px at 20 %; a banner's spreads 2px more.
 // Direct ShaderEffect on QtQuick.Effects' shader: RectangularShadow leaks its internal QQuickShaderEffect (null q_ptr in QQuickRectangularShadowPrivate's constructor).

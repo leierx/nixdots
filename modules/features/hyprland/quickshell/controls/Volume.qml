@@ -19,6 +19,8 @@ Singleton {
   readonly property bool present: fake !== null || (sink?.audio ?? null) !== null
   // What the level belongs to: a new one is a switch of output, not a change of level.
   readonly property string key: fake ? `fake:${fake.current}` : sink?.name ?? ""
+  // A Bluetooth headset by its device: switching profiles (A2DP, HFP) gives it a new node, and it is the same output; a card's outputs stay apart.
+  readonly property string deviceKey: !fake && sink?.properties["device.api"] === "bluez5" ? `device:${sink.properties["device.id"]}` : key
   readonly property string name: Names.clean(fake ? fake.devices[fake.current] ?? "" : sink ? sink.description || sink.nickname || sink.name : "")
   readonly property bool ready: fake !== null || (sink?.ready ?? false) && sink.audio !== null
   readonly property real volume: fake?.volume ?? sink?.audio?.volume ?? 0
