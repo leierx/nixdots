@@ -26,7 +26,7 @@ and headless against fake NetworkManager, BlueZ, UPower and MPRIS services.
 | | |
 | --- | --- |
 | ![Date menu with a player, notifications, calendar and weather](docs/gallery/center.png) | ![Notification popups](docs/gallery/notifications.png) |
-| Date menu: player, notifications, calendar, MET Norway weather | Notification popups |
+| Date menu: player, notifications grouped per app, calendar, MET Norway weather | Notification popups: critical, buttons, progress, pictures, markup |
 | ![Quick settings with the Wi-Fi menu open](docs/gallery/controls.png) | ![Quick settings with the Bluetooth menu open](docs/gallery/bluetooth.png) |
 | Quick settings (SUPER+A), Wi-Fi | Quick settings, Bluetooth |
 | ![App launcher](docs/gallery/launcher.png) | ![Clipboard history](docs/gallery/clipboard.png) |
@@ -35,8 +35,8 @@ and headless against fake NetworkManager, BlueZ, UPower and MPRIS services.
 | Windows, with live previews (SUPER+Tab) | Monitor layouts (SUPER+P) |
 | ![Running a package from nixpkgs](docs/gallery/nixpkgs.png) | ![Power menu](docs/gallery/power.png) |
 | Run anything from nixpkgs, sandboxed (SUPER+N) | Power menu (SUPER+X) |
-| ![Keyboard shortcuts overlay](docs/gallery/shortcuts.png) | |
-| Keyboard shortcuts (SUPER+?) | |
+| ![Keyboard shortcuts overlay](docs/gallery/shortcuts.png) | ![On-screen displays](docs/gallery/osd.png) |
+| Keyboard shortcuts (SUPER+?) | On-screen displays: volume, mute, brightness, microphone, Caps Lock, output |
 
 ## Using a module elsewhere
 
