@@ -464,7 +464,7 @@ qst wait '.controls.bluetooth.devices[0].battery == 70'
 open bluetooth
 qst area ControlsPanel:row:Headset > /dev/null
 
-qst case "a player starting elsewhere, a hover preview, leaves the card on the one playing"
+qst case "a player playing for a moment elsewhere, a hover preview, leaves the card on the one playing"
 qst player add spotify Spotify Playing
 qst player add firefox Firefox Paused
 center
@@ -472,7 +472,23 @@ qst wait '.controls.media.identity == "Spotify"'
 qst player status firefox Playing
 qst player status firefox Paused
 qst player status firefox Playing
+qst player status firefox Paused
 qst stays '.controls.media.identity == "Spotify"' 2.5
+
+qst case "the last player to start takes the card once it has played a moment; paused, the card goes back to the one still playing"
+qst player add spotify Spotify Playing
+qst player add firefox Firefox Paused
+center
+qst wait '.controls.media.identity == "Spotify"'
+qst player status firefox Playing
+qst wait '.controls.media.identity == "Firefox"'
+qst player status firefox Paused
+qst wait '.controls.media.identity == "Spotify"'
+qst player status firefox Playing
+qst wait '.controls.media.identity == "Firefox"'
+qst player status spotify Paused
+qst player status spotify Playing
+qst wait '.controls.media.identity == "Spotify"'
 
 qst case "two or three players get a button each, in the order they came, and a click pins one; a fourth takes the buttons and the pin away"
 qst player add spotify Spotify Playing
@@ -499,7 +515,7 @@ qst case "a pinned player that stops playing hands the card back to the one stil
 qst player add spotify Spotify Playing
 qst player add firefox Firefox Playing
 center
-qst wait '.controls.media.identity == "Spotify" and .controls.media.switcher == ["Spotify", "Firefox"]'
+qst wait '.controls.media.switcher == ["Spotify", "Firefox"]'
 qst click NotificationCenter:media:player:Firefox
 qst wait '.controls.media.identity == "Firefox" and .controls.media.pinned == "Firefox"'
 qst player status firefox Paused
@@ -514,8 +530,8 @@ qst player status spotify Playing
 qst wait '.controls.media.identity == "Spotify" and .controls.media.pinned == null'
 
 qst case "a player stopping between tracks keeps the card through the moment it is stopped"
-qst player add a A Playing
 qst player add b B Playing
+qst player add a A Playing
 center
 qst wait '.controls.media.identity == "A"'
 qst player status a Stopped

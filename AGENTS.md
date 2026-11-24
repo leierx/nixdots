@@ -642,9 +642,10 @@ icon theme, hostname, uptime).
   not the profile, DHCP DNS without TLS, `device reapply` once online), `BluetoothDevices` (pair, trust, connect in one click; a
   PIN device goes to bluetui), `Volume`, `Microphone`, `NightLight`
   (hyprsunset, state kept and restored when hyprsunset restarts), `Media`
-  (the card's player: kept while it plays and 2 s after it pauses or stops,
-  so a YouTube hover preview never takes it; else the last to start, else the
-  one shown, paused. With two or three players playing or paused the card has
+  (the card's player: the last to start, once it has played 1.5 s, so a
+  YouTube hover preview never takes it; the shown one kept 2 s after it pauses
+  or stops, then the card goes back to the newest still playing, else stays
+  on it, paused. With two or three players playing or paused the card has
   a button each in arrival order, and a click pins that one: it holds while
   its player plays, and goes when it is clicked again, the choice goes (one
   player, or a fourth), or its player has stopped playing and another plays.

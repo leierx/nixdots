@@ -445,15 +445,16 @@ for menu in wifi sound bluetooth vpn night; do
   qst stays ".controls.menu == \"$menu\" and .panel == \"controls:DP-1\"" 0.6
 done
 
-qst case "thirty players, paused and playing: no buttons, the card stays on the one playing as others start and stop"
+qst case "thirty players, paused and playing: no buttons, the card goes to the last to start and back to the one left playing"
 for n in $(seq 30); do qst player add "p$n" "Player $n" Paused; done
 qst player add spotify Spotify
 qst ipc panels open center > /dev/null
 qst wait '.panel == "center:DP-1" and .controls.media.identity == "Spotify" and .controls.media.switcher == []'
 for n in $(seq 30); do qst player status "p$n" Playing; done
-qst stays '.controls.media.identity == "Spotify"' 1
+qst wait '.controls.media.identity == "Player 30"'
 for n in $(seq 30); do qst player status "p$n" Paused; done
-qst stays '.controls.media.identity == "Spotify" and .controls.media.switcher == []' 1
+qst wait '.controls.media.identity == "Spotify" and .controls.media.switcher == []'
+qst stays '.controls.media.identity == "Spotify"' 1
 
 qst case "a player skipping and pausing faster than the card draws keeps the length of the track it lands on, and the card moves on when it quits"
 for n in 1 2 3 4 5; do qst player add "p$n" "Player $n" Paused; done

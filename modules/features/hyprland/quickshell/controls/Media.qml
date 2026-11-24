@@ -15,12 +15,13 @@ Singleton {
   readonly property var live: players.filter(p => p.isPlaying || p.playbackState === MprisPlaybackState.Paused)
   // A button per player on the card for two or three; past that, the sticky choice alone.
   readonly property bool switchable: live.length >= 2 && live.length <= 3
-  // The last to start playing.
-  property string last: ""
-  // The card's: kept while it plays and for a moment after it stops, so a hover preview or an ad elsewhere never takes it.
+  // When each player last started playing, by bus name.
+  property var started: ({})
+  // The card's: the last player to start, once it has played a moment (a hover preview never takes it); kept for a moment after it stops, then back to the one before.
   property string shown: ""
-  // Picked on the card. It holds while its player plays; once that stops, the next player to play takes the card back.
+  // Picked on the card. It holds while its player plays; once that has stopped, it goes as another plays.
   property string pinned: ""
+  property real pinnedAt: 0
   readonly property var player: players.find(p => p.dbusName === root.shown) ?? null
   readonly property string title: Names.clean(player?.trackTitle ?? "") || Names.clean(player?.identity ?? "")
   readonly property string artist: Names.clean(player?.trackArtist ?? "")
@@ -62,19 +63,30 @@ Singleton {
   }
 
   function choose(): void {
+    const now = Date.now();
     const live = root.players.filter(p => p.isPlaying || p.playbackState === MprisPlaybackState.Paused);
+    const since = p => root.started[p.dbusName] ?? 0;
     // A player that just stopped is held too, so one stopping between tracks keeps its place.
     const held = name => live.find(p => p.dbusName === name) ?? (hold.running && hold.player === name ? root.players.find(p => p.dbusName === name) ?? null : null);
-    if (live.length < 2 || live.length > 3 || !held(root.pinned)) root.pinned = "";
-    const current = held(root.shown);
     const playing = live.filter(p => p.isPlaying);
-    const next = held(root.pinned) ?? (current?.isPlaying || (current && hold.running) ? current : null) ?? playing.find(p => p.dbusName === root.last) ?? playing[0] ?? current ?? live.find(p => p.dbusName === root.last) ?? live[0] ?? null;
+    const settled = playing.filter(p => now - since(p) >= settle.wait);
+    const newest = list => list.reduce((best, p) => !best || since(p) > since(best) ? p : best, null);
+    const pinned = held(root.pinned);
+    if (live.length < 2 || live.length > 3 || !pinned || (!pinned.isPlaying && !(hold.running && hold.player === root.pinned) && settled.some(p => p !== pinned && since(p) > root.pinnedAt))) root.pinned = "";
+    const current = held(root.shown);
+    const next = held(root.pinned) ?? (current && !current.isPlaying && hold.running && hold.player === root.shown ? current : null) ?? newest(current?.isPlaying ? settled.concat(current) : settled) ?? current ?? newest(playing) ?? live[0] ?? null;
     root.shown = next?.dbusName ?? "";
+    const waiting = playing.filter(p => p !== next && now - since(p) < settle.wait);
+    if (waiting.length > 0) {
+      settle.interval = Math.max(1, settle.wait - Math.max(...waiting.map(p => now - since(p))));
+      settle.restart();
+    }
   }
 
   // Clicked again, the pin goes and the card follows playback.
   function pin(name: string): void {
     root.pinned = root.pinned === name ? "" : name;
+    root.pinnedAt = Date.now();
     root.choose();
   }
 
@@ -110,17 +122,28 @@ Singleton {
 
       target: modelData
       // One that arrives already playing is the last to have started.
-      Component.onCompleted: if (modelData.isPlaying) root.last = modelData.dbusName
+      Component.onCompleted: {
+        if (!modelData.isPlaying) return;
+        root.started[modelData.dbusName] = Date.now();
+        root.choose();
+      }
 
       function onPlaybackStateChanged(): void {
-        if (modelData.isPlaying) {
-          root.last = modelData.dbusName;
-          const pinned = root.players.find(p => p.dbusName === root.pinned);
-          if (pinned && pinned.dbusName !== modelData.dbusName && !pinned.isPlaying) root.pinned = "";
-        } else if (modelData.dbusName === root.shown) hold.start(modelData.dbusName);
+        if (modelData.isPlaying) root.started[modelData.dbusName] = Date.now();
+        else if (modelData.dbusName === root.shown) hold.start(modelData.dbusName);
         root.choose();
       }
     }
+  }
+
+  // How long a player plays before it takes the card, so a YouTube hover preview never does.
+  Timer {
+    id: settle
+
+    readonly property int wait: 1500
+
+    interval: wait
+    onTriggered: root.choose()
   }
 
   Timer {
