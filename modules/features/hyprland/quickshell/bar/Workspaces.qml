@@ -116,6 +116,14 @@ Item {
         return Theme.fgFaint;
       }
       font: button.mine ? Theme.numericSemiBold : Theme.captionHeading
+
+      // With the fill, so a number never snaps while its square fades.
+      Behavior on color {
+        ColorAnimation {
+          duration: Theme.panelButtonTime
+          easing.type: Easing.OutQuad
+        }
+      }
     }
 
     // As tall as the bar and across the gaps either side.

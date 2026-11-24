@@ -428,6 +428,8 @@ qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
 qst ipc controls menu wifi > /dev/null
 qst wait '(.controls.network.networks | length) == 43' 10
+# The menu eases open, then its rows come in.
+qst stays '.controls.menu == "wifi"' 0.6
 qst click ControlsPanel:row:Hvit_Monster
 qst wait '.controls.network.asking == "Hvit_Monster"'
 qst type visible

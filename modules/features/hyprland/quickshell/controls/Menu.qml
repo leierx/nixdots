@@ -15,6 +15,17 @@ Rectangle {
   // A row that grew, for the panel to keep whole in view as it scrolls.
   signal wantsInView(Item item)
 
+  // The order rows first came in, per list, kept while the menu is open: a row clicked (a network connecting, a device chosen) never sorts away from the pointer; a new one comes in last. Plain, as reading it must not rebuild the rows.
+  readonly property var order: ({})
+
+  function stable(name: string, list: var): var {
+    const seen = new Map((menuBox.order[name] ?? []).map((key, i) => [key, i]));
+    const kept = list.filter(row => seen.has(row.key)).sort((a, b) => seen.get(a.key) - seen.get(b.key));
+    const result = [...kept, ...list.filter(row => !seen.has(row.key))];
+    menuBox.order[name] = result.map(row => row.key);
+    return result;
+  }
+
   function rows(key: string): var {
     if (key === "wifi") {
       const rank = network => network.connected ? 3 : network.name === Net.asking || network.stateChanging ? 2 : network.known ? 1 : 0;
@@ -29,23 +40,23 @@ Rectangle {
         return { key: ssid, glyph: Net.signalGlyph(network.signalStrength), title: Net.name(network) || "Hidden Network", lock: Net.secured(network), current: network.connected, note: failure || (asking ? Net.askError : "") || state, bad: failure !== "" || asking && Net.askError !== "", asking, action: network.connected && Net.signInOffered ? "Sign In" : "", target: network };
       });
       // Gone while its password is typed: kept, saying so, with what was typed.
-      if (Net.asking !== "" && !list.some(row => row.asking)) list.unshift({ key: Net.asking, glyph: Symbols.wifi0, title: Names.clean(Net.asking), lock: true, note: "Out of range", bad: true, asking: true, target: null });
-      return list;
+      if (Net.asking !== "" && !list.some(row => row.asking)) list.push({ key: Net.asking, glyph: Symbols.wifi0, title: Names.clean(Net.asking), lock: true, note: "Out of range", bad: true, asking: true, target: null });
+      return menuBox.stable("wifi", list);
     }
     if (key === "vpn") return Net.vpns.map(vpn => {
       const busy = Net.busy(vpn.uuid);
       const asking = Net.vpnAsking === vpn.uuid;
       return { key: vpn.uuid, glyph: Symbols.vpn, title: Names.clean(vpn.name), toggle: vpn.active, note: busy === "up" || vpn.state === "activating" ? "Connecting…" : busy === "down" ? "Disconnecting…" : asking ? Net.vpnError || "Password needed" : "", bad: asking && Net.vpnError !== "", asking, target: vpn };
     });
-    if (key === "bluetooth") return BluetoothDevices.devices.map(device => ({ key: device.address, glyph: BluetoothDevices.glyph(device), title: BluetoothDevices.name(device), current: device.connected, tick: false, busy: BluetoothDevices.busy(device), note: BluetoothDevices.note(device), bad: (BluetoothDevices.failures[device.address] ?? "") !== "", battery: device.connected && device.batteryAvailable ? device.battery : -1, link: device.connected ? "connected" : device.paired ? "paired" : "", target: device }));
+    if (key === "bluetooth") return menuBox.stable("bluetooth", BluetoothDevices.devices.map(device => ({ key: device.address, glyph: BluetoothDevices.glyph(device), title: BluetoothDevices.name(device), current: device.connected, tick: false, busy: BluetoothDevices.busy(device), note: BluetoothDevices.note(device), bad: (BluetoothDevices.failures[device.address] ?? "") !== "", battery: device.connected && device.batteryAvailable ? device.battery : -1, link: device.connected ? "connected" : device.paired ? "paired" : "", target: device })));
     if (key === "sound") {
       const devices = (backend, side, other) => backend.devices.map(device => {
         const kind = Devices.kind(device.props, side === "input", other.hardware.has(device.props?.["device.id"]));
         return { key: `${side}:${device.id}`, side, kind, glyph: Volume.kindGlyph(kind), title: device.name, current: device.current, target: device.index };
       });
       const first = list => [...list.filter(device => device.current), ...list.filter(device => !device.current)];
-      const outputs = first(devices(Volume, "output", Microphone));
-      const inputs = Microphone.present ? first(devices(Microphone, "input", Volume)) : [];
+      const outputs = menuBox.stable("output", first(devices(Volume, "output", Microphone)));
+      const inputs = Microphone.present ? menuBox.stable("input", first(devices(Microphone, "input", Volume))) : [];
       const heading = (side, title, gap) => [{ key: `heading:${side}`, heading: true, title, gap }];
       return [...(outputs.length > 0 ? heading("output", "Output", false) : []), ...outputs, ...(inputs.length > 0 ? heading("input", "Input", outputs.length > 0) : []), ...inputs];
     }
@@ -119,6 +130,14 @@ Rectangle {
 
   implicitHeight: chrome + (tint ? rowHeight : Math.max(list.contentHeight, rowHeight))
   height: Math.min(implicitHeight, Math.max(chrome + 4 * rowHeight + (all.some(row => row.asking) ? askingHeight : rowHeight), limit))
+
+  // Its viewport follows its rows, so the footer under them moves rather than jumps.
+  Behavior on height {
+    NumberAnimation {
+      duration: Theme.popupTime
+      easing.type: Easing.OutQuad
+    }
+  }
   radius: Theme.toggleMenuRadius
   color: Theme.cardBg
 
@@ -235,6 +254,15 @@ Rectangle {
         width: parent.width - x
         height: menuBox.rowHeight
         visible: menuBox.shown.length === 0 && !menuBox.tint
+        // Once the last rows have gone, rather than over them as they go.
+        opacity: list.contentHeight < 1 ? 1 : 0
+
+        Behavior on opacity {
+          NumberAnimation {
+            duration: Theme.quickTime
+            easing.type: Easing.OutQuad
+          }
+        }
         text: menuBox.all.length === 0 ? menuBox.empty : "No results"
       }
 
@@ -267,26 +295,7 @@ Rectangle {
           objectProp: "key"
         }
 
-        add: Transition {
-          NumberAnimation {
-            property: "opacity"
-            from: 0
-            to: 1
-            duration: Theme.popupTime
-            easing.type: Easing.OutQuad
-          }
-        }
-
-        remove: Transition {
-          NumberAnimation {
-            property: "opacity"
-            to: 0
-            duration: Theme.popupTime
-            easing.type: Easing.OutQuad
-          }
-        }
-
-        // No displaced transition: Qt drops a row's new place while one runs, so a row above growing to ask left it underneath.
+        // No transitions: Qt drops a row's new place while a displaced one runs, so a row above growing to ask left it underneath. A row comes and goes by its own height instead, so those below move with it rather than snap under it.
         delegate: Rectangle {
           id: row
 
@@ -296,8 +305,81 @@ Rectangle {
           readonly property bool sound: menuBox.key === "sound"
           readonly property bool heading: modelData.heading ?? false
 
+          // Its own height, eased as it asks and stops; and how far it has come in, height first, then the fade.
+          property real natural: row.heading ? menuBox.headingHeight + (row.modelData.gap ? Theme.basePadding : 0) : row.asking ? menuBox.askingHeight : menuBox.rowHeight
+          property real grown: 1
+
+          Behavior on natural {
+            NumberAnimation {
+              duration: Theme.popupTime
+              easing.type: Easing.OutQuad
+            }
+          }
+
+          ListView.onAdd: arriving.start()
+          ListView.onRemove: leaving.start()
+
+          SequentialAnimation {
+            id: arriving
+
+            PropertyAction {
+              target: row
+              properties: "grown,opacity"
+              value: 0
+            }
+
+            NumberAnimation {
+              target: row
+              property: "grown"
+              to: 1
+              duration: Theme.popupTime
+              easing.type: Easing.OutQuad
+            }
+
+            NumberAnimation {
+              target: row
+              property: "opacity"
+              to: 1
+              duration: Theme.quickTime
+              easing.type: Easing.OutQuad
+            }
+          }
+
+          SequentialAnimation {
+            id: leaving
+
+            PropertyAction {
+              target: row
+              property: "ListView.delayRemove"
+              value: true
+            }
+
+            NumberAnimation {
+              target: row
+              property: "opacity"
+              to: 0
+              duration: Theme.quickTime
+              easing.type: Easing.OutQuad
+            }
+
+            NumberAnimation {
+              target: row
+              property: "grown"
+              to: 0
+              duration: Theme.popupTime
+              easing.type: Easing.OutQuad
+            }
+
+            PropertyAction {
+              target: row
+              property: "ListView.delayRemove"
+              value: false
+            }
+          }
+
           width: ListView.view.width
-          height: row.heading ? menuBox.headingHeight + (row.modelData.gap ? Theme.basePadding : 0) : row.asking ? menuBox.askingHeight : menuBox.rowHeight
+          height: natural * grown
+          clip: true
           radius: Theme.menuItemRadius
           color: asking ? Theme.menuHoverBg : "transparent"
           onHeightChanged: if (asking) Qt.callLater(menuBox.reveal, row)

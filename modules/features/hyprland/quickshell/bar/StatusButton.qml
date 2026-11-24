@@ -29,7 +29,35 @@ BarButton {
     return glyphs.length > 0 || Power.present ? glyphs : [{ name: "settings", path: Symbols.settings, color: Theme.fg }];
   }
 
+  // What it draws: the glyphs, and those just gone where they were, fading before the rest close up.
+  property var drawn: []
+
+  onGlyphsChanged: {
+    const names = new Set(root.glyphs.map(glyph => glyph.name));
+    const result = root.glyphs.slice();
+    let after = -1;
+    for (const old of root.drawn) {
+      const at = result.findIndex(glyph => glyph.name === old.name);
+      if (at >= 0) {
+        after = at;
+      } else if (!names.has(old.name)) {
+        result.splice(after + 1, 0, Object.assign({}, old, { leaving: true }));
+        after++;
+      }
+    }
+    root.drawn = result;
+    if (result.some(glyph => glyph.leaving)) gone.restart();
+  }
+
+  Timer {
+    id: gone
+
+    interval: Theme.popupTime
+    onTriggered: root.drawn = root.glyphs
+  }
+
   Component.onCompleted: {
+    drawn = glyphs;
     panel = `controls:${screen.name}`;
     loader.active = Panels.active === panel;
   }
@@ -47,10 +75,22 @@ BarButton {
   tooltip: "Quick Settings"
   onClicked: Panels.toggle(root.panel)
 
+  // From the right edge, so the glyphs already there hold still as one comes; centred while the button is at its least.
   Row {
     id: icons
 
-    anchors.centerIn: parent
+    property real inset: Theme.padding + Math.max(0, (root.width - 2 * Theme.padding - icons.implicitWidth) / 2)
+
+    anchors.right: parent.right
+    anchors.rightMargin: inset
+    anchors.verticalCenter: parent.verticalCenter
+
+    Behavior on inset {
+      NumberAnimation {
+        duration: Theme.popupTime
+        easing.type: Easing.OutQuad
+      }
+    }
     spacing: Theme.basePadding
 
     // The others make room for a new one, which fades in on its own: a positioner's add transition cut short leaves its item where it stopped.
@@ -65,7 +105,7 @@ BarButton {
     Repeater {
       // Keyed by name, so a symbol that stays keeps its delegate and only the new one arrives.
       model: ScriptModel {
-        values: root.glyphs
+        values: root.drawn
         objectProp: "name"
       }
 
@@ -79,6 +119,22 @@ BarButton {
         color: modelData.color
         opacity: 0
         Component.onCompleted: arrive.start()
+        // Read off its own data: a ScriptModel row that stays in place takes the new object.
+        readonly property bool leaving: modelData.leaving ?? false
+        onLeavingChanged: if (leaving) {
+          arrive.stop();
+          leave.start();
+        }
+
+        NumberAnimation {
+          id: leave
+
+          target: glyph
+          property: "opacity"
+          to: 0
+          duration: Theme.popupTime
+          easing.type: Easing.OutQuad
+        }
 
         NumberAnimation {
           id: arrive

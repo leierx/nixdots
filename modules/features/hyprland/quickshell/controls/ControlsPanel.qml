@@ -117,19 +117,123 @@ Popover {
             readonly property real gap: modelData.kind === "header" ? 0 : Theme.padding
             readonly property var keys: modelData.keys ?? []
             readonly property bool mine: menu && keys.includes(root.menu)
-            // The menu it shows, held while it eases shut.
+            // The menu it shows, held while it fades and eases shut; the one it goes to, as one of its row's menus swaps for another.
             property string held: ""
+            property string next: ""
+            // Where it is going, so a change of the open menu elsewhere leaves it be.
+            property string target: ""
+            // GNOME's: the slot eases open, then the menu fades in; it fades out, then the slot eases shut; a swap fades out, eases to the new height and fades in.
+            property real opened: !menu ? 1 : 0
+            property real shown: !menu ? 1 : 0
 
-            Binding on held {
-              when: section.mine
-              value: root.menu
-              restoreMode: Binding.RestoreNone
+            function follow(): void {
+              const want = section.mine ? root.menu : "";
+              if (want === section.target) return;
+              section.target = want;
+              opening.stop();
+              closing.stop();
+              swapping.stop();
+              section.next = "";
+              if (want === "") {
+                closing.start();
+              } else if (section.opened < 1 || want === section.held) {
+                // Opening, or back mid-close: it grows to the menu it now holds.
+                section.held = want;
+                opening.start();
+              } else {
+                section.next = want;
+                swapping.start();
+              }
             }
 
-            property real opened: !menu || mine ? 1 : 0
+            onMineChanged: if (menu) follow()
+            Component.onCompleted: {
+              Qt.callLater(column.measure);
+              if (menu) follow();
+            }
 
-            Behavior on opened {
+            Connections {
+              target: root
+              enabled: section.menu
+
+              function onMenuChanged(): void {
+                section.follow();
+              }
+            }
+
+            SequentialAnimation {
+              id: opening
+
               NumberAnimation {
+                target: section
+                property: "opened"
+                to: 1
+                duration: Theme.popupTime
+                easing.type: Easing.OutQuad
+              }
+
+              NumberAnimation {
+                target: section
+                property: "shown"
+                to: 1
+                duration: Theme.popupTime
+                easing.type: Easing.OutQuad
+              }
+            }
+
+            SequentialAnimation {
+              id: closing
+
+              NumberAnimation {
+                target: section
+                property: "shown"
+                to: 0
+                duration: Theme.quickTime
+                easing.type: Easing.OutQuad
+              }
+
+              NumberAnimation {
+                target: section
+                property: "opened"
+                to: 0
+                duration: Theme.popupTime
+                easing.type: Easing.OutQuad
+              }
+
+              PropertyAction {
+                target: section
+                property: "held"
+                value: ""
+              }
+            }
+
+            SequentialAnimation {
+              id: swapping
+
+              NumberAnimation {
+                target: section
+                property: "shown"
+                to: 0
+                duration: Theme.quickTime
+                easing.type: Easing.OutQuad
+              }
+
+              ScriptAction {
+                script: {
+                  section.held = section.next;
+                  section.next = "";
+                }
+              }
+
+              // The slot eases to the new menu's height meanwhile.
+              PauseAnimation {
+                duration: Theme.popupTime
+              }
+
+              NumberAnimation {
+                target: section
+                property: "shown"
+                to: 1
                 duration: Theme.popupTime
                 easing.type: Easing.OutQuad
               }
@@ -139,7 +243,6 @@ Popover {
             height: (gap + ((loader.item as Item)?.height ?? 0)) * opened
             clip: menu
             onHeightChanged: if (!menu) Qt.callLater(column.measure)
-            Component.onCompleted: Qt.callLater(column.measure)
 
             Loader {
               id: loader
@@ -147,6 +250,7 @@ Popover {
               y: section.gap
               width: parent.width
               active: section.opened > 0
+              opacity: section.shown
               sourceComponent: ({ header: headerSection, levels: levels, toggles: toggleRow, menu: menuSection, inuse: inUseSection })[section.modelData.kind]
             }
 
@@ -179,9 +283,9 @@ Popover {
                 readonly property real natural: each.count > 0 ? (((each.itemAt(section.keys.indexOf(section.held)) as Loader)?.item as Item)?.height ?? 0) : 0
                 property real eased: natural
 
-                // Only while it stays open, as another of its row's menus takes the slot.
+                // Only as another of its row's menus takes the slot; a menu eases its own height as its rows change.
                 Behavior on eased {
-                  enabled: section.opened === 1
+                  enabled: swapping.running
 
                   NumberAnimation {
                     duration: Theme.popupTime

@@ -25,6 +25,8 @@ Rectangle {
   // The mouse's, unless something (the gallery) holds a look.
   property bool hovered: area.containsMouse
   property bool pressed: area.pressed
+  // A bar item fills over panelButtonTime, as its neighbours do.
+  property int colorTime: Theme.quickTime
 
   readonly property bool filled: suggested || destructive
   readonly property color fillBg: suggested ? Theme.accentBg : Theme.destructiveBg
@@ -65,7 +67,7 @@ Rectangle {
 
   Behavior on color {
     ColorAnimation {
-      duration: Theme.quickTime
+      duration: root.colorTime
       easing.type: Easing.OutQuad
     }
   }

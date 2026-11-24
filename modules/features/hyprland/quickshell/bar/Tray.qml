@@ -32,7 +32,26 @@ Item {
   readonly property real cell: Theme.barItemHeight
   readonly property real offset: cells.contentX
   readonly property bool scrolls: expanded && cells.contentWidth > cells.width + 0.5
-  readonly property real strip: expanded ? Math.min(row.implicitWidth, most) : Math.min(row.implicitWidth, always * cell + (always - 1) * row.spacing)
+  // The strip and the count ease as one reveal, so nothing inside snaps while the tray grows.
+  property real strip: expanded ? Math.min(row.implicitWidth, most) : Math.min(row.implicitWidth, always * cell + (always - 1) * row.spacing)
+  property real counted: more > 0 ? 1 : 0
+  // What the count last said, kept as it fades.
+  property int lastMore: more
+  onMoreChanged: if (more > 0) lastMore = more
+
+  Behavior on strip {
+    NumberAnimation {
+      duration: Theme.popupTime
+      easing.type: Easing.OutQuad
+    }
+  }
+
+  Behavior on counted {
+    NumberAnimation {
+      duration: Theme.popupTime
+      easing.type: Easing.OutQuad
+    }
+  }
 
   visible: items.length > 0
   implicitWidth: items.length === 0 ? 0 : fill.width + Theme.basePadding
@@ -46,13 +65,6 @@ Item {
   onWantedChanged: {
     if (wanted) linger.stop();
     else linger.restart();
-  }
-
-  Behavior on implicitWidth {
-    NumberAnimation {
-      duration: Theme.popupTime
-      easing.type: Easing.OutQuad
-    }
   }
 
   // A moment's grace after the pointer leaves the bar's end.
@@ -97,7 +109,7 @@ Item {
   ClippingRectangle {
     id: fill
 
-    width: root.strip + (root.more > 0 ? count.implicitWidth + Theme.basePadding : 0)
+    width: root.strip + (count.implicitWidth + Theme.basePadding) * root.counted
     height: root.cell
     radius: height / 2
     color: "transparent"
@@ -173,8 +185,9 @@ Item {
 
       x: root.strip
       anchors.verticalCenter: parent.verticalCenter
-      visible: root.more > 0
-      text: `+${root.more}`
+      opacity: root.counted
+      visible: root.counted > 0
+      text: `+${root.lastMore}`
       color: Theme.fgDim
       font: Theme.caption
     }

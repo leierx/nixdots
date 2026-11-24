@@ -98,8 +98,20 @@ Popover {
 
         Item {
           Layout.fillWidth: true
-          // As tall as the calendar and weather at least, so the panel keeps its shape, and no taller than the screen.
-          Layout.preferredHeight: Math.min(root.height - 2 * Theme.rise - 3 * root.padding - footer.implicitHeight, Math.max(side.implicitHeight - footer.implicitHeight - root.padding, list.contentHeight, Notifs.entries.length === 0 ? empty.y + empty.implicitHeight : 0))
+          // As tall as the calendar and weather at least, so the panel keeps its shape, and no taller than the screen; eased once open, so the footer moves rather than jumps.
+          property real wanted: Math.min(root.height - 2 * Theme.rise - 3 * root.padding - footer.implicitHeight, Math.max(side.implicitHeight - footer.implicitHeight - root.padding, list.contentHeight, Notifs.entries.length === 0 ? empty.y + empty.implicitHeight : 0))
+          property real eased: wanted
+
+          Behavior on eased {
+            enabled: root.shown === 1
+
+            NumberAnimation {
+              duration: Theme.popupTime
+              easing.type: Easing.OutQuad
+            }
+          }
+
+          Layout.preferredHeight: eased
 
           ListView {
             id: list
@@ -121,14 +133,37 @@ Popover {
             header: Item {
               width: list.width
               height: media.active ? media.height + Theme.padding : 0
+              clip: true
+
+              Behavior on height {
+                enabled: root.shown === 1
+
+                NumberAnimation {
+                  duration: Theme.popupTime
+                  easing.type: Easing.OutQuad
+                }
+              }
 
               Loader {
                 id: media
 
                 width: parent.width
                 active: Media.player !== null
+                opacity: 0
+                onLoaded: arrive.start()
 
                 sourceComponent: MediaCard {}
+
+                NumberAnimation {
+                  id: arrive
+
+                  target: media
+                  property: "opacity"
+                  from: 0
+                  to: 1
+                  duration: Theme.popupTime
+                  easing.type: Easing.OutQuad
+                }
               }
             }
 
@@ -226,7 +261,16 @@ Popover {
             y: list.headerItem?.height ?? 0
             width: parent.width
             height: parent.height - y
-            visible: Notifs.entries.length === 0
+            // Once the last group has gone, rather than over it as it fades.
+            opacity: Notifs.entries.length === 0 && list.count === 0 ? 1 : 0
+            visible: opacity > 0
+
+            Behavior on opacity {
+              NumberAnimation {
+                duration: Theme.popupTime
+                easing.type: Easing.OutQuad
+              }
+            }
             glyph: Symbols.bell
             text: "No Notifications"
           }
