@@ -33,9 +33,14 @@ NetworkManager, BlueZ, UPower and MPRIS services.
 | | |
 | --- | --- |
 | ![Date menu with a player, notifications, calendar and weather](docs/gallery/center.png) | ![Notification popups](docs/gallery/notifications.png) |
-| Date menu: player, notifications grouped per app, calendar, MET Norway weather | Notification popups: critical, nixpkgs (SUPER+N) fetching a package, buttons, pictures, markup |
-| ![Quick settings with the Wi-Fi menu open](docs/gallery/controls.png) | ![Quick settings with the Bluetooth menu open](docs/gallery/bluetooth.png) |
-| Quick settings (SUPER+A), Wi-Fi | Quick settings, Bluetooth |
+| Date menu: player in its cover's colour with a button per player, notifications grouped per app, calendar, MET Norway weather | Notification popups: critical, nixpkgs (SUPER+N) fetching a package, buttons, pictures, markup |
+
+![Quick settings with the Wi-Fi, Bluetooth and Sound menus open](docs/gallery/quick-settings.png)
+
+Quick settings (SUPER+A): Wi-Fi, Bluetooth, Sound
+
+| | |
+| --- | --- |
 | ![App launcher](docs/gallery/launcher.png) | ![Clipboard history](docs/gallery/clipboard.png) |
 | Apps (SUPER+D) | Clipboard history (SUPER+V) |
 | ![Window switcher with live previews](docs/gallery/windows.png) | ![Monitor layouts](docs/gallery/monitors.png) |
