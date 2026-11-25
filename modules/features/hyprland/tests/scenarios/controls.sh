@@ -777,3 +777,39 @@ qst wait '.focused == "ControlsPanel/ListRow" and .volume.output == "Speakers"'
 qst key Return
 qst wait '.volume.output == "Headphones"'
 qst stays '.focused == "ControlsPanel/ListRow" and .panel == "controls:DP-1"' 0.5
+
+qst case "PipeWire absent as the shell starts comes in when it does"
+qst pipewire stop
+qst restart > /dev/null
+qst expect --may 'Failed to connect pipewire context'
+open
+qst stays '.panel == "controls:DP-1"' 1
+qst pipewire start
+qst wait '(.microphone.inputs | length) == 3 and .volume.output == "Speakers"' 15
+qst stays '.osd == null' 1
+
+qst case "the session manager dying alone leaves PipeWire's devices, and its coming back shows nothing"
+open sound
+qst wait '.volume.output == "Speakers"'
+shown=$(qst state .osdShown)
+qst wireplumber stop
+qst stays '.panel == "controls:DP-1"' 2
+qst wireplumber start
+qst wait '.volume.output == "Speakers" and (.microphone.inputs | length) == 3' 15
+qst stays ".osdShown == $shown and .panel == \"controls:DP-1\"" 1
+
+qst case "players that are barely players: no metadata, no length, a position past the end, art that is not there, seeking refused"
+qst player add bare "" Playing "" '{"metadata": false, "identity": ""}'
+qst wait '.controls.media != null' 10
+center
+qst stays '.panel == "center:DP-1"' 1
+qst player remove bare
+qst player add odd Odd Playing "" '{"tracks": [["A track", "Someone", 0]], "position": 999000000, "seek": false, "art": "file:///nonexistent/cover.png"}'
+qst wait '.controls.media.identity == "Odd"' 10
+qst stays '.panel == "center:DP-1" and .controls.media.length == 0' 1
+qst expect --may 'Cover art: '
+qst player add moving Moving Playing "" '{"artEvery": 200}'
+qst wait '.controls.media.identity == "Moving"' 10
+qst stays '.panel == "center:DP-1"' 3
+# One download at a time, each cover asked for once: never a pile of curls behind the addresses.
+[ "$(qst actions | grep -c '^curl .*127\.0\.0\.1:9/')" -le 20 ] || { qst actions | grep -c curl; echo "the covers were asked for more than they changed"; exit 1; }

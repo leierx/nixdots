@@ -176,3 +176,52 @@ qst restart > /dev/null
 # Before any probe: the probe itself reads Notifs, which would start the server.
 for _ in $(seq 50); do qst x busctl --user status org.freedesktop.Notifications > /dev/null 2>&1 && break; sleep 0.1; done # sleep: the bus name comes from qs, outside the probe
 qst x busctl --user status org.freedesktop.Notifications > /dev/null || { echo "no notification server without a monitor"; exit 1; }
+
+qst case "a panel named for a screen that is not there, or for nothing, opens nothing, and popups still come"
+qst expect 'Panels: no panel named nonsense'
+for name in center:HDMI-9 controls:HDMI-9 tray-menu:HDMI-9 nonsense; do
+  qst ipc panels open "$name" > /dev/null
+  qst stays '.panel == ""' 0.3
+done
+notify-send -a Test "still pops up"
+qst wait '(.popups | length) == 1'
+qst focus DP-2
+qst ipc panels toggle center > /dev/null
+qst wait '.panel == "center:DP-2"'
+
+qst case "a screen's panel closes as its monitor is turned off"
+qst focus DP-2
+qst ipc panels open controls > /dev/null
+qst wait '.panel == "controls:DP-2"'
+qst monitor disable DP-2
+qst wait '.panel == "" and (.screens | length) == 1'
+qst key super+a
+qst wait '.panel == "controls:DP-1"'
+
+qst case "a portrait monitor left of the first, at a negative origin, and DP-10 beside DP-1, each get their own bar, popups and center"
+qst monitor add DP-10 1920x1080 1 -1080x0
+qst x hyprctl eval 'hl.monitor({ output = "DP-10", mode = "1920x1080", position = "-1080x0", scale = 1, transform = 1, disabled = false })' > /dev/null
+qst wait '(.screens | length) == 3 and (.hypr | map(select(.name == "DP-10"))[0].x) == -1080'
+qst wait "$(layer "DP-10 quickshell:bar") and $(layer "DP-10 quickshell:notifications")"
+qst focus DP-10
+notify-send -t 0 -a Test "on the portrait one"
+qst wait '.popups | map(.screen) == ["DP-10"]'
+# Its clock, centred on a bar 1080 wide that starts at -1080.
+qst click left -540 16
+qst wait '.panel == "center:DP-10"'
+qst stays "$(layer "DP-10 quickshell:center")" 0.5
+qst ipc panels open controls:DP-10 > /dev/null
+qst wait "$(layer "DP-10 quickshell:controls")"
+no_problems
+
+qst case "Hyprland reloading its config under the open centre keeps a bar on every screen"
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+qst x hyprctl reload > /dev/null
+qst wait '(.layers | map(select(endswith(" quickshell:bar"))) | length) == 2' 10
+qst stays '(.screens | length) == 2' 1
+qst key super+a
+qst wait '.panel == ""'
+qst key super+a
+qst wait '.panel == "controls:DP-1"'
+no_problems

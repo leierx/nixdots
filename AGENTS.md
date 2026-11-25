@@ -321,7 +321,8 @@ fprintd, NetworkManager), so it needs the NixOS half.
   fingerprint unlock (no input) clears it through `on_unlock_cmd`. hypridle is
   the one clock and input watcher; without a shell the lock just comes. Sleep
   and the power menu lock at once. A fade whose lock or cancel never comes
-  (hypridle restarted mid-fade) lifts 10 s after it ends.
+  (hypridle restarted mid-fade) lifts 10 s after it ends, and a hold whose
+  lock never comes (the lock command killed after `hold`) 10 s after it.
 - **hypridle is `pkgs.unstable.hypridle`** (0.1.8): 0.1.7's single inhibit counter
   loses logind's idle inhibitor to a stray ScreenSaver `UnInhibit` and an app
   disconnect, so Caffeine stopped keeping the lock off. Drop the pin when
@@ -337,17 +338,27 @@ fprintd, NetworkManager), so it needs the NixOS half.
 ## The Quickshell shell (`hyprland/quickshell/`)
 
 [Quickshell](https://quickshell.org) 0.3.2 from `pkgs.unstable` (0.3.1 fixed
-crashes on freed objects in a `ScriptModel`). `quickshell.nix` runs it as
-`quickshell.service`: restarted when the shell changes (`X-Restart-Triggers`),
-1 s after a crash, no start limit (hotplug bursts), `MemoryMax=2G` without swap
-(it sits near 500 MiB). Quickshell's own guard also restarts a crashed
-instance in place and logs "Quickshell has crashed under pid N".
+crashes on freed objects in a `ScriptModel`), patched until upstream has the
+fixes: `quickshell-image-data.patch` drops an `image-data` hint whose sizes
+outrun its bytes (read past its end, any client could crash the shell) and
+honours the client's rowstride; `quickshell-crash-relaunch.patch` has a crash's
+relaunch and its reporter each open the instance's memfd anew (on one shared
+offset the relaunch sometimes read nothing and started with no config). The
+shell `qst clock` moves is the same build on the system malloc. `quickshell.nix`
+runs it as `quickshell.service`: restarted when the shell changes
+(`X-Restart-Triggers`), 1 s after a crash, no start limit (hotplug bursts),
+`MemoryMax=2G` without swap (it sits near 500 MiB),
+`QS_PIPEWIRE_IMMEDIATE_RECONNECT=1` (without it PipeWire not up as the shell
+starts is never connected to). Quickshell's own guard also restarts a crashed
+instance in place, an exec under the same pid, and logs "Quickshell has crashed
+under pid N" (the pid of a core-dump child, not the shell's); what the crashed
+shell ran stays its child until its next write fails.
 
 Components: `bar/`, `center/`, `controls/`, `launcher/`, `notifications/`,
 `osd/`, `power/`, `shortcuts/`, `tooltip/`, `weather/`, `idle/`; `shell.qml`
 only instantiates them. `common/` holds what several share: the STYLE.md
 pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `Popover`,
-`ClickAway`, `Screens`, `Time`, `StateFile`, `Command`, `Watcher`, `Detached`, `WheelSteps`,
+`ClickAway`, `Screens`, `Time`, `StateFile`, `Command`, `Deadline`, `Watcher`, `Detached`, `WheelSteps`,
 `WorkspaceOwners`, `Tooltips`, `Machine` (os-release's `LOGO=` through the
 icon theme, hostname, uptime).
 
@@ -359,8 +370,12 @@ icon theme, hostname, uptime).
   opens its own and another's never moves a window still fading out. IPC
   `panels open|close|toggle <name>`: `apps`, `clipboard`,
   `monitors`, `windows`, `nixpkgs`, `shortcuts`, `power`, `gallery` (qs-test
-  only), per screen `center:DP-1`, `controls:DP-1`, `tray-menu:DP-1`; `center` or
-  `controls` alone is the focused screen's. `Panels.center` is any open center.
+  only, which adds itself to `Panels.names`), per screen `center:DP-1`,
+  `controls:DP-1`, `tray-menu:DP-1`; `center` or `controls` alone is the
+  focused screen's. Any other name opens nothing (an unknown one warns): open,
+  it would hold the clicks and the popups with nothing shown. A screen's panel
+  closes as the screen goes from `Screens.real`. `Panels.center` is any open
+  center.
 - **`Overlay`**: the full-screen layer a panel lives in; a click off its `card`
   or a window elsewhere taking the keyboard closes it. Exclusive keyboard only
   until it has it, or a window clicked on another monitor never got it.
@@ -373,10 +388,19 @@ icon theme, hostname, uptime).
   while a panel is open, so bare desktop closes it.
 - **`Screens`**: screens less Hyprland's `FALLBACK`, and the focused one.
 - **`Command`**: a process whose failure (even to start) becomes a
-  notification, or a log line while `quiet`. **`Detached`**: one
+  notification, or a log line while `quiet`; stopped and failed after
+  `timeout` ms (10 s; 5 s for the shortcuts, 30 s past curl's own, 120 s for
+  the clipboard's first decode, 0 for the package list), as each runs one at a
+  time and a hung one would hold its feature for good. **`Deadline`** does the
+  same for a bare `Process` (Caps Lock, Caffeine's state, night light, the VPN
+  list). **`Detached`**: one
   `systemd-run --user --scope` per app, since a service restart kills its
   cgroup. **`Watcher`**: a long-lived command started again as it stops,
-  backing off until a run lasts a minute. **`WheelSteps`**: whole notches,
+  backing off until a run lasts a minute, with SIGPIPE back to its default
+  (Quickshell's children inherit it ignored), so one a crashed shell left
+  behind goes at its next line; nmcli, which ignores it itself, runs under a
+  reader that takes it along. **`Time`** polls the clock each second rather
+  than a `SystemClock`, which spins through a repeated DST hour. **`WheelSteps`**: whole notches,
   positive up, a touchpad's small steps adding up to them.
 - **Nix in the QML** is only the `qs.nix` module in the store copy: `Colors`
   (the palette, translucent colours as Qt `#aarrggbb`), `Hyprsplit.workspaces`
@@ -387,7 +411,7 @@ icon theme, hostname, uptime).
   `xdg-open`, `systemd-run`, `hyprmoncfg`, `wezterm`, `curl`, `nixpkgs-index`,
   `nixpkgs-run`, `hyprctl`, `systemctl`, `wpctl`, `camera-users`,
   `backlight-watch`, `nmcli`, `nm-connection-editor`, `brightnessctl`,
-  `bluetui`, `pwvucontrol`, and systemd's `busctl`), so it works as any rice: an exception to store paths;
+  `bluetui`, `pwvucontrol`, systemd's `busctl` and util-linux's `setpriv`), so it works as any rice: an exception to store paths;
   `quickshell.nix` installs those no other feature does.
 - **Scale**: designed at scale 1 (1920x1080). Hyprland's per-monitor scale
   handles dense screens; HM `quickshell.scale` (default 1, the desktop 1.2)
@@ -539,7 +563,9 @@ icon theme, hostname, uptime).
   of stats). `clipboard` decodes each clip once into Quickshell's cache, pruned
   to what cliphist lists; it searches cliphist's preview, a clip's first 100
   characters (a picture's size and format too, never the counts under it); a
-  clip is decoded to a file before wl-copy takes it, so one that fails says so.
+  clip is decoded to a file before wl-copy takes it, so one that fails says so;
+  cliphist with no database yet ("please store something first") is an empty
+  history.
   Rows rebuilt under the same query (a retitled window, the counts) keep the
   selection by key; while its rows load a mode says nothing (`loading`). A mode with a preview keeps its pane, empty while nothing matches, so the card never changes shape under the keys. `monitors` lists the profile hyprmoncfgd would apply
   next first (`Recommended`), reloading a second after hotplug bursts.
@@ -607,7 +633,9 @@ icon theme, hostname, uptime).
   turned away and summed in one card, and an update in place (by id
   too) only updates its card (no reorder, popup or sound); text is cut before layout (a megabyte held
   the shell for seconds); newest three per app, 100 in all. Body markup filtered
-  to the spec (`markup.js`). elementary OS sounds via `pw-play`, one per 300 ms.
+  to the spec (`markup.js`). elementary OS sounds via `pw-play`, one per 300 ms,
+  none past 30 s; a client's `sound-file` only if it is a plain file under
+  10 MB (never a pipe or a device), ours otherwise.
   A banner never expands: a click runs its default action, else its one
   button, else puts it away; a right click dismisses it (the user's, over the
   HIG); the pointer on it holds its timeout; it goes as it came. An update closed in the same turn is not put back.
@@ -657,7 +685,8 @@ icon theme, hostname, uptime).
   The card is the cover's colour, `Theme.cover` over `ColorQuantizer`'s eight:
   OKLab 0.40, the seek bar and play button 0.84, white on a grey cover; the
   art square, or as wide as 16:9 for a video's thumbnail. Art is
-  read from a local file, from the start rather than as the center opens:
+  read from a local file, once it is there (`test -r`, so a deleted cover never
+  makes Qt warn), from the start rather than as the center opens:
   remote art downloaded to the cache dir in the background, kept by URL (the
   last 32, pictures only), and held decoded so the card has it at once),
   `Power` (UPower display device), `Privacy` (a capture stream from a mic while
@@ -797,7 +826,13 @@ qst network wifi add Cafe 40 open # the fake NetworkManager: wifi add SSID [STRE
                                # connectivity none|portal|limited|full, switch on|off, delay MS, dump, stop|start|restart
 qst battery 15 discharging 1800             # PERCENT [charging|discharging|full|pending [SECONDS]], or remove
 qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70   # behaviour ok, pin, fail, slow (a connect taking 1.5 s) or crowded
-qst player add spotify Spotify Playing [ART]   # MPRIS, ART a file or an http(s) URL; status NAME STATE, track NAME TITLE [ARTIST], remove NAME, clear
+qst player add spotify Spotify Playing [ART] [JSON]   # MPRIS, ART a file or a URL, JSON more of tests/mpris.py's parameters; status NAME STATE, track NAME TITLE [ARTIST], remove NAME, clear
+qst upower stop                # or start; `logind stop|start [ANSWER]`, `wireplumber stop|start` (PipeWire stays up)
+qst hole org.bluez system      # a name held by something that takes every call and answers none; `hole NAME off`
+qst kill SEGV                  # a crash, waiting for Quickshell's relaunch in place; `kill` (KILL) takes the helpers too, then `qst restart`
+QS_TEST_CLOCK=1 qst case "…"   # the shell on libfaketime (and the system malloc: jemalloc deadlocks under it)
+qst clock +8h                  # its clock that far from the machine's; `clock -1h`, `clock at "2027-03-28 00:59:50 UTC"`
+qst fuzz 400 [SEED]            # random panels, keys, clicks, wheel, notifications, idle calls, hotplugs; invariants after each; prints its seed
 qst sync                       # copy edited QML in, restart qs, print warnings
 qst problems                   # warnings less tests/known-warnings and this case's expects
 qst census                     # what the probe finds wrong on screen
@@ -805,7 +840,8 @@ qst areas [REGEX]              # mouse areas: x, y, label, enabled, clicks, hand
 qst cursor 960 21 [hand]       # the cursor Qt sets there
 qst cursors [WINDOW]           # every clickable area asks for a hand
 qst motion start               # record items per frame; `motion stop` fails on a jump
-qst fail cliphist exit         # or crash, missing, garbage; `fail cliphist off`
+qst fail cliphist exit         # or crash, missing, garbage, hang, slow (3 s), truncated, huge (20 MB more), lie (then exit 1), 'say=[]'; `fail cliphist off`
+qst fail hyprctl hang 'binds*' # only the calls whose arguments match the glob, the rest as before
 qst expect [--may] 'hyprmoncfg'   # this case must (or may) log a warning matching it
 qst actions                    # what the session tried to run on the machine
 qst lint                       # the qmllint check on the checkout
@@ -815,18 +851,26 @@ qst down                       # kill and delete the session(s) and the test she
 ### The session's fakes
 
 - `systemctl`, `loginctl`, `pw-play`, `xdg-open`, `nixpkgs-run`, `brightnessctl`, `curl`, `nixpkgs-index`
-  and `hyprmoncfg` log to `qst actions` (`hyprmoncfg status` replays the live
-  profiles; fake profiles in `$QS_TEST_DIR/cfg/hyprmoncfg/profiles`). `curl`
+  and `hyprmoncfg` log to `qst actions` (`hyprmoncfg status` answers
+  `tests/hyprmoncfg/status.json`, the desktop's profiles from
+  `hosts/desktop/monitors.nix`, copied into `$QS_TEST_DIR/cfg/hyprmoncfg/profiles`). `curl`
   answers MET Norway with twelve hours from now, expiring in an hour and
   unmodified to If-Modified-Since (each case drops the cached forecast);
   `nixpkgs-index` writes a handful of packages once per session. No case
   reaches the network.
-  `systemd-run --scope` logs and runs in the session. `hyprctl` is the test
-  Hyprland's, `hl.dsp.exit()` only logged. cliphist reads a copy of the DB.
+  `systemd-run --scope` logs and runs in the session (only logs while
+  `$QS_TEST_DIR/no-launch` exists, as during `fuzz`). `hyprctl` is the test
+  Hyprland's, `hl.dsp.exit()` only logged. cliphist has a database of the
+  session's own, none at the start of a case, never the user's clips.
   `systemctl --user start|stop|is-active` keeps state in `$QS_TEST_DIR/units`.
 - Config dir: the user's, symlinked, except `hypr/` and `hyprmoncfg/`.
 - qs at `QT_SCALE_FACTOR` 1 unless `QS_TEST_SCALE`, with `TZDIR` (Qt needs it
-  on NixOS). `bar fakeOutputs 1000` fakes 1000 outputs; `realVolume` drops them
+  on NixOS), `QS_PIPEWIRE_IMMEDIATE_RECONNECT` as the unit, and its state and
+  cache in `$QS_TEST_DIR/state` and `cache` (a case may lock them; reset
+  unlocks and empties them). `TZ`, `LC_ALL` set on `qst case` reach it.
+  Everything it starts carries `QS_TEST_SHELL=$QS_TEST_DIR`, by which a case
+  counts its watchers and `stop_qs` kills what outlived the group (a crash
+  reporter, helpers left by a relaunch). `bar fakeOutputs 1000` fakes 1000 outputs; `realVolume` drops them
   (the probe's IPC, not the live shell's).
 - System bus: python-dbusmock templates via `qs-dbusmock`, fresh per case:
   NetworkManager (`tests/networkmanager.py`; wired + wg0 up, three networks,
@@ -872,8 +916,8 @@ qst down                       # kill and delete the session(s) and the test she
   `qst motion`, or background `qst x grim -s 0.25` ~35 ms apart and `md5sum`.
 - `notify-send -A` waits: background it. Tray menus close on a click elsewhere,
   their icon, or Escape.
-- Quickshell keys state and cache dirs by config path; `down` deletes only the
-  test shell's.
+- `QS_TEST_COLD=1 qst case` resets without the probe, whose read creates every
+  singleton: a case of what a shell nobody has looked at does.
 
 ### State and scenarios
 
@@ -893,18 +937,30 @@ Every snapshot also checks the whole shell:
   (Theme's faint colour and fading text aside), colours and radii not Theme's
   (the media card's `Media.tint` counts as Theme's; a running `Behavior on
   color` is held to its target),
-  images without source or failing, a disabled area setting a hand, a card off
-  its window, text over text, a window that is not a layer surface.
-- `invariants` (`tests/invariants.jq`): an open panel has its layer and vice
-  versa, nothing on `FALLBACK`, popups only on real screens and five at most,
-  three per app past the popped up, history within 100, a probe answer within
-  2 s, a countdown never going back up.
+  images without source, failing or loading past 5 s, a disabled area setting a
+  hand, a card off its window, text over text, `undefined`, `NaN`,
+  `[object` or `Invalid Date` in a label, a window that is not a layer surface.
+- `invariants` (`tests/invariants.jq`): the open panel is one the shell has,
+  on a screen that is there, with its layer on that screen (the shortcuts may
+  wait up to 5 s for Hyprland's binds), and vice versa, one layer per panel;
+  every screen one bar, click-away and notifications layer; the dim on every
+  screen or none; a tooltip layer exactly while a tooltip shows; the shell's
+  screens Hyprland's enabled monitors by name and id; nothing on `FALLBACK`,
+  popups only on real screens and five at most, three per app past the popped
+  up, history within 100; the status button's cup, bell, Do Not Disturb and
+  microphone as their backends say, the clocks pressed as the center open,
+  no slider without a value; a probe answer within 2 s, a countdown never
+  going back up.
 
 `wait`/`stays` fail on a problem lasting 500 ms (a transition passes through
 some), and at once on the countdown. A case fails on any warning qs logs, less
 `tests/known-warnings` (regex, tab, why) and its own `expect`s; on qs peaking
-past `QS_TEST_PEAK` MiB (1024, `VmHWM`); on an `IpcHandler` in the source that
-isn't registered.
+past `QS_TEST_PEAK` MiB (1024, `VmHWM`); on two of a watcher (`camera-users`,
+`nmcli monitor`, backlight-watch's `udevadm`) at once; on qs gone unless the
+case killed it (`qst kill`); on an `IpcHandler` in the source that isn't
+registered. An empty `expect` or known-warnings line is refused (it would allow
+every line). A whole green `run` names the known warnings no case met, which
+can go.
 
 `tests/scenarios/*.sh` run under `set -euo pipefail` with `qst` on PATH. Each
 `qst case "what should happen"` resets; a file sets `QS_TEST_MONITORS`; lines
@@ -923,22 +979,24 @@ own `qst areas` filter: a missing name then says what is there.
 
 | Scenario | Covers |
 | --- | --- |
-| `binds.sh` | every global bind opens its own panel and closes it |
-| `caffeine.sh` | Caffeine's unit, pill and status cup |
-| `chaos.sh` | hostile and broken clients: floods, megabytes of text, bad icons, panel and hotplug storms, 40-window workspaces, 60 outputs, damaged state, 200 tray items, 300 hostile network names, 1000 outputs, 50 VPNs, 100 BT devices, 30 players, small and 4K screens |
-| `controls.sh` | the control centre: open/close paths, status glyphs, header (battery or machine), every pill and menu against the fakes, a password tried as the centre shuts, two VPNs at once, a failed connect mid-scan, the sound menu's headings, symbols and Audio Settings, services stopping under it, Return on a sound output, the player the center's card shows, its buttons and pin, the cover's colour |
+| `binds.sh` | every global bind opens its own panel and closes it, held down too |
+| `caffeine.sh` | Caffeine's unit, pill and status cup, a cold shell's IPC |
+| `chaos.sh` | hostile and broken clients: floods, megabytes of text, bad icons, panel and hotplug storms, 40-window workspaces, 60 outputs, damaged state, 200 tray items, 300 hostile network names, 1000 outputs, 50 VPNs, 100 BT devices, 30 players, small and 4K screens, the shell stopped 10 s under a flood, services and a notification server that hold their names and never answer |
+| `clock.sh` | the wall clock moved under the shell: a suspend's gap, set back, midnight, both clock changes |
+| `controls.sh` | the control centre: open/close paths, status glyphs, header (battery or machine), every pill and menu against the fakes, a password tried as the centre shuts, two VPNs at once, a failed connect mid-scan, the sound menu's headings, symbols and Audio Settings, services stopping under it, PipeWire absent at start, WirePlumber dying alone, Return on a sound output, the player the center's card shows, its buttons and pin, the cover's colour, barely-players |
 | `cursors.sh` | the bar and every panel's cursors, a closed hand mid-drag |
-| `design.sh` | every surface on screen, scaled too, for the census |
-| `failures.sh` | the shell's tools failing (`qst fail`), the cached forecast |
+| `design.sh` | every surface on screen, scaled too, in three other locales, for the census |
+| `failures.sh` | the shell's tools failing, hanging, slow, cut short, enormous (`qst fail`), the cached forecast, the shell crashed and killed, its state and cache locked |
 | `history.sh` | saved history across restarts and in-place reloads, kept pictures, damaged files |
-| `hotplug.sh` | unplug, disable, replug under every panel, menus and popups; the center per screen; the server with no monitor at start |
-| `idle.sh` | the idle dim under `motion`, clicks through it, the lock command's holds |
-| `interactions.sh` | fixes that had no case: popups, wheel past 100 %, clip scope, 1024x600, power keys (held, rearmed, firmware), a banner's click, hover after a panel closes |
-| `launcher.sh` | typing as it opens, open time, clicks on another monitor, nixpkgs search, the selection under a retitling window, the clipboard's counts |
+| `hotplug.sh` | unplug, disable, replug under every panel, menus and popups; the center per screen; the server with no monitor at start; panels for absent screens; a portrait screen at a negative origin; Hyprland reloading |
+| `idle.sh` | the idle dim under `motion`, clicks through it, the lock command's holds, a hold whose lock never comes |
+| `interactions.sh` | fixes that had no case: popups, wheel past 100 %, clip scope, 1024x600 and 1080p at scale 3, power keys (held, rearmed, firmware), a banner's click, hover after a panel closes, a drag let go outside the centre |
+| `launcher.sh` | typing as it opens, open time, clicks on another monitor, nixpkgs search at full size and on a broken list, the selection under a retitling window, the clipboard's counts, Return twice |
 | `motion.sh` | center groups expanding, the OSD fading |
-| `notifications.sh` | per-app limits, five popups, stack tags, DND, the bell, flood sounds, bare-path pictures, Clear, groups holding their places, Collapse All shutting More, a hovered banner, updates by id (closed at once, past the flood limit), markup in labels |
+| `notifications.sh` | per-app limits, five popups, stack tags, DND, the bell, flood sounds, bare-path pictures, Clear, groups holding their places, Collapse All shutting More, a hovered banner, updates by id (closed at once, past the flood limit), markup in labels, hostile hints |
 | `osd.sh` | what shows and what must not (a mic level moving, the volume key past 100 %) |
 | `privacy.sh` | mics real and virtual, casts, cameras via PipeWire and `/dev` |
+| `soak.sh` | one shell used for long: `fuzz`, every panel fifty times (memory, open files), idle CPU |
 | `tray.sh` | the tray strip, its menus and keys, Escape in a submenu, the keyboard back to a window |
 | `workspaces.sh` | windows opened while the shell starts, the wheel spun hard |
 
@@ -956,7 +1014,8 @@ What Hyprland does that tests run into:
 - Going to and from no output, Qt warns "Layershell screen does not correspond
   to a real screen"; `problems` drops those right after "creating placeholder
   screen".
-- In jq a pipe binds loosest: `(.popups | map(.screen)) == [...]`.
+- In jq a pipe binds looser than `==` and a comma looser still:
+  `(.popups | map(.screen)) == [...]`, `[(a | max), (b | max)]`.
 
 ## Sharp edges
 

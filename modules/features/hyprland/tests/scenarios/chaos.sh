@@ -147,7 +147,7 @@ qst wait '(.tray | length) == 40' 20
 reveal DP-1 1850
 qst stays '.trays[0].shown' 1
 qst tray remove stay
-qst wait '(.tray | length) == 0 and (.trays[0].shown | not)' 10
+qst wait '(.tray | length) == 0 and (.trays | length) > 0 and all(.trays[]; .shown | not)' 10
 
 qst case "two hundred tray items scroll in the strip under the hammered wheel, and their monitor going closes a menu"
 qst tray add swarm 200
@@ -298,10 +298,16 @@ qst wait '.panel == ""'
 qst case "the idle dim's calls in any order, hundreds at once, still end where the last left them"
 idle_layers() { echo "(.layers | map(select(endswith(\" quickshell:idle\"))) | length) == $1"; }
 calls=("fade 1 0.4" "fade 3 0.4" cancel hold locked unlocked)
+# A seed of its own each run, said, so a failure replays with QS_TEST_SEED.
+seed=${QS_TEST_SEED:-$((EPOCHSECONDS % 32768))}
+RANDOM=$seed
+echo "seed $seed"
 for burst in $(seq 6); do
   for n in $(seq 30); do
+    # Picked here, as a background job's RANDOM is its own.
+    call=${calls[RANDOM % ${#calls[@]}]}
     # shellcheck disable=SC2086
-    qst ipc idle ${calls[RANDOM % ${#calls[@]}]} > /dev/null &
+    qst ipc idle $call > /dev/null &
   done
   wait
 done
@@ -409,14 +415,14 @@ qst case "toggles hammered faster than their services answer settle where the la
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
 for _ in $(seq 25); do qst click ControlsPanel:pill:wifi; done
-qst wait '(.controls.network.wifiOn | not)' 10
+qst wait '.controls.network.present and (.controls.network.wifiOn | not)' 10
 for _ in $(seq 20); do qst click ControlsPanel:pill:night; done
 qst wait '(.controls.night.on | not)'
 for _ in $(seq 15); do qst click ControlsPanel:pill:vpn; done
 # Each click reads the state before the last one is done, so only that it settles is certain.
-qst wait '.controls.vpns[0].busy == null' 15
+qst wait '(.controls.vpns | length) == 1 and .controls.vpns[0].busy == null' 15
 for _ in $(seq 21); do qst click ControlsPanel:pill:bluetooth; done
-qst wait '(.controls.bluetooth.on | not)'
+qst wait '.controls.bluetooth.present and (.controls.bluetooth.on | not)'
 qst stays '.panel == "controls:DP-1"' 1
 
 QS_TEST_SCALE=1.2 qst case "on a 1024x600 screen at the desktop's 1.2 the centre scrolls, and a password row scrolls into view"
@@ -630,7 +636,7 @@ for n in $(seq 1 40); do
   replace "$other" $((n + 100)) > /dev/null &
 done
 wait
-qst stays 'true' 2
+qst stays 'all(.history[]; .app == "Downloads" or .app == "Notifications") and (.popups | length) <= 5' 2
 qst ipc notifications clear > /dev/null
 qst wait '.notifications == 0'
 
@@ -652,8 +658,46 @@ for _ in 1 2 3; do
   qst tray add churn 6
   qst wait '(.tray | length) == 6 and .trays[0].more == 3 and (.trays[0].expanded | not)' 10
   qst tray remove churn
-  qst wait '(.tray | length) == 0 and (.trays[0].shown | not)' 10
+  qst wait '(.tray | length) == 0 and (.trays | length) > 0 and all(.trays[]; .shown | not)' 10
 done
 qst tray add churn 2
 qst wait '.trays[0].shown and .trays[0].more == 0 and (.trays[0].expanded | not)' 10
 qst stays '.trays[0].more == 0' 0.5
+
+qst case "the shell stopped for ten seconds under a flood, a hotplug and a moving pointer comes back answering"
+# alone: it times how soon the shell catches up, which other sessions on the machine slow
+pid=$(qst status | awk '{ print $NF }')
+kill -STOP "$pid"
+qst flood 500 --apps 50 > /dev/null &
+qst monitor remove DP-2
+qst monitor add DP-2 2560x1440 1.25
+for n in $(seq 100); do qst pointer $((n * 19)) $((n * 7)); done
+sleep 10 # sleep: the shell is stopped, and the probe would only wait on it
+kill -CONT "$pid"
+wait
+qst wait '(.screens | length) == 2 and (.layers | map(select(endswith(" quickshell:bar"))) | length) == 2' 15
+qst wait 'any(.history[]; .summary | test("Notifications Dropped$"))' 10
+qst stays '(.popups | length) <= 5' 1
+
+qst case "services holding their names and answering nothing leave the shell answering and the centre opening"
+qst network stop
+qst bluetooth stop
+qst upower stop
+qst hole org.freedesktop.NetworkManager system
+qst hole org.bluez system
+qst hole org.freedesktop.UPower system
+qst hole org.mpris.MediaPlayer2.ghost
+qst restart > /dev/null
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+qst stays '.panel == "controls:DP-1"' 3
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center:DP-1"'
+qst stays '.panel == "center:DP-1"' 1
+
+qst case "another notification server holding the name leaves the shell running without one"
+qst hole org.freedesktop.Notifications
+qst restart > /dev/null
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center:DP-1" and .notifications == 0'
+qst stays '.panel == "center:DP-1"' 1

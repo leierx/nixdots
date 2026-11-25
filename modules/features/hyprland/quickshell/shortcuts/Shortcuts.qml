@@ -88,12 +88,19 @@ Scope {
     id: binds
 
     command: ["hyprctl", "binds", "-j"]
+    // Someone waits on it with nothing shown.
+    timeout: 5000
     onDone: output => {
+      let groups;
       try {
-        root.groups = root.group(JSON.parse(output));
+        groups = root.group(JSON.parse(output));
       } catch (error) {
         binds.fail(String(error));
+        return;
       }
+      // Nothing to show would leave the panel open with no window.
+      if (groups.length === 0) binds.fail("Hyprland reported no described binds");
+      else root.groups = groups;
     }
   }
 

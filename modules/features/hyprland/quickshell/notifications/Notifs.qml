@@ -242,12 +242,13 @@ Singleton {
     // A path, never an option for pw-play.
     const file = String(hints["sound-file"] ?? "").replace(/^file:\/\//, "");
     const name = hints["sound-name"] ?? "";
+    // A client's file only if it is a plain one of a sound's size, never a device or a pipe, and nothing plays past 30 s.
     if (file.startsWith("/")) {
-      Quickshell.execDetached(["pw-play", file]);
+      Quickshell.execDetached(["sh", "-c", 'f=$2; [ -f "$1" ] && [ "$(stat -L -c %s "$1")" -le 10000000 ] && f=$1; exec timeout 30 pw-play "$f"', "sh", file, ours]);
     } else if (/^[a-z0-9-]+$/.test(name)) {
-      Quickshell.execDetached(["sh", "-c", 'IFS=:; for dir in ${XDG_DATA_HOME:-$HOME/.local/share}:${XDG_DATA_DIRS:-/usr/share}; do for ext in oga ogg wav; do [ -f "$dir/sounds/freedesktop/stereo/$1.$ext" ] && exec pw-play "$dir/sounds/freedesktop/stereo/$1.$ext"; done; done; exec pw-play "$2"', "sh", name, ours]);
+      Quickshell.execDetached(["sh", "-c", 'IFS=:; for dir in ${XDG_DATA_HOME:-$HOME/.local/share}:${XDG_DATA_DIRS:-/usr/share}; do for ext in oga ogg wav; do [ -f "$dir/sounds/freedesktop/stereo/$1.$ext" ] && exec timeout 30 pw-play "$dir/sounds/freedesktop/stereo/$1.$ext"; done; done; exec timeout 30 pw-play "$2"', "sh", name, ours]);
     } else {
-      Quickshell.execDetached(["pw-play", ours]);
+      Quickshell.execDetached(["timeout", "30", "pw-play", ours]);
     }
   }
 

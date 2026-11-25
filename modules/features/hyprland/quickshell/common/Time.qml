@@ -1,5 +1,6 @@
 pragma Singleton
 
+import QtQuick
 import Quickshell
 
 Singleton {
@@ -13,12 +14,17 @@ Singleton {
     return minute;
   }
 
-  // Ticking by the second, not the minute: Qt's timers stand still through a suspend, and a minute's would keep the old time up for most of one after it.
-  SystemClock {
-    precision: SystemClock.Seconds
-    onDateChanged: {
-      const minute = root.minute(date);
+  // By the second, as Qt's timers stand still through a suspend; not a SystemClock, which spins at 1 ms through the hour a clock change repeats.
+  Timer {
+    interval: 1000
+    repeat: true
+    running: true
+    onTriggered: {
+      const now = new Date();
+      const minute = root.minute(now);
       if (minute.getTime() !== root.now.getTime()) root.now = minute;
+      // Just past each second, so a new minute shows as it comes.
+      interval = 1005 - now.getMilliseconds();
     }
   }
 }

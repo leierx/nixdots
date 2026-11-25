@@ -251,3 +251,29 @@ qst wait '.panel == "center:DP-1"'
 read -r media _ < <(qst areas NotificationCenter | awk -F'\t' 'index($3, "media:play") { print $2; exit }')
 read -r first _ < <(qst areas NotificationCenter | awk -F'\t' '$3 ~ /SwipeArea|NotificationGroup/ { print $2; exit }')
 [ -n "$media" ] && [ -n "$first" ] && [ "$media" -lt "$first" ] || { echo "the player is not above the notifications ($media, $first)"; exit 1; }
+
+qst case "hints no honest client sends: pictures bigger than their bytes, endless and negative timeouts, three hundred actions, an id nobody issued, a pipe and a device as sounds"
+notify() {
+  gdbus call --session --dest org.freedesktop.Notifications --object-path /org/freedesktop/Notifications \
+    --method org.freedesktop.Notifications.Notify "'$2'" "uint32 $1" "''" "'$2'" "'a body'" "$3" "$4" "int32 $5" > /dev/null
+}
+bytes="[byte 255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255]"
+fifo=$QS_TEST_DIR/sound.fifo
+rm -f "$fifo" && mkfifo "$fifo"
+# Quickshell's own, as it drops the two pictures it cannot draw.
+qst expect 'Unable to parse pixmap as it holds 16 bytes, too few for 100 x 100'
+qst expect 'Unable to parse pixmap as it holds 16 bytes, too few for 65535 x 65535'
+actions=$(for n in $(seq 300); do printf "'a%d', 'Action %d', " "$n" "$n"; done)
+notify 0 "a picture larger than its bytes" "@as []" "{'image-data': <(100, 100, 400, true, 8, 4, $bytes)>}" -1
+notify 0 "a picture of 65535 squared" "@as []" "{'image-data': <(65535, 65535, 262140, true, 8, 4, $bytes)>}" -1
+notify 0 "a timeout that never ends" "@as []" "@a{sv} {}" 2147483647
+notify 0 "a timeout below nothing" "@as []" "@a{sv} {}" -5
+notify 0 "three hundred actions" "[${actions%, }]" "@a{sv} {}" -1
+notify 4242 "an id nobody issued" "@as []" "@a{sv} {}" -1
+notify 0 "a pipe to play" "@as []" "{'sound-file': <'$fifo'>}" -1
+notify 0 "a device to play" "@as []" "{'sound-file': <'/dev/zero'>}" -1
+qst wait '.notifications == 8 and (.popups | length) == 5' 10
+qst actions | grep -E '^pw-play (/dev/zero|.*sound\.fifo)' && { echo "a pipe or a device was played"; exit 1; }
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center:DP-1"'
+qst stays '.panel == "center:DP-1" and .notifications == 8' 1

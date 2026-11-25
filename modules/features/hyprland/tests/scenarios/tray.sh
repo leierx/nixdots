@@ -28,7 +28,7 @@ qst pointer 900 600
 qst stays '.trays[0].expanded' 0.4
 qst wait '(.trays[0].expanded | not) and .trays[0].more == 2' 2
 qst tray clear
-qst wait '(.tray | length) == 0 and (.trays[0].shown | not)'
+qst wait '(.tray | length) == 0 and (.trays | length) > 0 and all(.trays[]; .shown | not)'
 
 qst case "past 12 em the strip scrolls sideways under the wheel, and stops at its ends"
 qst tray add crowd 30

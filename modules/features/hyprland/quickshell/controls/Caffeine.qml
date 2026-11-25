@@ -76,12 +76,21 @@ Singleton {
   Process {
     id: state
 
+    // Stopped for taking too long, it read nothing: the state is not known, not off.
+    property bool expired: false
+
     command: ["systemctl", "--user", "is-active", root.unit]
+    onStarted: expired = false
     stdout: StdioCollector {
       onStreamFinished: {
-        if (!change.running) root.active = ["active", "activating", "reloading"].includes(text.trim());
+        if (!change.running && !state.expired) root.active = ["active", "activating", "reloading"].includes(text.trim());
       }
     }
+  }
+
+  Deadline {
+    process: state
+    onExpired: state.expired = true
   }
 
   Timer {

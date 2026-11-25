@@ -79,7 +79,9 @@ LauncherMode {
   Command {
     id: listCommand
 
-    command: ["cliphist", "list"]
+    name: "cliphist list"
+    // cliphist has no database until the first copy, and says so as an error: an empty history, not a failure.
+    command: ["sh", "-c", 'out=$(cliphist list 2>&1) && { printf "%s\\n" "$out"; exit; }; case $out in *"store something first"*) exit 0 ;; esac; printf "%s\\n" "$out" >&2; exit 1']
     onDone: output => {
       root.entries = output.split("\n").filter(line => line !== "").map(line => {
         const tab = line.indexOf("\t");
@@ -96,10 +98,12 @@ LauncherMode {
     name: "cliphist"
     // Nobody waits on the thumbnails and counts: a failure only reaches the log.
     quiet: true
+    // Every picture decoded once, on a first pass over a long history.
+    timeout: 120000
     command: ["sh", "-c", `
       set -f
       mkdir -p "$1" && cd "$1" || exit
-      list=$(cliphist list) || exit
+      list=$(cliphist list 2>&1) || case $list in *"store something first"*) list="" ;; *) printf '%s\\n' "$list" >&2; exit 1 ;; esac
       tab=$(printf '\\t')
       printf '%s\\n' "$list" | while IFS="$tab" read -r id text; do
         case $text in

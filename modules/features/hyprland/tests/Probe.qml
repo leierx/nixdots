@@ -166,9 +166,14 @@ Scope {
     return false;
   }
 
+  // Images loading, by item, since when: one that never finishes is a picture that never comes.
+  property var loading: new Map()
+
   // What should never be on screen, in whatever state the shell is in.
   function census(): var {
     const problems = [];
+    const loading = new Map();
+    const now = Date.now();
     for (const entry of windows()) {
       // Text drawn over other text: a crowded bar running into its clock, a label under a badge.
       const texts = entry.items.filter(({ item, opacity }) => isText(item) && String(item.text).trim() !== "" && opacity > 0.99 && !(entry.type in ownShapes || ancestorTypes(item).some(name => name in ownShapes))).map(({ item }) => ({ item, box: inked(item) }));
@@ -199,10 +204,16 @@ Scope {
             if (ratio < 3) problems.push(`${label(entry, item)} has a contrast of ${ratio.toFixed(2)}:1 against what is behind it`);
           }
           if (!themed(item.color)) problems.push(`${label(entry, item)} is coloured ${item.color}, which is not Theme's`);
+          // What a missing property or a bad number reads as once it reaches a label.
+          if (/\b(undefined|NaN)\b|\[object |Invalid Date/.test(String(item.text))) problems.push(`${label(entry, item)} shows a value that is not there`);
         } else if (isImage(item)) {
           const source = String(item.source);
           if (source === "") problems.push(`${label(entry, item)} is shown without a source`);
           else if (item.status === Image.Error) problems.push(`${label(entry, item)} failed to load ${source}`);
+          else if (item.status === Image.Loading) {
+            loading.set(item, probe.loading.get(item) ?? now);
+            if (now - loading.get(item) > 5000) problems.push(`${label(entry, item)} has been loading ${source} for ${Math.round((now - loading.get(item)) / 1000)} s`);
+          }
         } else if (isRect(item) && (item.color.a > 0 || item.border.width > 0)) {
           const radius = item.radius;
           const half = Math.min(item.width, item.height) / 2;
@@ -222,6 +233,7 @@ Scope {
         }
       }
     }
+    probe.loading = loading;
     return problems;
   }
 
@@ -434,6 +446,9 @@ Scope {
         historyFile: Quickshell.statePath("notification-history.json"),
         historyLoaded: History.loaded,
         historyImages: History.images,
+        // The shell's minute, as the bar's clock and the calendar take it, and its cache dir.
+        now: Qt.formatDateTime(Time.now, "yyyy-MM-dd HH:mm"),
+        cache: Quickshell.cachePath(""),
         dnd: Notifs.dnd,
         unchecked: Notifs.unchecked,
         volume: { percent: Volume.percent, muted: Volume.muted, output: Volume.devices.find(d => d.current)?.name ?? null },

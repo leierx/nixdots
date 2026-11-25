@@ -25,7 +25,8 @@ QtObject {
   Component.onCompleted: if (root.command.length > 0) root.process.running = true
 
   property Process process: Process {
-    command: root.command
+    // SIGPIPE as it should be, not ignored as Quickshell leaves it: one a crashed shell left behind goes at its next line.
+    command: ["env", "--default-signal=PIPE", ...root.command]
     environment: root.environment
     stdout: SplitParser {
       onRead: line => root.line(line)

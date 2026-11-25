@@ -1,0 +1,40 @@
+diff -ru a/src/crash/main.cpp b/src/crash/main.cpp
+--- a/src/crash/main.cpp
++++ b/src/crash/main.cpp
+@@ -211,12 +211,12 @@
+ 	{
+ 		auto infoFd = qEnvironmentVariable("__QUICKSHELL_CRASH_INFO_FD").toInt();
+ 
+-		QFile file;
+-		if (!file.open(infoFd, QFile::ReadOnly, QFile::AutoCloseHandle)) {
++		// Opened anew, as the relaunched shell reads the same memfd at the same time.
++		QFile file(QStringLiteral("/proc/self/fd/%1").arg(infoFd));
++		if (!file.open(QFile::ReadOnly)) {
+ 			qFatal() << "Failed to open instance info fd.";
+ 		}
+-
+-		file.seek(0);
++		close(infoFd);
+ 
+ 		auto ds = QDataStream(&file);
+ 		ds >> info;
+diff -ru a/src/launch/main.cpp b/src/launch/main.cpp
+--- a/src/launch/main.cpp
++++ b/src/launch/main.cpp
+@@ -35,12 +35,12 @@
+ 		RelaunchInfo info;
+ 
+ 		{
+-			QFile file;
+-			if (!file.open(lastInfoFd, QFile::ReadOnly, QFile::AutoCloseHandle)) {
++			// Opened anew, not through the fd: the crash reporter shares its offset, and reading at once one of them got nothing.
++			QFile file(QStringLiteral("/proc/self/fd/%1").arg(lastInfoFd));
++			if (!file.open(QFile::ReadOnly)) {
+ 				qFatal() << "Failed to open crash info fd. Cannot restart.";
+ 			}
+-
+-			file.seek(0);
++			close(lastInfoFd);
+ 
+ 			auto ds = QDataStream(&file);
+ 			ds >> info;

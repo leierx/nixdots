@@ -15,7 +15,6 @@ qst fail cliphist exit
 qst ipc panels open clipboard > /dev/null
 qst wait '.notifications == 1 and .history[0].summary == "cliphist list" and .panel == ""'
 qst fail cliphist missing
-qst expect 'Process failed to start, likely because the binary could not be found'
 qst ipc panels open clipboard > /dev/null
 qst wait '.notifications == 2 and .history[0].summary == "cliphist list" and .panel == ""'
 qst fail cliphist off
@@ -23,7 +22,7 @@ reopens clipboard
 
 qst case "monitor layouts outlive hyprmoncfg failing and writing garbage"
 qst fail hyprmoncfg exit
-qst expect 'hyprmoncfg'
+qst expect 'hyprmoncfg status --json: hyprmoncfg: failed for qst'
 reopens monitors
 qst fail hyprmoncfg garbage
 qst expect 'hyprmoncfg status: SyntaxError'
@@ -53,3 +52,128 @@ qst restart > /dev/null
 qst wait '.weather.hours > 0' 10
 qst actions | grep -q 'api.met.no.*(failing)' && { qst actions; echo "a restart asked MET again before the forecast expired"; exit 1; }
 true
+
+qst case "a hyprctl that never answers: the shortcuts give up and say so, and come back with it"
+qst fail hyprctl hang 'binds*'
+qst ipc panels open shortcuts > /dev/null
+qst wait '.panel == "shortcuts"'
+qst wait 'any(.history[]; .summary == "hyprctl binds -j") and .panel == ""' 10
+qst fail hyprctl off
+reopens shortcuts
+
+qst case "the shortcuts with no binds to show say so rather than open on nothing"
+qst fail hyprctl 'say=[]' 'binds*'
+qst ipc panels open shortcuts > /dev/null
+notified "hyprctl binds -j"
+qst wait '.panel == ""'
+
+qst case "a cliphist that never answers closes the clipboard saying so, and the next open lists"
+echo "a clip" | cliphist store
+qst fail cliphist hang list
+qst ipc panels open clipboard > /dev/null
+qst wait '.panel == "clipboard"'
+qst wait 'any(.history[]; .summary == "cliphist list") and .panel == ""' 15
+qst fail cliphist off
+qst ipc panels open clipboard > /dev/null
+qst wait '.panel == "clipboard" and (.results | index("a clip")) != null'
+
+qst case "a cliphist with no history yet is an empty clipboard, not a failure"
+rm -f "$QS_TEST_DIR/clip.db"
+qst ipc panels open clipboard > /dev/null
+qst wait '.panel == "clipboard" and .results == []'
+qst stays '.panel == "clipboard" and .notifications == 0' 1
+
+qst case "wpctl never answering: the input picked through it says so, and the next pick lands"
+qst fail wpctl hang 'set-default*'
+qst ipc panels open controls:DP-1 > /dev/null
+qst ipc controls menu sound > /dev/null
+qst wait '.panel == "controls:DP-1" and .controls.menu == "sound"'
+# A virtual input is set through wpctl; Quickshell takes only plain ones.
+qst click "ControlsPanel:Noise Cancelling"
+qst wait 'any(.history[]; .summary == "Input")' 15
+qst fail wpctl off
+qst ipc panels open controls:DP-1 > /dev/null
+qst ipc controls menu sound > /dev/null
+qst wait '.panel == "controls:DP-1" and .controls.menu == "sound"'
+qst click "ControlsPanel:Noise Cancelling"
+qst wait '.microphone.input == "Noise Cancelling"' 10
+
+qst case "systemctl never answering: Caffeine says so and shows what the unit is, and turns on once it answers"
+qst fail systemctl hang '*start*'
+qst ipc caffeine toggle
+qst wait 'any(.history[]; .summary == "Caffeine") and .caffeine == false' 15
+qst fail systemctl off
+qst ipc caffeine toggle
+qst wait '.caffeine'
+qst x sh -c '[ -e "${XDG_CONFIG_HOME%/cfg}/units/caffeine.service" ]'
+
+qst case "tools that answer slowly, cut short, at enormous length or exit failing after a good answer keep every panel opening"
+for mode in slow truncated huge lie; do
+  qst fail hyprmoncfg "$mode"
+  qst fail cliphist "$mode" list
+  qst fail hyprctl "$mode" 'binds*'
+  for panel in monitors clipboard shortcuts; do
+    qst ipc panels open "$panel" > /dev/null
+    qst wait "(.panel == \"$panel\") or any(.history[]; .app == \"Shell\")" 10
+    qst ipc panels close > /dev/null
+    qst wait '.panel == ""'
+  done
+  qst ipc notifications clear > /dev/null
+done
+qst expect --may 'hyprmoncfg status --json: '
+qst expect --may 'hyprmoncfg status: SyntaxError'
+
+qst case "the shell crashing comes back whole: its history, its panels, its notifications, and the helpers the crashed one left go at their next event"
+notify-send -a Mail "before the crash"
+qst wait '.notifications == 1'
+# Quickshell starts a crashed shell again only once it has run ten seconds.
+qst stays '.notifications == 1' 10.5
+qst expect 'Quickshell has crashed under pid'
+qst expect --may 'Further crash information is stored'
+qst expect --may 'Quickshell has been restarted'
+# The crashed shell's bus names go a moment after it: its notification server and tray watcher come back once they do.
+qst expect --may 'Could not register notification server|Registration will be attempted again'
+qst expect --may 'Error reading "RegisteredStatusNotifierItems"|Message recipient disconnected from message bus without replying'
+qst kill SEGV
+qst wait '(.history | map(.summary)) == ["before the crash"]' 10
+reopens center
+reopens apps
+notify-send -a Mail "after the crash"
+qst wait '.notifications == 2' 10
+# The relaunch is an exec in place, so what the crashed shell ran is still its child, writing to nobody until it tries.
+qst camera open zoom
+qst backlight intel_backlight 40
+qst network cable enp8s0 off
+qst wait '.privacy.camera == ["zoom"] and (.controls.network.wired | map(select(.name == "enp8s0"))[0].link | not)'
+
+qst case "the shell killed outright as it saves comes back with its history whole"
+for n in $(seq 20); do notify-send -a "App $n" "note $n"; done
+qst kill KILL
+qst restart > /dev/null
+qst wait '.historyLoaded'
+file=$(qst state .historyFile | jq -r .)
+[ ! -e "$file" ] || jq -e '.notifications | type == "array"' "$file" > /dev/null || { echo "the history was left unreadable"; exit 1; }
+
+qst case "state and cache that cannot be written cost a warning, not the shell, and are written again once they can be"
+state=$(dirname "$(qst state .historyFile | jq -r .)")
+cache=$(qst state .cache | jq -r .)
+mkdir -p "$state" "$cache"
+chmod -R a-w "$state" "$cache"
+# The shell's own warning, and Quickshell's beside it.
+qst expect 'Writing .* failed'
+qst expect 'Write of .* failed'
+qst expect --may 'Pruning saved notification pictures: '
+qst ipc notifications setDnd true
+for n in $(seq 200); do notify-send -a "App $((n % 7))" "note $n"; done
+qst wait '.dnd and .notifications >= 20' 15
+echo "a clip to pick" | cliphist store
+qst ipc panels open clipboard > /dev/null
+qst wait '.panel == "clipboard"'
+qst key Return
+qst wait 'any(.history[]; .summary == "Copying the clip")' 10
+warnings=$(grep -acE '(Writing|Write of) .* failed' "$QS_TEST_DIR/qs.log")
+[ "$warnings" -le 60 ] || { echo "$warnings warnings for one locked directory"; exit 1; }
+chmod -R u+w "$state" "$cache"
+notify-send -a Late "once it can"
+for _ in $(seq 40); do [ -s "$state/notification-history.json" ] && jq -e 'any(.notifications[]; .summary == "once it can")' "$state/notification-history.json" > /dev/null && break; qst stays true 0.1; done
+jq -e 'any(.notifications[]; .summary == "once it can")' "$state/notification-history.json" > /dev/null

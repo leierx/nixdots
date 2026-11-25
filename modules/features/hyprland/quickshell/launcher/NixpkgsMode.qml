@@ -210,6 +210,8 @@ LauncherMode {
     command: ["systemd-run", "--user", "--scope", "--quiet", "nixpkgs-index", Quickshell.cachePath("nixpkgs.tsv")]
     // Only an open with no list waits on it; at login the network may not be up yet.
     quiet: !root.open || root.index.lines.length > 0
+    // The channel's list is hundreds of megabytes on a slow line.
+    timeout: 0
     onDone: output => {
       if (output.trim() !== "updated") return;
       if (root.open && root.index.lines.length === 0 && root.parsing === null) list.reload();

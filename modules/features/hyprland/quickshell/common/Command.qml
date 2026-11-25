@@ -10,6 +10,9 @@ Process {
   // The panel open as it started; a failure closes that one, not one opened since.
   property string panel: ""
   property bool exitReported: false
+  // Milliseconds it may take before it is stopped and fails; 0 for as long as it takes.
+  property alias timeout: limit.interval
+  property bool timedOut: false
 
   signal done(string output)
   signal failed(string message)
@@ -31,11 +34,22 @@ Process {
     id: err
   }
 
-  onStarted: root.panel = Panels.active
+  property Deadline deadline: Deadline {
+    id: limit
+
+    process: root
+    onExpired: root.timedOut = true
+  }
+
+  onStarted: {
+    root.panel = Panels.active;
+    root.timedOut = false;
+  }
   // The collectors have their text by the time the process exits.
   onExited: (exitCode, exitStatus) => {
     root.exitReported = true;
-    if (exitCode === 0 && exitStatus === 0) root.done(out.text);
+    if (root.timedOut) root.fail(`no answer in ${Theme.unit(Math.round(root.timeout / 1000), "s")}`);
+    else if (exitCode === 0 && exitStatus === 0) root.done(out.text);
     else root.fail(err.text.trim() || (exitStatus !== 0 ? "crashed" : `exited with ${exitCode}`));
   }
   // One that fails to start, not found say, never reports an exit.

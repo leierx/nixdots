@@ -66,3 +66,20 @@ qst ipc idle unlocked
 qst wait "$(shown 0)"
 qst ipc idle fade 1 0.4
 qst wait "$(shown 2)"
+
+qst case "a hold whose lock never comes lifts by itself, and the dim can come again"
+# The lock command killed between its hold and its unlock: nothing else would ever lift it.
+qst ipc idle fade 1 0.4
+qst wait "$(shown 2)"
+qst ipc idle hold > /dev/null
+qst stays "$(shown 2)" 5
+qst wait "$(shown 0)" 10
+qst ipc idle fade 1 0.4
+qst wait "$(shown 2)"
+
+qst case "a hold with nothing dimmed refuses fades only until it lifts"
+qst ipc idle hold > /dev/null
+qst ipc idle fade 1 0.4
+qst stays "$(shown 0)" 11
+qst ipc idle fade 1 0.4
+qst wait "$(shown 2)"

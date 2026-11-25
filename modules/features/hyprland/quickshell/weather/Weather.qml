@@ -142,6 +142,8 @@ Singleton {
 
     name: "Weather: fetching the forecast"
     quiet: true
+    // Past curl's own 20 s.
+    timeout: 30000
     onFailed: {
       // The last forecast, however old, until it ages out by the clock.
       if (root.series.length === 0) root.series = root.revive(cache.series);

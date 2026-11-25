@@ -92,3 +92,56 @@ qst wait '.panel == "clipboard" and (.results | index("a clip to find")) != null
 qst stays '.panel == "clipboard"' 0.5
 qst type character
 qst stays '.panel == "clipboard" and all(.results[]; test("character"; "i"))' 0.5
+
+qst case "the package list at its real size is read without holding the keys, and cut short or binary it still opens"
+export QS_TEST_MONITORS="DP-1:1920x1080:1"
+qst reset > /dev/null
+list=$(qst state .cache | jq -r .)/nixpkgs.tsv
+mkdir -p "$(dirname "$list")"
+# Its first line names the fake's own list, which it then leaves as it is.
+{ printf 'qs-test\tqs-test\n'; awk 'BEGIN { for (i = 0; i < 130000; i++) printf "pkg%d\tprog%d\t1.%d\t\tthe description of package number %d\n", i, i, i, i }'; } > "$list"
+qst key super+n
+qst wait '.panel == "nixpkgs"'
+qst type pkg12345
+qst wait '.field == "pkg12345"'
+qst wait '.results[0] == "pkg12345"' 15
+qst key Escape
+qst wait '.panel == ""'
+# Cut short mid-line, then noise: a list fetched in half, or a disk that lost it.
+{ printf 'qs-test\tqs-test\n'; awk 'BEGIN { for (i = 0; i < 1000; i++) printf "pkg%d\tprog%d\t1.%d\t\tdescribed\n", i, i, i }'; printf 'pkg-half\tpro'; } > "$list"
+# A list once read stays a minute after the launcher closes: a fresh shell reads this one.
+qst restart > /dev/null
+qst key super+n
+qst wait '.panel == "nixpkgs"'
+qst type pkg99
+qst wait '.results[0] == "pkg99"' 10
+qst key Escape
+{ printf 'qs-test\tqs-test\n'; head -c 5000000 /dev/urandom; } > "$list"
+qst restart > /dev/null
+qst key super+n
+qst wait '.panel == "nixpkgs"'
+qst type zz
+qst stays '.panel == "nixpkgs" and .field == "zz"' 1
+
+qst case "Return pressed twice on a row launches it once"
+export QS_TEST_MONITORS="DP-1:1920x1080:1"
+qst reset > /dev/null
+# Qt, when the launcher closes while its list is still building rows (TODO.md).
+qst expect --may 'DelegateModel::cancel: index out range'
+# Logged, not started: a real app in the session would only cost the case its time.
+: > "$QS_TEST_DIR/no-launch"
+qst key super+d
+qst type firefox
+qst wait '.results[0] == "Firefox"'
+qst key Return Return
+qst wait '.panel == ""'
+qst stays '.panel == ""' 0.5
+[ "$(qst actions | grep -c '^systemd-run .*firefox')" = 1 ] || { qst actions; echo "two Returns launched it twice"; exit 1; }
+qst key super+n
+qst wait '.panel == "nixpkgs"'
+qst type fire
+qst wait '.results[0] == "firefox"' 10
+qst key Return Return
+qst wait '.panel == ""'
+qst stays '.panel == ""' 0.5
+[ "$(qst actions | grep -c '^systemd-run .*nixpkgs-run')" = 1 ] || { qst actions; echo "two Returns ran the package twice"; exit 1; }

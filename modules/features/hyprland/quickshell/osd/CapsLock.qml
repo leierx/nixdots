@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import qs.common
 
 Singleton {
   id: root
@@ -50,6 +51,11 @@ Singleton {
       root.again = false;
       running = true;
     }
+  }
+
+  Deadline {
+    process: devices
+    interval: 5000
   }
 
   // The key event comes before the keyboard's new state, so a second look follows the first.

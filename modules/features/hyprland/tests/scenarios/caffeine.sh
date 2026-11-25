@@ -43,3 +43,8 @@ qst wait '.caffeine and (.status[0].glyphs | index("caffeine")) != null'
 qst actions | grep -qx 'systemctl --user start caffeine.service'
 qst click ControlsPanel:pill:caffeine
 qst wait '(.caffeine | not) and (.status[0].glyphs | index("caffeine")) == null'
+
+QS_TEST_COLD=1 qst case "a shell nobody has looked at yet takes Caffeine from a script"
+[ "$(qst ipc caffeine toggle)" = "" ] || { echo "the caffeine target did not answer on a cold shell"; exit 1; }
+for _ in $(seq 30); do [ -e "$QS_TEST_DIR/units/caffeine.service" ] && break; sleep 0.1; done # sleep: the probe would read the singleton this case leaves unread
+[ -e "$QS_TEST_DIR/units/caffeine.service" ] || { qst actions; echo "Caffeine did not start its unit"; exit 1; }

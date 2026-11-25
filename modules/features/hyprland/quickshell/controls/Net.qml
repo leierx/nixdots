@@ -395,7 +395,8 @@ Singleton {
   Watcher {
     id: monitor
 
-    command: ["nmcli", "monitor"]
+    // nmcli ignores SIGPIPE, so left by a crashed shell it would write to nobody for good: the reader takes it along as it goes, killed or not.
+    command: ["bash", "-c", 'exec 3< <(exec setpriv --pdeathsig TERM nmcli monitor); nmcli=$!; trap \'kill "$nmcli" 2> /dev/null\' EXIT; trap exit PIPE TERM HUP; while IFS= read -r line <&3; do printf "%s\\n" "$line"; done']
     baseInterval: 2000
     // A machine without nmcli would fill the log; the backoff is enough.
     warn: false
@@ -452,6 +453,10 @@ Singleton {
         running = true;
       }
     }
+  }
+
+  Deadline {
+    process: vpnList
   }
 
   StateFile {

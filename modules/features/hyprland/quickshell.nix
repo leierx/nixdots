@@ -17,6 +17,16 @@ let
       text = builtins.readFile ./scripts/backlight-watch.sh;
     };
   };
+  # until upstream has them (TODO.md): an image-data hint whose sizes outrun its bytes was read past its end, crashing
+  # the shell; a crash's relaunch and its reporter raced on one file offset, so the relaunch sometimes found no config
+  patched =
+    quickshell:
+    quickshell.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [
+        ./patches/quickshell-image-data.patch
+        ./patches/quickshell-crash-relaunch.patch
+      ];
+    });
 in
 {
   flake.modules.homeManager.hyprland =
@@ -200,7 +210,7 @@ in
       programs.quickshell = {
         enable = true;
         # 0.3.1 fixed crashes on freed objects in a ScriptModel, which the notification lists hold
-        package = pkgs.unstable.quickshell;
+        package = patched pkgs.unstable.quickshell;
         configs.shell = shell;
         activeConfig = "shell";
         systemd.enable = true;
@@ -219,7 +229,11 @@ in
           # about 500 MiB in use; a runaway is restarted rather than swapping the desktop out
           MemoryMax = "2G";
           MemorySwapMax = 0;
-          Environment = [ "QT_SCALE_FACTOR=${builtins.toJSON config.quickshell.scale}" ];
+          Environment = [
+            "QT_SCALE_FACTOR=${builtins.toJSON config.quickshell.scale}"
+            # without it, PipeWire not up as the shell starts is never connected to; qs-test sets it too
+            "QS_PIPEWIRE_IMMEDIATE_RECONNECT=1"
+          ];
         };
       };
 
@@ -280,7 +294,11 @@ in
     let
       # the session's own quickshell (pkgs.unstable on the hosts) and the Qt it was built with
       unstable = inputs.nixpkgs-unstable.legacyPackages.${system};
-      inherit (unstable) quickshell;
+      quickshell = patched unstable.quickshell;
+      # libfaketime deadlocks in jemalloc's start, so the shell `qst clock` moves runs on the system's malloc
+      fakeableQuickshell = quickshell.overrideAttrs (old: {
+        cmakeFlags = (old.cmakeFlags or [ ]) ++ [ (lib.cmakeBool "USE_JEMALLOC" false) ];
+      });
       inherit (unstable.qt6) qtdeclarative;
       inherit (helpers pkgs) cameraUsers backlightWatch;
 
@@ -415,6 +433,11 @@ in
           gnugrep
           util-linux
         ];
+        # what `qst clock` moves the shell's clock with
+        runtimeEnv = {
+          QS_TEST_FAKETIME = "${pkgs.libfaketime}/lib/libfaketimeMT.so.1";
+          QS_TEST_FAKEABLE_QS = lib.getExe' fakeableQuickshell "qs";
+        };
         text = builtins.readFile ./scripts/qs-test.sh;
       };
 

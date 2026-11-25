@@ -24,11 +24,16 @@ Scope {
     easing.type: Easing.InQuad
   }
 
-  // A fade whose lock or cancel never came (hypridle restarted mid-fade) lifts, rather than leave the screens dark.
+  // A fade whose lock or cancel never came (hypridle restarted mid-fade, the lock command killed after its hold) lifts, rather than leave the screens dark and later fades refused.
   Timer {
+    id: lift
+
     interval: 10000
-    running: root.dimmed && !dimming.running && !root.held && !root.locked
-    onTriggered: root.level = 0
+    running: (root.dimmed || root.held) && !dimming.running && !root.locked
+    onTriggered: {
+      root.held = false;
+      root.level = 0;
+    }
   }
 
   IpcHandler {
@@ -50,6 +55,7 @@ Scope {
     function hold(): real {
       dimming.stop();
       root.held = true;
+      if (lift.running) lift.restart();
       return root.level;
     }
 

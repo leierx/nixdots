@@ -3,11 +3,13 @@
 Its buttons work: play, pause, next and previous move through a short list of tracks.
 A new track's length comes once and then goes from its metadata until a pause sends it again, as Firefox does on YouTube.
 qs-test starts one per player (`qst player add NAME`, the name in QS_MPRIS_NAME) and drives it through the mock.
+Parameters past the usual: metadata false (none at all), position (microseconds), seek false, artEvery (ms between new cover addresses).
 """
 
 import os
 
 import dbus
+from gi.repository import GLib
 
 from dbusmock import MOCK_IFACE
 
@@ -21,10 +23,12 @@ ROOT_IFACE = "org.mpris.MediaPlayer2"
 PLAYER_IFACE = "org.mpris.MediaPlayer2.Player"
 PATH = "/org/mpris/MediaPlayer2"
 
-player = {"tracks": [], "index": 0, "art": ""}
+player = {"tracks": [], "index": 0, "art": "", "bare": False}
 
 
 def metadata(index, length=True):
+    if player["bare"]:
+        return dbus.Dictionary({}, signature="sv")
     title, artist, seconds = player["tracks"][index]
     return dbus.Dictionary({
         "mpris:trackid": dbus.ObjectPath(f"/org/qstest/track/{index}"),
@@ -52,8 +56,16 @@ def status(mock, value):
         changed(mock, {"Metadata": metadata(player["index"])})
 
 
+def moving_art(mock):
+    # A new cover address every so often, at a port nothing answers on, as a player hopping through a playlist's thumbnails.
+    player["art"] = f"http://127.0.0.1:9/cover-{GLib.get_monotonic_time()}.png"
+    changed(mock, {"Metadata": metadata(player["index"])})
+    return True
+
+
 def load(mock, parameters):
     player["art"] = parameters.get("art", "")
+    player["bare"] = parameters.get("metadata", True) is False
     player["tracks"] = [tuple(track) for track in parameters.get("tracks", [["Everything In Its Right Place", "Radiohead", 251], ["Kid A", "Radiohead", 284], ["The National Anthem", "Radiohead", 351]])]
     mock.AddProperties(ROOT_IFACE, {
         "Identity": dbus.String(parameters.get("identity", "Player")),
@@ -72,14 +84,14 @@ def load(mock, parameters):
         "Shuffle": False,
         "Metadata": metadata(0),
         "Volume": dbus.Double(1.0),
-        "Position": dbus.Int64(96 * 1000000),
+        "Position": dbus.Int64(parameters.get("position", 96 * 1000000)),
         "MinimumRate": dbus.Double(1.0),
         "MaximumRate": dbus.Double(1.0),
         "CanGoNext": bool(parameters.get("next", True)),
         "CanGoPrevious": bool(parameters.get("previous", True)),
         "CanPlay": True,
         "CanPause": True,
-        "CanSeek": True,
+        "CanSeek": bool(parameters.get("seek", True)),
         "CanControl": True,
     })
     mock.AddMethods(PLAYER_IFACE, [
@@ -95,6 +107,8 @@ def load(mock, parameters):
     ])
     mock.mpris_status = status
     mock.mpris_go = go
+    if parameters.get("artEvery"):
+        GLib.timeout_add(int(parameters["artEvery"]), moving_art, mock)
 
 
 @dbus.service.method(MOCK_IFACE, in_signature="s", out_signature="")

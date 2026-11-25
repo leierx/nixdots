@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Mpris
 import qs.common
 import "names.js" as Names
@@ -35,7 +36,7 @@ Singleton {
   // The art as a local file, a remote one downloaded in the background and cached: ColorQuantizer reads only files, and the card would fetch it again on each open. A track's stays while the next one's downloads.
   property string artFile: ""
   // What the card shows: the local file, or art Qt loads itself (data:) that has none.
-  readonly property string artShown: artFile !== "" || /^https?:/.test(art) ? artFile : art
+  readonly property string artShown: artFile !== "" || /^(https?:|file:|\/)/.test(art) ? artFile : art
   // The card's colours from its cover (Theme.cover): the last cover's stay while the next is read, none after art without colours.
   property var tint: null
 
@@ -102,9 +103,11 @@ Singleton {
 
   function cover(): void {
     const art = root.art;
-    if (art.startsWith("file://")) root.artFile = art;
-    else if (art.startsWith("/")) root.artFile = `file://${art}`;
-    else if (/^https?:\/\//.test(art)) {
+    const local = art.startsWith("file://") ? art : art.startsWith("/") ? `file://${art}` : "";
+    present.wanted = local;
+    if (local !== "") {
+      if (!present.running) present.check(local);
+    } else if (/^https?:\/\//.test(art)) {
       if (!download.running) download.get(art);
     } else root.artFile = "";
   }
@@ -188,6 +191,8 @@ Singleton {
 
     name: "Cover art"
     quiet: true
+    // Past curl's own 20 s.
+    timeout: 30000
     // Kept by URL, the last 32 used; only a picture is kept (a captive portal answers with a page), written aside and moved in, so ColorQuantizer never reads half a file.
     command: ["sh", "-c", 'f=$1; dir=${f%/*}; if [ -s "$f" ]; then touch "$f"; else type=$(curl --fail --silent --show-error --globoff --location --proto =http,https --proto-redir =http,https --max-time 20 --max-filesize 20000000 --create-dirs --write-out "%{content_type}" --output "$f.part" "$2") && case $type in image/*) mv "$f.part" "$f" ;; *) false ;; esac || { rm -f "$f.part"; echo "not a picture: ${type:-no answer}" >&2; exit 1; }; fi; ls -1t "$dir" | tail -n +33 | while read -r name; do rm -f "$dir/$name"; done', "sh", file, url]
     onDone: {
@@ -197,6 +202,32 @@ Singleton {
     onFailed: {
       if (download.url === root.art) root.artFile = "";
       else root.cover();
+    }
+  }
+
+  // A local cover only once it is there: a player naming a file since deleted would have Qt warn wherever it is drawn.
+  Process {
+    id: present
+
+    property string url: ""
+    property string wanted: ""
+    property string path: ""
+
+    function check(url: string): void {
+      present.url = url;
+      present.path = url.slice("file://".length);
+      // A player's own percent-encoding, which may not decode.
+      try {
+        present.path = decodeURIComponent(present.path);
+      } catch (error) {}
+      present.running = true;
+    }
+
+    command: ["test", "-r", present.path]
+    onExited: code => {
+      if (present.url === present.wanted) root.artFile = code === 0 ? present.url : "";
+      // Once it has stopped: started from its own exit, the next check would be dropped.
+      else Qt.callLater(root.cover);
     }
   }
 

@@ -1,0 +1,45 @@
+{
+  "created_at": "1970-01-01T00:00:00Z",
+  "exec": "",
+  "name": "default",
+  "outputs": [
+    {
+      "description": "AOC Q27G2G4 0x000023BD",
+      "enabled": true,
+      "height": 1440,
+      "key": "aoc|q27g2g4|0x000023bd",
+      "make": "AOC",
+      "match_key": "aoc|q27g2g4|0x000023bd",
+      "mode": "2560x1440@143.91Hz",
+      "model": "Q27G2G4",
+      "refresh": 143.91,
+      "scale": 1,
+      "serial": "0x000023BD",
+      "transform": 0,
+      "width": 2560,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "description": "AOC Q27G2G4 0x000021BD",
+      "enabled": true,
+      "height": 1440,
+      "key": "aoc|q27g2g4|0x000021bd",
+      "make": "AOC",
+      "match_key": "aoc|q27g2g4|0x000021bd",
+      "mode": "2560x1440@143.91Hz",
+      "model": "Q27G2G4",
+      "refresh": 143.91,
+      "scale": 1,
+      "serial": "0x000021BD",
+      "transform": 0,
+      "width": 2560,
+      "x": 2560,
+      "y": 0
+    }
+  ],
+  "updated_at": "1970-01-01T00:00:00Z",
+  "workspaces": {
+    "enabled": false
+  }
+}

@@ -35,13 +35,16 @@ qst key Return
 qst wait '.panel == ""'
 qst actions | grep -q 'systemd-run.*--scope.*wl-copy' || { qst actions; echo "the clip was not handed over in a scope"; exit 1; }
 
-qst case "every panel fits a 1024x600 screen"
-qst output 1024x600 1
-qst wait '.screens[0].width <= 1024'
-for panel in apps clipboard monitors windows nixpkgs center:DP-1 shortcuts power controls:DP-1; do
-  qst ipc panels open "$panel" > /dev/null
-  qst wait ".panel == \"$panel\""
-  qst stays ".panel == \"$panel\"" 0.6
+for screen in "1024x600 1" "1920x1080 3"; do
+  read -r mode scale <<< "$screen"
+  qst case "every panel fits a $mode screen at scale $scale"
+  qst output "$mode" "$scale"
+  qst wait ".screens[0].width <= ${mode%x*} / $scale + 1"
+  for panel in apps clipboard monitors windows nixpkgs center:DP-1 shortcuts power controls:DP-1; do
+    qst ipc panels open "$panel" > /dev/null
+    qst wait ".panel == \"$panel\""
+    qst stays ".panel == \"$panel\"" 0.6
+  done
 done
 
 qst case "Power Off takes a second press, and moving the selection disarms it"
@@ -211,3 +214,12 @@ qst wait '.panel == ""'
 qst pointer 300 700
 qst wait '.hovered == []'
 qst stays '.hovered == []' 0.5
+
+qst case "a drag on the volume let go far outside the centre leaves the level where it ended, the centre open and no hand closed"
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+read -r x y <<< "$(qst area ControlsPanel:slider:output)"
+qst drag "$x" "$y" -900 700 400
+qst wait '.volume.percent == 0'
+qst stays '.panel == "controls:DP-1" and .volume.percent == 0' 0.5
+qst cursor 400 900 arrow > /dev/null

@@ -1,0 +1,132 @@
+{
+  "monitor_set_hash": "738ace8cfec4e9458f3fa628775e63668078e2a6cf18019cfd144ed1523620c3",
+  "schema_version": 1,
+  "version": "1.22.1",
+  "daemon": {
+    "running": true
+  },
+  "active_profile": null,
+  "recommended_profile": {
+    "name": "default",
+    "score": 200
+  },
+  "profiles": [
+    {
+      "name": "default",
+      "output_count": 2,
+      "enabled_outputs": 2,
+      "connected_outputs": 2,
+      "connected_enabled_outputs": 2,
+      "exact_display_match": true,
+      "match_score": 200,
+      "match_reasons": [
+        {
+          "kind": "connected",
+          "count": 2,
+          "points": 200
+        }
+      ],
+      "updated_at": "1970-01-01T00:00:00Z",
+      "active": false,
+      "recommended": true
+    },
+    {
+      "name": "left-only",
+      "output_count": 2,
+      "enabled_outputs": 1,
+      "connected_outputs": 2,
+      "connected_enabled_outputs": 1,
+      "exact_display_match": true,
+      "match_score": 150,
+      "match_reasons": [
+        {
+          "kind": "connected",
+          "count": 1,
+          "points": 100
+        },
+        {
+          "kind": "connected_kept_off",
+          "count": 1,
+          "points": 50
+        }
+      ],
+      "updated_at": "1970-01-01T00:00:00Z",
+      "active": false,
+      "recommended": false
+    },
+    {
+      "name": "right-only",
+      "output_count": 2,
+      "enabled_outputs": 1,
+      "connected_outputs": 2,
+      "connected_enabled_outputs": 1,
+      "exact_display_match": true,
+      "match_score": 150,
+      "match_reasons": [
+        {
+          "kind": "connected",
+          "count": 1,
+          "points": 100
+        },
+        {
+          "kind": "connected_kept_off",
+          "count": 1,
+          "points": 50
+        }
+      ],
+      "updated_at": "1970-01-01T00:00:00Z",
+      "active": false,
+      "recommended": false
+    }
+  ],
+  "monitors": [
+    {
+      "key": "aoc|q27g2g4|0x000021bd",
+      "match_key": "aoc|q27g2g4|0x000021bd",
+      "serial": "0x000021BD",
+      "name": "DP-1",
+      "description": "AOC Q27G2G4 0x000021BD",
+      "make": "AOC",
+      "model": "Q27G2G4",
+      "mode": "2560x1440@143.91Hz",
+      "width": 2560,
+      "height": 1440,
+      "refresh_rate": 143.912,
+      "x": 2560,
+      "y": 0,
+      "scale": 1,
+      "transform": 0,
+      "logical_width": 2560,
+      "logical_height": 1440,
+      "internal": false,
+      "focused": false,
+      "enabled": true,
+      "usable": true,
+      "health": "usable"
+    },
+    {
+      "key": "aoc|q27g2g4|0x000023bd",
+      "match_key": "aoc|q27g2g4|0x000023bd",
+      "serial": "0x000023BD",
+      "name": "DP-2",
+      "description": "AOC Q27G2G4 0x000023BD",
+      "make": "AOC",
+      "model": "Q27G2G4",
+      "mode": "2560x1440@143.91Hz",
+      "width": 2560,
+      "height": 1440,
+      "refresh_rate": 143.912,
+      "x": 0,
+      "y": 0,
+      "scale": 1,
+      "transform": 0,
+      "logical_width": 2560,
+      "logical_height": 1440,
+      "internal": false,
+      "focused": true,
+      "enabled": true,
+      "usable": true,
+      "health": "usable"
+    }
+  ]
+}

@@ -55,11 +55,18 @@ usage: qs-test COMMAND
   focus NAME            focus a monitor
   output MODE [SCALE]   change the first monitor's mode (2560x1440 1.5)
   pipewire start|stop|restart   the session's own sound server (tests/pipewire.conf)
+  wireplumber start|stop        its session manager alone
+  upower start|stop     the session's UPower (tests/upower.py), back with the battery at 76 %
+  logind start [ANSWER]|stop    the session's logind (tests/logind.py), CanRebootToFirmwareSetup answering ANSWER (yes)
+  hole NAME [session|system|off]  hold NAME on that bus with something that takes every call and answers none
+  kill [SIGNAL]         signal qs (KILL, the default, takes its helpers too, as the OOM killer and systemd would); restart starts it again
+  clock OFFSET|at DATE  the shell's clock OFFSET (+8h, -90m) from the machine's, or at DATE; the case starts with QS_TEST_CLOCK=1
+  fuzz COUNT [SEED]     COUNT random actions (panels, keys, the pointer, notifications, hotplugs), the invariants checked after each
   network SUB ...       the session's NetworkManager (tests/networkmanager.py): start|stop|restart, wifi add SSID [STRENGTH] [SECURITY] [PASSWORD],
                         wifi remove|strength|clear|many COUNT [PREFIX]|json JSON, device add|remove NAME [wifi|ethernet], cable NAME on|off,
                         profile wifi|ethernet|wireguard|vpn NAME [SSID PSK], vpn NAME ok|fail|secrets, up NAME,
                         connectivity none|portal|limited|full, switch on|off, delay MS, dump
-  player add NAME [IDENTITY] [STATUS] [ART]   an MPRIS player (tests/mpris.py), ART an image file for its cover; status NAME Playing|Paused|Stopped, remove NAME, clear
+  player add NAME [IDENTITY] [STATUS] [ART] [JSON]   an MPRIS player (tests/mpris.py), ART an image file for its cover, JSON more of its parameters; status NAME Playing|Paused|Stopped, remove NAME, clear
   battery PERCENT [STATE [SECONDS]]   the session's UPower battery (charging, discharging, full, pending), or remove
   bluetooth SUB ...     the session's BlueZ (tests/bluez.py): start|stop, adapter add|remove, remove ADDRESS,
                         add ADDRESS NAME [ICON] [ok|pin|fail|slow|crowded] [paired] [connected] [BATTERY]
@@ -80,12 +87,14 @@ usage: qs-test COMMAND
   cursor X Y [SHAPE]    the cursor there and what set it; fails if not SHAPE (hand, arrow, closed)
   cursors [WINDOW]      fail where an area that asks for a hand shows none, in WINDOW (BarWindow, LauncherWindow, …) or all
   motion start|stop     record every visible item each frame; stop prints what moved, failing on a jump
-  fail TOOL MODE        TOOL fails as MODE (exit, crash, missing, garbage, off) wherever the shell runs it
+  fail TOOL MODE [PATTERN]  TOOL fails as MODE wherever the shell runs it, or only for arguments matching the glob PATTERN:
+                        exit, crash, missing, garbage, hang (never answers), slow (3 s), truncated (half its output),
+                        huge (20 MB more), lie (its output, then exit 1), say=TEXT (only TEXT); off puts it back
   actions               what the session tried to run on the machine (power, systemd-run, ...)
 
-env: QS_TEST_DIR (session dir), QS_TEST_HOST (host whose config is built, $host),
+env: QS_TEST_DIR (session dir), QS_TEST_HOST (host whose config is built, $host), QS_TEST_CLOCK (1: a clock that clock moves),
      QS_TEST_NETWORK, QS_TEST_BLUETOOTH (none: no NetworkManager, no BlueZ), QS_TEST_SCALE (the shell's QT_SCALE_FACTOR, 1),
-     QS_TEST_REPO (checkout), QS_TEST_MONITORS (NAME:MODE:SCALE ..., DP-1:1920x1080:1)
+     QS_TEST_LOCALE (the shell's LANG and LC_ALL), QS_TEST_COLD (1: reset waits on Hyprland alone, the shell's singletons left unread), QS_TEST_REPO (checkout), QS_TEST_MONITORS (NAME:MODE:SCALE ..., DP-1:1920x1080:1)
 EOF
 }
 
@@ -168,7 +177,6 @@ enter() {
   unset DISPLAY SWAYSOCK
 }
 
-shell_id() { printf '%s' "$T/shell/shell.qml" | md5sum | cut -d' ' -f1; }
 
 # By config path, since setsid may fork and leave no pid to remember.
 testqs() {
@@ -180,27 +188,53 @@ testqs() {
 
 # The regexes no case fails on: tests/known-warnings, and what this case expects (`expect`).
 allowed() {
-  grep -v '^#' "$tests/known-warnings" | cut -f1
-  [ -s "$T/expected" ] && cut -f2- "$T/expected"
+  # An empty one would join as an alternative matching every line, allowing all.
+  { grep -v '^#' "$tests/known-warnings" | cut -f1; [ -s "$T/expected" ] && cut -f2- "$T/expected"; } | grep -v '^$'
   return 0
 }
+
+# The lines problems looks at: warnings, errors, a crash, and Qt's placeholder screen.
+warnings() { tail -n +"${1:-1}" "$T/qs.log" | grep -aE 'WARN|ERROR|CRIT|FATAL|crashed|creating placeholder screen'; }
 
 # qs's warnings from line $1 on that nothing allows, and whether it still runs.
 problems() {
   local patterns
   patterns=$(allowed | paste -sd '|')
   # With no output at all, Qt moves windows to a placeholder screen for a moment, and each warns before it is gone or placed.
-  tail -n +"${1:-1}" "$T/qs.log" | grep -aE 'WARN|ERROR|creating placeholder screen' |
+  warnings "${1:-1}" |
     awk '/creating placeholder screen/ { held = 1; next } held && /Layershell screen does not correspond/ { next } { held = 0; print }' |
     grep -vE "${patterns:-^$}" || true
-  if running && [ -s "$T/display" ] && ! alive; then echo "qs is not running: it crashed or failed to load"; fi
+  # Unless a case killed it (`qst kill`), to start it again.
+  if running && [ -s "$T/display" ] && [ ! -s "$T/killed" ] && ! alive; then echo "qs is not running: it crashed or failed to load"; fi
   [ -s "$T/ipc-missing" ] && cat "$T/ipc-missing"
   return 0
 }
 
+# The processes the test shell started, whatever became of it: each carries QS_TEST_SHELL.
+shell_processes() {
+  { grep -lzxF "QS_TEST_SHELL=$T" /proc/[0-9]*/environ 2> /dev/null || true; } | cut -d/ -f3 | grep -vx "$$" || true
+}
+
+# The long-lived helpers the shell runs, more than one of which is a watcher started again before the last one went.
+watchers() {
+  local proc cmdline
+  local -A count=()
+  for proc in $(shell_processes); do
+    cmdline=$(tr '\0' ' ' < "/proc/$proc/cmdline" 2> /dev/null) || continue
+    case $cmdline in
+      *camera-users\ *) count[camera-users]=$((${count[camera-users]:-0} + 1)) ;;
+      */nmcli\ monitor\ | "nmcli monitor ") count[nmcli-monitor]=$((${count[nmcli-monitor]:-0} + 1)) ;;
+      "tail -n0 -F $T/udev ") count[backlight-watch]=$((${count[backlight-watch]:-0} + 1)) ;;
+    esac
+  done
+  for proc in "${!count[@]}"; do
+    [ "${count[$proc]}" -le 1 ] || echo "${count[$proc]} of $proc run at once under qs, where one watches"
+  done
+}
+
 # A case fails on any warning it caused, and on a `qst expect` that never came.
 case_check() {
-  local found mark name pid peak
+  local found mark name pid peak pattern
   [ -s "$T/case" ] || return 0
   name=$(cat "$T/case")
   if [ -s "$T/case-start" ]; then
@@ -215,6 +249,11 @@ case_check() {
     peak=$(awk '/VmHWM/ { print int($2 / 1024) }' "/proc/$pid/status" 2> /dev/null || echo 0)
     [ "${peak:-0}" -le "${QS_TEST_PEAK:-1024}" ] || found+=$'\n'"qs peaked at $peak MiB, past the ${QS_TEST_PEAK:-1024} MiB a case may take"
   done
+  found+=$'\n'$(watchers)
+  # Which known warnings any case still meets, so one no longer met can go.
+  while IFS= read -r pattern; do
+    warnings "$mark" | grep -qE "$pattern" && printf '%s\n' "$pattern" >> "$T/known-seen"
+  done < <(grep -v '^#' "$tests/known-warnings" | cut -f1 | grep -v '^$')
   if [ -s "$T/expected" ]; then
     # One that came stays allowed, but need not come again in the log a restart starts.
     while IFS=$'\t' read -r kind pattern; do
@@ -246,8 +285,21 @@ start_qs() {
   : > "$T/qs.log"
   (
     enter
+    # The shell's state and cache in the session, so a case can damage or lock them and nothing reaches the user's.
+    # QS_PIPEWIRE_IMMEDIATE_RECONNECT as quickshell.service sets it.
+    local env=("XDG_STATE_HOME=$T/state" "XDG_CACHE_HOME=$T/cache" "QS_TEST_SHELL=$T" QS_PIPEWIRE_IMMEDIATE_RECONNECT=1)
+    mkdir -p "$T/state" "$T/cache"
+    local shell=qs
+    # A locale for the shell alone, as glibc here may have none of it, which Qt does not need.
+    [ -z "${QS_TEST_LOCALE:-}" ] || env+=("LANG=$QS_TEST_LOCALE" "LC_ALL=$QS_TEST_LOCALE")
+    # A clock of the shell's own (`qst clock`), its timers' monotonic one left alone.
+    if [ -n "${QS_TEST_CLOCK:-}" ]; then
+      [ -s "$T/clock" ] || echo +0 > "$T/clock"
+      shell=$QS_TEST_FAKEABLE_QS
+      env+=("LD_PRELOAD=$QS_TEST_FAKETIME" "FAKETIME_TIMESTAMP_FILE=$T/clock" FAKETIME_CACHE_DURATION=1 DONT_FAKE_MONOTONIC=1 FAKETIME_DONT_RESET=1)
+    fi
     # Qt names the item behind every cursor change, which `cursor` reads back.
-    QT_SCALE_FACTOR=${QS_TEST_SCALE:-1} QT_LOGGING_RULES=qt.quick.hover.cursor.debug=true setsid qs -p "$T/shell" > "$T/qs.log" 2>&1 < /dev/null &
+    env "${env[@]}" QT_SCALE_FACTOR="${QS_TEST_SCALE:-1}" QT_LOGGING_RULES=qt.quick.hover.cursor.debug=true setsid "$shell" -p "$T/shell" > "$T/qs.log" 2>&1 < /dev/null &
     echo $! > "$T/qs.pid"
   )
   echo 1 > "$T/case-mark"
@@ -260,6 +312,7 @@ start_qs() {
   exec 3<&-
   grep -q 'Configuration Loaded' "$T/qs.log" || { problems; die "the shell did not load, see qs-test log"; }
   [ -e "$T/ipc-checked" ] || { ipc_targets; : > "$T/ipc-checked"; }
+  rm -f "$T/killed"
   problems
 }
 
@@ -273,14 +326,15 @@ stop_qs() {
     rm -f "$T/qs.pid"
   fi
   [ -n "$pids" ] || pids=$(testqs)
-  [ -n "$pids" ] || return 0
   for pid in $pids; do kill -- "-$pid" 2> /dev/null || kill "$pid" 2> /dev/null || true; done
   for _ in $(seq 250); do
     left=0
     for pid in $pids; do kill -0 -- "-$pid" 2> /dev/null && left=1; done
-    [ $left = 1 ] || return 0
+    [ $left = 1 ] || break
     sleep 0.02
   done
+  # What outlived its group: a crash's reporter, helpers a relaunch in place left behind.
+  for pid in $(shell_processes); do kill -s KILL "$pid" 2> /dev/null || true; done
 }
 
 # path:, since a git flake leaves untracked files out
@@ -338,7 +392,10 @@ install_probe() {
 fakes() {
   local config=${XDG_CONFIG_HOME:-$HOME/.config} cliphist entry
   mkdir -p "$T/bin" "$T/cfg/hyprmoncfg"
-  hyprmoncfg status --json > "$T/status.json" 2> /dev/null || echo '{"profiles":[]}' > "$T/status.json"
+  # The desktop's profiles (hosts/desktop/monitors.nix), whatever this machine has.
+  cp "$tests/hyprmoncfg/status.json" "$T/status.json"
+  rm -rf "$T/cfg/hyprmoncfg/profiles"
+  cp -r "$tests/hyprmoncfg/profiles" "$T/cfg/hyprmoncfg/profiles"
   : > "$T/actions.log"
 
   cat > "$T/bin/hyprctl" << EOF
@@ -358,8 +415,11 @@ echo "systemd-run \$*" >> "$T/actions.log"
 case " \$* " in *' --scope '*) ;; *) exit ;; esac
 while [ "\${1#-}" != "\$1" ]; do shift; done
 case "\$1" in nixpkgs-run | xdg-open | freeze-region) exit ;; nixpkgs-index) exec "\$@" ;; esac
-# Its own process group, which reset kills: a window still starting has no client to kill yet.
+# While a fuzz runs, nothing it clicks starts an app in the session.
+[ -e "$T/no-launch" ] && exit
+# Its own process group, which reset kills: a window still starting has no client to kill yet. Out of the shell's, as a scope is.
 echo \$\$ >> "$T/launched"
+unset QS_TEST_SHELL
 exec setsid "\$@"
 EOF
   # The package list, a handful of packages rather than the channel's 400 MB, written once per session.
@@ -468,8 +528,8 @@ echo "\$level" > "\$dir/actual_brightness"
 printf 'UDEV  [%s] change   /devices/qs-test/backlight/%s (backlight)\n' "\$(date +%s.%N)" "\$device" >> "$T/udev"
 EOF2
   cliphist=$(command -v cliphist || true)
+  # A history of the session's own, which each case starts empty: never the user's clips.
   if [ -n "$cliphist" ]; then
-    [ -f "$HOME/.cache/cliphist/db" ] && cp "$HOME/.cache/cliphist/db" "$T/clip.db"
     printf '#!/bin/sh\nexec %s -db-path "%s/clip.db" "$@"\n' "$cliphist" "$T" > "$T/bin/cliphist"
   fi
   find "$T/bin" -maxdepth 1 -type f -exec chmod +x {} +
@@ -477,7 +537,6 @@ EOF2
   for entry in "$config"/*; do
     case $(basename "$entry") in hypr | hyprmoncfg) ;; *) ln -sfn "$entry" "$T/cfg/" ;; esac
   done
-  [ -e "$config/hyprmoncfg/profiles" ] && ln -sfn "$config/hyprmoncfg/profiles" "$T/cfg/hyprmoncfg/profiles"
   return 0
 }
 
@@ -489,17 +548,16 @@ pw_start() {
   cp "$tests/wireplumber.conf" "$pw/cfg/wireplumber/wireplumber.conf.d/qs-test.conf"
   (
     enter
-    export XDG_CONFIG_HOME=$pw/cfg XDG_STATE_HOME=$pw/state DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent
-    setsid pipewire -c "$tests/pipewire.conf" > "$T/pipewire.log" 2>&1 < /dev/null &
+    XDG_CONFIG_HOME=$pw/cfg XDG_STATE_HOME=$pw/state DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent setsid pipewire -c "$tests/pipewire.conf" > "$T/pipewire.log" 2>&1 < /dev/null &
     echo $! > "$T/pipewire.pid"
     for _ in $(seq 250); do
       # The socket is there as it is bound, before it listens; WirePlumber connecting then gives up for good.
       [ -S "$XDG_RUNTIME_DIR/pipewire-0" ] && timeout 1 pw-cli info 0 > /dev/null 2>&1 && break
       sleep 0.02
     done
-    setsid wireplumber > "$T/wireplumber.log" 2>&1 < /dev/null &
-    echo $! > "$T/wireplumber.pid"
   )
+  : > "$T/wireplumber.log"
+  wp_start
   (
     enter
     for _ in $(seq 500); do
@@ -511,9 +569,18 @@ pw_start() {
   ) || die "PipeWire did not start, see $T/pipewire.log and $T/wireplumber.log"
 }
 
+# WirePlumber alone, as a session manager dying or starting late leaves PipeWire up.
+wp_start() {
+  (
+    enter
+    XDG_CONFIG_HOME=$T/pw/cfg XDG_STATE_HOME=$T/pw/state DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent setsid wireplumber >> "$T/wireplumber.log" 2>&1 < /dev/null &
+    echo $! > "$T/wireplumber.pid"
+  )
+}
+
 pw_stop() {
   local name pid
-  for name in wireplumber pipewire; do
+  for name in ${1:-wireplumber pipewire}; do
     [ -s "$T/$name.pid" ] || continue
     pid=$(cat "$T/$name.pid")
     kill "$pid" 2> /dev/null || true
@@ -625,7 +692,8 @@ services_reset() {
     battery 76 discharging 9600
   } &
   fakes+=($!)
-  owned org.freedesktop.login1 || mock_start logind org.freedesktop.login1 "$tests/logind.py" &
+  # Kept up across cases, unless one changed it (`qst logind`).
+  { [ ! -e "$T/logind.changed" ] && owned org.freedesktop.login1; } || { rm -f "$T/logind.changed"; mock_start logind org.freedesktop.login1 "$tests/logind.py"; } &
   fakes+=($!)
   {
     mock_stop bluetooth
@@ -728,8 +796,8 @@ player() {
   mkdir -p "$T/players"
   case $sub in
     add)
-      [ -n "$name" ] || die "player add NAME [IDENTITY] [STATUS] [ART]"
-      QS_MPRIS_NAME=$name setsid qs-dbusmock --session --template "$tests/mpris.py" -p "$(jq -cn --arg identity "${3:-$name}" --arg status "${4:-Playing}" --arg art "$(case ${5:-} in "") ;; http://* | https://*) echo "$5" ;; *) echo "file://$(realpath "$5")" ;; esac)" '{ identity: $identity, status: $status, art: $art }')" > "$T/players/$name.log" 2>&1 < /dev/null &
+      [ -n "$name" ] || die "player add NAME [IDENTITY] [STATUS] [ART] [JSON]"
+      QS_MPRIS_NAME=$name setsid qs-dbusmock --session --template "$tests/mpris.py" -p "$(jq -cn --arg identity "${3:-$name}" --arg status "${4:-Playing}" --arg art "$(case ${5:-} in "") ;; http://* | https://* | file://*) echo "$5" ;; *) echo "file://$(realpath "$5")" ;; esac)" --argjson more "${6:-"{}"}" '{ identity: $identity, status: $status, art: $art } + $more')" > "$T/players/$name.log" 2>&1 < /dev/null &
       echo $! > "$T/players/$name.pid"
       for _ in $(seq 250); do
         dbus-send --session --print-reply --dest=org.freedesktop.DBus / org.freedesktop.DBus.NameHasOwner "string:org.mpris.MediaPlayer2.$name" 2> /dev/null | grep -q 'boolean true' && return
@@ -1013,7 +1081,7 @@ EOF
 }
 
 down() {
-  local bus="" runtime="" pid id worker
+  local bus="" runtime="" pid worker
   for worker in "$T"/w[0-9]*/; do
     [ -d "$worker" ] && QS_TEST_DIR=${worker%/} "$self" down > /dev/null &
   done
@@ -1030,10 +1098,8 @@ down() {
     grep -qzxF -e "DBUS_SESSION_BUS_ADDRESS=${bus:-none}" -e "XDG_RUNTIME_DIR=${runtime:-none}" "/proc/$pid/environ" 2> /dev/null &&
       kill "$pid" 2> /dev/null
   done
-  # Quickshell keys its dirs by config path, so these are the test shell's own.
-  id=$(shell_id)
-  rm -rf "$HOME/.local/state/quickshell/by-shell/$id" "$HOME/.cache/quickshell/by-shell/$id"
   [ -n "$runtime" ] && rm -rf "$runtime"
+  chmod -R u+w "$T" 2> /dev/null || true
   rm -rf "$T"
   echo down
 }
@@ -1177,6 +1243,114 @@ stays() {
   timing stays $((REPLY - began)) "$snaps ${2:-1}"
 }
 
+# A name on a bus held by something that takes every call and answers none: a service hung, or a second one in the way.
+hole() {
+  local name=$1 address=$DBUS_SESSION_BUS_ADDRESS pid
+  mkdir -p "$T/holes"
+  case ${2:-} in
+    off)
+      [ -s "$T/holes/$name.pid" ] || die "no hole holds $name"
+      kill "$(cat "$T/holes/$name.pid")" 2> /dev/null || true
+      rm -f "$T/holes/$name.pid"
+      return
+      ;;
+    "" | session | system) ;;
+    *) die "hole NAME [session|system|off]" ;;
+  esac
+  [ "${2:-}" = system ] && address=$DBUS_SYSTEM_BUS_ADDRESS
+  DBUS_SESSION_BUS_ADDRESS=$address setsid dbus-test-tool black-hole "--name=$name" > /dev/null 2>&1 < /dev/null &
+  pid=$!
+  echo "$pid" > "$T/holes/$name.pid"
+  for _ in $(seq 250); do
+    DBUS_SESSION_BUS_ADDRESS=$address dbus-send --print-reply --dest=org.freedesktop.DBus / org.freedesktop.DBus.GetNameOwner "string:$name" > /dev/null 2>&1 && return
+    kill -0 "$pid" 2> /dev/null || die "the hole could not take $name: it has an owner"
+    sleep 0.02
+  done
+  die "the hole never took $name"
+}
+
+holes_reset() {
+  local pid
+  for pid in "$T"/holes/*.pid; do
+    [ -s "$pid" ] && kill "$(cat "$pid")" 2> /dev/null || true
+  done
+  rm -rf "$T/holes"
+}
+
+# The shell's clock as OFFSET from the machine's (+8h, -90m, +0), or at DATE as `date -d` reads it, from now on.
+clock() {
+  local offset unit
+  [ -e "$T/clock" ] || die "the shell runs on the machine's clock: start the case with QS_TEST_CLOCK=1"
+  case ${1:-} in
+    at) [ $# -eq 2 ] || die "clock at DATE"; offset=$(($(date -d "$2" +%s) - $(date +%s))) || die "no date $2" ;;
+    [+-][0-9]*)
+      unit=${1##*[0-9]}
+      offset=${1%"$unit"}
+      case $unit in "" | s) ;; m) offset=$((offset * 60)) ;; h) offset=$((offset * 3600)) ;; d) offset=$((offset * 86400)) ;; *) die "clock +N[s|m|h|d]" ;; esac
+      ;;
+    *) die "clock +N[s|m|h|d] | -N[s|m|h|d] | at DATE" ;;
+  esac
+  # libfaketime reads its file once a second.
+  printf '%+d\n' "$offset" > "$T/clock"
+  sleep 1.1
+}
+
+# COUNT random actions on the shell as it is, the invariants and census checked after each as every wait checks them;
+# SEED replays a run, which prints its own.
+fuzz() {
+  local actions=$1 seed=${2:-$((EPOCHSECONDS % 32768))} n pick x y button panel_names key_names spots width height choice
+  RANDOM=$seed
+  echo "fuzz: seed $seed"
+  printf '       fuzz seed %s\n' "$seed" >> "$T/trace.log"
+  : > "$T/no-launch"
+  panel_names=(apps clipboard monitors windows nixpkgs center controls shortcuts power)
+  key_names=(Escape Escape Tab shift+Tab Down Down Up Left Right Home End Return space BackSpace Delete a f super+d super+a super+v super+x super+Tab super+shift+plus super+p ctrl+a)
+  read -r width height < <("$HC" monitors -j | jq -r '"\(map(.x + .width / .scale) | max | floor) \(map(.y + .height / .scale) | max | floor)"')
+  for n in $(seq "$actions"); do
+    pick=$((RANDOM % 100))
+    if [ $pick -lt 15 ]; then
+      timeout 5 qs ipc -p "$T/shell" call panels toggle "${panel_names[RANDOM % ${#panel_names[@]}]}" > /dev/null
+    elif [ $pick -lt 45 ]; then
+      input key "${key_names[RANDOM % ${#key_names[@]}]}"
+    elif [ $pick -lt 55 ]; then
+      pointer $((RANDOM % width)) $((RANDOM % height))
+    elif [ $pick -lt 75 ]; then
+      # Somewhere that takes a click, mostly.
+      mapfile -t spots < <(areas | cut -f1,2)
+      button=left
+      [ $((RANDOM % 5)) -ne 0 ] || button=right
+      if [ ${#spots[@]} -gt 0 ] && [ $((RANDOM % 4)) -ne 0 ]; then
+        read -r x y <<< "${spots[RANDOM % ${#spots[@]}]}"
+      else
+        x=$((RANDOM % width)) y=$((RANDOM % height))
+      fi
+      pointer "$x" "$y"
+      input click "$button"
+    elif [ $pick -lt 82 ]; then
+      input wheel $((RANDOM % 7 - 3))
+    elif [ $pick -lt 90 ]; then
+      # Each choice here, as a subshell's RANDOM is its own.
+      choice=normal
+      [ $((RANDOM % 6)) -ne 0 ] || choice=critical
+      notify-send -a "Fuzz $((RANDOM % 4))" -u "$choice" "fuzz $n" "number $RANDOM" &
+    elif [ $pick -lt 93 ]; then
+      choice=clear
+      [ $((RANDOM % 2)) -eq 0 ] || choice=hidePopups
+      timeout 5 qs ipc -p "$T/shell" call notifications "$choice" > /dev/null
+    elif [ $pick -lt 96 ]; then
+      if [ $((RANDOM % 2)) -eq 0 ]; then timeout 5 qs ipc -p "$T/shell" call idle cancel; else timeout 5 qs ipc -p "$T/shell" call idle fade 1 0.4; fi > /dev/null
+    else
+      # A monitor beside the first unplugged, or plugged back in.
+      if "$HC" monitors -j | jq -e 'any(.name == "DP-9")' > /dev/null; then monitor_remove DP-9; else monitor_add DP-9 1280x720 1; fi
+    fi
+    snapshot true
+    violations || true
+  done
+  wait
+  rm -f "$T/no-launch"
+  wait_for true 10
+}
+
 # Every tray item a test started.
 trays_reset() {
   local pid
@@ -1194,6 +1368,8 @@ reset() {
   enter
   trays_reset
   players_reset
+  holes_reset
+  rm -f "$T/no-launch"
   for pid in $("$HC" clients -j | jq -r '.[].pid'); do kill "$pid" 2> /dev/null || true; done
   if [ -s "$T/launched" ]; then
     while read -r pid; do kill -- "-$pid" 2> /dev/null || kill "$pid" 2> /dev/null || true; done < "$T/launched"
@@ -1217,14 +1393,22 @@ reset() {
     wait "$part" || { cat "$T"/reset.*.log >&2; die "the reset failed"; }
   done
   phase pipewire+services+monitors
-  rm -rf "$HOME/.local/state/quickshell/by-shell/$(shell_id)"
-  # The forecast is a cache the shell keeps across restarts; each case fetches its own.
-  rm -f "$HOME/.cache/quickshell/by-shell/$(shell_id)/weather.json"
+  # Writable again first, as a case may have locked them; the cache too, the forecast, covers and clips each case fetches its own.
+  chmod -R u+w "$T/state" "$T/cache" 2> /dev/null || true
+  rm -rf "$T/state" "$T/cache/quickshell" "$T/clock" "$T/clip.db"
   : > "$T/actions.log"
   restore_tools
   start_qs > /dev/null
   problems
   phase start_qs
+  if [ -n "${QS_TEST_COLD:-}" ]; then
+    # By Hyprland's layers alone: the probe reads every singleton, which creates them.
+    for _ in $(seq 100); do
+      [ "$("$HC" layers -j | jq '[.[].levels[][] | select(.namespace == "quickshell:bar")] | length')" = "$("$HC" monitors -j | jq length)" ] && return
+      sleep 0.1
+    done
+    die "the bars never came up"
+  fi
   wait_kind=reset:bar wait_for "(.screens | length) == ($("$HC" monitors -j | jq length)) and (.layers | map(select(endswith(\" quickshell:bar\"))) | length) == (.screens | length)" 10
 }
 
@@ -1303,16 +1487,16 @@ order_jobs() {
 # The scenarios that exercise a directory of the shell; none for one this does not know.
 component_scenarios() {
   case $1 in
-    bar) echo tray hotplug workspaces cursors design controls chaos interactions idle notifications ;;
-    center) echo notifications history motion cursors design hotplug chaos interactions idle failures ;;
-    controls) echo controls caffeine cursors design chaos osd privacy interactions notifications ;;
-    idle) echo idle chaos ;;
-    launcher) echo launcher hotplug cursors design failures interactions chaos binds ;;
-    notifications) echo notifications history cursors design chaos hotplug motion interactions controls failures ;;
-    osd) echo osd motion design ;;
-    power) echo interactions hotplug cursors design binds controls ;;
-    shortcuts) echo hotplug cursors design binds failures ;;
-    weather) echo failures design cursors notifications history motion ;;
+    bar) echo tray hotplug workspaces cursors design controls chaos interactions idle notifications soak clock ;;
+    center) echo notifications history motion cursors design hotplug chaos interactions idle failures soak clock ;;
+    controls) echo controls caffeine cursors design chaos osd privacy interactions notifications failures soak ;;
+    idle) echo idle chaos soak ;;
+    launcher) echo launcher hotplug cursors design failures interactions chaos binds soak ;;
+    notifications) echo notifications history cursors design chaos hotplug motion interactions controls failures soak clock ;;
+    osd) echo osd motion design failures ;;
+    power) echo interactions hotplug cursors design binds controls soak ;;
+    shortcuts) echo hotplug cursors design binds failures soak ;;
+    weather) echo failures design cursors notifications history motion clock ;;
   esac
 }
 
@@ -1350,7 +1534,8 @@ changed_scenarios() {
       modules/features/hyprland/tests/networkmanager.py | modules/features/hyprland/tests/upower.py) picked+=(controls chaos) ;;
       modules/features/hyprland/tests/bluez.py | modules/features/hyprland/tests/mpris.py) picked+=(controls chaos cursors design) ;;
       modules/features/hyprland/tests/tray.qml | modules/features/hyprland/tests/trays.qml) picked+=(tray cursors design hotplug chaos) ;;
-      modules/features/hyprland/tests/logind.py) picked+=(interactions) ;;
+      modules/features/hyprland/tests/logind.py) picked+=(interactions chaos) ;;
+      modules/features/hyprland/tests/hyprmoncfg/*) picked+=(launcher failures design binds) ;;
       modules/features/hyprland/scripts/camera-users.c) picked+=(privacy design) ;;
       modules/features/hyprland/scripts/backlight-watch.sh) picked+=(osd controls design) ;;
       modules/features/hyprland/quickshell/common/*.qml)
@@ -1528,6 +1713,7 @@ run_tests() {
     wait "${pids[$k]}" || { tail -15 "${workers[$k]}.prepare.log" >&2; die "session ${workers[$k]} did not come up"; }
   done
   echo "${#queue[@]} jobs on ${#workers[@]} sessions"
+  for w in "${workers[@]}"; do rm -f "$w/known-seen"; done
 
   local -A job_of=() worker_of=() began_of=() stopped=()
   [ "${#workers[@]}" = 1 ] || : > "$T/timings.tsv"
@@ -1602,6 +1788,10 @@ run_tests() {
   timing run $((REPLY - run_began))
   [ -n "${QS_TEST_RED:-}" ] && return $failed
   remember_run
+  # Only a whole run can say a known warning is met no more.
+  if [ "$changed" = 0 ] && [ "$failed_jobs" = all ] && [ ${#selected[@]} -eq "$(find "$tests/scenarios" -name '*.sh' | wc -l)" ] && [ $failed = 0 ]; then
+    grep -v '^#' "$tests/known-warnings" | cut -f1 | grep -v '^$' | grep -vxFf <(cat "${workers[@]/%//known-seen}" 2> /dev/null | sort -u) | sed 's/^/no case met the known warning: /' || true
+  fi
   report "$T/timings.tsv"
   return $failed
 }
@@ -1652,9 +1842,10 @@ lint_scenarios() {
   [ -z "$found" ] || die "scenarios sleep where they should wait (or say why after '# sleep: '):"$'\n'"$found"
 }
 
-# TOOL fails as MODE (exit, crash, missing, garbage) wherever the shell runs it, until `fail TOOL off` or a reset.
+# TOOL fails as MODE wherever the shell runs it, until `fail TOOL off` or a reset; with PATTERN (a glob over its arguments) only
+# those calls, the rest going to the tool as before.
 fail_tool() {
-  local tool=$1 mode=$2 bin=$T/bin
+  local tool=$1 mode=$2 pattern=${3:-*} bin=$T/bin real body word
   mkdir -p "$bin/.real"
   # Only what `fail` put there goes, so the fakes the session stands in for real tools stay.
   if [ "$mode" = off ]; then
@@ -1668,14 +1859,39 @@ fail_tool() {
   if [ ! -e "$bin/.real/$tool" ] && [ ! -e "$bin/.real/$tool.none" ]; then
     if [ -e "$bin/$tool" ]; then mv "$bin/$tool" "$bin/.real/$tool"; else : > "$bin/.real/$tool.none"; fi
   fi
+  # What the shell ran before: the session's fake, or the tool on PATH behind the session's bin/.
+  if [ -e "$bin/.real/$tool" ]; then real=$bin/.real/$tool; else real=$(PATH=${PATH//"$bin:"/} command -v "$tool" || echo "/nonexistent/$tool"); fi
+  # Each body runs in the fake, where $real and the arguments are its own.
+  # shellcheck disable=SC2016
   case $mode in
-    exit) printf '#!/bin/sh\necho "%s $* (failing)" >> "%s/actions.log"\necho "%s: failed for qst" >&2\nexit 1\n' "$tool" "$T" "$tool" > "$bin/$tool" ;;
-    crash) printf '#!/bin/sh\necho "%s $* (crashing)" >> "%s/actions.log"\nkill -SEGV $$\n' "$tool" "$T" > "$bin/$tool" ;;
+    exit) word=failing body="echo '$tool: failed for qst' >&2; exit 1" ;;
+    crash) word=crashing body='kill -SEGV $$' ;;
+    garbage) word=garbage body='echo "{\"garbage"' ;;
+    # Never answering, as a tool stuck on a lock or a service that holds its reply; exec, so stopping it stops the sleep.
+    hang) word=hanging body='exec sleep infinity' ;;
+    slow) word=slow body='sleep 3; exec "$real" "$@"' ;;
+    truncated) word=truncated body='out=$("$real" "$@"); status=$?; printf %s "$out" | head -c $((${#out} / 2)); exit $status' ;;
+    huge) word=huge body='"$real" "$@"; head -c 20000000 /dev/zero | tr "\0" x; echo' ;;
+    # All it should have said, and then a failure.
+    lie) word=lying body='"$real" "$@"; exit 1' ;;
+    # Just this, and success: an answer the shell has to make sense of.
+    say=*) word=saying body="printf '%s\\n' $(printf %q "${mode#say=}")" ;;
     # QProcess finds it on PATH and then cannot start it, as with a program that is not installed.
-    missing) printf '#!/nonexistent/qst-missing\n' > "$bin/$tool" ;;
-    garbage) printf '#!/bin/sh\necho "%s $* (garbage)" >> "%s/actions.log"\necho "{\\"garbage"\n' "$tool" "$T" > "$bin/$tool" ;;
-    *) die "fail TOOL exit|crash|missing|garbage|off" ;;
+    missing)
+      [ "$pattern" = "*" ] || die "fail $tool missing takes no pattern: a program that is not installed is missing for every call"
+      printf '#!/nonexistent/qst-missing\n' > "$bin/$tool"
+      chmod +x "$bin/$tool"
+      return
+      ;;
+    *) die "fail TOOL exit|crash|missing|garbage|hang|slow|truncated|huge|lie|say=TEXT|off [PATTERN]" ;;
   esac
+  {
+    printf '#!/bin/sh\nreal=%q\n' "$real"
+    # shellcheck disable=SC2016
+    printf 'case "$*" in %s) ;; *) exec "$real" "$@" ;; esac\n' "$pattern"
+    printf 'echo "%s $* (%s)" >> %q\n' "$tool" "$word" "$T/actions.log"
+    printf '%s\n' "$body"
+  } > "$bin/$tool"
   chmod +x "$bin/$tool"
 }
 
@@ -1813,7 +2029,7 @@ case $cmd in
     need_up
     kind=must
     [ "${1:-}" = --may ] && kind=may && shift
-    [ $# -eq 1 ] || die "expect [--may] REGEX"
+    [ $# -eq 1 ] && [ -n "$1" ] || die "expect [--may] REGEX"
     printf "%s\t%s\n" "$kind" "$1" >> "$T/expected"
     ;;
   census) need_up; enter; timeout 5 qs ipc -p "$T/shell" call probe census | jq -r ".[]" ;;
@@ -1841,7 +2057,7 @@ case $cmd in
   areas) need_up; areas | awk -F "\t" -v pattern="${1:-.}" '$3 ~ pattern' ;;
   area) need_up; [ $# -eq 1 ] || die "area [WINDOW:]NAME"; area_at "$1" ;;
   trace) cat "$T/trace.log" 2> /dev/null || true ;;
-  fail) need_up; [ $# -eq 2 ] || die "fail TOOL exit|crash|missing|garbage|off"; fail_tool "$1" "$2" ;;
+  fail) need_up; [ $# -eq 2 ] || [ $# -eq 3 ] || die "fail TOOL exit|crash|missing|garbage|hang|slow|truncated|huge|lie|say=TEXT|off [PATTERN]"; fail_tool "$@" ;;
   run) mkdir -p "$hist"; run_tests "$@" 2>&1 | tee "$hist/last-run.log" ;;
   red) red "$@" ;;
   job) need_up; run_job "$@" ;;
@@ -1895,6 +2111,63 @@ case $cmd in
     need_up
     enter
     monitor_add "$("$HC" monitors -j | jq -r 'min_by(.id).name')" "$1" "${2:-1}" 0x0
+    ;;
+  wireplumber)
+    need_up
+    case ${1:-} in
+      start) wp_start ;;
+      stop) pw_stop wireplumber ;;
+      *) die "wireplumber start|stop" ;;
+    esac
+    ;;
+  upower)
+    need_up
+    enter
+    case ${1:-} in
+      start) mock_start power org.freedesktop.UPower "$tests/upower.py"; battery 76 discharging 9600 ;;
+      stop) mock_stop power ;;
+      *) die "upower start|stop" ;;
+    esac
+    ;;
+  logind)
+    need_up
+    enter
+    case ${1:-} in
+      start) : > "$T/logind.changed"; mock_start logind org.freedesktop.login1 "$tests/logind.py" "$(jq -cn --arg firmware "${2:-yes}" '{ firmware: $firmware }')" ;;
+      stop) : > "$T/logind.changed"; mock_stop logind ;;
+      *) die "logind start [ANSWER]|stop" ;;
+    esac
+    ;;
+  hole) need_up; enter; [ $# -ge 1 ] || die "hole NAME [session|system|off]"; hole "$@" ;;
+  clock) need_up; clock "$@" ;;
+  fuzz) need_up; enter; [ $# -ge 1 ] || die "fuzz COUNT [SEED]"; fuzz "$@" ;;
+  kill)
+    need_up
+    sig=${1:-KILL}
+    victims=$(testqs)
+    [ -n "$victims" ] || die "no qs to kill"
+    echo "$sig" >> "$T/killed"
+    # SIGKILL as the OOM killer and systemd after it take the service: its helpers go too. Any other only qs, which may start itself again.
+    loaded=$(grep -ac 'Configuration Loaded' "$T/qs.log")
+    for pid in $victims; do
+      if [ "$sig" = KILL ]; then kill -s KILL -- "-$pid" 2> /dev/null || kill -s KILL "$pid"; else kill -s "$sig" "$pid"; fi
+    done
+    # A crash: Quickshell starts the shell again in place, which takes no probe until it has loaded, and the fork writing the
+    # core holds the old one's windows and bus names until it is done (TODO.md).
+    case $sig in SEGV | ABRT | BUS | FPE | ILL)
+      ms
+      began=$REPLY
+      for _ in $(seq 300); do [ "$(grep -ac 'Configuration Loaded' "$T/qs.log")" -gt "$loaded" ] && break; sleep 0.1; done
+      [ "$(grep -ac 'Configuration Loaded' "$T/qs.log")" -gt "$loaded" ] || die "qs did not come back from SIG$sig"
+      dump=$(grep -aoP 'crashed under pid \K[0-9]+' "$T/qs.log" | tail -1)
+      for _ in $(seq 600); do
+        { [ -z "$dump" ] || [ ! -e "/proc/$dump" ] || [ "$(awk '{ print $3 }' "/proc/$dump/stat" 2> /dev/null)" = Z ]; } && break
+        sleep 0.1
+      done
+      ms
+      echo "qs came back, its old windows gone, $(((REPLY - began) / 100)) tenths of a second after SIG$sig"
+      ;;
+    esac
     ;;
   pipewire)
     need_up

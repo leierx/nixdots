@@ -64,6 +64,11 @@ Singleton {
     }
   }
 
+  Deadline {
+    process: set
+    interval: 5000
+  }
+
   // Its getter keeps the last temperature through identity, but a hyprsunset started again reads its own default.
   Process {
     id: query
@@ -77,6 +82,11 @@ Singleton {
         if (root.present && (!was || root.on && temperature !== root.temperature)) root.apply();
       }
     }
+  }
+
+  Deadline {
+    process: query
+    interval: 5000
   }
 
   Timer {

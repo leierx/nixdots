@@ -17,6 +17,8 @@ for monitor in DP-1 DP-2; do
   qst case "the bar, popups and every panel on $monitor"
   qst focus "$monitor"
   notifications
+  echo "a clip to show" | cliphist store
+  echo "https://example.org/a/link" | cliphist store
   qst stays '(.popups | length) > 0' 1
   for panel in apps clipboard monitors windows nixpkgs center shortcuts power; do
     qst ipc panels open "$panel" > /dev/null
@@ -78,3 +80,16 @@ qst wait '.notifications == 1'
 qst ipc panels open center > /dev/null
 qst wait '.panel == "center:DP-1" and .controls.media != null'
 qst stays '.panel == "center:DP-1"' 0.6
+
+# Qt's own locale data, whatever glibc has: long words, another script, other digits; a time zone fourteen hours on.
+for locale in de_DE fi_FI ar_EG; do
+  QS_TEST_LOCALE=$locale.UTF-8 TZ=Pacific/Kiritimati qst case "the bar, the center, the control centre and the power menu in $locale"
+  # Qt's, as glibc on the machine may lack the locale; Qt has its own.
+  qst expect --may 'Detected locale "C" with character encoding'
+  notifications
+  for panel in center controls power shortcuts; do
+    qst ipc panels open "$panel" > /dev/null
+    qst wait "(.panel | startswith(\"$panel\"))"
+    qst stays "(.panel | startswith(\"$panel\"))" 0.6
+  done
+done
