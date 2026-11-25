@@ -7,6 +7,7 @@ root: {
       hyprland
       plymouth
       sound
+      thunar
     ];
 
     home-manager.users.${root.config.identity.username}.imports = [
@@ -22,6 +23,7 @@ root: {
     hyprland
     neovim
     qt
+    thunar
     wezterm
   ];
 }

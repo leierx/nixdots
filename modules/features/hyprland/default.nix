@@ -21,10 +21,6 @@ in
         trusted-public-keys = [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
       };
 
-      services.gvfs.enable = true;
-      services.gnome.sushi.enable = true;
-      environment.systemPackages = [ pkgs.nautilus ];
-
       # hyprlock reads fprintd itself; pam_fprintd would block the password
       security.pam.services.hyprlock.fprintAuth = false;
     };

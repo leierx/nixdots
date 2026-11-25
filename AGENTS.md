@@ -181,6 +181,7 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | `podman.nix` | nixos | `podman` | docker compat, DNS on `podman0` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
 | `tmux/` | HM | `tmux` | below |
+| `thunar.nix` | nixos, HM | `thunar` | Thunar 4.20 (`pkgs.unstable` until 26.11) with thunar-volman and thunar-vcs-plugin, its daemon on `graphical-session.target` (no unit PATH, so apps open by name); plain gvfs (no GNOME Online Accounts, keyring, OneDrive), tumbler, xfconf; `inode/directory` in `/etc/xdg/mimeapps.list`. HM: xfconf (headerbar, no menubar, symbolic sidebar, path buttons, embedded image preview; volman automounts drives and media), `uca.xml` and `accels.scm` from Nix, so the actions dialog's and shortcut editor's changes do not last: Open Terminal Here (F4), Open in Neovim, Copy Path (Ctrl+Shift+C), Open as Root (`admin://`), Preview (Space, the default app), Extract Here and Compress (ouch, a notification on failure) |
 | `users.nix` | nixos, HM | `users` | user, groups, hashed password, zsh + starship (oh-my-zsh runs compinit), root locked |
 | `wezterm.nix` | HM | `wezterm` | "Adwaita Darker" from the palette, Hack, notifications only while unfocused |
 | `xdg.nix` | HM | `xdg-user-dirs` | XDG user dirs, created |
@@ -1067,8 +1068,8 @@ What Hyprland does that tests run into:
 - **Profiles**: `base` (nixos: `boot doas documentation git home-manager
   journald locale network neovim nix nixpkgs packages podman unstable-nixpkgs
   users`; HM: `git pi-agent tmux users xdg-user-dirs zsh`), `workstation`
-  (nixos: `display-manager fonts gtk hyprland plymouth sound`; HM: `bluetooth
-  cursor desktop-apps gtk hyprland neovim qt wezterm`). The NixOS half pulls in
+  (nixos: `display-manager fonts gtk hyprland plymouth sound thunar`; HM:
+  `bluetooth cursor desktop-apps gtk hyprland neovim qt thunar wezterm`). The NixOS half pulls in
   the HM half.
 - **Theme** (`modules/theme/`): `palette.nix` declares `palettes`; `fonts`
   nixos, `gtk` both, `cursor` and `qt` HM. GTK4 recoloured through libadwaita's
