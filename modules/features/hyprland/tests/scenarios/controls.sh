@@ -327,6 +327,13 @@ qst wait 'any(.history[]; .summary == "Office Failed to Connect")' 10
 qst wait '(.controls.vpns | map(select(.name == "Office"))[0].busy) == null'
 qst fail nmcli off
 
+qst case "a profile list cut short shows no VPN made of the record before it"
+qst fail nmcli "say=$(printf '00000000-0000-4000-8000-00000000000a:vpn:no::Listed\n00000000-0000-4000-8000-000000000003:wireguard:yes:activated:wg0\n00000000-0000-4000-8000-000000000009:vpn:no')" '*UUID,TYPE,ACTIVE,STATE,NAME*'
+# Any change has the shell list the profiles again.
+qst network profile vpn Office
+qst wait 'any(.controls.vpns[]; .name == "Listed")'
+qst stays '.controls.vpns == [{ name: "Listed", active: false, busy: null }, { name: "wg0", active: true, busy: null }]' 2
+
 qst case "a new headset pairs, is trusted and connects in one click; a keyboard wanting a PIN says where to go"
 qst bluetooth add 11:22:33:44:55:01 "WH-1000XM4" audio-headset ok
 qst bluetooth add 11:22:33:44:55:02 "Keychron K3" input-keyboard pin

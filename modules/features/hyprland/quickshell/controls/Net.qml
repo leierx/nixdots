@@ -533,7 +533,10 @@ Singleton {
         }
         const vpns = [];
         for (const record of records) {
-          const [uuid, type, active, state, name] = root.fields(record);
+          const fields = root.fields(record);
+          // A record cut short is no profile, and Qt 6.12 would leave its missing fields stale (TODO.md).
+          if (fields.length < 5) continue;
+          const [uuid, type, active, state, name] = fields;
           if (type === "wireguard" || type === "vpn") vpns.push({ name, uuid, type, active: active === "yes", state });
         }
         // By name, so the list keeps still as they come and go.
