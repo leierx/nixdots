@@ -1,0 +1,45 @@
+/* The shell's Theme (palettes.adwaita_darker, GNOME Shell 51 less 28 per channel). */
+:root{
+  --m-pop:#1a1a1e; --m-border:#26262b; --m-card:#2b2b30; --m-fg:#fff; --m-dim:rgba(255,255,255,.55); --m-faint:rgba(255,255,255,.16); --m-btn:rgba(255,255,255,.09); --m-hover:rgba(255,255,255,.13); --m-hdr:rgba(255,255,255,.2); --m-accent:#3584e4; --m-accent-h:#4290e6; --m-sep:rgba(255,255,255,.25); --m-sep-on:#71a9ec; --m-trough:rgba(255,255,255,.1); --m-knob:#e8e8e8; --m-sw:rgba(255,255,255,.15); --m-swknob:#d7d7d8; --m-line:rgba(255,255,255,.1); --m-wall:#25252b;
+}
+.stage{min-height:700px}
+.mock{width:400px;display:flex;flex-direction:column;gap:10px}
+.cc{background:var(--m-pop);border:1px solid var(--m-border);border-radius:36px;padding:18px;font:14.67px/1.25 var(--f-ui);color:var(--m-fg);box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.lv{display:flex;align-items:center;gap:10px;height:36px;padding-left:6px}
+.trough{flex:1;height:4px;border-radius:2px;background:var(--m-trough);position:relative}
+.trough i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--m-accent)}
+.trough b{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--m-knob)}
+.lvarrow{width:36px;height:36px;border-radius:18px;display:grid;place-items:center;background:var(--m-btn)}
+.prow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.pill{height:48px;border-radius:24px;display:flex;overflow:hidden;background:var(--m-btn)}
+.pill.on{background:var(--m-accent)}
+.pmain{flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:0 12px 0 15px}
+.ptxt{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.ptxt b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ptxt small{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stage .parrow{width:38px;flex:none;display:grid;place-items:center;border-left:1px solid var(--m-sep);transition:background calc(100ms * var(--sp))}
+.stage .pill.on .parrow{border-left-color:var(--m-sep-on)}
+.stage .pill.on .parrow:hover{background:var(--m-accent-h)}
+.stage .pill:not(.on) .parrow:hover{background:rgba(255,255,255,.04)}
+.parrow .ms{transition:transform calc(150ms * var(--sp)) cubic-bezier(.5,1,.89,1)}
+.pill.open .parrow .ms{transform:rotate(90deg)}
+.slot{overflow:hidden}
+.slot-in{position:relative;padding-top:12px}
+.menu{background:var(--m-card);border-radius:24px;padding:12px 6px 6px}
+.menu.leaving{position:absolute;top:12px;left:0;right:0}
+.mh{display:flex;align-items:center;gap:12px;height:32px;margin:0 6px 12px}
+.chip{width:32px;height:32px;border-radius:16px;display:grid;place-items:center;background:var(--m-hdr)}
+.chip.on{background:var(--m-accent)}
+.mh b{font-size:17.33px;font-weight:700;flex:1}
+.mcount{font-size:12px;color:var(--m-dim);margin-right:12px}
+.mrow{height:36px;border-radius:12px;display:flex;align-items:center;gap:6px;padding:0 12px;cursor:pointer;transition:background calc(100ms * var(--sp))}
+.mrow:hover{background:var(--m-hover)}
+.mrow .mt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow.strong .mt{font-weight:700}
+.mnote{font-size:12px;color:var(--m-dim)}
+.msep{height:1px;background:var(--m-line);margin:6px 0}
+.sw{width:46px;height:26px;border-radius:13px;background:var(--m-sw);position:relative;flex:none}
+.sw.on{background:var(--m-accent)}
+.sw i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--m-swknob)}
+.sw.on i{left:23px;background:var(--m-fg)}
+.mslider{height:36px;display:flex;align-items:center;padding:0 12px}

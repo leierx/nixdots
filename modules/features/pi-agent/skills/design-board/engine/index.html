@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Design board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<link rel="stylesheet" href="engine.css">
+<link rel="stylesheet" href="board.css">
+<div class="wrap">
+  <section class="intro">
+    <div>
+      <span class="eyebrow" id="eyebrow"></span>
+      <h1 id="headline"></h1>
+      <p class="lede">Every mock-up below is live. Pick one option per question with the bar under it, add notes where you want a mix, then copy the prompt at the bottom and paste it back.</p>
+    </div>
+    <div class="decided">
+      <span class="eyebrow">Already decided</span>
+      <ul id="decided"></ul>
+    </div>
+  </section>
+  <nav class="scen" id="scen" aria-label="Scenario"></nav>
+  <div id="board"></div>
+  <section class="sec" id="s-together">
+    <div class="grouphead"><span class="eyebrow">All picks</span><h2>Together</h2></div>
+    <header style="margin-top:14px"><p>The current picks in one piece, with the recommendations filling the questions not answered yet.</p></header>
+    <div id="together"></div>
+    <label class="note" for="overall"><span>Overall notes</span><textarea id="overall" rows="3"></textarea></label>
+    <details class="out"><summary>Show the prompt text</summary><textarea id="prompt" readonly></textarea></details>
+    <p class="footnote" id="footnote"></p>
+  </section>
+</div>
+<div class="dock"><div class="in">
+  <span class="count" id="count"></span>
+  <span class="grp" id="next"></span>
+  <span class="copied" id="copied" aria-live="polite"></span>
+  <button class="copy" id="copy" type="button">Copy prompt</button>
+</div></div>
+<script src="engine.js"></script>
+<script src="board.js"></script>

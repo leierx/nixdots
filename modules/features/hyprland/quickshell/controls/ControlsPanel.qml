@@ -119,14 +119,12 @@ Popover {
             readonly property real gap: modelData.kind === "header" ? 0 : Theme.padding
             readonly property var keys: modelData.keys ?? []
             readonly property bool mine: menu && keys.includes(root.menu)
-            // The menu it shows, held while it fades and eases shut; the one it goes to, as one of its row's menus swaps for another.
+            // The menu it shows, held while it fades and eases shut.
             property string held: ""
-            property string next: ""
             // Where it is going, so a change of the open menu elsewhere leaves it be.
             property string target: ""
-            // GNOME's: the slot eases open, then the menu fades in; it fades out, then the slot eases shut, or as it fades when another row's opens; a swap fades out, then fades in as it eases to the new height.
+            // The slot's height and its menu's opacity as one, so it unfolds rather than growing and then fading (STYLE.md, Toggle menu).
             property real opened: !menu ? 1 : 0
-            property real shown: !menu ? 1 : 0
 
             function follow(): void {
               const want = section.mine ? root.menu : "";
@@ -134,21 +132,15 @@ Popover {
               section.target = want;
               opening.stop();
               closing.stop();
-              handing.stop();
               swapping.stop();
-              section.next = "";
               if (want === "") {
-                // Another row's menu easing open beside it, both move at once, so the card's height goes one way.
-                if (root.menu !== "") handing.start();
-                else closing.start();
-              } else if (section.opened < 1 || want === section.held) {
-                // Opening, or back mid-close: it grows to the menu it now holds.
-                section.held = want;
-                opening.start();
-              } else {
-                section.next = want;
-                swapping.start();
+                closing.start();
+                return;
               }
+              // Started first, so the slot's Behavior eases to the new menu's height.
+              if (section.held !== "" && want !== section.held && section.opened > 0) swapping.start();
+              section.held = want;
+              if (section.opened < 1) opening.start();
             }
 
             onMineChanged: if (menu) follow()
@@ -166,36 +158,18 @@ Popover {
               }
             }
 
-            SequentialAnimation {
+            NumberAnimation {
               id: opening
 
-              NumberAnimation {
-                target: section
-                property: "opened"
-                to: 1
-                duration: Theme.menuTime * (1 - section.opened)
-                easing.type: Easing.OutQuad
-              }
-
-              NumberAnimation {
-                target: section
-                property: "shown"
-                to: 1
-                duration: Theme.menuTime * (1 - section.shown)
-                easing.type: Easing.OutQuad
-              }
+              target: section
+              property: "opened"
+              to: 1
+              duration: Theme.menuTime * (1 - section.opened)
+              easing.type: Easing.OutQuad
             }
 
             SequentialAnimation {
               id: closing
-
-              NumberAnimation {
-                target: section
-                property: "shown"
-                to: 0
-                duration: Theme.menuTime * section.shown
-                easing.type: Easing.OutQuad
-              }
 
               NumberAnimation {
                 target: section
@@ -212,66 +186,11 @@ Popover {
               }
             }
 
-            SequentialAnimation {
-              id: handing
-
-              ParallelAnimation {
-                NumberAnimation {
-                  target: section
-                  property: "shown"
-                  to: 0
-                  duration: Theme.menuTime * section.shown
-                  easing.type: Easing.OutQuad
-                }
-
-                NumberAnimation {
-                  target: section
-                  property: "opened"
-                  to: 0
-                  duration: Theme.menuTime * section.opened
-                  easing.type: Easing.OutQuad
-                }
-              }
-
-              PropertyAction {
-                target: section
-                property: "held"
-                value: ""
-              }
-            }
-
-            SequentialAnimation {
+            // The slot's Behavior runs only while this does.
+            PauseAnimation {
               id: swapping
 
-              NumberAnimation {
-                target: section
-                property: "shown"
-                to: 0
-                duration: Theme.menuTime * section.shown
-                easing.type: Easing.OutQuad
-              }
-
-              ScriptAction {
-                script: {
-                  section.held = section.next;
-                  section.next = "";
-                }
-              }
-
-              // The slot eases to the new menu's height meanwhile; its Behavior runs only while this does.
-              ParallelAnimation {
-                NumberAnimation {
-                  target: section
-                  property: "shown"
-                  to: 1
-                  duration: Theme.menuTime
-                  easing.type: Easing.OutQuad
-                }
-
-                PauseAnimation {
-                  duration: Theme.menuTime
-                }
-              }
+              duration: Theme.menuTime
             }
 
             width: column.width
@@ -285,7 +204,7 @@ Popover {
               y: section.gap
               width: parent.width
               active: section.opened > 0
-              opacity: section.shown
+              opacity: section.opened
               sourceComponent: ({ header: headerSection, levels: levels, toggles: toggleRow, menu: menuSection, inuse: inUseSection })[section.modelData.kind]
             }
 

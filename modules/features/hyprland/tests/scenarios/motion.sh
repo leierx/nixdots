@@ -46,8 +46,27 @@ for menu in bluetooth wifi night sound; do
   qst motion stop > /dev/null
 done
 
-qst case "a toggle menu swapped for its row's other fades out and in over GNOME's 200 ms, not in a blink"
+qst case "a toggle menu fades in as its slot eases open, and out as it eases shut, in one motion"
 # alone: it times the fade frame by frame
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+qst stays '.panel == "controls:DP-1"' 0.4
+# The menu's heading fades over menuTime from the frame the card starts to move, not after it.
+together='(first(.moved[] | select(.label == "ControlsPanel/Card" and .property == "height")) | .start) as $moves
+  | any(.moved[]; .label == "ControlsPanel/QQuickText \"Wi-Fi\"" and .property == "opacity" and (.from < .to) == $in and .start - $moves < 50 and .end - .start >= 120)'
+qst motion start
+qst click ControlsPanel:menu:wifi
+qst stays '.controls.menu == "wifi"' 0.6
+qst motion stop | jq -e --argjson in true "$together" > /dev/null
+qst motion start
+qst click ControlsPanel:menu:wifi
+qst stays '.controls.menu == ""' 0.6
+qst motion stop | jq -e --argjson in false "$together" > /dev/null
+
+qst case "a toggle menu swapped for its row's other changes at once as the slot eases to its height"
+# alone: it times the slot frame by frame
+qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70 > /dev/null
+qst bluetooth add 11:22:33:44:55:02 Mouse input-mouse ok paired > /dev/null
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
 qst click ControlsPanel:menu:vpn
@@ -56,7 +75,6 @@ qst stays '.controls.menu == "vpn"' 0.5
 qst motion start
 qst click ControlsPanel:menu:bluetooth
 qst stays '.controls.menu == "bluetooth"' 0.6
-# An ease-out shows its last visible frame two thirds in: 100 ms showed for 60.
 qst motion stop | jq -e '
-  def faded(text; out): any(.moved[]; .label == "ControlsPanel/QQuickText \"\(text)\"" and .property == "opacity" and (.from > .to) == out and .end - .start >= 120);
-  faded("VPN"; true) and faded("Bluetooth Settings"; false)' > /dev/null
+  any(.moved[]; .label == "ControlsPanel/Card" and .property == "height" and .from < .to and .end - .start >= 120)
+  and all(.moved[]; .property != "opacity" or (.label | startswith("Tooltip/")))' > /dev/null

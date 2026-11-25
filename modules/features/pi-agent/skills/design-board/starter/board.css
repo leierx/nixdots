@@ -1,0 +1,8 @@
+/* The subject's real theme as --m-* tokens; mocks inside .stage use only these. Style buttons as `.stage .cls`, since `.stage button` resets them. */
+:root{
+  --m-bg:#0f0f12; --m-fg:#fff; --m-dim:rgba(255,255,255,.55); --m-btn:rgba(255,255,255,.10); --m-btn-h:rgba(255,255,255,.15); --m-accent:#3584e4; --m-wall:#25252b;
+}
+.demo{background:var(--m-bg);border-radius:15px;padding:12px;display:flex;gap:8px;align-items:center}
+.stage .demo button{height:34px;border-radius:17px;padding:0 14px;background:var(--m-btn);display:inline-flex;align-items:center;gap:8px;transition:background .15s}
+.stage .demo button:hover{background:var(--m-btn-h)}
+.stage .demo button.on{background:var(--m-accent)}
