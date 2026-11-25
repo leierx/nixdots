@@ -5,9 +5,9 @@ root: {
       fonts
       gtk
       hyprland
+      nautilus
       plymouth
       sound
-      thunar
     ];
 
     home-manager.users.${root.config.identity.username}.imports = [
@@ -21,9 +21,9 @@ root: {
     desktop-apps
     gtk
     hyprland
+    nautilus
     neovim
     qt
-    thunar
     wezterm
   ];
 }

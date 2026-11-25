@@ -37,6 +37,8 @@ in
 
       dconf.settings = {
         "org/gnome/desktop/interface".color-scheme = "prefer-dark";
+        # on Wayland GTK takes gtk-recent-files-enabled from here, over settings.ini
+        "org/gnome/desktop/privacy".remember-recent-files = false;
       };
 
       gtk = {

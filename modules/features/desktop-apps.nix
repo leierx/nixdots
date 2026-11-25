@@ -4,6 +4,7 @@
     let
       imageViewer = "org.gnome.Loupe.desktop";
       videoPlayer = "io.github.celluloid_player.Celluloid.desktop";
+      documentViewer = "org.gnome.Papers.desktop";
       images = [
         "image/apng"
         "image/avif"
@@ -68,12 +69,17 @@
         discord-canary
         celluloid
         loupe
+        papers
       ];
 
       # below ~/.config/mimeapps.list, which apps write to and an "Open With" choice still overrides
       xdg.dataFile."applications/mimeapps.list".text = lib.generators.toINI { } {
         "Default Applications" =
-          lib.genAttrs images (_: imageViewer) // lib.genAttrs videos (_: videoPlayer);
+          lib.genAttrs images (_: imageViewer)
+          // lib.genAttrs videos (_: videoPlayer)
+          // {
+            "application/pdf" = documentViewer;
+          };
       };
 
       dconf.settings."io/github/celluloid-player/celluloid" = {

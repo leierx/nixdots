@@ -158,7 +158,7 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | --- | --- | --- | --- |
 | `bluetooth.nix` | HM | `bluetooth` | `bluetui` when the host has `hardware.bluetooth` (`osConfig`); the control centre's Bluetooth Settings |
 | `boot.nix` | nixos | `boot`, `systemd-boot` | GRUB on EFI (themed); `systemd-boot` `mkForce`s GRUB off, conflicts by design, unused |
-| `desktop-apps.nix` | HM | `desktop-apps` | GUI apps every workstation gets; Loupe and Celluloid the default image viewer and video player through `~/.local/share/applications/mimeapps.list` (below the mutable `~/.config/mimeapps.list`, which apps write and "Open With" overrides); Celluloid on an mpv.conf (`hwdec=auto-safe`, its default is software; `profile=fast`) and graphics offload via dconf |
+| `desktop-apps.nix` | HM | `desktop-apps` | GUI apps every workstation gets; Loupe, Celluloid and Papers the default image viewer, video player and PDF viewer through `~/.local/share/applications/mimeapps.list` (below the mutable `~/.config/mimeapps.list`, which apps write and "Open With" overrides); Celluloid on an mpv.conf (`hwdec=auto-safe`, its default is software; `profile=fast`) and graphics offload via dconf |
 | `display-manager.nix` | nixos | `display-manager` | ly |
 | `doas.nix` | nixos | `doas` | doas replaces sudo (`doas-sudo-shim`); wheel `noPass`, no `keepenv`, passes only `LANG`, `NIX_PATH`, `SUDO_*` |
 | `documentation.nix` | nixos | `documentation` | NixOS manual, info pages and `/share/doc` off; man pages kept |
@@ -170,6 +170,7 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | `journald.nix` | nixos | `journald` | 90-day retention |
 | `locale.nix` | nixos | `locale` | `no`/`nodeadkeys`, `en_DK.UTF-8`, Europe/Oslo, timesyncd; hyprland reads xkb via `osConfig` |
 | `moonshine/` | nixos | `moonshine` | below |
+| `nautilus.nix` | nixos, HM | `nautilus` | Nautilus with Sushi (Space) and LocalSearch (full-text search; its `ConditionEnvironment=XDG_SESSION_CLASS=user` reset, as only gnome-session imports it); the GNOME module's thumbnailers (glycin, GStreamer, EPUB; PDF from desktop-apps' Papers); gvfs; `inode/directory`; xdg-desktop-portal-gnome for FileChooser alone, so GTK4's file dialogs are Nautilus (floating over a parent, tiled without one). HM: Create Link and Delete Permanently in its menus; Sushi floated and centred (GTK3, whose xdg-foreign v1 Hyprland lacks, so it comes without a parent; Sushi 51, GTK4, in 26.11), never taking the focus, not even as it asks on each file, so Nautilus' keys move it and Space closes it; it keeps the size it opened at for every next file, Sushi 51 too |
 | `neovim/` | nixos, HM | `neovim` (+ HM `neovim.outOfStorePath`) | below |
 | `network.nix` | nixos | `network` | resolved with DNS-over-TLS to Quad9, no plaintext fallback; NetworkManager (DHCP DNS ignored, stable MACs, wifi powersave off, no auto wired profile; connectivity checked against Arch's plaintext `nm-check.txt`, without which no captive portal is ever reported); nftables; no ping; rp-filter `loose` (WireGuard full tunnels) |
 | `nix.nix` | nixos | `nix` | GC, `auto-optimise-store`, flakes, cache, no global registry; `nixpkgs` registry/`NIX_PATH` from `nixpkgs.flake.source` |
@@ -181,7 +182,6 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | `podman.nix` | nixos | `podman` | docker compat, DNS on `podman0` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
 | `tmux/` | HM | `tmux` | below |
-| `thunar.nix` | nixos, HM | `thunar` | Thunar 4.20 (`pkgs.unstable` until 26.11) with thunar-volman and thunar-vcs-plugin, its daemon on `graphical-session.target` (no unit PATH, so apps open by name); plain gvfs (no GNOME Online Accounts, keyring, OneDrive), tumbler, xfconf; `inode/directory` in `/etc/xdg/mimeapps.list`. HM: xfconf (headerbar, no menubar, symbolic sidebar, path buttons, embedded image preview; volman automounts drives and media), `uca.xml` and `accels.scm` from Nix, so the actions dialog's and shortcut editor's changes do not last: Open Terminal Here (F4), Open in Neovim, Copy Path (Ctrl+Shift+C), Open as Root (`admin://`), Preview (Space, the default app), Extract Here and Compress (ouch, a notification on failure) |
 | `users.nix` | nixos, HM | `users` | user, groups, hashed password, zsh + starship (oh-my-zsh runs compinit), root locked |
 | `wezterm.nix` | HM | `wezterm` | "Adwaita Darker" from the palette, Hack, notifications only while unfocused |
 | `xdg.nix` | HM | `xdg-user-dirs` | XDG user dirs, created |
@@ -274,7 +274,7 @@ is on PATH.
 
 Files: `default.nix` (nixos + HM base), `bindings.nix`, `rules.nix`,
 `hypridle.nix`, `hyprlock.nix`, `hyprmoncfg.nix`, `hyprtoolkit.nix`,
-`plugins.nix`, `quickshell.nix`, `assets/`, `scripts/`, `tests/`,
+`plugins.nix`, `quickshell.nix`, `satty.nix`, `assets/`, `scripts/`, `tests/`,
 `quickshell/`. The HM half reads `osConfig` (compositor package, xkb,
 fprintd, NetworkManager), so it needs the NixOS half.
 
@@ -332,13 +332,20 @@ fprintd, NetworkManager), so it needs the NixOS half.
   loses logind's idle inhibitor to a stray ScreenSaver `UnInhibit` and an app
   disconnect, so Caffeine stopped keeping the lock off. Drop the pin when
   nixpkgs moves to 26.11.
-- **Screenshots**: one `writeShellApplication` (`scripts/freeze-region.sh`,
-  `copy|save`), ending in a transient, silent notification from "Screenshot"
-  with the shot as picture (`file://`) and `accessories-screenshot` badge
-  (`-n`). Copies share stack tag `screenshot` (picture in
-  `$XDG_RUNTIME_DIR/screenshots` until the next); saves are untagged with Open
-  and Show in Folder. Escape in slurp sends nothing; a failure is a critical
-  "Screenshot Failed".
+- **Screenshots**: one `writeShellApplication` (`scripts/freeze-region.sh`),
+  the screen frozen while slurp selects. `copy` (SUPER+Q, the control
+  centre) puts the region on the clipboard, silently; `edit` (SUPER+SHIFT+Q)
+  opens it in Satty (`satty.nix`; no parent, so a window rule floats it at
+  75 % of the monitor, centred, dimming the rest and keeping the focus; the
+  shot is fitted inside, small ones scaled up): rectangles in Adwaita red to
+  start, the palette Adwaita's, toolbars opaque at twice GTK's size through
+  the user's GTK4 `gtk.css` (`window.root`, Satty's alone; its own
+  `overrides.css` loads below the GTK theme, which sets button sizes); Enter
+  copies, Ctrl+S saves to `~/Pictures/screenshots` (made by the script, as
+  Satty makes no directory), and Satty says so itself. It takes about a
+  second to open (GTK4 and libadwaita, then its GL canvas); Flameshot 13
+  freezes only the first monitor under Hyprland. Escape in slurp sends nothing; a failure is a critical "Screenshot
+  Failed".
 
 ## The Quickshell shell (`hyprland/quickshell/`)
 
@@ -1068,8 +1075,8 @@ What Hyprland does that tests run into:
 - **Profiles**: `base` (nixos: `boot doas documentation git home-manager
   journald locale network neovim nix nixpkgs packages podman unstable-nixpkgs
   users`; HM: `git pi-agent tmux users xdg-user-dirs zsh`), `workstation`
-  (nixos: `display-manager fonts gtk hyprland plymouth sound thunar`; HM:
-  `bluetooth cursor desktop-apps gtk hyprland neovim qt thunar wezterm`). The NixOS half pulls in
+  (nixos: `display-manager fonts gtk hyprland nautilus plymouth sound`; HM:
+  `bluetooth cursor desktop-apps gtk hyprland nautilus neovim qt wezterm`). The NixOS half pulls in
   the HM half.
 - **Theme** (`modules/theme/`): `palette.nix` declares `palettes`; `fonts`
   nixos, `gtk` both, `cursor` and `qt` HM. GTK4 recoloured through libadwaita's

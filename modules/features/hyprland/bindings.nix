@@ -53,10 +53,10 @@ root: {
           wl-clipboard
           coreutils
           libnotify
-          xdg-utils
+          config.programs.satty.package
         ];
         text = ''
-          screenshot_dir=${lib.escapeShellArg "${config.xdg.userDirs.pictures}/screenshots"}
+          screenshot_dir=${lib.escapeShellArg (dirOf config.programs.satty.settings.general.output-filename)}
         ''
         + builtins.readFile ./scripts/freeze-region.sh;
       };
@@ -151,8 +151,8 @@ root: {
           (mkBind {
             key = "Q";
             modifiers = [ "SHIFT" ];
-            dispatcher = exec "${lib.getExe freezeRegion} save";
-            desc = "Screenshot region to file";
+            dispatcher = exec "${lib.getExe freezeRegion} edit";
+            desc = "Screenshot region to Satty";
           })
         ]
         ++ lib.concatMap (

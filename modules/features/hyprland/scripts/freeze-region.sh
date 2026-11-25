@@ -1,19 +1,15 @@
 # $screenshot_dir is set by the nix wrapper
 mode=${1:-}
 case "$mode" in
-copy | save) ;;
+copy | edit) ;;
 *)
-  echo "usage: freeze-region copy|save" >&2
+  echo "usage: freeze-region copy|edit" >&2
   exit 2
   ;;
 esac
 
-notify() {
-  notify-send -a Screenshot -n accessories-screenshot "$@"
-}
-
 fail() {
-  notify -u critical "Screenshot Failed" "$1"
+  notify-send -a Screenshot -n accessories-screenshot -u critical "Screenshot Failed" "$1"
   exit 1
 }
 
@@ -38,31 +34,17 @@ done
 g=$(slurp -d) || exit 0
 [ -n "$g" ] || exit 0
 
-if [ "$mode" = copy ]; then
-  # The card's picture, for as long as the session; a newer copy's card replaces it.
-  dir="$XDG_RUNTIME_DIR/screenshots"
-  mkdir -p "$dir"
-  rm -f "$dir"/copy-*.png
-  file="$dir/copy-$(date +%Y%m%d-%H%M%S)-$$.png"
-else
-  mkdir -p "$screenshot_dir" || fail "Could not make $screenshot_dir"
-  file="$screenshot_dir/$(date +%Y%m%d-%H%M%S)-$$.png"
-fi
-
-err=$(grim -g "$g" "$file" 2>&1) || fail "${err:-grim failed}"
+# ppm for Satty: no encoding to wait on
+if [ "$mode" = edit ]; then type=ppm; else type=png; fi
+file="$tmpdir/shot.$type"
+err=$(grim -t "$type" -g "$g" "$file" 2>&1) || fail "${err:-grim failed}"
 kill "$wp" 2>/dev/null || true
 
-if [ "$mode" = copy ]; then
+if [ "$mode" = edit ]; then
+  # Satty saves there, and makes no directory
+  mkdir -p "$screenshot_dir" || fail "Could not make $screenshot_dir"
+  satty --filename "$file" || fail "Satty failed"
+else
   # Its server keeps any pipe open, so its error is not captured.
   wl-copy --type image/png < "$file" || fail "Could not copy it to the clipboard"
-  notify -h boolean:transient:true -h boolean:suppress-sound:true -i "file://$file" -h string:x-canonical-private-synchronous:screenshot "Screenshot Copied to Clipboard"
-else
-  # Each save keeps a card of its own, with its own file to open; the actions wait in the background.
-  (
-    action=$(notify -h boolean:transient:true -h boolean:suppress-sound:true -i "file://$file" -A default=Open -A open=Open -A "folder=Show in Folder" "Screenshot Saved" "${file/#"$HOME"/\~}") || exit 0
-    case "$action" in
-    default | open) xdg-open "$file" ;;
-    folder) xdg-open "$(dirname "$file")" ;;
-    esac
-  ) > /dev/null 2>&1 &
 fi
