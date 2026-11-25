@@ -264,6 +264,10 @@ machine, then `claude-bridge/...` models (never `anthropic/...`, which is pi's
 own provider and does not use the subscription). Skill boards are plain
 `file://` pages in `~/.local/share/design-board/`, so Copy falls back to
 selecting the textarea there (`navigator.clipboard` needs a secure context).
+A board is scaffolded by `new-board.sh` (the engine copied, only `board.js` and
+`board.css` written per round) and checked by `check.mjs`: headless Chromium
+over the DevTools protocol in real time, `nix shell nixpkgs#chromium` when none
+is on PATH.
 
 ### `hyprland/`
 
@@ -675,8 +679,9 @@ icon theme, hostname, uptime).
   Privacy already skips as passive); no mic mute; dim but for the arrow
   with a microphone and no output; each backlight), the `Pill`s
   the machine has (`Controls.toggles`), a `Menu` under the row that opens it (one slot
-  per row, so its menus swap in place, fading in as the slot eases to the new
-  height; a menu moving to another row eases shut as fast as the other opens,
+  per row, so its menus swap in place at once, the slot easing to the new
+  height; a menu fades as its slot eases open or shut, the user's pick over
+  GNOME's two steps; one moving to another row eases shut as fast as the other opens,
   so the card moves one way; a new menu comes at its full height, rows arriving
   only once it is drawn; rows keep the order they came in while it is open),
   `InUse` (`Pill`s raising the app's window) while something records. Backends are singletons: `Net`
