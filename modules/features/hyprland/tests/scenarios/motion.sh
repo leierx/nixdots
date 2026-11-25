@@ -45,3 +45,18 @@ for menu in bluetooth wifi night sound; do
   qst stays ".controls.menu == \"$menu\"" 0.6
   qst motion stop > /dev/null
 done
+
+qst case "a toggle menu swapped for its row's other fades out and in over GNOME's 200 ms, not in a blink"
+# alone: it times the fade frame by frame
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+qst click ControlsPanel:menu:vpn
+qst wait '.controls.menu == "vpn"'
+qst stays '.controls.menu == "vpn"' 0.5
+qst motion start
+qst click ControlsPanel:menu:bluetooth
+qst stays '.controls.menu == "bluetooth"' 0.6
+# An ease-out shows its last visible frame two thirds in: 100 ms showed for 60.
+qst motion stop | jq -e '
+  def faded(text; out): any(.moved[]; .label == "ControlsPanel/QQuickText \"\(text)\"" and .property == "opacity" and (.from > .to) == out and .end - .start >= 120);
+  faded("VPN"; true) and faded("Bluetooth Settings"; false)' > /dev/null

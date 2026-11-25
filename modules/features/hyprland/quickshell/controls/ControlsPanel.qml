@@ -173,7 +173,7 @@ Popover {
                 target: section
                 property: "opened"
                 to: 1
-                duration: Theme.popupTime
+                duration: Theme.menuTime * (1 - section.opened)
                 easing.type: Easing.OutQuad
               }
 
@@ -181,7 +181,7 @@ Popover {
                 target: section
                 property: "shown"
                 to: 1
-                duration: Theme.quickTime
+                duration: Theme.menuTime * (1 - section.shown)
                 easing.type: Easing.OutQuad
               }
             }
@@ -193,7 +193,7 @@ Popover {
                 target: section
                 property: "shown"
                 to: 0
-                duration: Theme.quickTime
+                duration: Theme.menuTime * section.shown
                 easing.type: Easing.OutQuad
               }
 
@@ -201,7 +201,7 @@ Popover {
                 target: section
                 property: "opened"
                 to: 0
-                duration: Theme.popupTime
+                duration: Theme.menuTime * section.opened
                 easing.type: Easing.OutQuad
               }
 
@@ -220,7 +220,7 @@ Popover {
                   target: section
                   property: "shown"
                   to: 0
-                  duration: Theme.quickTime
+                  duration: Theme.menuTime * section.shown
                   easing.type: Easing.OutQuad
                 }
 
@@ -228,7 +228,7 @@ Popover {
                   target: section
                   property: "opened"
                   to: 0
-                  duration: Theme.popupTime
+                  duration: Theme.menuTime * section.opened
                   easing.type: Easing.OutQuad
                 }
               }
@@ -247,7 +247,7 @@ Popover {
                 target: section
                 property: "shown"
                 to: 0
-                duration: Theme.quickTime
+                duration: Theme.menuTime * section.shown
                 easing.type: Easing.OutQuad
               }
 
@@ -264,12 +264,12 @@ Popover {
                   target: section
                   property: "shown"
                   to: 1
-                  duration: Theme.quickTime
+                  duration: Theme.menuTime
                   easing.type: Easing.OutQuad
                 }
 
                 PauseAnimation {
-                  duration: Theme.popupTime
+                  duration: Theme.menuTime
                 }
               }
             }
@@ -323,7 +323,7 @@ Popover {
                   enabled: swapping.running
 
                   NumberAnimation {
-                    duration: Theme.popupTime
+                    duration: Theme.menuTime
                     easing.type: Easing.OutQuad
                   }
                 }

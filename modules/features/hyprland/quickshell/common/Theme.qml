@@ -124,6 +124,7 @@ Singleton {
   readonly property int popupTime: 150
   readonly property int bannerTime: 200
   readonly property int quickTime: 100
+  readonly property int menuTime: 200
   readonly property int panelButtonTime: 150
   readonly property int levelTime: 100
   readonly property int settle: 400
