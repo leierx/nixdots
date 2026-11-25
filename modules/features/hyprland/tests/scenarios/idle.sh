@@ -6,6 +6,8 @@ dims() { jq -e "any(.moved[]; .label | startswith(\"Idle/\")) and all(.moved[] |
 
 qst case "the dim darkens every screen steadily to its depth and stays there"
 # alone: a frame dropped on a loaded machine reads as a jump
+# The status button settled first: a symbol coming in moves the rest.
+qst wait 'all(.status[]; .glyphs | index("vpn"))'
 qst motion start
 qst ipc idle fade 1 0.4
 qst wait "$(shown 2)"

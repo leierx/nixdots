@@ -20,14 +20,14 @@ Singleton {
   property bool running: false
   readonly property bool present: running || devices.length > 0
   readonly property var devices: Networking.devices.values
-  // The first card; a second is rare enough to leave to Network Settings.
-  readonly property var wifi: devices.find(device => device.type === DeviceType.Wifi) ?? null
+  readonly property var wifis: devices.filter(device => device.type === DeviceType.Wifi)
   readonly property var wired: devices.filter(device => device.type === DeviceType.Wired)
   readonly property bool wifiOn: Networking.wifiEnabled && Networking.wifiHardwareEnabled
   readonly property bool switchedOff: !Networking.wifiHardwareEnabled
   // While someone looks at the list: a scan every ten seconds costs power.
   property bool scanning: false
-  readonly property var networks: wifi && wifiOn ? wifi.networks.values : []
+  // Every card's, each network its card's own.
+  readonly property var networks: wifiOn ? [].concat(...wifis.map(device => device.networks.values)) : []
   readonly property var connected: networks.find(network => network.connected) ?? null
   readonly property bool wiredUp: wired.some(device => device.connected)
   readonly property bool portal: Networking.connectivity === NetworkConnectivity.Portal
@@ -40,9 +40,12 @@ Singleton {
   // The network it was relaxed for: on another the flag is stale, as NetworkManager dropped the change.
   property alias relaxedFor: saved.relaxedFor
 
-  // The network a password is asked for, why it is asked again, and those this shell saved a profile for that never connected.
+  // The network a password is asked for, on which card, why it is asked again, and those this shell saved a profile for that never connected.
   property string asking: ""
+  property string askingOn: ""
   property string askError: ""
+  // The hidden network asked for: { ssid, password, error, busy }, until it connects or is given up.
+  property var hidden: null
   property var created: []
   // The network a password was just sent for, until NetworkManager says how it went.
   property string trying: ""
@@ -59,7 +62,7 @@ Singleton {
 
   readonly property string wifiGlyph: !wifiOn ? Symbols.wifiOff : connected && portal ? Symbols.wifiPortal : connected && limited ? Symbols.wifiBad : connected ? signalGlyph(connected.signalStrength) : Symbols.wifi0
   // What the bar shows: the link in use, wired before Wi-Fi.
-  readonly property string glyph: !present ? "" : wiredUp ? Symbols.wired : wifi ? wifiGlyph : ""
+  readonly property string glyph: !present ? "" : wiredUp ? Symbols.wired : wifis.length > 0 ? wifiGlyph : ""
 
   function signalGlyph(strength: real): string {
     return strength > 0.75 ? Symbols.wifi4 : strength > 0.5 ? Symbols.wifi3 : strength > 0.25 ? Symbols.wifi2 : strength > 0.05 ? Symbols.wifi1 : Symbols.wifi0;
@@ -78,8 +81,10 @@ Singleton {
     return [WifiSecurityType.Wpa2Eap, WifiSecurityType.WpaEap, WifiSecurityType.Wpa3SuiteB192, WifiSecurityType.Leap, WifiSecurityType.DynamicWep].includes(network.security);
   }
 
-  function find(ssid: string): var {
-    return root.networks.find(network => network.name === ssid) ?? null;
+  // On the card named, if it sees it.
+  function find(ssid: string, card: string): var {
+    const all = root.networks.filter(network => network.name === ssid);
+    return all.find(network => network.device?.name === card) ?? all[0] ?? null;
   }
 
   function toggleWifi(): void {
@@ -105,18 +110,19 @@ Singleton {
       root.attempt = ssid;
       network.connect();
     } else {
-      root.ask(ssid);
+      root.ask(ssid, network.device?.name ?? "");
     }
   }
 
-  function ask(ssid: string): void {
+  function ask(ssid: string, card: string): void {
     root.cancel();
     root.asking = ssid;
+    root.askingOn = card;
     root.askError = "";
   }
 
   function submit(ssid: string, password: string): void {
-    const network = root.find(ssid);
+    const network = root.find(ssid, root.askingOn);
     if (!network) {
       root.askError = "Out of range";
       return;
@@ -130,13 +136,59 @@ Singleton {
 
   // A profile saved for a password that never worked goes again, as nothing else would clean it up; one still being tried waits for how it went.
   function cancel(): void {
-    const ssid = root.asking;
+    const ssids = [root.asking, root.hidden?.ssid ?? ""];
     root.asking = "";
+    root.askingOn = "";
     root.askError = "";
-    if (!root.created.includes(ssid) || root.trying === ssid) return;
-    root.created = root.created.filter(other => other !== ssid);
-    const network = root.find(ssid);
-    if (network && !network.connected) network.forget();
+    root.hidden = null;
+    for (const ssid of ssids) {
+      if (ssid === "" || !root.created.includes(ssid) || root.trying === ssid) continue;
+      root.created = root.created.filter(other => other !== ssid);
+      const network = root.find(ssid, "");
+      if (network && !network.connected) network.forget();
+    }
+  }
+
+  function askHidden(): void {
+    root.cancel();
+    root.hidden = { ssid: "", password: "", error: "", busy: false };
+  }
+
+  // A profile first, as NetworkManager only joins a network it cannot see from one marked hidden; the password goes over D-Bus once it is there, never on a command line.
+  function connectHidden(ssid: string, password: string): void {
+    if (!root.hidden || root.hidden.busy) return;
+    root.setFailure(ssid, "");
+    // 802.11's limit, in bytes.
+    if (encodeURIComponent(ssid).replace(/%[0-9A-F]{2}/g, "x").length > 32) {
+      root.hidden = { ssid, password, error: "Name too long", busy: false };
+      return;
+    }
+    root.hidden = { ssid, password, error: "", busy: true };
+    if (root.find(ssid, "")?.known) {
+      root.joinHidden();
+    } else {
+      addHidden.ssid = ssid;
+      addHidden.running = true;
+    }
+  }
+
+  function joinHidden(): void {
+    const ssid = root.hidden?.ssid ?? "";
+    const network = root.hidden?.busy && root.trying !== ssid ? root.find(ssid, "") : null;
+    if (!network?.known) return;
+    root.attempt = ssid;
+    root.trying = ssid;
+    if (root.hidden.password !== "") network.connectWithPsk(root.hidden.password);
+    else network.connect();
+  }
+
+  onNetworksChanged: if (root.hidden?.busy && !addHidden.running) Qt.callLater(root.joinHidden)
+  // Gone mid-attempt, NetworkManager will never say how it went.
+  onPresentChanged: {
+    if (root.present) return;
+    root.attempt = "";
+    root.trying = "";
+    if (root.hidden?.busy) root.hidden = Object.assign({}, root.hidden, { busy: false });
   }
 
   function setFailure(ssid: string, message: string): void {
@@ -152,6 +204,15 @@ Singleton {
     if (root.attempt === ssid) root.attempt = "";
     if (root.trying === ssid) root.trying = "";
     const noSecrets = reason === ConnectionFailReason.NoSecrets && root.secured(network) && !root.enterprise(network);
+    // Asked for by name: the prompt says why, with what was typed, and the profile goes until it works.
+    if (root.hidden?.ssid === ssid) {
+      if (root.created.includes(ssid)) {
+        root.created = root.created.filter(other => other !== ssid);
+        network.forget();
+      }
+      root.hidden = Object.assign({}, root.hidden, { busy: false, error: noSecrets ? "Wrong password" : reason === ConnectionFailReason.WifiNetworkLost ? "Not found" : "Couldn't connect" });
+      return;
+    }
     // Its prompt shut while it was tried: nobody is there to ask again.
     if (root.asking !== ssid && root.created.includes(ssid)) {
       root.created = root.created.filter(other => other !== ssid);
@@ -162,6 +223,7 @@ Singleton {
     if (noSecrets) {
       root.askError = root.asking === ssid || root.created.includes(ssid) ? "Wrong password" : "Password needed";
       root.asking = ssid;
+      root.askingOn = network.device?.name ?? "";
     } else {
       root.setFailure(ssid, reason === ConnectionFailReason.WifiNetworkLost ? "Out of range" : "Couldn't connect");
     }
@@ -180,7 +242,7 @@ Singleton {
   function signIn(): void {
     Panels.close();
     // Seen as a portal, its check resolved: DNS works as it is.
-    if (root.portal || root.relaxed !== "" || !root.wifi) root.openPortal();
+    if (root.portal || root.relaxed !== "" || !root.connected) root.openPortal();
     else relax.running = true;
   }
 
@@ -245,11 +307,18 @@ Singleton {
     return out;
   }
 
-  Binding {
-    target: root.wifi
-    property: "scannerEnabled"
-    value: root.scanning
-    when: root.wifi !== null
+  Instantiator {
+    model: ScriptModel {
+      values: root.wifis
+    }
+
+    Binding {
+      required property var modelData
+
+      target: modelData
+      property: "scannerEnabled"
+      value: root.scanning
+    }
   }
 
   Instantiator {
@@ -275,8 +344,10 @@ Singleton {
         root.setFailure(modelData.name, "");
         if (root.asking === modelData.name) {
           root.asking = "";
+          root.askingOn = "";
           root.askError = "";
         }
+        if (root.hidden?.ssid === modelData.name) root.hidden = null;
       }
     }
   }
@@ -340,14 +411,38 @@ Singleton {
     id: relax
 
     name: "Signing In to Network"
-    command: ["nmcli", "device", "modify", root.wifi?.name ?? "", "ipv4.ignore-auto-dns", "no", "ipv6.ignore-auto-dns", "no", "connection.dns-over-tls", "no"]
+    command: ["nmcli", "device", "modify", root.connected?.device?.name ?? "", "ipv4.ignore-auto-dns", "no", "ipv6.ignore-auto-dns", "no", "connection.dns-over-tls", "no"]
     environment: root.nmcliEnvironment
     onDone: {
-      root.relaxed = root.wifi?.name ?? "";
+      root.relaxed = root.connected?.device?.name ?? "";
       root.relaxedFor = root.connected?.name ?? "";
       Networking.checkConnectivity();
       root.openPortal();
     }
+  }
+
+  // WPA's pre-shared key, or open; on no card in particular, as the profile goes to whichever finds it.
+  Command {
+    id: addHidden
+
+    // What it was started for, as the prompt may go while it runs.
+    property string ssid: ""
+
+    name: "Hidden network"
+    quiet: true
+    command: ["nmcli", "connection", "add", "type", "wifi", "con-name", ssid, "ssid", ssid, "802-11-wireless.hidden", "yes", ...(root.hidden?.password ? ["wifi-sec.key-mgmt", "wpa-psk"] : [])]
+    environment: root.nmcliEnvironment
+    onDone: output => {
+      if (root.hidden?.ssid !== addHidden.ssid) {
+        // Given up on meanwhile: nothing will connect with it.
+        const uuid = /\(([0-9a-f-]{36})\)/.exec(output)?.[1];
+        if (uuid) Quickshell.execDetached(["nmcli", "connection", "delete", "uuid", uuid]);
+        return;
+      }
+      if (!root.created.includes(addHidden.ssid)) root.created = [...root.created, addHidden.ssid];
+      root.joinHidden();
+    }
+    onFailed: if (root.hidden?.ssid === addHidden.ssid) root.hidden = Object.assign({}, root.hidden, { busy: false, error: "Couldn't connect" })
   }
 
   // Online, the saved profile's DNS again; failing means the connection, and the change with it, has gone.

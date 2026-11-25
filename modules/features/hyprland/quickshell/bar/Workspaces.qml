@@ -138,10 +138,6 @@ Item {
       // On press, which feels quicker than a click.
       onPressed: root.go(button.target)
     }
-
-    TooltipArea {
-      text: `Workspace ${button.label}`
-    }
   }
 
   Row {

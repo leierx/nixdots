@@ -1,0 +1,127 @@
+diff -ru a/src/bluetooth/bluez.cpp b/src/bluetooth/bluez.cpp
+--- a/src/bluetooth/bluez.cpp
++++ b/src/bluetooth/bluez.cpp
+@@ -58,12 +58,38 @@
+ 	    &Bluez::onInterfacesRemoved
+ 	);
+ 
++	// BlueZ starting later, or again, is read anew; gone, it takes what it had with it.
++	QObject::connect(&this->serviceWatcher, &QDBusServiceWatcher::serviceRegistered, this, &Bluez::onServiceRegistered);
++	QObject::connect(&this->serviceWatcher, &QDBusServiceWatcher::serviceUnregistered, this, &Bluez::onServiceUnregistered);
++	this->serviceWatcher.setWatchMode(
++	    QDBusServiceWatcher::WatchForRegistration | QDBusServiceWatcher::WatchForUnregistration
++	);
++	this->serviceWatcher.addWatchedService("org.bluez");
++	this->serviceWatcher.setConnection(bus);
++
+ 	if (!this->objectManager->setInterface("org.bluez", "/", bus)) {
+ 		qCDebug(logBluetooth) << "BlueZ is not running. Bluetooth integration will not work.";
+ 		return;
+ 	}
+ }
+ 
++void Bluez::onServiceRegistered() {
++	qCDebug(logBluetooth) << "BlueZ service registered";
++	this->objectManager->setInterface("org.bluez", "/", QDBusConnection::systemBus());
++}
++
++void Bluez::onServiceUnregistered() {
++	qCDebug(logBluetooth) << "BlueZ service unregistered";
++
++	for (const auto& path: this->mDeviceMap.keys()) {
++		this->onInterfacesRemoved(QDBusObjectPath(path), {"org.bluez.Device1"});
++	}
++
++	for (const auto& path: this->mAdapterMap.keys()) {
++		this->onInterfacesRemoved(QDBusObjectPath(path), {"org.bluez.Adapter1"});
++	}
++}
++
+ void Bluez::onInterfacesAdded(
+     const QDBusObjectPath& path,
+     const DBusObjectManagerInterfaces& interfaces
+diff -ru a/src/bluetooth/bluez.hpp b/src/bluetooth/bluez.hpp
+--- a/src/bluetooth/bluez.hpp
++++ b/src/bluetooth/bluez.hpp
+@@ -2,6 +2,7 @@
+ 
+ #include <qcontainerfwd.h>
+ #include <qhash.h>
++#include <qdbusservicewatcher.h>
+ #include <qobject.h>
+ #include <qproperty.h>
+ #include <qqmlintegration.h>
+@@ -38,12 +39,15 @@
+ 	onInterfacesAdded(const QDBusObjectPath& path, const DBusObjectManagerInterfaces& interfaces);
+ 	void onInterfacesRemoved(const QDBusObjectPath& path, const QStringList& interfaces);
+ 	void updateDefaultAdapter();
++	void onServiceRegistered();
++	void onServiceUnregistered();
+ 
+ private:
+ 	explicit Bluez();
+ 	void init();
+ 
+ 	qs::dbus::DBusObjectManager* objectManager = nullptr;
++	QDBusServiceWatcher serviceWatcher;
+ 	QHash<QString, BluetoothAdapter*> mAdapterMap;
+ 	QHash<QString, BluetoothDevice*> mDeviceMap;
+ 	ObjectModel<BluetoothAdapter> mAdapters {this};
+diff -ru a/src/network/nm/backend.cpp b/src/network/nm/backend.cpp
+--- a/src/network/nm/backend.cpp
++++ b/src/network/nm/backend.cpp
+@@ -116,7 +116,7 @@
+ }
+ 
+ void NetworkManager::registerDevice(const QString& path) {
+-	if (this->mDevices.contains(path)) {
++	if (this->mDevices.contains(path) || this->mPendingDevices.contains(path)) {
+ 		qCDebug(logNetworkManager) << "Skipping duplicate registration of device" << path;
+ 		return;
+ 	}
+@@ -127,8 +127,16 @@
+ 	    QDBusConnection::systemBus(),
+ 	    this
+ 	);
++	this->mPendingDevices.insert(path, temp);
+ 
+ 	auto callback = [this, path, temp](uint value, const QDBusError& error) {
++		// Removed, or the service gone, while its type was read.
++		if (this->mPendingDevices.value(path) != temp) {
++			temp->deleteLater();
++			return;
++		}
++		this->mPendingDevices.remove(path);
++
+ 		if (error.isValid()) {
+ 			qCWarning(logNetworkManager) << "Failed to get device type:" << error;
+ 		} else {
+@@ -172,6 +180,7 @@
+ }
+ 
+ void NetworkManager::onDevicePathRemoved(const QDBusObjectPath& path) {
++	if (this->mPendingDevices.remove(path.path())) return;
+ 	auto iter = this->mDevices.find(path.path());
+ 	if (iter == this->mDevices.end()) {
+ 		qCWarning(logNetworkManager) << "Sent removal signal for" << path.path()
+@@ -246,6 +255,8 @@
+ void NetworkManager::onServiceUnregistered() {
+ 	qCDebug(logNetworkManager) << "NetworkManager service unregistered";
+ 
++	this->mPendingDevices.clear();
++
+ 	// Clear all remaining devices
+ 	const auto devices = this->mDevices;
+ 	this->mDevices.clear();
+diff -ru a/src/network/nm/backend.hpp b/src/network/nm/backend.hpp
+--- a/src/network/nm/backend.hpp
++++ b/src/network/nm/backend.hpp
+@@ -74,6 +74,8 @@
+ 	void registerDevice(const QString& path);
+ 
+ 	QHash<QString, NMDevice*> mDevices;
++	// Paths whose type is being read, by the proxy reading it: a DeviceAdded and GetAllDevices naming one path both register it, as a service starting does.
++	QHash<QString, QObject*> mPendingDevices;
+ 
+ 	// clang-format off
+ 	Q_OBJECT_BINDABLE_PROPERTY(NetworkManager, bool, bWifiEnabled, &NetworkManager::wifiEnabledChanged);

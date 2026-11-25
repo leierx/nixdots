@@ -134,7 +134,7 @@ qst click
 qst wait '.tooltip == null and .volume.muted'
 qst stays '.tooltip == null' 0.8
 
-qst case "every control on the bar names itself in a tooltip"
+qst case "every control on the bar names itself in a tooltip, but a workspace, whose number is its name"
 qst tray > /dev/null
 qst wait '.tray | length > 0'
 hover() {
@@ -146,7 +146,9 @@ hover() {
 }
 read -r status _ < <(qst areas 'BarWindow' | awk -F'\t' '$6 == "true" { x = $1 } END { print x }')
 read -r first _ < <(qst areas 'BarWindow' | awk -F'\t' '$6 == "true"' | sort -n | head -1)
-hover "$first" "Workspace 1"
+qst pointer "$first" 17
+qst pointer $((first + 1)) 18
+qst stays '.tooltip == null' 0.8
 hover 960 "Notifications and Calendar"
 hover "$status" "Quick Settings"
 # A tray item names itself once the tray is out.

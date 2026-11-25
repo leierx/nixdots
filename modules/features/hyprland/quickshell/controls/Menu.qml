@@ -28,20 +28,29 @@ Rectangle {
 
   function rows(key: string): var {
     if (key === "wifi") {
+      // GNOME's: with several cards, each card's networks under its name.
+      const several = Net.wifis.length > 1;
       const rank = network => network.connected ? 3 : network.name === Net.asking || network.stateChanging ? 2 : network.known ? 1 : 0;
       // By the steps the glyph shows, not the strength itself, so a rescan moves a row only when its glyph changes.
       const steps = network => [0.05, 0.25, 0.5, 0.75].filter(step => network.signalStrength > step).length;
-      const sorted = [...Net.networks].sort((a, b) => rank(b) - rank(a) || steps(b) - steps(a) || a.name.localeCompare(b.name, undefined, { numeric: true }));
-      const list = sorted.map(network => {
-        const ssid = network.name;
-        const asking = ssid === Net.asking;
-        const failure = Net.failures[ssid] ?? "";
-        const state = network.state === ConnectionState.Connecting ? "Connecting…" : network.state === ConnectionState.Disconnecting ? "Disconnecting…" : network.connected ? "" : Net.enterprise(network) && !network.known ? "Enterprise" : network.known ? "Saved" : "";
-        return { key: ssid, glyph: Net.signalGlyph(network.signalStrength), title: Net.name(network) || "Hidden Network", lock: Net.secured(network), current: network.connected, note: failure || (asking ? Net.askError : "") || state, bad: failure !== "" || asking && Net.askError !== "", asking, action: network.connected && Net.signInOffered ? "Sign In" : "", target: network };
-      });
+      const list = [];
+      for (const card of Net.wifis) {
+        const sorted = Net.networks.filter(network => network.device === card).sort((a, b) => rank(b) - rank(a) || steps(b) - steps(a) || a.name.localeCompare(b.name, undefined, { numeric: true }));
+        const rows = sorted.map(network => {
+          const ssid = network.name;
+          const asking = ssid === Net.asking && (!several || card.name === Net.askingOn);
+          const failure = Net.failures[ssid] ?? "";
+          const state = network.state === ConnectionState.Connecting ? "Connecting…" : network.state === ConnectionState.Disconnecting ? "Disconnecting…" : network.connected ? "" : Net.enterprise(network) && !network.known ? "Enterprise" : network.known ? "Saved" : "";
+          return { key: several ? `${card.name}/${ssid}` : ssid, ssid, glyph: Net.signalGlyph(network.signalStrength), title: Net.name(network) || "Hidden Network", lock: Net.secured(network), current: network.connected, note: failure || (asking ? Net.askError : "") || state, bad: failure !== "" || asking && Net.askError !== "", asking, action: network.connected && Net.signInOffered ? "Sign In" : "", target: network };
+        });
+        if (several) list.push({ key: `heading:${card.name}`, heading: true, title: Names.clean(card.name), gap: list.length > 0 });
+        list.push(...menuBox.stable(`wifi:${card.name}`, rows));
+      }
       // Gone while its password is typed: kept, saying so, with what was typed.
-      if (Net.asking !== "" && !list.some(row => row.asking)) list.push({ key: Net.asking, glyph: Symbols.wifi0, title: Names.clean(Net.asking), lock: true, note: "Out of range", bad: true, asking: true, target: null });
-      return menuBox.stable("wifi", list);
+      if (Net.asking !== "" && !list.some(row => row.asking)) list.push({ key: Net.asking, ssid: Net.asking, glyph: Symbols.wifi0, title: Names.clean(Net.asking), lock: true, note: "Out of range", bad: true, asking: true, target: null });
+      const hidden = Net.hidden;
+      if (hidden) list.push({ key: "hidden", ssid: hidden.ssid, glyph: Symbols.visibilityOff, title: "Hidden Network", note: hidden.error || (hidden.busy ? "Connecting…" : ""), bad: hidden.error !== "", asking: true, hidden: true, target: null });
+      return list;
     }
     if (key === "vpn") return Net.vpns.map(vpn => {
       const busy = Net.busy(vpn.uuid);
@@ -86,6 +95,8 @@ Rectangle {
   readonly property int headingHeight: 28
   // A row asking for a password: its own row and the field under it.
   readonly property int askingHeight: 2 * rowHeight + 12
+  // A hidden network's: its name over that.
+  readonly property int hiddenHeight: askingHeight + rowHeight + Theme.basePadding
   // Night light's menu is its strength rather than a list.
   readonly property bool tint: key === "night"
   readonly property var all: key === "wifi" ? settled : tint ? [] : Keep.keep(menuBox.kept, menuBox.rows(key), "key")
@@ -93,7 +104,7 @@ Rectangle {
   readonly property var kept: ({})
   // Wi-Fi's rows, built every 150 ms while it is open: a binding would rebuild them for each of the hundreds of changes a scan makes.
   property var settled: []
-  readonly property int count: all.filter(row => !row.heading).length
+  readonly property int count: all.filter(row => !row.heading && !row.hidden).length
   readonly property bool filtering: count > 20
   readonly property var shown: {
     if (!filtering || filter.text === "") return all;
@@ -106,7 +117,7 @@ Rectangle {
   readonly property var toggle: Controls.toggles.find(toggle => toggle.key === key) ?? null
   readonly property string glyph: toggle?.glyph ?? (Volume.present ? Volume.glyph : Symbols.volumeOff)
   readonly property bool on: toggle?.on ?? true
-  readonly property var footer: key === "wifi" || key === "vpn" ? ["Network Settings"] : key === "bluetooth" ? ["Bluetooth Settings"] : key === "sound" ? ["Audio Settings"] : []
+  readonly property var footer: key === "wifi" ? [...(Net.wifiOn ? ["Connect to Hidden Network…"] : []), "Network Settings"] : key === "vpn" ? ["Network Settings"] : key === "bluetooth" ? ["Bluetooth Settings"] : key === "sound" ? ["Audio Settings"] : []
   // Said in place of a list with nothing in it.
   readonly property string empty: {
     if (key === "wifi") return !Net.wifiOn ? "Wi-Fi is off" : "Looking for networks…";
@@ -117,7 +128,8 @@ Rectangle {
   readonly property real chrome: heading.height + (filter.visible ? filter.height + Theme.basePadding : 0) + (foot.visible ? foot.height + 2 * Theme.basePadding + 1 : 0) + Theme.padding + Theme.basePadding
 
   function act(name: string): void {
-    if (name === "Network Settings") Net.settings([]);
+    if (name === "Connect to Hidden Network…") Net.askHidden();
+    else if (name === "Network Settings") Net.settings([]);
     else if (name === "Audio Settings") Volume.settings();
     else BluetoothDevices.settings();
   }
@@ -130,11 +142,22 @@ Rectangle {
     Qt.callLater(menuBox.wantsInView, item);
   }
 
+  // Once a frame has shown it: the rows it opens with are there at once, at its full height, so the slot eases to that rather than chasing it.
+  property bool drawn: false
+
+  // Counted on the GUI thread, as frameSwapped comes from the render thread; the list lays its first rows out in the frame after the first.
+  FrameAnimation {
+    running: !menuBox.drawn
+    onTriggered: if (currentFrame >= 2) menuBox.drawn = true
+  }
+
   implicitHeight: chrome + (tint ? rowHeight : Math.max(list.contentHeight, rowHeight))
-  height: Math.min(implicitHeight, Math.max(chrome + 4 * rowHeight + (all.some(row => row.asking) ? askingHeight : rowHeight), limit))
+  height: Math.min(implicitHeight, Math.max(chrome + 4 * rowHeight + (all.some(row => row.hidden) ? hiddenHeight : all.some(row => row.asking) ? askingHeight : rowHeight), limit))
 
   // Its viewport follows its rows, so the footer under them moves rather than jumps.
   Behavior on height {
+    enabled: menuBox.drawn
+
     NumberAnimation {
       duration: Theme.popupTime
       easing.type: Easing.OutQuad
@@ -171,6 +194,10 @@ Rectangle {
     }
 
     function onAskErrorChanged(): void {
+      menuBox.settle();
+    }
+
+    function onHiddenChanged(): void {
       menuBox.settle();
     }
   }
@@ -304,9 +331,10 @@ Rectangle {
           readonly property string askAgain: asking ? (modelData.note ?? "") : ""
           readonly property bool sound: menuBox.key === "sound"
           readonly property bool heading: modelData.heading ?? false
+          readonly property bool hidden: modelData.hidden ?? false
 
           // Its own height, eased as it asks and stops; and how far it has come in, height first, then the fade.
-          property real natural: row.heading ? menuBox.headingHeight + (row.modelData.gap ? Theme.basePadding : 0) : row.asking ? menuBox.askingHeight : menuBox.rowHeight
+          property real natural: row.heading ? menuBox.headingHeight + (row.modelData.gap ? Theme.basePadding : 0) : row.hidden ? menuBox.hiddenHeight : row.asking ? menuBox.askingHeight : menuBox.rowHeight
           property real grown: 1
 
           Behavior on natural {
@@ -316,7 +344,7 @@ Rectangle {
             }
           }
 
-          ListView.onAdd: arriving.start()
+          ListView.onAdd: if (menuBox.drawn) arriving.start()
           ListView.onRemove: leaving.start()
 
           SequentialAnimation {
@@ -383,10 +411,10 @@ Rectangle {
           radius: Theme.menuItemRadius
           color: asking ? Theme.menuHoverBg : "transparent"
           onHeightChanged: if (asking) Qt.callLater(menuBox.reveal, row)
-          onAskingChanged: if (asking) password.input.forceActiveFocus()
-          // Asked again after a wrong one, the field takes the keyboard back for the next try.
-          onAskAgainChanged: if (asking) password.input.forceActiveFocus()
-          Component.onCompleted: if (asking) password.input.forceActiveFocus()
+          onAskingChanged: if (asking) (hidden ? networkName : password).input.forceActiveFocus()
+          // Asked again after a wrong one, the field at fault takes the keyboard back for the next try.
+          onAskAgainChanged: if (asking) (hidden && askAgain === "Name too long" ? networkName : password).input.forceActiveFocus()
+          Component.onCompleted: if (asking) (hidden ? networkName : password).input.forceActiveFocus()
 
           Text {
             x: Theme.padding
@@ -484,10 +512,21 @@ Rectangle {
             }
           }
 
+          TextField {
+            id: networkName
+
+            visible: row.hidden
+            x: Theme.padding
+            y: menuBox.rowHeight + Theme.baseMargin
+            width: parent.width - 2 * Theme.padding
+            placeholder: "Network name"
+            onAccepted: password.input.forceActiveFocus()
+          }
+
           Row {
             visible: row.asking
             x: Theme.padding
-            y: menuBox.rowHeight + Theme.baseMargin
+            y: menuBox.rowHeight + Theme.baseMargin + (row.hidden ? networkName.height + Theme.basePadding : 0)
             width: parent.width - 2 * Theme.padding
             spacing: Theme.basePadding
 
@@ -496,7 +535,7 @@ Rectangle {
 
               width: parent.width - connect.width - parent.spacing
               password: true
-              placeholder: "Password"
+              placeholder: row.hidden ? "Password, if any" : "Password"
               onAccepted: if (connect.enabled) connect.clicked(Qt.LeftButton)
             }
 
@@ -506,9 +545,10 @@ Rectangle {
               implicitHeight: 36
               text: "Connect"
               suggested: true
-              enabled: password.text !== "" && (menuBox.key !== "wifi" || row.modelData.target !== null)
+              enabled: row.hidden ? networkName.text !== "" && !Net.hidden?.busy : password.text !== "" && (menuBox.key !== "wifi" || row.modelData.target !== null)
               onClicked: {
-                if (menuBox.key === "wifi") Net.submit(row.modelData.key, password.text);
+                if (row.hidden) Net.connectHidden(networkName.text, password.text);
+                else if (menuBox.key === "wifi") Net.submit(row.modelData.ssid, password.text);
                 else Net.vpnPassword(row.modelData.key, password.text);
               }
             }
@@ -548,7 +588,7 @@ Rectangle {
 
           width: foot.width
           areaName: `action:${modelData}`
-          glyph: Symbols.settings
+          glyph: modelData.endsWith("…") ? Symbols.visibilityOff : Symbols.settings
           title: modelData
           onClicked: menuBox.act(modelData)
         }

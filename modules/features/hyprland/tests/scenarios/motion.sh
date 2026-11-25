@@ -29,3 +29,19 @@ qst wait '.osd == null' 3
 qst stays '.osd == null' 0.5
 # An ease-out shows its last visible frame two thirds in; a jump would take one frame.
 qst motion stop | jq -e 'any(.moved[]; .property == "opacity" and .from > .to and .end - .start >= 50)' > /dev/null
+
+qst case "a toggle menu handed to its row's other, or to another row's, moves the card one way"
+# alone: a frame dropped on a loaded machine reads as a jump
+qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70 > /dev/null
+qst bluetooth add 11:22:33:44:55:02 Mouse input-mouse ok paired > /dev/null
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+qst click ControlsPanel:menu:vpn
+qst wait '.controls.menu == "vpn"'
+qst stays '.controls.menu == "vpn"' 0.5
+for menu in bluetooth wifi night sound; do
+  qst motion start
+  qst click "ControlsPanel:menu:$menu"
+  qst stays ".controls.menu == \"$menu\"" 0.6
+  qst motion stop > /dev/null
+done

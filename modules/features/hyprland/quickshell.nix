@@ -18,13 +18,17 @@ let
     };
   };
   # until upstream has them (TODO.md): an image-data hint whose sizes outrun its bytes was read past its end, crashing
-  # the shell; a crash's relaunch and its reporter raced on one file offset, so the relaunch sometimes found no config
+  # the shell; a crash's relaunch and its reporter raced on one file offset, so the relaunch sometimes found no config;
+  # NetworkManager starting again registered each device twice, and BlueZ gone left its adapter and devices behind;
+  # a FileView save whose atomic commit failed (a full disk) reported success
   patched =
     quickshell:
     quickshell.overrideAttrs (old: {
       patches = (old.patches or [ ]) ++ [
         ./patches/quickshell-image-data.patch
         ./patches/quickshell-crash-relaunch.patch
+        ./patches/quickshell-service-restart.patch
+        ./patches/quickshell-fileview-commit.patch
       ];
     });
 in
@@ -437,6 +441,8 @@ in
         runtimeEnv = {
           QS_TEST_FAKETIME = "${pkgs.libfaketime}/lib/libfaketimeMT.so.1";
           QS_TEST_FAKEABLE_QS = lib.getExe' fakeableQuickshell "qs";
+          # the probe's socket, cheaper per snapshot than a qs process; by path, as `qst fail curl` fakes the one on PATH
+          QS_TEST_CURL = lib.getExe pkgs.curl;
         };
         text = builtins.readFile ./scripts/qs-test.sh;
       };

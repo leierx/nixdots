@@ -695,6 +695,51 @@ qst ipc panels open center > /dev/null
 qst wait '.panel == "center:DP-1"'
 qst stays '.panel == "center:DP-1"' 1
 
+qst case "services killed mid-call: NetworkManager as a password goes in and a VPN comes up, BlueZ as a device connects; the shell answers, nothing stays connecting, and each comes back once, whole"
+# Said only if the reply's error lands before the device is dropped with the service.
+qst expect --may 'Failed to connect to device .* disconnected from message bus without replying'
+qst network delay 3000
+qst network profile vpn Office
+qst bluetooth add 11:22:33:44:55:01 Headset audio-headset slow paired
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+qst click ControlsPanel:menu:wifi
+qst wait '.controls.network.networks | index("Hvit_Monster")'
+qst click ControlsPanel:row:Hvit_Monster
+qst wait '.controls.network.asking == "Hvit_Monster"'
+qst type monster
+qst key Return
+qst ipc controls menu vpn > /dev/null
+qst wait '.controls.menu == "vpn" and .controls.open.first == ["Office", "wg0"]'
+qst click ControlsPanel:row:Office
+qst wait '.controls.vpns | map(select(.name == "Office"))[0].busy == "up"'
+qst network kill
+qst wait '.controls.toggles[0].key == "network" and .controls.vpns == [] and .controls.network.cards == []' 10
+qst wait 'any(.history[]; .summary == "Office Failed to Connect")' 10
+qst ipc controls menu bluetooth > /dev/null
+qst wait '.controls.menu == "bluetooth" and .controls.open.first == ["Headset"]'
+qst click ControlsPanel:row:Headset
+qst wait '.controls.bluetooth.devices[0].note == "Connecting…"'
+qst bluetooth kill
+qst wait '(.controls.bluetooth.present | not) and (.controls.toggles | map(.key) | index("bluetooth") | not)'
+qst stays '.panel == "controls:DP-1"' 0.5
+qst network start
+qst bluetooth start
+qst wait '[.controls.toggles[].key] == ["wired:enp8s0", "wifi", "vpn", "bluetooth", "night", "caffeine"] and .controls.network.cards == ["wlp5s0"] and (.controls.network.wired | length) == 1 and (.controls.vpns | length) == 1' 10
+qst stays '(.controls.toggles | length) == 6 and (.controls.network.wired | length) == 1' 1
+qst ipc controls menu wifi > /dev/null
+qst wait '.controls.menu == "wifi" and (.controls.open.first | sort) == ["Hvit_Monster", "Kaffebrenneriet Gjest", "Pixel_7128"] and all(.controls.toggles[]; .subtitle != "Connecting…")'
+
+qst case "a second shell of this config, run by hand beside the first, goes before it shows anything, and the first keeps answering"
+qst x sh -c 'XDG_STATE_HOME="$1/state" XDG_CACHE_HOME="$1/cache" QS_TEST_SHELL="$1" setsid qs -p "$1/shell" > "$1/second.log" 2>&1 < /dev/null & echo $! > "$1/second.pid"' sh "$QS_TEST_DIR"
+pid=$(cat "$QS_TEST_DIR/second.pid")
+timeout 5 tail --pid="$pid" -f /dev/null || { kill "$pid"; echo "the second shell stayed"; exit 1; }
+grep -q 'Another shell of this config is running: quitting' "$QS_TEST_DIR/second.log" || { cat "$QS_TEST_DIR/second.log"; echo "the second shell went without saying why"; exit 1; }
+! grep -q 'Could not register notification server' "$QS_TEST_DIR/second.log" || { echo "the second shell started its notification server"; exit 1; }
+[ -z "$(qst layers | grep 'quickshell:bar' | sort | uniq -d)" ] || { qst layers; echo "two bars on a screen"; exit 1; }
+qst key super+a
+qst wait '.panel == "controls:DP-1"'
+
 qst case "another notification server holding the name leaves the shell running without one"
 qst hole org.freedesktop.Notifications
 qst restart > /dev/null

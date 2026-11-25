@@ -1,6 +1,6 @@
 export QS_TEST_MONITORS="DP-1:1920x1080:1"
 
-# The wall clock moving under the shell (`qst clock`, the shell's alone): a suspend's gap, a clock set back, midnight, Oslo's clock changes.
+# The wall clock moving under the shell (`qst clock`, the shell's alone): a suspend's gap, the shell frozen through one (`qst suspend`), a clock set back, midnight, Oslo's clock changes.
 
 fetches() { qst actions | grep -c 'api\.met\.no' || true; }
 
@@ -14,6 +14,25 @@ for _ in $(seq 50); do [ "$(fetches)" -gt "$before" ] && break; qst stays true 0
 [ "$(fetches)" = $((before + 1)) ] || { qst actions; echo "the forecast was fetched $(($(fetches) - before)) times after the gap, not once"; exit 1; }
 qst stays '.weather.hours > 0' 2
 [ "$(fetches)" = $((before + 1)) ] || { qst actions; echo "the forecast went on being fetched"; exit 1; }
+
+QS_TEST_CLOCK=1 qst case "a suspend: the shell and its helpers frozen while eight hours pass wake on the hour it is, with what came meanwhile, one forecast fetch and no popup left for good"
+qst wait '.weather.hours > 0' 10
+before=$(fetches)
+was=$(qst state .now | jq -r .)
+notify-send -a Mail "before"
+qst wait '(.popups | length) == 1'
+qst suspend +8h 2 &
+# Its reply waits on the frozen shell.
+notify-send -a Chat "meanwhile" &
+wait
+qst wait ".now != \"$was\" and any(.history[]; .summary == \"meanwhile\")"
+now=$(qst state .now | jq -r .)
+# A minute may turn between the two reads.
+[ "$now" = "$(date -d '+8 hours' '+%Y-%m-%d %H:%M')" ] || [ "$now" = "$(date -d '+8 hours -1 minute' '+%Y-%m-%d %H:%M')" ] || { echo "the clock says $now, not eight hours on"; exit 1; }
+for _ in $(seq 50); do [ "$(fetches)" -gt "$before" ] && break; qst stays true 0.1; done
+[ "$(fetches)" = $((before + 1)) ] || { qst actions; echo "the forecast was fetched $(($(fetches) - before)) times after the suspend, not once"; exit 1; }
+qst wait '.popups == []' 15
+qst stays '.notifications == 2 and .weather.hours > 0' 1
 
 QS_TEST_CLOCK=1 qst case "the clock set back an hour keeps the newest notification first, and the next above it"
 notify-send -a Mail "first"

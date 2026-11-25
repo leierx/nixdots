@@ -50,3 +50,25 @@ sleep 10 # sleep: the probe itself would cost the CPU this measures
 used=$(($(ticks "$shell") - start))
 # Clock ticks of 10 ms: 30 in 10 s is 3 % of a core.
 [ "$used" -le 30 ] || { echo "the shell used $used ticks of CPU in 10 s doing nothing"; exit 1; }
+
+qst case "the package list at its real size, searched and let go of a minute after the launcher closes, gives its memory back"
+# alone: it measures the shell's memory, which a loaded machine's slower frames would leave less settled
+shell=$(pid)
+list=$(qst state .cache | jq -r .)/nixpkgs.tsv
+mkdir -p "$(dirname "$list")"
+# Its first line names the fake's own list, which it then leaves as it is; lines as long as the channel's.
+{ printf 'qs-test\tqs-test\n'; awk 'BEGIN { for (i = 0; i < 133000; i++) printf "pkgs.group%d.package%d\tprogram%d\t%d.%d.%d\t%s\tA description of package number %d, as long as most in the channel\n", i % 97, i, i, i % 7, i % 13, i % 3, i % 50 == 0 ? "unfree" : "", i }'; } > "$list"
+before=$(rss "$shell")
+qst key super+n
+qst wait '.panel == "nixpkgs"'
+qst type package12345
+qst wait '.results[0] == "pkgs.group26.package12345"' 15
+qst key ctrl+a BackSpace
+qst type e
+qst wait '.field == "e" and (.results | length) == 10'
+open=$(rss "$shell")
+qst key Escape
+qst wait '.panel == ""'
+qst stays '.panel == ""' 62
+after=$(rss "$shell")
+[ $((after - before)) -le 30 ] || { echo "RSS was $before MiB, $open MiB with the list, and $after MiB a minute after it was let go"; exit 1; }

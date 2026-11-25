@@ -61,14 +61,16 @@ usage: qs-test COMMAND
   hole NAME [session|system|off]  hold NAME on that bus with something that takes every call and answers none
   kill [SIGNAL]         signal qs (KILL, the default, takes its helpers too, as the OOM killer and systemd would); restart starts it again
   clock OFFSET|at DATE  the shell's clock OFFSET (+8h, -90m) from the machine's, or at DATE; the case starts with QS_TEST_CLOCK=1
+  suspend GAP [SECONDS] the shell and its helpers frozen SECONDS (1.1) while its clock moves on GAP (+8h), as a suspend; QS_TEST_CLOCK=1
+  disk fill|free|CMD    the shell's tmpfs state and cache filled to the last byte, freed, or CMD run where it sees them; the case starts with QS_TEST_DISK=SIZE
   fuzz COUNT [SEED]     COUNT random actions (panels, keys, the pointer, notifications, hotplugs), the invariants checked after each
-  network SUB ...       the session's NetworkManager (tests/networkmanager.py): start|stop|restart, wifi add SSID [STRENGTH] [SECURITY] [PASSWORD],
-                        wifi remove|strength|clear|many COUNT [PREFIX]|json JSON, device add|remove NAME [wifi|ethernet], cable NAME on|off,
+  network SUB ...       the session's NetworkManager (tests/networkmanager.py): start|stop|restart|kill (mid-call, back fresh), wifi add SSID [STRENGTH] [SECURITY] [PASSWORD],
+                        wifi remove|hide|strength|clear|many COUNT [PREFIX]|json JSON, device add|remove NAME [wifi|ethernet], cable NAME on|off,
                         profile wifi|ethernet|wireguard|vpn NAME [SSID PSK], vpn NAME ok|fail|secrets, up NAME,
                         connectivity none|portal|limited|full, switch on|off, delay MS, dump
   player add NAME [IDENTITY] [STATUS] [ART] [JSON]   an MPRIS player (tests/mpris.py), ART an image file for its cover, JSON more of its parameters; status NAME Playing|Paused|Stopped, remove NAME, clear
   battery PERCENT [STATE [SECONDS]]   the session's UPower battery (charging, discharging, full, pending), or remove
-  bluetooth SUB ...     the session's BlueZ (tests/bluez.py): start|stop, adapter add|remove, remove ADDRESS,
+  bluetooth SUB ...     the session's BlueZ (tests/bluez.py): start|stop|kill (mid-call), adapter add|remove, remove ADDRESS,
                         add ADDRESS NAME [ICON] [ok|pin|fail|slow|crowded] [paired] [connected] [BATTERY]
   backlight NAME VALUE [MAX]    set a fake backlight (max 100) and announce it as udev does; NAME remove unplugs it
   camera open|close NAME [DEV]  a process named NAME holding a fake camera (video0) open; add|remove DEV
@@ -94,7 +96,7 @@ usage: qs-test COMMAND
 
 env: QS_TEST_DIR (session dir), QS_TEST_HOST (host whose config is built, $host), QS_TEST_CLOCK (1: a clock that clock moves),
      QS_TEST_NETWORK, QS_TEST_BLUETOOTH (none: no NetworkManager, no BlueZ), QS_TEST_SCALE (the shell's QT_SCALE_FACTOR, 1),
-     QS_TEST_LOCALE (the shell's LANG and LC_ALL), QS_TEST_COLD (1: reset waits on Hyprland alone, the shell's singletons left unread), QS_TEST_REPO (checkout), QS_TEST_MONITORS (NAME:MODE:SCALE ..., DP-1:1920x1080:1)
+     QS_TEST_LOCALE (the shell's LANG and LC_ALL), QS_TEST_DISK (SIZE: the shell's state and cache on tmpfs that small), QS_TEST_COLD (1: reset waits on Hyprland alone, the shell's singletons left unread), QS_TEST_REPO (checkout), QS_TEST_MONITORS (NAME:MODE:SCALE ..., DP-1:1920x1080:1)
 EOF
 }
 
@@ -283,6 +285,7 @@ start_qs() {
   local tailer
   # Emptied first, so the last qs's "Configuration Loaded" is never read as this one's.
   : > "$T/qs.log"
+  rm -f "$T/probe.sock"
   (
     enter
     # The shell's state and cache in the session, so a case can damage or lock them and nothing reaches the user's.
@@ -296,10 +299,17 @@ start_qs() {
     if [ -n "${QS_TEST_CLOCK:-}" ]; then
       [ -s "$T/clock" ] || echo +0 > "$T/clock"
       shell=$QS_TEST_FAKEABLE_QS
-      env+=("LD_PRELOAD=$QS_TEST_FAKETIME" "FAKETIME_TIMESTAMP_FILE=$T/clock" FAKETIME_CACHE_DURATION=1 DONT_FAKE_MONOTONIC=1 FAKETIME_DONT_RESET=1)
+      # Its children inherit the preload, so a qs it runs (`qs list`) is the same build.
+      env+=("LD_PRELOAD=$QS_TEST_FAKETIME" "FAKETIME_TIMESTAMP_FILE=$T/clock" FAKETIME_CACHE_DURATION=1 DONT_FAKE_MONOTONIC=1 FAKETIME_DONT_RESET=1 "PATH=$(dirname "$QS_TEST_FAKEABLE_QS"):$PATH")
     fi
+    # Its state and cache on tmpfs of that size each, in a mount namespace of its own (`qst disk`); the same user
+    # inside, as D-Bus authenticates by uid, and without the namespace's capabilities once mounted.
+    local disk=()
+    [ -n "${QS_TEST_DISK:-}" ] && echo "$QS_TEST_DISK" > "$T/disk"
+    # shellcheck disable=SC2016
+    [ ! -s "$T/disk" ] || disk=(unshare --user --map-current-user --mount --keep-caps sh -c 'mount -t tmpfs -o "size=$1" qs-test "$2" && mount -t tmpfs -o "size=$1" qs-test "$3" && shift 3 && exec setpriv --inh-caps=-all --ambient-caps=-all -- "$@"' sh "$(cat "$T/disk")" "$T/state" "$T/cache")
     # Qt names the item behind every cursor change, which `cursor` reads back.
-    env "${env[@]}" QT_SCALE_FACTOR="${QS_TEST_SCALE:-1}" QT_LOGGING_RULES=qt.quick.hover.cursor.debug=true setsid "$shell" -p "$T/shell" > "$T/qs.log" 2>&1 < /dev/null &
+    env "${env[@]}" QT_SCALE_FACTOR="${QS_TEST_SCALE:-1}" QT_LOGGING_RULES=qt.quick.hover.cursor.debug=true setsid "${disk[@]}" "$shell" -p "$T/shell" > "$T/qs.log" 2>&1 < /dev/null &
     echo $! > "$T/qs.pid"
   )
   echo 1 > "$T/case-mark"
@@ -636,11 +646,12 @@ mock_start() {
   die "the fake $name did not start, see $T/$name.log"
 }
 
+# NAME [SIGNAL]: KILL takes it mid-call, its replies never sent.
 mock_stop() {
   local pid
   [ -s "$T/$1.pid" ] || return 0
   pid=$(cat "$T/$1.pid")
-  kill "$pid" 2> /dev/null || true
+  kill "-${2:-TERM}" "$pid" 2> /dev/null || true
   for _ in $(seq 125); do
     kill -0 "$pid" 2> /dev/null || break
     sleep 0.02
@@ -724,6 +735,7 @@ bluetooth() {
   case $sub in
     start) mock_start bluetooth org.bluez "$tests/bluez.py"; bluez AddAdapter string:hci0 string:qs-test > /dev/null ;;
     stop) mock_stop bluetooth ;;
+    kill) mock_stop bluetooth KILL ;;
     adapter)
       case ${1:-} in
         add) bluez AddAdapter "string:${2:-hci0}" string:qs-test > /dev/null ;;
@@ -737,7 +749,7 @@ bluetooth() {
       bluez AddFullDevice string:hci0 "string:$1" "string:$2" "string:${3:-audio-headset}" "string:${4:-ok}" "boolean:$([ "${5:-}" = paired ] && echo true || echo false)" "boolean:$([ "${6:-}" = connected ] && echo true || echo false)" "int32:${7:--1}" > /dev/null
       ;;
     remove) bluez RemoveFullDevice string:hci0 "string:$1" > /dev/null ;;
-    *) die "bluetooth start|stop|adapter add|remove|add ADDRESS NAME ...|remove ADDRESS" ;;
+    *) die "bluetooth start|stop|kill|adapter add|remove|add ADDRESS NAME ...|remove ADDRESS" ;;
   esac
 }
 
@@ -755,16 +767,22 @@ network() {
       nm Dump | sed 's/^ *//' > "$T/network.state"
       network_start "$(cat "$T/network.state")"
       ;;
+    # Mid-call, its state with it: it comes back as a fresh case's.
+    kill)
+      rm -f "$T/network.state"
+      mock_stop network KILL
+      ;;
     wifi)
       case ${1:-} in
         add) [ $# -ge 2 ] || die "network wifi add SSID [STRENGTH] [SECURITY] [PASSWORD]"; nm AddNetwork "string:$2" "byte:${3:-60}" "string:${4:-wpa2}" "string:${5:-password}" "string:" > /dev/null ;;
         remove) nm RemoveNetwork "string:$2" > /dev/null ;;
+        hide) nm HideNetwork "string:$2" > /dev/null ;;
         strength) nm SetStrength "string:$2" "byte:$3" > /dev/null ;;
         clear) nm ClearNetworks > /dev/null ;;
         # COUNT networks named PREFIX1 … in one call, or a JSON list of [ssid, strength, security, password]
         many) nm AddNetworksJson "string:$(jq -cn --argjson n "$2" --arg prefix "${3:-Network }" '[range($n) | ["\($prefix)\(. + 1)", ((. * 37) % 100), (if . % 9 == 0 then "open" else "wpa2" end), "password"]]')" > /dev/null ;;
         json) nm AddNetworksJson "string:$2" > /dev/null ;;
-        *) die "network wifi add|remove|strength|clear|many|json" ;;
+        *) die "network wifi add|remove|hide|strength|clear|many|json" ;;
       esac
       ;;
     device)
@@ -786,7 +804,7 @@ network() {
     switch) nm SetHardwareSwitch "boolean:$([ "${1:-on}" = on ] && echo true || echo false)" > /dev/null ;;
     delay) nm SetDelay "uint32:$1" > /dev/null ;;
     dump) nm Dump | sed 's/^ *//' | jq . ;;
-    *) die "network start|stop|restart|wifi|device|cable|profile|vpn|up|connectivity|switch|delay|dump" ;;
+    *) die "network start|stop|restart|kill|wifi|device|cable|profile|vpn|up|connectivity|switch|delay|dump" ;;
   esac
 }
 
@@ -1133,7 +1151,8 @@ snapshot() {
   enter
   ms
   started=$REPLY
-  probe=$(timeout 5 qs ipc -p "$T/shell" call probe state) || {
+  # Over its socket, or through qs while the shell has yet to open it.
+  probe=$("$QS_TEST_CURL" --silent --fail --max-time 5 --unix-socket "$T/probe.sock" http://probe/state) || { [ $? = 7 ] && probe=$(timeout 5 qs ipc -p "$T/shell" call probe state); } || {
     alive || die "qs is not running: it crashed or failed to load, see qs-test log"
     die "the probe did not answer, see qs-test log"
   }
@@ -1277,17 +1296,37 @@ holes_reset() {
   rm -rf "$T/holes"
 }
 
+# The shell's tmpfs state and cache (QS_TEST_DISK): fill to the last byte, free again, or COMMAND run where it sees them.
+disk() {
+  local dir
+  [ -s "$T/disk" ] || die "the shell writes to the session's disk: start the case with QS_TEST_DISK=SIZE"
+  inside() { nsenter -t "$(cat "$T/qs.pid")" -U -m --preserve-credentials -- "$@"; }
+  case ${1:-} in
+    fill)
+      # Every block, so a file can still be made but nothing written into it.
+      for dir in "$T/state" "$T/cache"; do inside dd if=/dev/zero of="$dir/.filler" bs=1k status=none 2> /dev/null || true; done
+      ;;
+    free) inside rm -f "$T/state/.filler" "$T/cache/.filler" ;;
+    "") die "disk fill|free|COMMAND..." ;;
+    *) inside "$@" ;;
+  esac
+}
+
+# +N[s|m|h|d] or -N... as seconds, into REPLY.
+seconds() {
+  local unit=${1##*[0-9]} count
+  count=${1%"$unit"}
+  [[ $count =~ ^[+-]?[0-9]+$ ]] || die "not a duration: $1 (+N[s|m|h|d])"
+  case $unit in "" | s) REPLY=$((count)) ;; m) REPLY=$((count * 60)) ;; h) REPLY=$((count * 3600)) ;; d) REPLY=$((count * 86400)) ;; *) die "not a duration: $1 (+N[s|m|h|d])" ;; esac
+}
+
 # The shell's clock as OFFSET from the machine's (+8h, -90m, +0), or at DATE as `date -d` reads it, from now on.
 clock() {
-  local offset unit
+  local offset
   [ -e "$T/clock" ] || die "the shell runs on the machine's clock: start the case with QS_TEST_CLOCK=1"
   case ${1:-} in
     at) [ $# -eq 2 ] || die "clock at DATE"; offset=$(($(date -d "$2" +%s) - $(date +%s))) || die "no date $2" ;;
-    [+-][0-9]*)
-      unit=${1##*[0-9]}
-      offset=${1%"$unit"}
-      case $unit in "" | s) ;; m) offset=$((offset * 60)) ;; h) offset=$((offset * 3600)) ;; d) offset=$((offset * 86400)) ;; *) die "clock +N[s|m|h|d]" ;; esac
-      ;;
+    [+-][0-9]*) seconds "$1"; offset=$REPLY ;;
     *) die "clock +N[s|m|h|d] | -N[s|m|h|d] | at DATE" ;;
   esac
   # libfaketime reads its file once a second.
@@ -1295,10 +1334,26 @@ clock() {
   sleep 1.1
 }
 
+# A suspend of GAP as the shell lives it: frozen with its helpers for SECONDS (1.1, libfaketime's re-read), meanwhile its
+# wall clock moved on by GAP; its monotonic clock, which a suspend stops, moves only by those seconds. The rest of the
+# session runs on, so what it sent meanwhile arrives at once as the shell wakes.
+suspend_qs() {
+  local gap pid
+  [ -e "$T/clock" ] || die "the shell runs on the machine's clock: start the case with QS_TEST_CLOCK=1"
+  seconds "${1:-}"
+  gap=$REPLY
+  pid=$(testqs | head -1)
+  [ -n "$pid" ] || die "no qs to suspend"
+  kill -s STOP -- "-$pid" 2> /dev/null || kill -s STOP "$pid"
+  printf '%+d\n' $(($(cat "$T/clock") + gap)) > "$T/clock"
+  sleep "${2:-1.1}"
+  kill -s CONT -- "-$pid" 2> /dev/null || kill -s CONT "$pid"
+}
+
 # COUNT random actions on the shell as it is, the invariants and census checked after each as every wait checks them;
 # SEED replays a run, which prints its own.
 fuzz() {
-  local actions=$1 seed=${2:-$((EPOCHSECONDS % 32768))} n pick x y button panel_names key_names spots width height choice
+  local actions=$1 seed=${2:-$((EPOCHSECONDS % 32768))} n pick x y button panel_names key_names spots width height choice step
   RANDOM=$seed
   echo "fuzz: seed $seed"
   printf '       fuzz seed %s\n' "$seed" >> "$T/trace.log"
@@ -1307,6 +1362,8 @@ fuzz() {
   key_names=(Escape Escape Tab shift+Tab Down Down Up Left Right Home End Return space BackSpace Delete a f super+d super+a super+v super+x super+Tab super+shift+plus super+p ctrl+a)
   read -r width height < <("$HC" monitors -j | jq -r '"\(map(.x + .width / .scale) | max | floor) \(map(.y + .height / .scale) | max | floor)"')
   for n in $(seq "$actions"); do
+    ms
+    step=$REPLY
     pick=$((RANDOM % 100))
     if [ $pick -lt 15 ]; then
       timeout 5 qs ipc -p "$T/shell" call panels toggle "${panel_names[RANDOM % ${#panel_names[@]}]}" > /dev/null
@@ -1343,6 +1400,10 @@ fuzz() {
       # A monitor beside the first unplugged, or plugged back in.
       if "$HC" monitors -j | jq -e 'any(.name == "DP-9")' > /dev/null; then monitor_remove DP-9; else monitor_add DP-9 1280x720 1; fi
     fi
+    # Looked at 130 ms after the action at the soonest, as a slower probe did: sooner, its 150 ms colour changes are caught
+    # midway step after step, and what is only passing never clears.
+    ms
+    [ $((REPLY - step)) -ge 130 ] || sleep "0.$(printf '%03d' $((130 - REPLY + step)))"
     snapshot true
     violations || true
   done
@@ -1395,21 +1456,27 @@ reset() {
   phase pipewire+services+monitors
   # Writable again first, as a case may have locked them; the cache too, the forecast, covers and clips each case fetches its own.
   chmod -R u+w "$T/state" "$T/cache" 2> /dev/null || true
-  rm -rf "$T/state" "$T/cache/quickshell" "$T/clock" "$T/clip.db"
+  rm -rf "$T/state" "$T/cache/quickshell" "$T/clock" "$T/disk" "$T/clip.db"
   : > "$T/actions.log"
   restore_tools
   start_qs > /dev/null
   problems
   phase start_qs
+  shell_up
+}
+
+# Loaded is not yet up: the shell makes its windows once it knows it is the only one.
+shell_up() {
   if [ -n "${QS_TEST_COLD:-}" ]; then
     # By Hyprland's layers alone: the probe reads every singleton, which creates them.
     for _ in $(seq 100); do
-      [ "$("$HC" layers -j | jq '[.[].levels[][] | select(.namespace == "quickshell:bar")] | length')" = "$("$HC" monitors -j | jq length)" ] && return
+      [ "$("$HC" layers -j | jq '[.[].levels[][] | select(.namespace == "quickshell:bar")] | length')" = "$("$HC" monitors -j | jq 'map(select(.name != "FALLBACK")) | length')" ] && return
       sleep 0.1
     done
     die "the bars never came up"
   fi
-  wait_kind=reset:bar wait_for "(.screens | length) == ($("$HC" monitors -j | jq length)) and (.layers | map(select(endswith(\" quickshell:bar\"))) | length) == (.screens | length)" 10
+  # None on Hyprland's FALLBACK, the only screen while no monitor is on.
+  wait_kind=reset:bar wait_for "(.screens | map(select(.name != \"FALLBACK\")) | length) as \$real | \$real == ($("$HC" monitors -j | jq 'map(select(.name != "FALLBACK")) | length')) and (.layers | map(select(endswith(\" quickshell:bar\"))) | length) == \$real" 10
 }
 
 
@@ -2004,8 +2071,8 @@ case $cmd in
   up) up ;;
   down) down ;;
   status) if running; then echo "up in $T, qs $(testqs)"; else echo down; fi ;;
-  sync) need_up; case_check; stop_qs; sync_source; start_qs ;;
-  restart) need_up; case_check; stop_qs; start_qs ;;
+  sync) need_up; case_check; stop_qs; sync_source; start_qs; enter; shell_up ;;
+  restart) need_up; case_check; stop_qs; start_qs; enter; shell_up ;;
   lint) qs-lint "$(readlink -f "$(build)/shell")" ;;
   ipc) need_up; enter; timeout 5 qs ipc -p "$T/shell" call "$@" ;;
   gallery) need_up; enter; timeout 5 qs ipc -p "$T/shell" call panels open gallery > /dev/null ;;
@@ -2140,6 +2207,8 @@ case $cmd in
     ;;
   hole) need_up; enter; [ $# -ge 1 ] || die "hole NAME [session|system|off]"; hole "$@" ;;
   clock) need_up; clock "$@" ;;
+  suspend) need_up; [ $# -ge 1 ] || die "suspend GAP [SECONDS]"; suspend_qs "$@" ;;
+  disk) need_up; disk "$@" ;;
   fuzz) need_up; enter; [ $# -ge 1 ] || die "fuzz COUNT [SEED]"; fuzz "$@" ;;
   kill)
     need_up
@@ -2164,6 +2233,8 @@ case $cmd in
         { [ -z "$dump" ] || [ ! -e "/proc/$dump" ] || [ "$(awk '{ print $3 }' "/proc/$dump/stat" 2> /dev/null)" = Z ]; } && break
         sleep 0.1
       done
+      enter
+      shell_up
       ms
       echo "qs came back, its old windows gone, $(((REPLY - began) / 100)) tenths of a second after SIG$sig"
       ;;

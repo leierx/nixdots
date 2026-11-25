@@ -10,25 +10,31 @@ LauncherMode {
 
   readonly property string prefix: "nixpkgs:"
   readonly property int limit: 50
-  // The parsed columns cost a few hundred MiB; a second open within a moment keeps them, one after that reads the list again.
+  // The list is let go of a moment after the launcher closes; a second open within it keeps it, one after that reads the list again.
   readonly property int releaseDelay: 60000
-  // Lines parsed per frame, so the launcher takes keys while a list is read.
+  // Lines indexed per frame, so the launcher takes keys while a list is read.
   readonly property int chunk: 20000
-  // Columns rather than an object per package, since there are over 130 000; read only while the launcher wants them, so the idle shell holds neither the file nor them.
+  // The list as two strings, as read and lowered, and where each line and its name end lie in them: a few large blocks, which a release gives back whole, where a string per package left the engine holding pages. Read only while the launcher wants it, so the idle shell holds none of it.
   property bool loaded: false
-  property var index: ({ rev: "", lines: [], attrs: [], names: [], texts: [] })
-  // The list being parsed, a chunk a frame.
+  property var index: root.empty()
+  // The list being indexed, a chunk a frame.
   property var parsing: null
   // A list fetched since this one was read, read on the next open, so a search never changes under the keys.
   property bool stale: false
-  // What this open searched, so backspace finds a query's matches again and a longer one searches only those.
+  // What this open searched, so backspace finds a query's rows again.
   readonly property var memo: ({ state: null })
 
+  function empty(): var {
+    return { rev: "", text: "", lower: "", starts: new Int32Array(1), names: new Int32Array(0), count: 0 };
+  }
+
   function parse(text: string): void {
-    const lines = text.split("\n");
-    const head = lines.shift().split("\t");
-    if (lines[lines.length - 1] === "") lines.pop();
-    root.parsing = { rev: head[0], lines, attrs: new Array(lines.length), names: new Array(lines.length), texts: new Array(lines.length), at: 0 };
+    const head = text.indexOf("\n");
+    // Lowered in one piece, at the same length, so one offset serves both: U+0130 is the one capital whose lowering is longer.
+    const lower = text.replace(/\u0130/g, "I").toLowerCase().replace(/\t/g, " ");
+    let lines = 0;
+    for (let at = head; at >= 0 && at + 1 < text.length; at = text.indexOf("\n", at + 1)) lines++;
+    root.parsing = { rev: (head < 0 ? text : text.slice(0, head)).split("\t")[0], text, lower, starts: new Int32Array(lines + 1), names: new Int32Array(lines), count: 0, at: head < 0 ? text.length : head + 1, tab: text.indexOf("\t", head + 1) };
     parser.start();
   }
 
@@ -36,14 +42,32 @@ LauncherMode {
     parser.stop();
     root.parsing = null;
     root.loaded = false;
-    root.index = ({ rev: "", lines: [], attrs: [], names: [], texts: [] });
+    root.index = root.empty();
     root.memo.state = null;
-    // The engine holds the parsed columns' pages until asked, so the release is what gives the memory back.
+    // The engine holds what it let go of until asked.
     gc();
   }
 
+  // The line holding offset `at`.
+  function lineAt(index: var, at: int): int {
+    let low = 0;
+    let high = index.count - 1;
+    while (low < high) {
+      const middle = (low + high + 1) >> 1;
+      if (index.starts[middle] <= at) low = middle;
+      else high = middle - 1;
+    }
+    return low;
+  }
+
   function row(index: var, i: int): var {
-    const [attr, program, version, unfree, description] = index.lines[i].split("\t");
+    // By index: Qt 6.12 fills names a short array has no element for with stale values (TODO.md), here the line's own columns.
+    const fields = index.text.slice(index.starts[i], index.starts[i + 1] - 1).split("\t");
+    const attr = fields[0];
+    const program = fields[1] ?? "";
+    const version = fields[2] ?? "";
+    const unfree = fields[3] ?? "";
+    const description = fields[4] ?? "";
     return {
       key: attr,
       title: attr,
@@ -56,12 +80,13 @@ LauncherMode {
 
   function prepare(index: var): var {
     const uses = AppUsage.uses(root.prefix);
-    const wanted = new Set(Object.keys(uses));
-    const boost = new Float64Array(index.attrs.length);
+    const boost = new Float64Array(index.count);
     const used = [];
-    for (let i = 0; wanted.size > 0 && i < index.attrs.length; i++) {
-      if (!wanted.has(index.attrs[i])) continue;
-      boost[i] = 50 * uses[index.attrs[i]];
+    for (const attr in uses) {
+      const at = index.count === 0 ? -1 : index.text.indexOf(`\n${attr}\t`, index.starts[0] - 1);
+      if (at < 0) continue;
+      const i = root.lineAt(index, at + 1);
+      boost[i] = 50 * uses[attr];
       used.push(i);
     }
     used.sort((a, b) => boost[b] - boost[a]);
@@ -73,7 +98,7 @@ LauncherMode {
   image: Quickshell.iconPath("nix-snowflake", "package-x-generic")
   placeholder: "Run a package from nixpkgs…"
   nothing: "Type a Package Name"
-  loading: root.index.lines.length === 0
+  loading: root.index.count === 0
   fields: row => [[1.0, row.title], [0.5, row.subtitle]]
 
   find: query => {
@@ -85,47 +110,38 @@ LauncherMode {
     if (typed.length === 0) return state.recent;
 
     const lowered = typed.join(" ");
-    const memo = state.queries;
-    if (memo[lowered]) return memo[lowered].rows;
-    let pool = null;
-    for (const query in memo) {
-      if (lowered.startsWith(query) && (!pool || memo[query].matched.length < pool.length)) pool = memo[query].matched;
+    if (state.queries[lowered]) return state.queries[lowered];
+    const { lower, starts, names, count } = index;
+    // Per line: the words found so far, each at its first place in the line; a line whose name holds them all ranks as a name match, otherwise at half as a match in its description.
+    const found = new Uint8Array(count);
+    const outside = new Uint8Array(count);
+    const points = new Float64Array(count);
+    for (let w = 0; w < typed.length; w++) {
+      const word = typed[w];
+      let line = 0;
+      // A line's first place only: the search goes on from the next line.
+      for (let at = lower.indexOf(word, starts[0]); at >= 0 && line < count; at = line < count ? lower.indexOf(word, starts[line]) : -1) {
+        while (starts[line + 1] <= at) line++;
+        if (line >= count) break;
+        if (found[line] === w) {
+          const before = at === starts[line] ? -1 : lower.charCodeAt(at - 1);
+          // Search.scoreLowered's: the start, after a separator (space, - _ . / :), or within a word.
+          points[line] += before < 0 ? 1000 : before === 32 || before === 45 || before === 95 || before === 46 || before === 47 || before === 58 ? 900 : 700;
+          if (at + word.length > names[line]) outside[line] = 1;
+          found[line] = w + 1;
+        }
+        line++;
+      }
     }
-    const count = pool ? pool.length : index.attrs.length;
-    const names = index.names;
-    const texts = index.texts;
     const boost = state.boost;
-    const words = typed.length;
     const limit = root.limit;
-    const matched = [];
     // The best few, kept in order as they come, rather than sorting every match.
     const best = [];
-    // Search.scoreLowered inlined: a call per package costs ten times the matching.
-    for (let k = 0; k < count; k++) {
-      const i = pool ? pool[k] : k;
-      let text = names[i];
-      let weight = 1;
-      let score = 0;
-      for (let w = 0; w < words; w++) {
-        const at = text.indexOf(typed[w]);
-        if (at < 0) {
-          // A description match at half weight never beats a name match, so it is only looked at without one.
-          if (weight === 0.5) {
-            score = -1;
-            break;
-          }
-          text = texts[i];
-          weight = 0.5;
-          score = 0;
-          w = -1;
-          continue;
-        }
-        score += at === 0 ? 1000 : " -_./:".indexOf(text[at - 1]) >= 0 ? 900 : 700;
-      }
-      if (score < 0) continue;
-      score = weight * (score - text.length / 20);
-      matched.push(i);
-      const ranked = score + boost[i];
+    const words = typed.length;
+    for (let i = 0; i < count; i++) {
+      if (found[i] !== words) continue;
+      const length = outside[i] ? starts[i + 1] - 1 - starts[i] : names[i] - starts[i];
+      const ranked = (outside[i] ? 0.5 : 1) * (points[i] - length / 20) + boost[i];
       if (best.length === limit && ranked <= best[best.length - 1].ranked) continue;
       let at = best.length;
       while (at > 0 && best[at - 1].ranked < ranked) at--;
@@ -133,7 +149,7 @@ LauncherMode {
       if (best.length > limit) best.pop();
     }
     const rows = best.map(match => root.row(index, match.i));
-    memo[lowered] = { matched, rows };
+    state.queries[lowered] = rows;
     return rows;
   }
 
@@ -171,18 +187,31 @@ LauncherMode {
         stop();
         return;
       }
-      const end = Math.min(job.lines.length, job.at + root.chunk);
-      for (let i = job.at; i < end; i++) {
-        const fields = job.lines[i].split("\t", 2);
-        job.attrs[i] = fields[0];
-        job.names[i] = `${fields[0]} ${fields[1]}`.toLowerCase();
-        job.texts[i] = job.lines[i].replace(/\t/g, " ").toLowerCase();
+      const { text, starts, names } = job;
+      // Tabs found once, front to back, so a list without them costs no more than one with.
+      let tab = job.tab;
+      for (let n = 0; n < root.chunk && job.at < text.length; n++) {
+        const start = job.at;
+        let end = text.indexOf("\n", start);
+        if (end < 0) end = text.length;
+        while (tab >= 0 && tab < start) tab = text.indexOf("\t", start);
+        // The name is the attribute and its program, up to the second tab.
+        let name = end;
+        if (tab >= 0 && tab < end) {
+          tab = text.indexOf("\t", tab + 1);
+          if (tab >= 0 && tab < end) name = tab;
+        }
+        starts[job.count] = start;
+        names[job.count] = name;
+        job.count++;
+        job.at = end + 1;
       }
-      job.at = end;
-      if (end < job.lines.length) return;
+      job.tab = tab;
+      if (job.at < text.length) return;
       stop();
+      starts[job.count] = text.length + 1;
       root.parsing = null;
-      root.index = { rev: job.rev, lines: job.lines, attrs: job.attrs, names: job.names, texts: job.texts };
+      root.index = { rev: job.rev, text, lower: job.lower, starts: starts.subarray(0, job.count + 1), names: names.subarray(0, job.count), count: job.count };
     }
   }
 
@@ -209,12 +238,12 @@ LauncherMode {
     // Outside the shell's cgroup: jq holds the whole list a while, which the shell's memory limit has no room for.
     command: ["systemd-run", "--user", "--scope", "--quiet", "nixpkgs-index", Quickshell.cachePath("nixpkgs.tsv")]
     // Only an open with no list waits on it; at login the network may not be up yet.
-    quiet: !root.open || root.index.lines.length > 0
+    quiet: !root.open || root.index.count > 0
     // The channel's list is hundreds of megabytes on a slow line.
     timeout: 0
     onDone: output => {
       if (output.trim() !== "updated") return;
-      if (root.open && root.index.lines.length === 0 && root.parsing === null) list.reload();
+      if (root.open && root.index.count === 0 && root.parsing === null) list.reload();
       else root.stale = true;
     }
   }

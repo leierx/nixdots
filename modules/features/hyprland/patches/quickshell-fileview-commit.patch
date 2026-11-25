@@ -1,0 +1,12 @@
+diff -ru a/src/io/fileview.cpp b/src/io/fileview.cpp
+--- a/src/io/fileview.cpp
++++ b/src/io/fileview.cpp
+@@ -287,6 +287,8 @@
+ 	if (doAtomicWrite) {
+ 		if (!reinterpret_cast<QSaveFile*>(file.get())->commit()) {
+ 			qmlWarning(view) << "Write of " << state.path << " failed: Atomic commit failed.";
++			// The file still holds what it did: a save that never landed is no save.
++			state.error = FileViewError::Unknown;
+ 		}
+ 	}
+ }

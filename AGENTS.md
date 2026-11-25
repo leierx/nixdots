@@ -343,11 +343,18 @@ fixes: `quickshell-image-data.patch` drops an `image-data` hint whose sizes
 outrun its bytes (read past its end, any client could crash the shell) and
 honours the client's rowstride; `quickshell-crash-relaunch.patch` has a crash's
 relaunch and its reporter each open the instance's memfd anew (on one shared
-offset the relaunch sometimes read nothing and started with no config). The
-shell `qst clock` moves is the same build on the system malloc. `quickshell.nix`
+offset the relaunch sometimes read nothing and started with no config);
+`quickshell-service-restart.patch` registers a NetworkManager device once
+(starting again, NetworkManager named each twice) and follows BlueZ going and
+coming (gone, its adapter stayed; started late, it was never seen);
+`quickshell-fileview-commit.patch` fails a save whose atomic commit failed (a
+full disk read as saved). The shell `qst clock` moves is the same build on the
+system malloc. `quickshell.nix`
 runs it as `quickshell.service`: restarted when the shell changes
 (`X-Restart-Triggers`), 1 s after a crash, no start limit (hotplug bursts),
-`MemoryMax=2G` without swap (it sits near 500 MiB),
+`MemoryMax=2G` without swap (it sits near 500 MiB; past it the kernel kills
+it, `Result=oom-kill`, which `Restart=on-failure` restarts, as a transient unit
+showed),
 `QS_PIPEWIRE_IMMEDIATE_RECONNECT=1` (without it PipeWire not up as the shell
 starts is never connected to). Quickshell's own guard also restarts a crashed
 instance in place, an exec under the same pid, and logs "Quickshell has crashed
@@ -356,7 +363,9 @@ shell ran stays its child until its next write fails.
 
 Components: `bar/`, `center/`, `controls/`, `launcher/`, `notifications/`,
 `osd/`, `power/`, `shortcuts/`, `tooltip/`, `weather/`, `idle/`; `shell.qml`
-only instantiates them. `common/` holds what several share: the STYLE.md
+only instantiates them, once `qs list` shows no older shell of this config
+(one run by hand beside the unit's quits before it shows anything; a failed
+check starts it anyway). `common/` holds what several share: the STYLE.md
 pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `Popover`,
 `ClickAway`, `Screens`, `Time`, `StateFile`, `Command`, `Deadline`, `Watcher`, `Detached`, `WheelSteps`,
 `WorkspaceOwners`, `Tooltips`, `Machine` (os-release's `LOGO=` through the
@@ -411,7 +420,7 @@ icon theme, hostname, uptime).
   `xdg-open`, `systemd-run`, `hyprmoncfg`, `wezterm`, `curl`, `nixpkgs-index`,
   `nixpkgs-run`, `hyprctl`, `systemctl`, `wpctl`, `camera-users`,
   `backlight-watch`, `nmcli`, `nm-connection-editor`, `brightnessctl`,
-  `bluetui`, `pwvucontrol`, systemd's `busctl` and util-linux's `setpriv`), so it works as any rice: an exception to store paths;
+  `bluetui`, `pwvucontrol`, `qs`, systemd's `busctl` and util-linux's `setpriv`), so it works as any rice: an exception to store paths;
   `quickshell.nix` installs those no other feature does.
 - **Scale**: designed at scale 1 (1920x1080). Hyprland's per-monitor scale
   handles dense screens; HM `quickshell.scale` (default 1, the desktop 1.2)
@@ -572,11 +581,14 @@ icon theme, hostname, uptime).
   `windows` is wlr-foreign-toplevels in Hyprland focus order with live
   previews, none of a window whose size Hyprland has not given. `nixpkgs` searches nixos-unstable's ~130 000 packages
   (`nixpkgs-index` TSV, refreshed on every open through `systemd-run --scope`,
-  outside the shell's memory limit; read into columns a chunk a frame, so keys
-  land meanwhile; own loop and a memo keyed on the ranks, no slip pass: it
-  would cost a pass over every row per key. The columns and the file go a
-  minute after the launcher closes, so the idle shell holds neither and the
-  next open reads the list again).
+  outside the shell's memory limit; held as two strings, as read and lowered,
+  with each line's start and name end in typed arrays, indexed a chunk a frame,
+  so keys land meanwhile: ~80 MiB where a string per package took ~220 and kept
+  ~95 after a release. A search scans the lowered string once per word, a
+  line's first place only; a memo keyed on the ranks, no slip pass: it would
+  cost a pass over every row per key. The strings and the file go a minute
+  after the launcher closes, given back whole, and the next open reads the list
+  again).
 - `nixpkgs-run`: builds `github:NixOS/nixpkgs/<rev>#<attr>` with a progress card
   (`nixpkgs-progress.jq` over nix's internal-json), then runs it in a transient
   `systemd-run --user` service sandboxed by systemd: `ProtectSystem=strict`,
@@ -663,10 +675,16 @@ icon theme, hostname, uptime).
   Privacy already skips as passive); no mic mute; dim but for the arrow
   with a microphone and no output; each backlight), the `Pill`s
   the machine has (`Controls.toggles`), a `Menu` under the row that opens it (one slot
-  per row, so its menus swap in place; the slot eases, then the menu fades;
-  rows keep the order they came in while it is open),
+  per row, so its menus swap in place, fading in as the slot eases to the new
+  height; a menu moving to another row eases shut as fast as the other opens,
+  so the card moves one way; a new menu comes at its full height, rows arriving
+  only once it is drawn; rows keep the order they came in while it is open),
   `InUse` (`Pill`s raising the app's window) while something records. Backends are singletons: `Net`
-  (Quickshell.Networking for Wi-Fi and wired, `nmcli` for VPNs; a captive
+  (Quickshell.Networking for Wi-Fi and wired, every Wi-Fi card's networks,
+  under each card's name where there are several, as GNOME's; a hidden network
+  by name: `nmcli connection add` a profile marked hidden, the password then
+  over D-Bus (`connectWithPsk`), never on a command line, the profile gone
+  again if it never connects; `nmcli` for VPNs; a captive
   portal gets a card; Wi-Fi without internet offers Sign In too, as a portal
   blocking DoT reads as limited: `nmcli device modify` gives the connection,
   not the profile, DHCP DNS without TLS, `device reapply` once online), `BluetoothDevices` (pair, trust, connect in one click; a
@@ -820,19 +838,22 @@ qst x notify-send -a Discord loft01 hello   # anything inside the session
 qst pipewire restart           # or stop, start
 qst backlight intel_backlight 40 [MAX]      # fake backlight; `NAME remove`
 qst camera open zoom [video1]  # `close zoom`, `add video1 [locked]`, `unlock video1`, `remove video0`
-qst network wifi add Cafe 40 open # the fake NetworkManager: wifi add SSID [STRENGTH] [SECURITY] [PASSWORD], wifi remove|strength|clear,
+qst network wifi add Cafe 40 open # the fake NetworkManager: wifi add SSID [STRENGTH] [SECURITY] [PASSWORD], wifi remove|hide|strength|clear,
                                # wifi many 300 [PREFIX], wifi json JSON, device add|remove NAME [wifi|ethernet], cable NAME on|off,
                                # profile wifi|ethernet|wireguard|vpn NAME [SSID PSK], vpn NAME ok|fail|secrets, up NAME,
-                               # connectivity none|portal|limited|full, switch on|off, delay MS, dump, stop|start|restart
+                               # connectivity none|portal|limited|full, switch on|off, delay MS, dump, stop|start|restart, kill (mid-call, back fresh)
 qst battery 15 discharging 1800             # PERCENT [charging|discharging|full|pending [SECONDS]], or remove
-qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70   # behaviour ok, pin, fail, slow (a connect taking 1.5 s) or crowded
+qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70   # behaviour ok, pin, fail, slow (a connect taking 1.5 s) or crowded; `bluetooth kill` mid-call
 qst player add spotify Spotify Playing [ART] [JSON]   # MPRIS, ART a file or a URL, JSON more of tests/mpris.py's parameters; status NAME STATE, track NAME TITLE [ARTIST], remove NAME, clear
 qst upower stop                # or start; `logind stop|start [ANSWER]`, `wireplumber stop|start` (PipeWire stays up)
 qst hole org.bluez system      # a name held by something that takes every call and answers none; `hole NAME off`
 qst kill SEGV                  # a crash, waiting for Quickshell's relaunch in place; `kill` (KILL) takes the helpers too, then `qst restart`
 QS_TEST_CLOCK=1 qst case "…"   # the shell on libfaketime (and the system malloc: jemalloc deadlocks under it)
 qst clock +8h                  # its clock that far from the machine's; `clock -1h`, `clock at "2027-03-28 00:59:50 UTC"`
-qst fuzz 400 [SEED]            # random panels, keys, clicks, wheel, notifications, idle calls, hotplugs; invariants after each; prints its seed
+qst suspend +8h [SECONDS]      # the shell and its helpers frozen SECONDS (1.1) while its clock moves on 8 h: a suspend as it lives one
+QS_TEST_DISK=256k qst case "…" # its state and cache on tmpfs that small, in a mount namespace of its own
+qst disk fill                  # those filled to the last byte; `disk free`, `disk CMD…` run where the shell sees them
+qst fuzz 400 [SEED]            # random panels, keys, clicks, wheel, notifications, idle calls, hotplugs; invariants 130 ms after each; prints its seed
 qst sync                       # copy edited QML in, restart qs, print warnings
 qst problems                   # warnings less tests/known-warnings and this case's expects
 qst census                     # what the probe finds wrong on screen
@@ -874,7 +895,8 @@ qst down                       # kill and delete the session(s) and the test she
   (the probe's IPC, not the live shell's).
 - System bus: python-dbusmock templates via `qs-dbusmock`, fresh per case:
   NetworkManager (`tests/networkmanager.py`; wired + wg0 up, three networks,
-  unless `QS_TEST_NETWORK=none`), UPower (`tests/upower.py`; battery 76 %
+  unless `QS_TEST_NETWORK=none`; a hidden profile is there on every card and
+  probed for, failing as not found, as NetworkManager's), UPower (`tests/upower.py`; battery 76 %
   discharging), BlueZ (`tests/bluez.py`; an adapter, unless
   `QS_TEST_BLUETOOTH=none`), logind (`tests/logind.py`; only
   `CanRebootToFirmwareSetup`, yes). `nmcli` is real except `connection up`, which asks
@@ -897,7 +919,8 @@ qst down                       # kill and delete the session(s) and the test she
 ### Session notes
 
 - `sync` copies files and restarts qs (a hot reload keeps inline components'
-  old types). `reset` does not re-copy. A palette, `Symbols` or Hyprland config
+  old types); it and `restart` return once the bars are up, as the shell makes
+  its windows only after `qs list`. `reset` does not re-copy. A palette, `Symbols` or Hyprland config
   change needs `down` and `up` (they live in the built `nix/`).
 - `run` copies the working tree per case: to test a commit while editing, use
   a `git worktree` with `QS_TEST_REPO` pointing at it.
@@ -922,7 +945,8 @@ qst down                       # kill and delete the session(s) and the test she
 ### State and scenarios
 
 `qst state` is `tests/Probe.qml` (IPC target `probe`, only in the session's
-copy): panel, screens and monitors, workspaces, windows, popups, notification
+copy; a snapshot reads it over `probe.sock` with curl, a third of a `qs ipc`
+process's cost, until the socket is up): panel, screens and monitors, workspaces, windows, popups, notification
 history, DND, volume, microphone, OSD, brightness, caps, privacy, the status
 button's glyphs, `clocks` (screens whose clock shows its center open),
 controls and its backends, tray, tray menu, the focused
@@ -981,22 +1005,22 @@ own `qst areas` filter: a missing name then says what is there.
 | --- | --- |
 | `binds.sh` | every global bind opens its own panel and closes it, held down too |
 | `caffeine.sh` | Caffeine's unit, pill and status cup, a cold shell's IPC |
-| `chaos.sh` | hostile and broken clients: floods, megabytes of text, bad icons, panel and hotplug storms, 40-window workspaces, 60 outputs, damaged state, 200 tray items, 300 hostile network names, 1000 outputs, 50 VPNs, 100 BT devices, 30 players, small and 4K screens, the shell stopped 10 s under a flood, services and a notification server that hold their names and never answer |
-| `clock.sh` | the wall clock moved under the shell: a suspend's gap, set back, midnight, both clock changes |
-| `controls.sh` | the control centre: open/close paths, status glyphs, header (battery or machine), every pill and menu against the fakes, a password tried as the centre shuts, two VPNs at once, a failed connect mid-scan, the sound menu's headings, symbols and Audio Settings, services stopping under it, PipeWire absent at start, WirePlumber dying alone, Return on a sound output, the player the center's card shows, its buttons and pin, the cover's colour, barely-players |
+| `chaos.sh` | hostile and broken clients: floods, megabytes of text, bad icons, panel and hotplug storms, 40-window workspaces, 60 outputs, damaged state, 200 tray items, 300 hostile network names, 1000 outputs, 50 VPNs, 100 BT devices, 30 players, small and 4K screens, the shell stopped 10 s under a flood, services and a notification server that hold their names and never answer, NetworkManager and BlueZ killed mid-call, a second shell run by hand |
+| `clock.sh` | the wall clock moved under the shell: a suspend's gap, the shell frozen through one, set back, midnight, both clock changes |
+| `controls.sh` | the control centre: open/close paths, status glyphs, header (battery or machine), every pill and menu against the fakes, a password tried as the centre shuts, two VPNs at once, a failed connect mid-scan, hidden networks, two Wi-Fi cards, the sound menu's headings, symbols and Audio Settings, services stopping under it, PipeWire absent at start, WirePlumber dying alone, Return on a sound output, the player the center's card shows, its buttons and pin, the cover's colour, barely-players |
 | `cursors.sh` | the bar and every panel's cursors, a closed hand mid-drag |
 | `design.sh` | every surface on screen, scaled too, in three other locales, for the census |
-| `failures.sh` | the shell's tools failing, hanging, slow, cut short, enormous (`qst fail`), the cached forecast, the shell crashed and killed, its state and cache locked |
+| `failures.sh` | the shell's tools failing, hanging, slow, cut short, enormous (`qst fail`), the cached forecast, the shell crashed and killed, its state and cache locked, a full disk |
 | `history.sh` | saved history across restarts and in-place reloads, kept pictures, damaged files |
 | `hotplug.sh` | unplug, disable, replug under every panel, menus and popups; the center per screen; the server with no monitor at start; panels for absent screens; a portrait screen at a negative origin; Hyprland reloading |
 | `idle.sh` | the idle dim under `motion`, clicks through it, the lock command's holds, a hold whose lock never comes |
 | `interactions.sh` | fixes that had no case: popups, wheel past 100 %, clip scope, 1024x600 and 1080p at scale 3, power keys (held, rearmed, firmware), a banner's click, hover after a panel closes, a drag let go outside the centre |
 | `launcher.sh` | typing as it opens, open time, clicks on another monitor, nixpkgs search at full size and on a broken list, the selection under a retitling window, the clipboard's counts, Return twice |
-| `motion.sh` | center groups expanding, the OSD fading |
+| `motion.sh` | center groups expanding, the OSD fading, toggle menus handed between and within rows |
 | `notifications.sh` | per-app limits, five popups, stack tags, DND, the bell, flood sounds, bare-path pictures, Clear, groups holding their places, Collapse All shutting More, a hovered banner, updates by id (closed at once, past the flood limit), markup in labels, hostile hints |
 | `osd.sh` | what shows and what must not (a mic level moving, the volume key past 100 %) |
 | `privacy.sh` | mics real and virtual, casts, cameras via PipeWire and `/dev` |
-| `soak.sh` | one shell used for long: `fuzz`, every panel fifty times (memory, open files), idle CPU |
+| `soak.sh` | one shell used for long: `fuzz`, every panel fifty times (memory, open files), idle CPU, the package list's memory given back |
 | `tray.sh` | the tray strip, its menus and keys, Escape in a submenu, the keyboard back to a window |
 | `workspaces.sh` | windows opened while the shell starts, the wheel spun hard |
 

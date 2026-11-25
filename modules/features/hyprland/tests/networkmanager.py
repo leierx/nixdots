@@ -57,8 +57,8 @@ SECURITY = {
 
 state = {
     "devices": {},  # iface -> {path, type, carrier, speed, active, aps}
-    "air": [],  # {ssid, bssid, strength, security, password, iface, path}
-    "profiles": {},  # uuid -> {path, id, type, ssid, psk, behaviour, settings}
+    "air": [],  # {ssid, bssid, strength, security, password, iface, hidden}
+    "profiles": {},  # uuid -> {path, id, type, ssid, psk, security, behaviour, iface, timestamp, hidden}
     "active": {},  # path -> {uuid, device}
     "delay": 400,
     "counter": 0,
@@ -178,7 +178,7 @@ def profile_settings(p):
         "ipv6": {"method": "auto"},
     }
     if p["type"] == "wifi":
-        s["802-11-wireless"] = {"ssid": ssid_bytes(p["ssid"]), "mode": "infrastructure"}
+        s["802-11-wireless"] = {"ssid": ssid_bytes(p["ssid"]), "mode": "infrastructure", "hidden": p.get("hidden", False)}
         if p.get("security", "open") != "open":
             s["802-11-wireless"]["security"] = "802-11-wireless-security"
             s["802-11-wireless-security"] = {"key-mgmt": {"wpa3": "sae", "enterprise": "wpa-eap"}.get(p["security"], "wpa-psk")}
@@ -194,10 +194,10 @@ def profile_settings(p):
     return dbus.Dictionary({k: dbus.Dictionary(v, signature="sv") for k, v in s.items()}, signature="sa{sv}")
 
 
-def add_profile(kind, name, ssid="", psk="", security="open", behaviour="ok", iface="", uuid=None, timestamp=0):
+def add_profile(kind, name, ssid="", psk="", security="open", behaviour="ok", iface="", uuid=None, timestamp=0, hidden=False):
     path = nextpath("Settings")
     uuid = uuid or str(uuidlib.uuid4())
-    p = {"path": path, "uuid": uuid, "id": name, "type": kind, "ssid": ssid, "psk": psk, "security": security, "behaviour": behaviour, "iface": iface, "timestamp": timestamp}
+    p = {"path": path, "uuid": uuid, "id": name, "type": kind, "ssid": ssid, "psk": psk, "security": security, "behaviour": behaviour, "iface": iface, "timestamp": timestamp, "hidden": hidden}
     state["profiles"][uuid] = p
     methods = [
         ("GetSettings", "", "a{sa{sv}}", f"ret = self.nm_settings('{uuid}')"),
@@ -256,12 +256,16 @@ def delete_profile(uuid):
     remove_object(p["path"])
 
 
+# The profile's own security, as given: one that does not match the network fails as NetworkManager's would.
 def settings_add(settings):
     c = settings.get("connection", {})
     kind = {"802-11-wireless": "wifi", "802-3-ethernet": "ethernet"}.get(str(c.get("type", "")), str(c.get("type", "")))
-    ssid = bytes(settings.get("802-11-wireless", {}).get("ssid", b"")).decode(errors="replace")
-    psk = str(settings.get("802-11-wireless-security", {}).get("psk", ""))
-    return add_profile(kind, str(c.get("id", ssid or kind)), ssid=ssid, psk=psk, security=security_of(ssid))["path"]
+    wireless = settings.get("802-11-wireless", {})
+    ssid = bytes(wireless.get("ssid", b"")).decode(errors="replace")
+    sec = settings.get("802-11-wireless-security")
+    security = "open" if sec is None else {"sae": "wpa3", "wpa-eap": "enterprise", "none": "wep"}.get(str(sec.get("key-mgmt", "")), "wpa2")
+    psk = str(sec.get("psk", "")) if sec is not None else ""
+    return add_profile(kind, str(c.get("id", ssid or kind)), ssid=ssid, psk=psk, security=security, hidden=bool(wireless.get("hidden", False)))["path"]
 
 
 def security_of(ssid):
@@ -273,7 +277,8 @@ def refresh_available():
     for iface, dev in state["devices"].items():
         if dev["type"] == "wifi":
             seen = {a["ssid"] for a in dev["aps"].values()}
-            paths = [p["path"] for p in state["profiles"].values() if p["type"] == "wifi" and p["ssid"] in seen]
+            # As NetworkManager's: a hidden one may be anywhere, so always.
+            paths = [p["path"] for p in state["profiles"].values() if p["type"] == "wifi" and (p["ssid"] in seen or p.get("hidden"))]
         elif dev["type"] == "ethernet":
             paths = [p["path"] for p in state["profiles"].values() if p["type"] == "ethernet" and p["iface"] in ("", iface)] if dev["carrier"] else []
         else:
@@ -401,7 +406,7 @@ def refresh_aps(iface):
             "Flags": dbus.UInt32(flags),
             "WpaFlags": dbus.UInt32(wpa),
             "RsnFlags": dbus.UInt32(rsn),
-            "Ssid": ssid_bytes(a["ssid"]),
+            "Ssid": ssid_bytes("" if a.get("hidden") else a["ssid"]),
             "Frequency": dbus.UInt32(2437),
             "HwAddress": a["bssid"],
             "Mode": dbus.UInt32(2),
@@ -436,7 +441,10 @@ def activate(conn_path, dev_path, specific):
         if not radio_on():
             raise dbus.exceptions.DBusException("Wi-Fi is off", name="org.freedesktop.NetworkManager.UnmanagedDevice")
         ap = next((path for path, a in sorted(dev["aps"].items(), key=lambda x: -x[1]["strength"]) if a["ssid"] == p["ssid"]), None)
-        if ap is None:
+        # A hidden one is probed for, and fails only once nothing answers.
+        if ap is None and p.get("hidden"):
+            ap = "/"
+        elif ap is None:
             raise dbus.exceptions.DBusException(f"no network {p['ssid']}", name="org.freedesktop.NetworkManager.UnknownConnection")
     if dev["active"]:
         drop_active(dev["active"], AC_REASON_USER)
@@ -459,6 +467,9 @@ def finish(path):
         drop_active(path, AC_REASON_USER)
         return False
     if p["type"] == "wifi":
+        if a["ap"] == "/":
+            fail(dev, path, REASON_SSID_NOT_FOUND)
+            return False
         air = next((x for x in state["air"] if x["ssid"] == p["ssid"]), None)
         if air and air["security"] != "open" and (air["security"] == "enterprise" or air["password"] != p["psk"]):
             set_device_state(dev, NEED_AUTH, REASON_NONE)
@@ -590,8 +601,8 @@ def dump():
         "hardware": bool(manager_props()["WirelessHardwareEnabled"]),
         "connectivity": int(manager_props()["Connectivity"]),
         "devices": [{"iface": i, "type": d["type"], "carrier": d["carrier"], "speed": d["speed"]} for i, d in state["devices"].items() if d["type"] != "wireguard"],
-        "air": [{k: a[k] for k in ("ssid", "bssid", "strength", "security", "password", "iface")} for a in state["air"]],
-        "profiles": [{k: p[k] for k in ("uuid", "id", "type", "ssid", "psk", "security", "behaviour", "iface", "timestamp")} for p in state["profiles"].values()],
+        "air": [{**{k: a[k] for k in ("ssid", "bssid", "strength", "security", "password", "iface")}, "hidden": a.get("hidden", False)} for a in state["air"]],
+        "profiles": [{**{k: p[k] for k in ("uuid", "id", "type", "ssid", "psk", "security", "behaviour", "iface", "timestamp")}, "hidden": p.get("hidden", False)} for p in state["profiles"].values()],
         "active": [a["uuid"] for a in state["active"].values() if a["state"] == AC_ACTIVATED],
         "delay": state["delay"],
     })
@@ -652,6 +663,7 @@ def load(mock_obj, parameters):
         ("GetConnectionByUuid", "s", "o", "ret = self.nm_by_uuid(args[0])"),
         ("AddConnection", "a{sa{sv}}", "o", "ret = self.nm_add(args[0])"),
         ("AddConnectionUnsaved", "a{sa{sv}}", "o", "ret = self.nm_add(args[0])"),
+        ("AddConnection2", "a{sa{sv}}ua{sv}", "oa{sv}", "ret = (self.nm_add(args[0]), {})"),
         ("SaveHostname", "s", "", ""),
         ("ReloadConnections", "", "b", "ret = True"),
     ])
@@ -673,7 +685,7 @@ def load(mock_obj, parameters):
     for d in saved.get("devices", []):
         add_device(d["iface"], d["type"], d["carrier"], d["speed"])
     for p in saved.get("profiles", []):
-        add_profile(p["type"], p["id"], ssid=p["ssid"], psk=p["psk"], security=p["security"], behaviour=p["behaviour"], iface=p["iface"], uuid=p["uuid"], timestamp=p["timestamp"])
+        add_profile(p["type"], p["id"], ssid=p["ssid"], psk=p["psk"], security=p["security"], behaviour=p["behaviour"], iface=p["iface"], uuid=p["uuid"], timestamp=p["timestamp"], hidden=p.get("hidden", False))
     # As NetworkManager assumes what was up when it started again.
     for uuid in saved.get("active", []):
         p = state["profiles"].get(uuid)
@@ -724,6 +736,22 @@ def AddNetworks(self, networks):
     for ssid, strength, security, password, iface in networks:
         state["air"].append({"ssid": str(ssid), "bssid": "02:%02x:%02x:%02x:%02x:00" % ((len(state["air"]) >> 24) & 255, (len(state["air"]) >> 16) & 255, (len(state["air"]) >> 8) & 255, len(state["air"]) & 255), "strength": int(strength), "security": str(security), "password": str(password), "iface": str(iface)})
     for i in [i for i, d in state["devices"].items() if d["type"] == "wifi"]:
+        refresh_aps(i)
+
+
+# Its access points stop sending the name: gone, and back nameless, as a scan would find them.
+@dbus.service.method(MOCK_IFACE, in_signature="s", out_signature="")
+def HideNetwork(self, ssid):
+    for a in state["air"]:
+        if a["ssid"] == str(ssid):
+            a["hidden"] = True
+    for i in [i for i, d in state["devices"].items() if d["type"] == "wifi"]:
+        dev = state["devices"][i]
+        for path, a in list(dev["aps"].items()):
+            if a["ssid"] == str(ssid) and not dev["active"]:
+                del dev["aps"][path]
+                obj(dev["path"]).EmitSignal(WIRELESS_IFACE, "AccessPointRemoved", "o", [path])
+                remove_object(path)
         refresh_aps(i)
 
 

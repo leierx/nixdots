@@ -363,7 +363,27 @@ Scope {
     }
   }
 
+  // `state` without a qs process per call, which costs most of a snapshot: a GET answered over HTTP, which curl speaks on a socket.
+  SocketServer {
+    active: true
+    path: `${Quickshell.env("QS_TEST_SHELL")}/probe.sock`
+    handler: Socket {
+      id: client
+
+      parser: SplitParser {
+        onRead: line => {
+          if (!line.startsWith("GET ")) return;
+          client.write(`HTTP/1.0 200 OK\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n${answers.state()}\n`);
+          client.flush();
+          client.connected = false;
+        }
+      }
+    }
+  }
+
   IpcHandler {
+    id: answers
+
     target: "probe"
 
     function census(): string {
@@ -445,6 +465,14 @@ Scope {
         history: Notifs.entries.map(e => ({ uid: e.uid, time: e.time.getTime(), app: Notifs.appKey(e), summary: e.summary ?? null, popup: e.popup, checked: e.checked, restored: e.restored ?? false, image: e.image || null, kept: Object.keys(e.kept ?? {}) })),
         historyFile: Quickshell.statePath("notification-history.json"),
         historyLoaded: History.loaded,
+        // What the shell takes the file to hold, by count; null once a save failed, -1 for a file it could not read.
+        historySaved: (() => {
+          try {
+            return History.written === "" ? null : (JSON.parse(History.written).notifications ?? []).length;
+          } catch (error) {
+            return -1;
+          }
+        })(),
         historyImages: History.images,
         // The shell's minute, as the bar's clock and the calendar take it, and its cache dir.
         now: Qt.formatDateTime(Time.now, "yyyy-MM-dd HH:mm"),
@@ -468,7 +496,7 @@ Scope {
           // The open menu: its count, and the rows its filter leaves, a few by title.
           open: (menu => menu ? { count: menu.count, rows: menu.shown.length, first: menu.shown.slice(0, 5).map(row => row.title), sound: menu.key === "sound" ? menu.shown.map(row => row.heading ? `# ${row.title}` : `${row.title} (${row.kind})`) : null } : null)(probe.windows().find(entry => entry.type === "ControlsPanel")?.items.find(({ item }) => "filtering" in item && "shown" in item)?.item ?? null),
           toggles: Controls.toggles.map(t => ({ key: t.key, subtitle: t.subtitle, on: t.on, unavailable: t.unavailable ?? false })),
-          network: { present: Net.present, running: Net.running, wifi: Net.wifi !== null, wifiOn: Net.wifiOn, scanning: Net.scanning, connected: Net.connected?.name ?? null, networks: Net.networks.map(n => n.name), known: Net.networks.filter(n => n.known).map(n => n.name), asking: Net.asking || null, askError: Net.askError || null, created: Net.created, failures: Net.failures, portal: Net.portal, limited: Net.limited, signIn: Net.signInOffered, relaxed: Net.relaxed || null, wired: Net.wired.map(d => ({ name: d.name, connected: d.connected, link: d.hasLink })) },
+          network: { present: Net.present, running: Net.running, wifi: Net.wifis.length > 0, cards: Net.wifis.map(d => d.name), wifiOn: Net.wifiOn, scanning: Net.scanning, connected: Net.connected?.name ?? null, networks: Net.networks.map(n => n.name), known: Net.networks.filter(n => n.known).map(n => n.name), asking: Net.asking || null, askingOn: Net.askingOn || null, hidden: Net.hidden ? { ssid: Net.hidden.ssid, error: Net.hidden.error || null, busy: Net.hidden.busy } : null, askError: Net.askError || null, created: Net.created, failures: Net.failures, portal: Net.portal, limited: Net.limited, signIn: Net.signInOffered, relaxed: Net.relaxed || null, wired: Net.wired.map(d => ({ name: d.name, connected: d.connected, link: d.hasLink })) },
           vpns: Net.vpns.map(v => ({ name: v.name, active: v.active, busy: Net.busy(v.uuid) || null })),
           vpnAsking: Net.vpnAsking || null,
           bluetooth: { present: BluetoothDevices.present, on: BluetoothDevices.on, scanning: BluetoothDevices.scanning, devices: BluetoothDevices.devices.map(d => ({ name: d.name, address: d.address, paired: d.paired, connected: d.connected, trusted: d.trusted, note: BluetoothDevices.note(d) || null, battery: d.batteryAvailable ? Math.round(d.battery * 100) : null })) },

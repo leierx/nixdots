@@ -177,3 +177,23 @@ chmod -R u+w "$state" "$cache"
 notify-send -a Late "once it can"
 for _ in $(seq 40); do [ -s "$state/notification-history.json" ] && jq -e 'any(.notifications[]; .summary == "once it can")' "$state/notification-history.json" > /dev/null && break; qst stays true 0.1; done
 jq -e 'any(.notifications[]; .summary == "once it can")' "$state/notification-history.json" > /dev/null
+
+QS_TEST_DISK=256k qst case "a full disk costs a warning, not the shell or a saved file: the history stays whole, and is written again once there is room"
+qst expect 'Writing .*notification-history\.json failed'
+qst expect --may 'Writing .* failed'
+qst expect --may 'Write of .* failed'
+qst expect --may 'Pruning saved notification pictures: '
+file=$(qst state .historyFile | jq -r .)
+for n in $(seq 5); do notify-send -a "App $n" "before $n"; done
+qst wait '.historySaved == 5'
+qst disk fill
+qst disk sh -c '[ "$(df --output=avail "$1" | tail -1)" -eq 0 ]' sh "$(dirname "$file")" || { qst disk df "$(dirname "$file")"; echo "the disk is not full"; exit 1; }
+notify-send -a Late "while full" "$(printf 'A body long enough to need a block of its own. %.0s' $(seq 100))"
+qst wait '.historySaved == null and .notifications == 6'
+qst disk jq -e '.notifications | length == 5' "$file" > /dev/null || { echo "the history on disk is not the last whole one"; exit 1; }
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center:DP-1"'
+qst disk free
+notify-send -a Late "with room again"
+qst wait '.historySaved == 7'
+qst disk sh -c 'for _ in $(seq 100); do jq -e ".notifications | length == 7" "$1" > /dev/null 2>&1 && exit 0; sleep 0.05; done; exit 1' sh "$file" || { echo "the history was not written again"; exit 1; } # sleep: the file is written off the shell's thread, after its own record of it changed

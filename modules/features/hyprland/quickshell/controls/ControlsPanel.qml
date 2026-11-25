@@ -124,7 +124,7 @@ Popover {
             property string next: ""
             // Where it is going, so a change of the open menu elsewhere leaves it be.
             property string target: ""
-            // GNOME's: the slot eases open, then the menu fades in; it fades out, then the slot eases shut; a swap fades out, eases to the new height and fades in.
+            // GNOME's: the slot eases open, then the menu fades in; it fades out, then the slot eases shut, or as it fades when another row's opens; a swap fades out, then fades in as it eases to the new height.
             property real opened: !menu ? 1 : 0
             property real shown: !menu ? 1 : 0
 
@@ -134,10 +134,13 @@ Popover {
               section.target = want;
               opening.stop();
               closing.stop();
+              handing.stop();
               swapping.stop();
               section.next = "";
               if (want === "") {
-                closing.start();
+                // Another row's menu easing open beside it, both move at once, so the card's height goes one way.
+                if (root.menu !== "") handing.start();
+                else closing.start();
               } else if (section.opened < 1 || want === section.held) {
                 // Opening, or back mid-close: it grows to the menu it now holds.
                 section.held = want;
@@ -178,7 +181,7 @@ Popover {
                 target: section
                 property: "shown"
                 to: 1
-                duration: Theme.popupTime
+                duration: Theme.quickTime
                 easing.type: Easing.OutQuad
               }
             }
@@ -210,6 +213,34 @@ Popover {
             }
 
             SequentialAnimation {
+              id: handing
+
+              ParallelAnimation {
+                NumberAnimation {
+                  target: section
+                  property: "shown"
+                  to: 0
+                  duration: Theme.quickTime
+                  easing.type: Easing.OutQuad
+                }
+
+                NumberAnimation {
+                  target: section
+                  property: "opened"
+                  to: 0
+                  duration: Theme.popupTime
+                  easing.type: Easing.OutQuad
+                }
+              }
+
+              PropertyAction {
+                target: section
+                property: "held"
+                value: ""
+              }
+            }
+
+            SequentialAnimation {
               id: swapping
 
               NumberAnimation {
@@ -227,17 +258,19 @@ Popover {
                 }
               }
 
-              // The slot eases to the new menu's height meanwhile.
-              PauseAnimation {
-                duration: Theme.popupTime
-              }
+              // The slot eases to the new menu's height meanwhile; its Behavior runs only while this does.
+              ParallelAnimation {
+                NumberAnimation {
+                  target: section
+                  property: "shown"
+                  to: 1
+                  duration: Theme.quickTime
+                  easing.type: Easing.OutQuad
+                }
 
-              NumberAnimation {
-                target: section
-                property: "shown"
-                to: 1
-                duration: Theme.popupTime
-                easing.type: Easing.OutQuad
+                PauseAnimation {
+                  duration: Theme.popupTime
+                }
               }
             }
 

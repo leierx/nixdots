@@ -24,7 +24,7 @@ Singleton {
       list.push({ key: "network", title: "Network", subtitle: "Not available", glyph: Symbols.wifiOff, on: false, menu: false, unavailable: true });
     } else {
       for (const device of Net.wired) list.push({ key: `wired:${device.name}`, title: Net.wired.length > 1 ? `Wired ${device.name}` : "Wired", subtitle: root.wiredState(device), glyph: Symbols.wired, on: device.connected, menu: false, unavailable: !device.hasLink, device });
-      if (Net.wifi) list.push({ key: "wifi", title: "Wi-Fi", subtitle: root.wifiState(), glyph: Net.wifiGlyph, on: Net.wifiOn, menu: true, unavailable: Net.switchedOff });
+      if (Net.wifis.length > 0) list.push({ key: "wifi", title: "Wi-Fi", subtitle: root.wifiState(), glyph: Net.wifiGlyph, on: Net.wifiOn, menu: true, unavailable: Net.switchedOff });
       if (Net.vpns.length > 0) {
         const up = Net.vpns.filter(vpn => vpn.active);
         const busy = Net.operations.some(op => op.action === "up");
@@ -55,7 +55,7 @@ Singleton {
     if (!Net.connected) return "Not connected";
     if (Net.portal) return "Sign in to network";
     if (Net.limited) return "No internet";
-    return Net.name(Net.connected);
+    return Net.networks.filter(network => network.connected).map(network => Net.name(network)).join(", ");
   }
 
   function flip(toggle: var): void {

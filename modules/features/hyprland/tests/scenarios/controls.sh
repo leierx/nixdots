@@ -139,6 +139,68 @@ qst network wifi remove Hvit_Monster
 qst wait '(.controls.network.networks | index("Hvit_Monster") | not) and .controls.network.asking == "Hvit_Monster"'
 qst stays '.controls.network.asking == "Hvit_Monster"' 1
 
+qst case "a hidden network is asked for by name: a wrong password says so with what was typed and leaves no profile, the right one connects and saves it hidden"
+qst network wifi add Skjult 70 wpa2 hemmelig
+qst network wifi hide Skjult
+open wifi
+qst wait '.controls.network.scanning and (.controls.network.networks | index("Skjult") | not)'
+qst click "ControlsPanel:action:Connect to Hidden Network…"
+qst wait '.controls.network.hidden == { ssid: "", error: null, busy: false }'
+qst type Skjult
+qst key Return
+qst type feil
+qst key Return
+qst wait '.controls.network.hidden == { ssid: "Skjult", error: "Wrong password", busy: false } and .field == "feil"' 10
+qst wait '(.controls.network.known | index("Skjult") | not) and .controls.network.created == []'
+qst key ctrl+a
+qst type hemmelig
+qst key Return
+qst wait '.controls.network.connected == "Skjult" and .controls.network.hidden == null and .controls.network.created == []' 10
+qst network dump | jq -e '[.profiles[] | select(.ssid == "Skjult")] | length == 1 and all(.hidden and .psk == "hemmelig" and .security == "wpa2")' > /dev/null || { qst network dump; echo "the profile is not the hidden network's"; exit 1; }
+
+qst case "a hidden open network connects without a password; a name past 32 bytes is refused in the prompt; one not there is not found, and the centre shut while it is tried takes the prompt and the profile"
+qst network wifi add Usynlig 50 open ""
+qst network wifi hide Usynlig
+open wifi
+qst click "ControlsPanel:action:Connect to Hidden Network…"
+qst wait '.controls.network.hidden != null'
+qst type "$(printf 'æ%.0s' $(seq 17))"
+qst key Return Return
+qst wait '.controls.network.hidden.error == "Name too long"'
+qst stays '(.controls.network.known | length) == 1' 0.5
+qst key ctrl+a
+qst type Usynlig
+qst key Return Return
+qst wait '.controls.network.connected == "Usynlig" and .controls.network.hidden == null' 10
+qst network delay 1500
+qst click ControlsPanel:row:Usynlig
+qst wait '.controls.network.connected == null'
+qst click "ControlsPanel:action:Connect to Hidden Network…"
+qst wait '.controls.network.hidden != null'
+qst type Borte
+qst key Return Return
+qst wait '.controls.network.hidden.error == "Not found" and (.controls.network.known | index("Borte") | not) and .controls.network.created == []' 10
+qst key Return
+qst wait '.controls.network.hidden.busy and (.controls.network.known | index("Borte"))'
+qst key Escape Escape
+qst wait '.panel == "" and .controls.network.hidden == null'
+qst wait '(.controls.network.known | index("Borte") | not) and .controls.network.created == [] and .controls.network.failures.Borte == "Couldn'\''t connect"' 10
+
+qst case "two Wi-Fi cards: each card's networks under its name, a password asked for on the row clicked, and the pill names both connections"
+qst network device add wlan1 wifi
+open wifi
+qst wait '.controls.network.cards == ["wlp5s0", "wlan1"] and .controls.open.first == ["wlp5s0", "Pixel_7128", "Hvit_Monster", "Kaffebrenneriet Gjest", "wlan1"]'
+read -r x y < <(qst areas ControlsPanel | awk -F'\t' '$3 ~ /row:Hvit_Monster$/ { n++; if (n == 2) print $1, $2 }')
+qst click left "$x" "$y"
+qst wait '.controls.network.asking == "Hvit_Monster" and .controls.network.askingOn == "wlan1"'
+qst type monster
+qst key Return
+qst wait '.controls.network.connected == "Hvit_Monster"' 10
+qst click ControlsPanel:row:Pixel_7128
+qst wait '[.controls.toggles[] | select(.key == "wifi") | .subtitle] | . == ["Pixel_7128, Hvit_Monster"] or . == ["Hvit_Monster, Pixel_7128"]' 10
+qst network device remove wlp5s0
+qst wait '.controls.network.cards == ["wlan1"] and .controls.open.first == ["Hvit_Monster", "Pixel_7128", "Kaffebrenneriet Gjest"]'
+
 qst case "an open network connects at once; Wi-Fi off empties the list and turns the pill grey"
 open wifi
 qst wait '.controls.network.networks | index("Kaffebrenneriet Gjest")'
