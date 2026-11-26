@@ -12,5 +12,12 @@
           early_exit = true;
         };
       };
+
+      wayland.windowManager.hyprland.settings.window_rule = [
+        {
+          match.class = "^swappy$";
+          stay_focused = true;
+        }
+      ];
     };
 }

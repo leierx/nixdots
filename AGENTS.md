@@ -337,8 +337,10 @@ fprintd, NetworkManager), so it needs the NixOS half.
   centre) puts the region on the clipboard, silently; `edit` (SUPER+SHIFT+Q)
   opens it in Swappy (`swappy.nix`; red rectangles to start, the panel shown,
   Ctrl+C copies and Ctrl+S saves to `~/Pictures/screenshots`, either
-  closing it, silently). It floats and centres by itself (a fixed size, the
-  shot up to 75 % of the screen) and opens in about a third of a second;
+  closing it, silently). It floats and centres by itself, its window fixed to
+  the shot (up to 75 % of the screen; Hyprland's `size` and `min_size` rules
+  do not reach a window that cannot resize), a rule keeps the focus on it,
+  and it opens in about a third of a second;
   Satty took a second (GTK4, libadwaita and a GL canvas), and Flameshot 13
   freezes only the first monitor under Hyprland. Escape in slurp sends
   nothing; a failure is a critical "Screenshot Failed".
