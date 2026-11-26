@@ -170,7 +170,7 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | `journald.nix` | nixos | `journald` | 90-day retention |
 | `locale.nix` | nixos | `locale` | `no`/`nodeadkeys`, `en_DK.UTF-8`, Europe/Oslo, timesyncd; hyprland reads xkb via `osConfig` |
 | `moonshine/` | nixos | `moonshine` | below |
-| `nautilus.nix` | nixos, HM | `nautilus` | Nautilus with Sushi (Space) and LocalSearch (full-text search; its `ConditionEnvironment=XDG_SESSION_CLASS=user` reset, as only gnome-session imports it); the GNOME module's thumbnailers (glycin, GStreamer, EPUB; PDF from desktop-apps' Papers); gvfs; `inode/directory`; xdg-desktop-portal-gnome for FileChooser alone, so GTK4's file dialogs are Nautilus (floating over a parent, tiled without one). HM: Create Link and Delete Permanently in its menus; Sushi floated and centred (GTK3, whose xdg-foreign v1 Hyprland lacks, so it comes without a parent; Sushi 51, GTK4, in 26.11), never taking the focus, not even as it asks on each file, so Nautilus' keys move it and Space closes it; it keeps the size it opened at for every next file, Sushi 51 too |
+| `nautilus.nix` | nixos, HM | `nautilus` | Nautilus, Sushi (Space) and LocalSearch (full-text search; its `ConditionEnvironment=XDG_SESSION_CLASS=user` reset, as only gnome-session imports it) from `pkgs.unstable` until NixOS 26.11: GNOME 51's Sushi is GTK4, which attaches to Nautilus over xdg-foreign v2 and floats by itself (50's GTK3 wants v1, which Hyprland lacks); the GNOME module's thumbnailers (glycin, GStreamer, EPUB; PDF from desktop-apps' Papers); gvfs; `inode/directory`; xdg-desktop-portal-gnome for FileChooser alone, so GTK4's file dialogs are Nautilus (floating over a parent, tiled without one). HM: Create Link and Delete Permanently in its menus; Sushi never takes the focus, not even as it asks on each file, so Nautilus' keys move it and Space closes it |
 | `neovim/` | nixos, HM | `neovim` (+ HM `neovim.outOfStorePath`) | below |
 | `network.nix` | nixos | `network` | resolved with DNS-over-TLS to Quad9, no plaintext fallback; NetworkManager (DHCP DNS ignored, stable MACs, wifi powersave off, no auto wired profile; connectivity checked against Arch's plaintext `nm-check.txt`, without which no captive portal is ever reported); nftables; no ping; rp-filter `loose` (WireGuard full tunnels) |
 | `nix.nix` | nixos | `nix` | GC, `auto-optimise-store`, flakes, cache, no global registry; `nixpkgs` registry/`NIX_PATH` from `nixpkgs.flake.source` |
@@ -274,7 +274,7 @@ is on PATH.
 
 Files: `default.nix` (nixos + HM base), `bindings.nix`, `rules.nix`,
 `hypridle.nix`, `hyprlock.nix`, `hyprmoncfg.nix`, `hyprtoolkit.nix`,
-`plugins.nix`, `quickshell.nix`, `satty.nix`, `assets/`, `scripts/`, `tests/`,
+`plugins.nix`, `quickshell.nix`, `swappy.nix`, `assets/`, `scripts/`, `tests/`,
 `quickshell/`. The HM half reads `osConfig` (compositor package, xkb,
 fprintd, NetworkManager), so it needs the NixOS half.
 
@@ -335,17 +335,13 @@ fprintd, NetworkManager), so it needs the NixOS half.
 - **Screenshots**: one `writeShellApplication` (`scripts/freeze-region.sh`),
   the screen frozen while slurp selects. `copy` (SUPER+Q, the control
   centre) puts the region on the clipboard, silently; `edit` (SUPER+SHIFT+Q)
-  opens it in Satty (`satty.nix`; no parent, so a window rule floats it at
-  75 % of the monitor, centred, dimming the rest and keeping the focus; the
-  shot is fitted inside, small ones scaled up): rectangles in Adwaita red to
-  start, the palette Adwaita's, toolbars opaque at twice GTK's size through
-  the user's GTK4 `gtk.css` (`window.root`, Satty's alone; its own
-  `overrides.css` loads below the GTK theme, which sets button sizes); Enter
-  copies, Ctrl+S saves to `~/Pictures/screenshots` (made by the script, as
-  Satty makes no directory), and Satty says so itself. It takes about a
-  second to open (GTK4 and libadwaita, then its GL canvas); Flameshot 13
-  freezes only the first monitor under Hyprland. Escape in slurp sends nothing; a failure is a critical "Screenshot
-  Failed".
+  opens it in Swappy (`swappy.nix`; red rectangles to start, the panel shown,
+  Ctrl+C copies and Ctrl+S saves to `~/Pictures/screenshots`, either
+  closing it, silently). It floats and centres by itself (a fixed size, the
+  shot up to 75 % of the screen) and opens in about a third of a second;
+  Satty took a second (GTK4, libadwaita and a GL canvas), and Flameshot 13
+  freezes only the first monitor under Hyprland. Escape in slurp sends
+  nothing; a failure is a critical "Screenshot Failed".
 
 ## The Quickshell shell (`hyprland/quickshell/`)
 

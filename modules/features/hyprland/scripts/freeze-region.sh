@@ -1,4 +1,3 @@
-# $screenshot_dir is set by the nix wrapper
 mode=${1:-}
 case "$mode" in
 copy | edit) ;;
@@ -34,16 +33,14 @@ done
 g=$(slurp -d) || exit 0
 [ -n "$g" ] || exit 0
 
-# ppm for Satty: no encoding to wait on
+# ppm for Swappy: no encoding to wait on
 if [ "$mode" = edit ]; then type=ppm; else type=png; fi
 file="$tmpdir/shot.$type"
 err=$(grim -t "$type" -g "$g" "$file" 2>&1) || fail "${err:-grim failed}"
 kill "$wp" 2>/dev/null || true
 
 if [ "$mode" = edit ]; then
-  # Satty saves there, and makes no directory
-  mkdir -p "$screenshot_dir" || fail "Could not make $screenshot_dir"
-  satty --filename "$file" || fail "Satty failed"
+  swappy --file "$file" || fail "Swappy failed"
 else
   # Its server keeps any pipe open, so its error is not captured.
   wl-copy --type image/png < "$file" || fail "Could not copy it to the clipboard"

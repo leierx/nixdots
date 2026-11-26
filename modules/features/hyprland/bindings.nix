@@ -53,12 +53,9 @@ root: {
           wl-clipboard
           coreutils
           libnotify
-          config.programs.satty.package
+          config.programs.swappy.package
         ];
-        text = ''
-          screenshot_dir=${lib.escapeShellArg (dirOf config.programs.satty.settings.general.output-filename)}
-        ''
-        + builtins.readFile ./scripts/freeze-region.sh;
+        text = builtins.readFile ./scripts/freeze-region.sh;
       };
 
       directions = {
@@ -152,7 +149,7 @@ root: {
             key = "Q";
             modifiers = [ "SHIFT" ];
             dispatcher = exec "${lib.getExe freezeRegion} edit";
-            desc = "Screenshot region to Satty";
+            desc = "Screenshot region to Swappy";
           })
         ]
         ++ lib.concatMap (
