@@ -15,6 +15,8 @@ Item {
   // One that fails to load (an app naming a file that is no picture) gives way to what comes after it.
   readonly property bool picture: image !== "" && pictureView.status !== Image.Error
   readonly property bool icon: appIcon !== "" && iconView.status !== Image.Error
+  // Nothing stands in while its pictures are copied, or the initial would flash before them.
+  readonly property bool waiting: entry?.copying ?? false
   // An app icon sent without an image is Quickshell's image too, which a badge would only repeat.
   readonly property bool badged: picture && icon && appIcon !== image
 
@@ -32,14 +34,14 @@ Item {
     id: iconView
 
     anchors.centerIn: parent
-    visible: !root.picture && root.icon
+    visible: !root.picture && root.icon && !root.waiting
     source: root.appIcon
     implicitSize: Math.round(root.size * 0.7)
   }
 
   Text {
     anchors.centerIn: parent
-    visible: !root.picture && !root.icon
+    visible: !root.picture && !root.icon && !root.waiting
     text: [...(root.entry?.notification.appName || "?")][0].toUpperCase()
     textFormat: Text.PlainText
     color: Theme.fg

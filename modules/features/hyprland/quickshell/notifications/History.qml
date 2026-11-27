@@ -22,7 +22,8 @@ Singleton {
     root.restored(records);
   }
 
-  function save(records: var): void {
+  // LIVE: the uids of every entry shown, whose copies stay whether saved or not.
+  function save(records: var, live: var): void {
     if (!root.loaded) return;
     const kept = Saved.current(records, Date.now());
     const text = Saved.serialise(kept);
@@ -30,7 +31,7 @@ Singleton {
     root.written = text;
     file.setText(text);
     // A picture saved since this list was made may be one it has not seen yet.
-    prune.command = ["sh", "-c", 'mkdir -p "$1" && cd "$1" && since=$2 && shift 2 && find . -maxdepth 1 -name "*.png" ! -newermt "@$since" | while read -r file; do file=${file#./}; case " $* " in *" ${file%%-*} "*) ;; *) rm -f "$file" ;; esac; done', "sh", root.images, String(Date.now() / 1000), ...kept.map(record => record.uid)];
+    prune.command = ["sh", "-c", 'mkdir -p "$1" && cd "$1" && since=$2 && shift 2 && find . -maxdepth 1 -name "*.png" ! -newermt "@$since" | while read -r file; do file=${file#./}; case " $* " in *" ${file%%-*} "*) ;; *) rm -f "$file" ;; esac; done', "sh", root.images, String(Date.now() / 1000), ...kept.map(record => record.uid), ...live];
     if (prune.running) prune.again = true;
     else prune.running = true;
   }

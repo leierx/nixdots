@@ -1,7 +1,9 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Notifications
 import qs.common
+import "history.js" as Saved
 
 QtObject {
   id: root
@@ -25,8 +27,15 @@ QtObject {
   property bool hovered: false
 
   readonly property bool critical: notification.urgency === NotificationUrgency.Critical
-  readonly property string appIcon: Notifs.appIcon(notification)
-  readonly property string image: Notifs.picture(notification.image)
+  // As the notification names them: a theme icon, a picture only the server holds, or a file.
+  readonly property var sources: ({ image: Notifs.picture(notification.image), appIcon: Notifs.appIcon(notification) })
+  readonly property string appIcon: root.shown("appIcon")
+  readonly property string image: root.shown("image")
+  // By path, a client's files copied into the cache, "" where one could not be: only a copy is drawn, as the file could be a pipe or on a hung mount, which would hold the shell.
+  property var copies: new Map()
+  readonly property var files: [...new Set([sources.image, sources.appIcon].map(source => Saved.localPath(source)))].filter(path => path !== "" && !path.startsWith(`${History.images}/`))
+  readonly property var pending: files.filter(path => !copies.has(path))
+  readonly property bool copying: pending.length > 0
   readonly property string key: Notifs.key(notification)
   readonly property string summary: Notifs.clip(notification.summary, Notifs.maxSummary)
   readonly property string body: Notifs.cleanBody(Notifs.clip(notification.body, Notifs.maxBody))
@@ -53,8 +62,35 @@ QtObject {
   function keep(result: var): void {
     if (!root.wants()) return;
     const path = `${History.images}/${root.uid}-image.png`;
-    if (result.saveToFile(path)) root.kept = { image: `file://${path}` };
+    if (result.saveToFile(path)) root.kept = { image: Saved.fileUrl(path) };
   }
+
+  // What is drawn for ROLE: a client's file only as its copy, nothing until there is one.
+  function shown(role: string): string {
+    const path = Saved.localPath(root.sources[role]);
+    return root.files.includes(path) ? root.copies.get(path) ?? "" : root.sources[role];
+  }
+
+  // What the saved history keeps for ROLE, named RAW by the notification: a file as its copy, nothing only the server holds.
+  function lasting(role: string, raw: string): string {
+    if (Saved.localPath(root.sources[role]) !== "") return root.shown(role);
+    return Notifs.inMemory(raw) ? "" : raw;
+  }
+
+  // Copies what is pending, and deletes the copies of files no longer named.
+  function copy(): void {
+    if (copier.running || root.pending.length === 0) return;
+    copier.jobs = root.pending.map(from => ({ from, to: `${History.images}/${root.uid}-${Qt.md5(from)}.png` }));
+    copier.stale = [...root.copies.keys()].filter(path => !root.files.includes(path));
+    const old = copier.stale.map(path => Saved.localPath(root.copies.get(path))).filter(path => path !== "");
+    // A plain file of a picture's size, read with a deadline, as a pipe swapped in after the test would never answer.
+    copier.command = ["sh", "-c", 'dir=$1; shift; [ -d "$dir" ] || mkdir -p "$dir"; while [ "$1" != -- ]; do if [ -f "$1" ] && timeout 2 head -c 10000001 -- "$1" > "$2" && [ "$(wc -c < "$2")" -le 10000000 ]; then echo "$2"; else rm -f "$2"; fi; shift 2; done; shift; rm -f -- "$@"', "sh", History.images, ...copier.jobs.reduce((args, job) => [...args, job.from, job.to], []), "--", ...old];
+    copier.running = true;
+  }
+
+  onPendingChanged: root.copy()
+  onCopiesChanged: Notifs.remember()
+  Component.onCompleted: root.copy()
 
   function restartTimeout(): void {
     if (countdown.running) countdown.restart();
@@ -138,6 +174,25 @@ QtObject {
     function onImageChanged() {
       root.kept = ({});
       Qt.callLater(root.reshow);
+    }
+  }
+
+  property Process copyProcess: Process {
+    id: copier
+
+    property var jobs: []
+    property var stale: []
+
+    stdout: StdioCollector {
+      id: copied
+    }
+    onRunningChanged: {
+      if (running) return;
+      const done = new Set(copied.text.split("\n"));
+      const copies = new Map([...root.copies].filter(([path]) => !copier.stale.includes(path)));
+      for (const job of copier.jobs) copies.set(job.from, done.has(job.to) ? Saved.fileUrl(job.to) : "");
+      root.copies = copies;
+      root.copy();
     }
   }
 }

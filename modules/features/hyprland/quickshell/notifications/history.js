@@ -33,3 +33,19 @@ function parse(text, now) {
 function serialise(records) {
   return JSON.stringify({ version: 1, notifications: records });
 }
+
+// The path a file: URL names, "" for any other; its query and fragment are not part of it.
+function localPath(url) {
+  const file = /^file:(?:\/\/(?:localhost)?)?(\/[^?#]*)/.exec(url);
+  if (!file) return "";
+  try {
+    return decodeURIComponent(file[1]);
+  } catch (error) {
+    return "";
+  }
+}
+
+// Encoded, so a # or a % in a name stays part of it.
+function fileUrl(path) {
+  return `file://${path.split("/").map(encodeURIComponent).join("/")}`;
+}
