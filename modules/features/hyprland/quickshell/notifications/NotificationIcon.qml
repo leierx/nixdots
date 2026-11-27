@@ -40,7 +40,7 @@ Item {
   Text {
     anchors.centerIn: parent
     visible: !root.picture && !root.icon
-    text: (root.entry?.notification.appName || "?")[0].toUpperCase()
+    text: [...(root.entry?.notification.appName || "?")][0].toUpperCase()
     textFormat: Text.PlainText
     color: Theme.fg
     font: Theme.heading
