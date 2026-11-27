@@ -306,9 +306,9 @@ Singleton {
     target: History
 
     function onRestored(records) {
-      // Each live one takes one record, so two alike stay two.
+      // Each one a reload handed over takes one record, so two alike stay two; one arriving before the file was read is new.
       const live = new Map();
-      for (const entry of root.entries) live.set(entry.key, [...(live.get(entry.key) ?? []), entry]);
+      for (const entry of root.entries.filter(entry => entry.notification.lastGeneration)) live.set(entry.key, [...(live.get(entry.key) ?? []), entry]);
       const restored = records.filter(record => {
         const entry = live.get(root.key(record))?.shift();
         if (!entry) return true;
