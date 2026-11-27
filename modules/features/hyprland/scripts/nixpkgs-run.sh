@@ -108,9 +108,14 @@ sandbox=(
   --property=PrivateTmp=yes
   --property="TemporaryFileSystem=$HOME:mode=0700"
   --property="TemporaryFileSystem=$runtime:mode=0700"
-  # The daemon would let it write to the store, and the session and system buses would let it ask anything outside to.
+  # The daemon would let it write to the store, the buses ask anything outside to, podman's socket act as root, and evdev, uinput and uhid read or type keys.
   --property=InaccessiblePaths=-/nix/var/nix/daemon-socket
   --property=InaccessiblePaths=-/run/dbus
+  --property=InaccessiblePaths=-/run/podman
+  --property=InaccessiblePaths=-/run/docker.sock
+  --property=InaccessiblePaths=-/dev/input
+  --property=InaccessiblePaths=-/dev/uinput
+  --property=InaccessiblePaths=-/dev/uhid
   --property="BindPaths=$wayland/socket:$runtime/$display"
   --property="BindPaths=-$runtime/pipewire-0"
   --property="BindPaths=-$runtime/pulse/native"
