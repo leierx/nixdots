@@ -6,6 +6,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const usage = 'usage: check.mjs BOARD_DIR|FILE [--shots DIR] [--eval EXPR|FILE] [--width PX] [--browser PATH] [--timeout S]';
 const opt = { width: 1500, timeout: 120 };
@@ -24,6 +25,7 @@ for (let i = 0; i < argv.length; i++) {
 if (!target || typeof WebSocket === 'undefined') { console.error(typeof WebSocket === 'undefined' ? 'check.mjs needs Node 22 or later' : usage); process.exit(2); }
 let file = path.resolve(target);
 if (fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
+const url = pathToFileURL(file).href;
 
 function browser() {
   const chosen = opt.browser || process.env.DESIGN_BOARD_BROWSER;
@@ -64,7 +66,8 @@ async function finish(result, code) {
   console.log(JSON.stringify(result, null, 1));
   try { await Promise.race([send('Browser.close'), new Promise(r => setTimeout(r, 2000))]); } catch {}
   setTimeout(() => { try { child.kill('SIGKILL'); } catch {} }, 1500).unref();
-  child.once('exit', () => fs.rmSync(profile, { recursive: true, force: true }));
+  const rm = () => fs.rmSync(profile, { recursive: true, force: true });
+  if (child.exitCode !== null || child.signalCode !== null) rm(); else child.once('exit', rm);
   setTimeout(() => process.exit(code), 1600);
 }
 
@@ -76,6 +79,7 @@ const wsUrl = await new Promise((resolve, reject) => {
     if (m) resolve(m[1]);
   });
   child.once('exit', c => reject(new Error(`browser exited (${c}): ${err.slice(-500)}`)));
+  child.once('error', e => reject(new Error(`browser failed to start: ${e.message}`)));
 }).catch(e => finish({ error: String(e.message) }, 1));
 if (done) await new Promise(() => {});
 
@@ -103,12 +107,14 @@ try {
   await Promise.all([send('Runtime.enable', {}, s), send('Log.enable', {}, s), send('Page.enable', {}, s)]);
   await send('Emulation.setDeviceMetricsOverride', { width: opt.width, height: 1000, deviceScaleFactor: 1, mobile: false }, s);
   const loaded = event('Page.loadEventFired', s);
-  await send('Page.navigate', { url: 'file://' + file }, s);
+  await send('Page.navigate', { url }, s);
   await loaded;
   await evaluate('document.fonts.ready.then(() => new Promise(r => setTimeout(r, 300)))');
   const summary = await evaluate(`(() => {
     const secs = [...document.querySelectorAll('section.sec[id^="s-"]')].filter(x => x.id !== 's-together');
     return {
+      href: location.href,
+      board: typeof BOARD !== 'undefined',
       title: document.title,
       questions: secs.map(x => ({ id: x.id.slice(2), options: x.querySelectorAll('.opt').length, empty: [...x.querySelectorAll('.stage')].filter(st => !st.children.length).length })),
       together: !!document.querySelector('#together .stage'),
@@ -117,6 +123,8 @@ try {
       height: document.documentElement.scrollHeight
     };
   })()`);
+  if (!summary.board) errors.push(`no BOARD on the page (${summary.href})`);
+  else if (!summary.questions.length) errors.push(`no questions on the page (${summary.href})`);
   let value;
   if (opt.eval) value = await evaluate(fs.existsSync(opt.eval) ? fs.readFileSync(opt.eval, 'utf8') : opt.eval);
   const shots = [];
@@ -132,7 +140,7 @@ try {
       shots.push(out);
     }
   }
-  finish({ url: 'file://' + file, errors, log, summary, ...(opt.eval ? { eval: value } : {}), ...(opt.shots ? { shots } : {}) }, errors.length ? 1 : 0);
+  finish({ url, errors, log, summary, ...(opt.eval ? { eval: value } : {}), ...(opt.shots ? { shots } : {}) }, errors.length ? 1 : 0);
 } catch (e) {
   finish({ error: String(e.message ?? e), errors, log }, 1);
 }

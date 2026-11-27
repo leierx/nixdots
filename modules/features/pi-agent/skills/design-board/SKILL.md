@@ -13,8 +13,8 @@ All paths below are relative to this skill's directory.
 
 - `engine/` is the page: `index.html` (fixed markup), `engine.css` (chrome), `engine.js` (picks and notes in localStorage, scenario bar, Together, prompt, dock, Copy, plus helpers). Never edit a board's copy; fix the engine here.
 - `starter/board.js`, `starter/board.css`: the part you write, a one-question example.
-- `new-board.sh SLUG` makes `~/.local/share/design-board/SLUG/` (refreshing the engine copies, keeping an existing `board.js`/`board.css`) and prints the path.
-- `check.mjs BOARD_DIR [--shots DIR] [--eval EXPR|FILE]`: headless Chromium in real time; JSON with page errors, each question's option count, empty or sideways-overflowing mocks, an `--eval`'s awaited value, one PNG per question under `--shots`. Exit 1 on any page error.
+- `new-board.sh SLUG` (lowercase letters, digits and `-`) makes `~/.local/share/design-board/SLUG/` (refreshing the engine copies, keeping an existing `board.js`/`board.css`) and prints the path.
+- `check.mjs BOARD_DIR [--shots DIR] [--eval EXPR|FILE]`: headless Chromium in real time; JSON with page errors (no `BOARD` or no questions counts as one), each question's option count, empty or sideways-overflowing mocks, an `--eval`'s awaited value, one PNG per question under `--shots`. Exit 1 on any page error.
 - `examples/toggle-menus/`: a motion board on the engine (a Quickshell control centre's menus: open, swap, hand-off, timing; Play and Click fast buttons; speed chips) and `motion-check.js`, an `--eval` that samples every mock's transitions.
 - `examples/control-centre-round-1.html`: an older single-file board (bar, glyphs, sliders, pills, menus, media card, open/close motion, pill feedback); lift renderers and CSS from it, not its engine.
 
@@ -25,10 +25,10 @@ All paths below are relative to this skill's directory.
 3. **Scaffold, then write only the board.** `sh new-board.sh SLUG`, then write `board.js` and `board.css` in that directory:
    - `BOARD` (name, slug, round, eyebrow, headline, footnote: what stands in for what), `DECIDED`, `SECTIONS`, `renderTogether()`, `onAct(act, x, y, e)`; optional `SCENARIOS`, `NEXT`, scenario keys via `Object.assign(S, {...})`.
    - A section renders option `k` as `render: k => W({ [id]: k }, () => mock(...))`; renderers read picks through `P(id)`, so every mock shows the user's other picks and Together composes them for free.
-   - Interactive bits carry `data-act="verb:arg:arg"` (split on `:`, so no `:` inside an arg; name scopes `open-A`). `onAct` returning true re-renders every mock; return false when you animate the DOM yourself.
+   - Interactive bits carry `data-act="verb:arg:arg"` (split on `:`, so no `:` inside an arg; name scopes `open-A`). Every verb but `noop` (does nothing) reaches `onAct`; the engine's own chips use other attributes. `onAct` returning true re-renders every mock; return false when you animate the DOM yourself.
    - Option keys are single capital letters (the pick badge shows them); map them to variant names in the renderer.
    - Style buttons inside a mock as `.stage .cls`: the engine resets `.stage button`.
-4. **Check, look, open.** `node check.mjs DIR --shots /tmp/SLUG-shots` and fix every error, empty or overflowing mock; read two or three shots (whole sections, not the page). For motion, add an `--eval` that drives the mocks and samples them (see `examples/toggle-menus/motion-check.js`) and read the numbers against each option's description. Then `xdg-open DIR/index.html` (`open` on macOS) and give the user the path. On `file://` the clipboard is blocked: Copy selects the prompt's text instead and the user presses Ctrl+C; say so once, and that they paste it back.
+4. **Check, look, open.** `node check.mjs DIR --shots /tmp/SLUG-shots` and fix every error, empty or overflowing mock; read two or three shots (whole sections, not the page). For motion, add an `--eval` that drives the mocks and samples them (see `examples/toggle-menus/motion-check.js`) and read the numbers against each option's description. Then `xdg-open DIR/index.html` (`open` on macOS) and give the user the path, and say they paste the copied prompt back. If the browser refuses the clipboard, Copy selects the prompt's text instead (Ctrl+C).
 5. **Next round** when the prompt comes back: bump `BOARD.round` (a fresh store, so old picks don't preselect), move answered questions into `DECIDED`, drop settled ones, add new ones from the notes, edit `board.js` in place, re-run `check.mjs`, reopen.
 
 ## Motion questions

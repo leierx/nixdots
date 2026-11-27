@@ -51,6 +51,7 @@ const DEFAULT_NEXT = {
   impl: ['Implement', 'Next: implement these picks, test them, commit, push and deploy.']
 };
 const next = () => (typeof NEXT !== 'undefined' ? NEXT : DEFAULT_NEXT);
+const nextKey = k => (Object.hasOwn(next(), k) ? k : Object.keys(next())[0]);
 const scenarios = () => (typeof SCENARIOS !== 'undefined' ? SCENARIOS : []);
 const store = () => `design-board-${BOARD.slug}-r${BOARD.round}`;
 
@@ -60,7 +61,7 @@ function renderScen() {
   el.hidden = scenarios().length === 0;
   el.innerHTML = scenarios().map(([l, key, vals]) => `<span class="grp"><span class="lab">${l}</span>${vals.map(([v, t]) => {
     const on = String(S[key]) === v;
-    return `<button class="chipbtn ${on ? 'on' : ''}" type="button" data-act="scen:${key}:${v}" aria-pressed="${on}">${t}</button>`;
+    return `<button class="chipbtn ${on ? 'on' : ''}" type="button" data-scen="${key}:${v}" aria-pressed="${on}">${t}</button>`;
   }).join('')}</span>`).join('');
 }
 function buildBoard() {
@@ -114,7 +115,7 @@ function promptText() {
 function updatePrompt() {
   document.getElementById('count').textContent = `${SECTIONS.filter(s => S.picks[s.id]).length} / ${SECTIONS.length} picked`;
   document.getElementById('prompt').value = promptText();
-  document.getElementById('next').innerHTML = `<span class="lab">Then</span> ` + Object.entries(next()).map(([k, [t]]) => `<button class="chipbtn ${S.next === k ? 'on' : ''}" type="button" data-act="next:${k}" aria-pressed="${S.next === k}">${t}</button>`).join(' ');
+  document.getElementById('next').innerHTML = `<span class="lab">Then</span> ` + Object.entries(next()).map(([k, [t]]) => `<button class="chipbtn ${S.next === k ? 'on' : ''}" type="button" data-next="${k}" aria-pressed="${S.next === k}">${t}</button>`).join(' ');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -128,8 +129,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('footnote').innerHTML = BOARD.footnote ?? '';
   try {
     const saved = JSON.parse(localStorage.getItem(store()) || 'null');
-    if (saved) Object.assign(S, { picks: saved.picks || {}, notes: saved.notes || {}, overall: saved.overall || '', next: saved.next || 'round' });
+    if (saved) Object.assign(S, { picks: saved.picks || {}, notes: saved.notes || {}, overall: saved.overall || '', next: saved.next });
   } catch (e) {}
+  S.next = nextKey(S.next);
   document.addEventListener('click', e => {
     const pick = e.target.closest('[data-pick]');
     if (pick) {
@@ -137,12 +139,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (S.picks[id] === k) delete S.picks[id]; else S.picks[id] = k;
       save(); renderAll(); return;
     }
+    const scen = e.target.closest('[data-scen]');
+    if (scen) {
+      const [key, v] = scen.dataset.scen.split(':');
+      if (scenarios().some(([, k, vals]) => k === key && vals.some(([w]) => w === v))) { S[key] = v; renderAll(); }
+      return;
+    }
+    const nx = e.target.closest('[data-next]');
+    if (nx) { S.next = nextKey(nx.dataset.next); save(); updatePrompt(); return; }
     const a = e.target.closest('[data-act]');
     if (!a) return;
     const [act, x, y] = a.dataset.act.split(':');
     if (act === 'noop') return;
-    if (act === 'scen') { S[x] = y; renderAll(); return; }
-    if (act === 'next') { S.next = x; save(); updatePrompt(); return; }
     if (onAct(act, x, y, e)) renderAll();
   });
   document.getElementById('copy').addEventListener('click', () => {
