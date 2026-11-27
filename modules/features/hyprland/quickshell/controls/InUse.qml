@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Wayland
 import qs.common
 import "../common/keep.js" as Keep
+import "names.js" as Names
 
 Column {
   id: inUse
@@ -55,7 +56,7 @@ Column {
         toggle: ({
           key: `inuse:${use.modelData.name}`,
           title: use.modelData.name === "Screen" ? "Screen Sharing" : use.modelData.name,
-          subtitle: use.modelData.apps.map(app => DesktopEntries.heuristicLookup(app)?.name ?? app).join(", ") || "Through the screen sharing portal",
+          subtitle: use.modelData.apps.map(app => Names.clean(DesktopEntries.heuristicLookup(app)?.name ?? app)).join(", ") || "Through the screen sharing portal",
           glyph: use.modelData.glyph,
           glyphColor: Theme.inUse,
           on: false,
