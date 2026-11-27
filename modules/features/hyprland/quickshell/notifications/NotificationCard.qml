@@ -31,9 +31,7 @@ Item {
     rightOnly: true
     // A hand where the click runs something; an arrow where it only puts the popup away.
     restCursor: root.entry.defaultAction || root.entry.buttons.length === 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
-    onSwiped: left => {
-      if (!left) swipe.slideAway(false, root.entry.dismissal());
-    }
+    onSwiped: swipe.slideAway(false, root.entry.dismissal())
     onDismissed: swipe.slideAway(false, root.entry.dismissal())
     onTapped: {
       if (root.entry.defaultAction) root.entry.invoke(root.entry.defaultAction);
