@@ -373,8 +373,8 @@ shell ran stays its child until its next write fails.
 
 Components: `bar/`, `center/`, `controls/`, `launcher/`, `notifications/`,
 `osd/`, `power/`, `shortcuts/`, `tooltip/`, `weather/`, `idle/`; `shell.qml`
-only instantiates them, once `qs list` shows no older shell of this config
-(one run by hand beside the unit's quits before it shows anything; a failed
+only instantiates them, once `qs list -p` shows no older shell of this config
+on this display (one run by hand beside the unit's quits before it shows anything; a failed
 check starts it anyway). `common/` holds what several share: the STYLE.md
 pieces, `Theme` (only it reads `Colors`), `Panels`, `Overlay`, `Popover`,
 `ClickAway`, `Screens`, `Time`, `StateFile`, `Command`, `Deadline`, `Watcher`, `Detached`, `WheelSteps`,
@@ -390,7 +390,8 @@ icon theme, hostname, uptime).
   `panels open|close|toggle <name>`: `apps`, `clipboard`,
   `monitors`, `windows`, `nixpkgs`, `shortcuts`, `power`, `gallery` (qs-test
   only, which adds itself to `Panels.names`), per screen `center:DP-1`,
-  `controls:DP-1`, `tray-menu:DP-1`; `center` or `controls` alone is the
+  `controls:DP-1`, `tray-menu:DP-1` (a tray menu opens only from a press on
+  its item; named alone it closes again); `center` or `controls` alone is the
   focused screen's. Any other name opens nothing (an unknown one warns): open,
   it would hold the clicks and the popups with nothing shown. A screen's panel
   closes as the screen goes from `Screens.real`. `Panels.center` is any open
@@ -402,7 +403,9 @@ icon theme, hostname, uptime).
   in and out, letting clicks and the keyboard go as it closes, then says
   `hidden`; reopened as it fades, it asks for the keyboard again.
 - **`Card`** keeps the focused item whole in view in every list it is in, once
-  keys have moved it.
+  keys have moved it. Tab and the arrows step through a ListView by index,
+  making a row out of view (Qt's chain puts rows made while scrolling back
+  last). Return and Space act once on a held key.
 - **`ClickAway`**: a layer under the windows on every screen, taking input only
   while a panel is open, so bare desktop closes it.
 - **`Screens`**: screens less Hyprland's `FALLBACK`, and the focused one.
@@ -410,24 +413,28 @@ icon theme, hostname, uptime).
   notification, or a log line while `quiet`; stopped and failed after
   `timeout` ms (10 s; 5 s for the shortcuts, 30 s past curl's own, 120 s for
   the clipboard's first decode, 0 for the package list), as each runs one at a
-  time and a hung one would hold its feature for good. **`Deadline`** does the
+  time and a hung one would hold its feature for good; its stderr goes
+  escaped and cut to its last 1000 characters. **`Deadline`** does the
   same for a bare `Process` (Caps Lock, Caffeine's state, night light, the VPN
-  list). **`Detached`**: one
+  list), counted from each start, SIGKILL 2 s after its SIGTERM.
+  **`StateFile`** writes nothing until its read is done or found no file
+  (`ready`). **`Detached`**: one
   `systemd-run --user --scope` per app, since a service restart kills its
-  cgroup. **`Watcher`**: a long-lived command started again as it stops,
+  cgroup; a program not on PATH is a critical notification instead. **`Watcher`**: a long-lived command started again as it stops,
   backing off until a run lasts a minute, with SIGPIPE back to its default
   (Quickshell's children inherit it ignored), so one a crashed shell left
   behind goes at its next line; nmcli, which ignores it itself, runs under a
   reader that takes it along. **`Time`** polls the clock each second rather
   than a `SystemClock`, which spins through a repeated DST hour. **`WheelSteps`**: whole notches,
-  positive up, a touchpad's small steps adding up to them.
+  positive up, a touchpad's small steps adding up to them, a part notch
+  dropped as the wheel turns back.
 - **Nix in the QML** is only the `qs.nix` module in the store copy: `Colors`
   (the palette, translucent colours as Qt `#aarrggbb`), `Hyprsplit.workspaces`
   and `Symbols` (MDI 7.4 from `@mdi/svg`, `scripts/symbols.mjs` over
   `scripts/symbols.tsv`). So the shell runs from the built copy
   (`programs.quickshell.configs.shell`), not the checkout.
 - **Tools by name from PATH** (`cliphist`, `wl-copy`, `pw-play`, `notify-send`,
-  `xdg-open`, `systemd-run`, `hyprmoncfg`, `wezterm`, `curl`, `nixpkgs-index`,
+  `xdg-open`, `systemd-run`, `hyprmoncfg`, `wezterm`, `awk`, `find`, `curl`, `nixpkgs-index`,
   `nixpkgs-run`, `hyprctl`, `systemctl`, `wpctl`, `camera-users`,
   `backlight-watch`, `nmcli`, `nm-connection-editor`, `brightnessctl`,
   `bluetui`, `pwvucontrol`, `qs`, systemd's `busctl` and util-linux's `setpriv`), so it works as any rice: an exception to store paths;
@@ -566,6 +573,23 @@ icon theme, hostname, uptime).
   (a process killed and run again, a watcher's state lost): a `ScriptModel`.
 - A notification replaced in place is soon gone, and calling it throws: compare
   it, never call it, once replaced.
+- Qt opens a local file on the GUI thread, or with `asynchronous` on the
+  engine's one pixmap reader thread, and `ColorQuantizer` waits for its last
+  run on the GUI thread: a client's path (a FIFO, a hung mount) never reaches
+  an `Image` or a quantizer, only a copy the shell made; a theme icon name
+  with a slash is no icon.
+- Quickshell emits `exited` before `runningChanged`: a process started again
+  from its exit handler reads running throughout, so a binding on `running`
+  never sees it end.
+- A JsonAdapter property set in its singleton's `Component.onCompleted` fires
+  no `adapterUpdated`, so it is never saved.
+- NetworkManager's Update and AddConnection refuse a PSK outside 8–63 bytes
+  (64 hex digits; SAE any), and Quickshell only logs it: Net checks before
+  `connectWithPsk`, which takes only WPA and SAE networks.
+- nmcli exits 143 itself on SIGTERM, a normal exit: a run its Deadline stopped
+  is told by `expired`, not its exit status.
+- V4 throws on `obj["__proto__"] = n`, and `constructor`, `toString` are
+  there already: anything keyed by a client's string is a `Map`.
 
 ### Components: what the code does not say
 
@@ -575,14 +599,18 @@ icon theme, hostname, uptime).
   mode sets `rows` (unique `key`s keep delegates), `fields`, a `glyph` or
   `image`, optional `preview` and `find`. `search.js`: each word a substring,
   or a loose field's letters in order, or from four letters a word with one
-  slip, ranked below. The card opens full height so it holds still while
-  typing. `apps` ranks equal matches by `AppUsage` (log2 of the summed 2^weeks of
+  slip, ranked below; only a row's fields are marked. The card opens full
+  height so it holds still while typing. A new query starts at its best
+  match, even when it matches the same rows. `apps` ranks equal matches by `AppUsage` (log2 of the summed 2^weeks of
   each launch: a launch counts half as much a week later, and the stored number
-  never needs decaying) and warms every icon at start (an icon Papirus lacks costs thousands
+  never needs decaying; an id whose use reads exactly 0, about a year
+  unused, is dropped at the next launch) and warms every icon at start (an icon Papirus lacks costs thousands
   of stats). `clipboard` decodes each clip once into Quickshell's cache, pruned
   to what cliphist lists; it searches cliphist's preview, a clip's first 100
   characters (a picture's size and format too, never the counts under it); a
-  clip is decoded to a file before wl-copy takes it, so one that fails says so;
+  clip is decoded to a file of its own before wl-copy takes it, so one that
+  fails says so; each copy and delete is its own process; one listing per
+  open serves the rows and the cache pass;
   cliphist with no database yet ("please store something first") is an empty
   history.
   Rows rebuilt under the same query (a retitled window, the counts) keep the
@@ -662,10 +690,14 @@ icon theme, hostname, uptime).
   button, else puts it away; a right click dismisses it (the user's, over the
   HIG); the pointer on it holds its timeout; it goes as it came. An update closed in the same turn is not put back.
   `History` saves atomically to the state dir (no transient ones, 7 days,
-  `history.js`), with copies in the cache dir of pictures only the server held,
-  grabbed off screen once in a window of their own (`PictureCopies`, a 1 px
-  overlay on the first screen, moved rather than destroyed as monitors go);
-  a prune spares pictures newer than its list. `Notifs` is read at start, so
+  `history.js`), with every picture copied into the cache dir: a client's
+  file by a process (a plain file of up to 10 MB, read under a 2 s timeout),
+  as only the copy is drawn and saved; one only the server held grabbed off
+  screen once in a window of their own (`PictureCopies`, a 1 px overlay on
+  the first screen, moved rather than destroyed as monitors go; a grab waits
+  for a monitor, and one its window took down is made again); a prune spares
+  pictures newer than its list and those of live notifications. App names
+  key `Map`s, so `__proto__` is just a name. `Notifs` is read at start, so
   the server runs with no monitor on. IPC `notifications toggleDnd|setDnd|dnd|count|clear|hidePopups`.
 - `center/`: GNOME's date menu under the clock, one per screen (`center:DP-1`): `Media`'s
   player's `MediaCard`, notifications grouped per app, calendar (ISO weeks) and weather
@@ -695,7 +727,9 @@ icon theme, hostname, uptime).
   under each card's name where there are several, as GNOME's; a hidden network
   by name: `nmcli connection add` a profile marked hidden, the password then
   over D-Bus (`connectWithPsk`), never on a command line, the profile gone
-  again if it never connects; `nmcli` for VPNs; a captive
+  again if it never connects; a WPA key NetworkManager would refuse is
+  refused in the prompt; WEP and other keys `connectWithPsk` cannot take go
+  to `nm-connection-editor`; `nmcli` for VPNs; a captive
   portal gets a card; Wi-Fi without internet offers Sign In too, as a portal
   blocking DoT reads as limited: `nmcli device modify` gives the connection,
   not the profile, DHCP DNS without TLS, `device reapply` once online), `BluetoothDevices` (pair, trust, connect in one click; a
@@ -714,7 +748,8 @@ icon theme, hostname, uptime).
   The card is the cover's colour, `Theme.cover` over `ColorQuantizer`'s eight:
   OKLab 0.40, the seek bar and play button 0.84, white on a grey cover; the
   art square, or as wide as 16:9 for a video's thumbnail. Art is
-  read from a local file, once it is there (`test -r`, so a deleted cover never
+  read from a copy in the cache dir (a local file copied anew under `timeout`
+  and 20 MB, so a FIFO or a device holds nothing up and a deleted cover never
   makes Qt warn), from the start rather than as the center opens:
   remote art downloaded to the cache dir in the background, kept by URL (the
   last 32, pictures only), and held decoded so the card has it at once),
@@ -776,8 +811,8 @@ Checks (`modules/flake/checks.nix`): `format` (`nixfmt --check` everywhere),
   name, a title) without `textFormat` (markup could load a URL).
   Deliberate exceptions are listed in the script with why.
 - `notification-markup`, `notification-history`, `launcher-search`, `names`,
-  `sound-devices`, `keep`, `cover`: `qmltestrunner` over
-  `tests/tst_{markup,history,search,names,devices,keep,cover}.qml`, each with
+  `sound-devices`, `keep`, `cover`, `wheel-steps`: `qmltestrunner` over
+  `tests/tst_{markup,history,search,names,devices,keep,cover,wheel}.qml`, each with
   only its script beside it (`qmlTest`).
 - `qs-test`: builds the package, so shellcheck runs over `scripts/qs-test.sh`.
 
@@ -852,7 +887,7 @@ qst camera open zoom [video1]  # `close zoom`, `add video1 [locked]`, `unlock vi
 qst network wifi add Cafe 40 open # the fake NetworkManager: wifi add SSID [STRENGTH] [SECURITY] [PASSWORD], wifi remove|hide|strength|clear,
                                # wifi many 300 [PREFIX], wifi json JSON, device add|remove NAME [wifi|ethernet], cable NAME on|off,
                                # profile wifi|ethernet|wireguard|vpn NAME [SSID PSK], vpn NAME ok|fail|secrets, up NAME,
-                               # connectivity none|portal|limited|full, switch on|off, delay MS, dump, stop|start|restart, kill (mid-call, back fresh)
+                               # connectivity none|portal|limited|full, switch on|off, delay MS, lag MS (a new profile offered that late), dump, stop|start|restart, kill (mid-call, back fresh)
 qst battery 15 discharging 1800             # PERCENT [charging|discharging|full|pending [SECONDS]], or remove
 qst bluetooth add 11:22:33:44:55:01 Headset audio-headset ok paired connected 70   # behaviour ok, pin, fail, slow (a connect taking 1.5 s) or crowded; `bluetooth kill` mid-call
 qst player add spotify Spotify Playing [ART] [JSON]   # MPRIS, ART a file or a URL, JSON more of tests/mpris.py's parameters; status NAME STATE, track NAME TITLE [ARTIST], remove NAME, clear
@@ -902,12 +937,16 @@ qst down                       # kill and delete the session(s) and the test she
   unlocks and empties them). `TZ`, `LC_ALL` set on `qst case` reach it.
   Everything it starts carries `QS_TEST_SHELL=$QS_TEST_DIR`, by which a case
   counts its watchers and `stop_qs` kills what outlived the group (a crash
-  reporter, helpers left by a relaunch). `bar fakeOutputs 1000` fakes 1000 outputs; `realVolume` drops them
-  (the probe's IPC, not the live shell's).
+  reporter, helpers left by a relaunch). `bar fakeOutputs 1000` fakes 1000 outputs; `realVolume` drops them;
+  `probe chain FIRST THEN` runs THEN from FIRST's exit in one `Command`,
+  `probe launch PROGRAM` launches as the shell does (the probe's IPC, not
+  the live shell's).
 - System bus: python-dbusmock templates via `qs-dbusmock`, fresh per case:
   NetworkManager (`tests/networkmanager.py`; wired + wg0 up, three networks,
   unless `QS_TEST_NETWORK=none`; a hidden profile is there on every card and
-  probed for, failing as not found, as NetworkManager's), UPower (`tests/upower.py`; battery 76 %
+  probed for, failing as not found, as NetworkManager's; Update and
+  AddConnection refuse a WPA key as its `verify_secrets` does: 8–63 bytes or
+  64 hex digits, SAE any), UPower (`tests/upower.py`; battery 76 %
   discharging), BlueZ (`tests/bluez.py`; an adapter, unless
   `QS_TEST_BLUETOOTH=none`), logind (`tests/logind.py`; only
   `CanRebootToFirmwareSetup`, yes). `nmcli` is real except `connection up`, which asks
@@ -958,17 +997,20 @@ qst down                       # kill and delete the session(s) and the test she
 `qst state` is `tests/Probe.qml` (IPC target `probe`, only in the session's
 copy; a snapshot reads it over `probe.sock` with curl, a third of a `qs ipc`
 process's cost, until the socket is up): panel, screens and monitors, workspaces, windows, popups, notification
-history, DND, volume, microphone, OSD, brightness, caps, privacy, the status
-button's glyphs, `clocks` (screens whose clock shows its center open),
+history (with `body`), DND and `dndFlips`, volume, microphone, OSD, brightness,
+caps, privacy, the status button's glyphs (and `opaque`, those drawn whole),
+`notificationPictures` (images loaded in the popups and the center), `clocks` (screens whose clock shows its center open),
 controls and its backends, tray, tray menu, the focused
-control and `ring`, `hovered` (pieces lit by the pointer), tooltip, sliders,
+control (`focused`, its row's `focusedTitle`) and `ring`, `hovered` (pieces lit by the pointer), tooltip, sliders,
 launcher `results` and `selected` (by key), `weather`, `center` (groups with `y`, `slid`) and `centerMore`,
 `machine`, `field`, `problems`, `layers`, `hypr`. A field a
 test needs goes in the probe, read through the shell's own singletons.
 
 Every snapshot also checks the whole shell:
 
-- `problems` (the census): text with no room or under 8 pt, contrast below 3:1
+- `problems` (the census): text with no room, a one-line label broken over
+  lines, lines past their box or cut by a clip (a list's past its view and
+  content), or under 8 pt, contrast below 3:1
   (Theme's faint colour and fading text aside), colours and radii not Theme's
   (the media card's `Media.tint` counts as Theme's; a running `Behavior on
   color` is held to its target),
@@ -1016,23 +1058,23 @@ own `qst areas` filter: a missing name then says what is there.
 | --- | --- |
 | `binds.sh` | every global bind opens its own panel and closes it, held down too |
 | `caffeine.sh` | Caffeine's unit, pill and status cup, a cold shell's IPC |
-| `chaos.sh` | hostile and broken clients: floods, megabytes of text, bad icons, panel and hotplug storms, 40-window workspaces, 60 outputs, damaged state, 200 tray items, 300 hostile network names, 1000 outputs, 50 VPNs, 100 BT devices, 30 players, small and 4K screens, the shell stopped 10 s under a flood, services and a notification server that hold their names and never answer, NetworkManager and BlueZ killed mid-call, a second shell run by hand |
-| `clock.sh` | the wall clock moved under the shell: a suspend's gap, the shell frozen through one, set back, midnight, both clock changes |
-| `controls.sh` | the control centre: open/close paths, status glyphs, header (battery or machine), every pill and menu against the fakes, a password tried as the centre shuts, two VPNs at once, a failed connect mid-scan, hidden networks, two Wi-Fi cards, the sound menu's headings, symbols and Audio Settings, services stopping under it, PipeWire absent at start, WirePlumber dying alone, Return on a sound output, the player the center's card shows, its buttons and pin, the cover's colour, barely-players |
+| `chaos.sh` | hostile and broken clients: floods, megabytes of text, bad icons, panel and hotplug storms, 40-window workspaces, 60 outputs, damaged state, 200 tray items, 300 hostile network names, 1000 outputs, 50 VPNs, 100 BT devices, 30 players, small and 4K screens, the shell stopped 10 s under a flood, services and a notification server that hold their names and never answer, NetworkManager and BlueZ killed mid-call, a second shell run by hand, apps named `__proto__` |
+| `clock.sh` | the wall clock moved under the shell: a suspend's gap, the shell frozen through one, set back, midnight, both clock changes, the uptime under a moved clock |
+| `controls.sh` | the control centre: open/close paths, status glyphs, header (battery or machine), every pill and menu against the fakes, a password tried as the centre shuts, two VPNs at once, a failed connect mid-scan, hidden networks (one named as one in view, joined late), WPA keys NetworkManager refuses, WEP, a sign-in dropped and joined again, a hung VPN list, two Wi-Fi cards, the sound menu's headings, symbols and Audio Settings, services stopping under it, PipeWire absent at start, WirePlumber dying alone, Return on a sound output, the player the center's card shows, its buttons and pin, the cover's colour, a cover that is a FIFO, barely-players |
 | `cursors.sh` | the bar and every panel's cursors, a closed hand mid-drag |
 | `design.sh` | every surface on screen, scaled too, in three other locales, for the census |
-| `failures.sh` | the shell's tools failing, hanging, slow, cut short, enormous (`qst fail`), the cached forecast, the shell crashed and killed, its state and cache locked, a full disk |
-| `history.sh` | saved history across restarts and in-place reloads, kept pictures, damaged files |
+| `failures.sh` | the shell's tools failing, hanging, slow, cut short, enormous (`qst fail`), the cached forecast, the shell crashed and killed, its state and cache locked, a full disk, a command's error as written, an app not installed |
+| `history.sh` | saved history across restarts and in-place reloads, kept pictures, damaged files, a picture arriving with no monitor on, a file's copy outliving it, pipes in a saved history |
 | `hotplug.sh` | unplug, disable, replug under every panel, menus and popups; the center per screen; the server with no monitor at start; panels for absent screens; a portrait screen at a negative origin; Hyprland reloading |
 | `idle.sh` | the idle dim under `motion`, clicks through it, the lock command's holds, a hold whose lock never comes |
-| `interactions.sh` | fixes that had no case: popups, wheel past 100 %, clip scope, 1024x600 and 1080p at scale 3, power keys (held, rearmed, firmware), a banner's click, hover after a panel closes, a drag let go outside the centre |
+| `interactions.sh` | fixes that had no case: popups, wheel past 100 %, clip scope, 1024x600 and 1080p at scale 3, power keys (held, rearmed, firmware), a banner's click, hover after a panel closes, a drag let go outside the centre, Space held on a switch, a long menu by keys, a process run again from its exit, a status glyph back mid-fade |
 | `launcher.sh` | typing as it opens, open time, clicks on another monitor, nixpkgs search at full size and on a broken list, the selection under a retitling window, the clipboard's counts, Return twice |
 | `motion.sh` | center groups expanding, the OSD fading, toggle menus handed between and within rows |
-| `notifications.sh` | per-app limits, five popups, stack tags, DND, the bell, flood sounds, bare-path pictures, Clear, groups holding their places, Collapse All shutting More, a hovered banner, updates by id (closed at once, past the flood limit), markup in labels, hostile hints |
+| `notifications.sh` | per-app limits, five popups, stack tags, DND, the bell, flood sounds, bare-path pictures, Clear, groups holding their places, Collapse All shutting More, a hovered banner, updates by id (closed at once, past the flood limit), markup in labels, hostile hints, pictures and app icons that are pipes, paths with a space, # and %, an app icon naming another's picture |
 | `osd.sh` | what shows and what must not (a mic level moving, the volume key past 100 %) |
-| `privacy.sh` | mics real and virtual, casts, cameras via PipeWire and `/dev` |
+| `privacy.sh` | mics real and virtual, casts, cameras via PipeWire and `/dev`, an app named over several lines |
 | `soak.sh` | one shell used for long: `fuzz`, every panel fifty times (memory, open files), idle CPU, the package list's memory given back |
-| `tray.sh` | the tray strip, its menus and keys, Escape in a submenu, the keyboard back to a window |
+| `tray.sh` | the tray strip, its menus and keys, Escape in a submenu, an opener hovered back onto, the keyboard back to a window, a tray menu named over IPC |
 | `workspaces.sh` | windows opened while the shell starts, the wheel spun hard |
 
 Behaviour that broke once gets a case; check it fails without the fix:
