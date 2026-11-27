@@ -233,3 +233,22 @@ qst wait '.status[0].opaque | index("dnd") != null'
 qst x sh -c 'shell=${XDG_CONFIG_HOME%/cfg}/shell; qs ipc -p "$shell" call notifications setDnd false && qs ipc -p "$shell" call notifications setDnd true'
 qst wait '.dnd and (.status[0].opaque | index("dnd") != null)'
 qst stays '.status[0].opaque | index("dnd") != null' 0.5
+
+qst case "a process run again from its own exit gets a whole deadline: night light's second strength reaches a slow hyprsunset"
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+qst click ControlsPanel:menu:night
+qst wait '.controls.menu == "night" and .controls.night.present'
+qst fail hyprctl slow 'hyprsunset*'
+log="$QS_TEST_DIR/hyprsunset.log"
+seen=$(wc -l < "$log")
+qst click ControlsPanel:slider:night -100 0
+qst wait '.controls.night.on'
+first=$(qst state '.controls.night.temperature')
+qst click ControlsPanel:slider:night 100 0
+qst wait ".controls.night.temperature != $first"
+second=$(qst state '.controls.night.temperature')
+# Two slow runs, the second started from the first's exit: past the 5 s deadline of the first's start.
+applied() { tail -n +$((seen + 1)) "$log" | grep -aq "Setting the temperature to ${second}K"; }
+for _ in $(seq 100); do applied && break; sleep 0.1; done # sleep: hyprsunset is outside the probe
+applied || { tail -n +$((seen + 1)) "$log" | grep -a "Setting the temperature"; echo "the second strength never reached hyprsunset"; exit 1; }

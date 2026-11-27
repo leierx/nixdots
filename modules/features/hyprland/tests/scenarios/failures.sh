@@ -20,6 +20,11 @@ qst wait '.notifications == 2 and .history[0].summary == "cliphist list" and .pa
 qst fail cliphist off
 reopens clipboard
 
+qst case "a command started again from its own exit, of a program not installed, says so"
+qst expect 'Process failed to start.*qst-missing'
+qst ipc probe chain true qst-missing > /dev/null
+qst wait '.notifications == 1 and .history[0].summary == "qst-missing"'
+
 qst case "monitor layouts outlive hyprmoncfg failing and writing garbage"
 qst fail hyprmoncfg exit
 qst expect 'hyprmoncfg status --json: hyprmoncfg: failed for qst'
