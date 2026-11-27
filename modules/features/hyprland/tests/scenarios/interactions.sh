@@ -252,3 +252,11 @@ second=$(qst state '.controls.night.temperature')
 applied() { tail -n +$((seen + 1)) "$log" | grep -aq "Setting the temperature to ${second}K"; }
 for _ in $(seq 100); do applied && break; sleep 0.1; done # sleep: hyprsunset is outside the probe
 applied || { tail -n +$((seen + 1)) "$log" | grep -a "Setting the temperature"; echo "the second strength never reached hyprsunset"; exit 1; }
+
+qst case "Space held on a switch flips it once, not with every repeat"
+qst ipc panels open center:DP-1 > /dev/null
+qst wait '.panel == "center:DP-1"'
+qst key Tab
+qst wait '.focused == "NotificationCenter/Switch:switch:dnd"'
+qst hold space 2000
+qst wait '.dnd and .dndFlips == 1'
