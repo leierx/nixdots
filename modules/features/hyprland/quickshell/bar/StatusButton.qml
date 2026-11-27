@@ -139,6 +139,9 @@ BarButton {
         onLeavingChanged: if (leaving) {
           arrive.stop();
           leave.start();
+        } else {
+          leave.stop();
+          arrive.restart();
         }
 
         Behavior on x {

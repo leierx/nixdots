@@ -225,3 +225,11 @@ qst drag "$x" "$y" -900 700 400
 qst wait '.volume.percent == 0'
 qst stays '.panel == "controls:DP-1" and .volume.percent == 0' 0.5
 qst cursor 400 900 arrow > /dev/null
+
+qst case "a status glyph back while it still fades out shows again"
+qst ipc notifications setDnd true > /dev/null
+qst wait '.status[0].opaque | index("dnd") != null'
+# Both calls within the glyph's fade.
+qst x sh -c 'shell=${XDG_CONFIG_HOME%/cfg}/shell; qs ipc -p "$shell" call notifications setDnd false && qs ipc -p "$shell" call notifications setDnd true'
+qst wait '.dnd and (.status[0].opaque | index("dnd") != null)'
+qst stays '.status[0].opaque | index("dnd") != null' 0.5

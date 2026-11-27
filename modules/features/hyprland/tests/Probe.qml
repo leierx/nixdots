@@ -508,8 +508,8 @@ Scope {
           media: Media.player ? { title: Media.title, artist: Media.artist, playing: Media.player.isPlaying, identity: Media.player.identity, position: Math.round(Media.player.position), length: Math.round(Media.length), pinned: Media.pinned !== "" ? Media.player.identity : null, switcher: Media.switchable ? Media.live.map(p => p.identity) : [], tint: Media.tint, art: probe.mediaArt()?.width ?? null, artY: probe.mediaArt()?.y ?? null, titleLine: probe.mediaLine("media:title"), artistLine: probe.mediaLine("media:artist") } : null
         },
         tray: SystemTray.items.values.filter(item => item.status !== Status.Passive).map(item => item.id),
-        // Each bar's status button, what it shows by name, and its battery.
-        status: probe.windows().filter(entry => entry.type === "BarWindow").map(entry => ({ screen: entry.screen, glyphs: entry.items.find(({ item }) => "glyphs" in item && "panel" in item)?.item.glyphs.map(glyph => glyph.name) ?? [], battery: Power.present ? Power.percent : null })),
+        // Each bar's status button, what it shows by name, the glyphs drawn at full opacity, and its battery.
+        status: probe.windows().filter(entry => entry.type === "BarWindow").map(entry => ({ screen: entry.screen, glyphs: entry.items.find(({ item }) => "glyphs" in item && "panel" in item)?.item.glyphs.map(glyph => glyph.name) ?? [], opaque: entry.items.filter(({ item, opacity }) => "leaving" in item && "look" in item && opacity > 0.99).map(({ item }) => item.modelData.name), battery: Power.present ? Power.percent : null })),
         // The screens whose clock shows pressed, as its center is open.
         clocks: probe.windows().filter(entry => entry.type === "BarWindow" && entry.items.some(({ item }) => "screenName" in item && "checked" in item && item.checked)).map(entry => entry.screen),
         // Every slider on screen by name, with its range: past 1 while it reaches beyond 100 %.
