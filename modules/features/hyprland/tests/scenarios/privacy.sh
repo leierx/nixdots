@@ -105,3 +105,9 @@ record 'application.name = Zoom' --target test-mic
 qst camera open zoom
 pw-cli -m create-node adapter '{ factory.name = videotestsrc node.name = xdph-streaming-2 media.class = Video/Source }' < /dev/null > /dev/null 2>&1 &
 qst wait '.privacy.mic == ["Zoom"] and .privacy.camera == ["zoom"] and .privacy.screen == []'
+
+qst case "an app naming itself over several lines is one line in the control centre's In Use"
+record 'application.name = "Line one\nLine two\nLine three"' --target test-mic
+qst wait '.privacy.mic == ["Line one\nLine two\nLine three"]'
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.controls.inUse == ["Line one Line two Line three"]'
