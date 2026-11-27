@@ -1477,6 +1477,8 @@ reset() {
   ms
   phase_at=$REPLY
   enter
+  # A Caps Lock a case left on would be the next one's.
+  qs-input "$XDG_RUNTIME_DIR/input" unlock
   trays_reset
   players_reset
   holes_reset

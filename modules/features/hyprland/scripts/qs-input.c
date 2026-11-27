@@ -302,6 +302,13 @@ static bool run(int argc, char **argv) {
     return number(argv[2], &ms) && key(argv[1], (long)ms);
   if (!strcmp(cmd, "type") && argc == 2)
     return type(argv[1]);
+  if (!strcmp(cmd, "unlock") && argc == 1) {
+    xkb_state_unref(state);
+    state = xkb_state_new(keymap);
+    send_modifiers();
+    pause_ms(STEP_MS);
+    return true;
+  }
   return fail("unknown command: %s", cmd);
 }
 
