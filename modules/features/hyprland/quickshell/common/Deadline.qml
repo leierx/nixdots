@@ -10,9 +10,20 @@ Timer {
   signal expired()
 
   interval: 10000
-  running: process.running && interval > 0
   onTriggered: {
     root.expired();
     root.process.running = false;
+  }
+
+  // Counted from each start: a run started from the last one's exit handler reads running throughout, so a binding would keep the first run's count.
+  property Connections runs: Connections {
+    target: root.process
+
+    function onStarted(): void {
+      if (root.interval > 0) root.restart();
+    }
+    function onRunningChanged(): void {
+      if (!root.process.running) root.stop();
+    }
   }
 }

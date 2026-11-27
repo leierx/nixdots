@@ -348,6 +348,20 @@ Scope {
     }
   }
 
+  // Started again from its own exit, as callers chain runs.
+  Command {
+    id: chained
+
+    property var next: []
+
+    onDone: {
+      if (chained.next.length === 0) return;
+      chained.command = chained.next;
+      chained.next = [];
+      chained.running = true;
+    }
+  }
+
   // Only in the session's copy, so the live shell carries no test hooks.
   IpcHandler {
     target: "bar"
@@ -395,6 +409,14 @@ Scope {
       for (let i = 0; i < count; i++) churnCard.createObject(null).destroy();
       gc();
       return "done";
+    }
+
+    // FIRST, then from its exit THEN, one Command.
+    function chain(first: string, then: string): string {
+      chained.next = [then];
+      chained.command = [first];
+      chained.running = true;
+      return "started";
     }
 
     function areas(): string {

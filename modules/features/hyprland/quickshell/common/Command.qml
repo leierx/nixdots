@@ -52,9 +52,12 @@ Process {
     else if (exitCode === 0 && exitStatus === 0) root.done(out.text);
     else root.fail(err.text.trim() || (exitStatus !== 0 ? "crashed" : `exited with ${exitCode}`));
   }
-  // One that fails to start, not found say, never reports an exit.
+  // One that fails to start, not found say, never reports an exit. A run started from the last one's exit handler reads running as that one ends.
   onRunningChanged: {
-    if (root.running) return;
+    if (root.running) {
+      root.exitReported = false;
+      return;
+    }
     if (!root.exitReported) {
       root.panel = Panels.active;
       root.fail(`${root.command[0]} could not be started`);
