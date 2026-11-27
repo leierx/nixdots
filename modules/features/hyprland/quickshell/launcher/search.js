@@ -19,8 +19,8 @@ function scoreLowered(typed, haystack, loose) {
         total += 300;
         continue;
       }
-      // Tighter is better: "ffx" in "firefox" spans all seven letters.
-      total += 500 - (letters[letters.length - 1] - letters[0] + 1);
+      // Tighter is better: "ffx" in "firefox" spans all seven letters. However wide, still above a slip.
+      total += 500 - Math.min(letters[letters.length - 1] - letters[0] + 1, 199);
       continue;
     }
     if (at === 0) {
