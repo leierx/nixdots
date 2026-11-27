@@ -25,6 +25,13 @@ Singleton {
   property var pairing: []
   // Seen connecting, so going back to disconnected is a failure.
   property var connecting: []
+  readonly property var addresses: (adapter?.devices.values ?? []).map(device => device.address)
+
+  // One gone mid-way and back is no longer ours: another tool may pair it.
+  onAddressesChanged: {
+    root.pairing = root.pairing.filter(address => root.addresses.includes(address));
+    root.connecting = root.connecting.filter(address => root.addresses.includes(address));
+  }
 
   function rank(device: var): int {
     return device.connected ? 2 : device.paired ? 1 : 0;

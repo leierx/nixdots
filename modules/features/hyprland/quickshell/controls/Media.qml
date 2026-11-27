@@ -42,7 +42,11 @@ Singleton {
 
   onWatchedChanged: if (watched) root.player?.positionChanged()
   onPlayerChanged: remember(0)
-  onPlayersChanged: choose()
+  onPlayersChanged: {
+    const names = new Set(root.players.map(p => p.dbusName));
+    for (const name of Object.keys(root.started)) if (!names.has(name)) delete root.started[name];
+    root.choose();
+  }
   onArtChanged: cover()
   // Another player's art never stands in for this one's while it downloads.
   onShownChanged: {
