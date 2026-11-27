@@ -83,10 +83,11 @@ Popover {
       anchors.fill: parent
       hoverEnabled: true
       cursorShape: Qt.PointingHandCursor
-      // The pointer takes the selection once it moves, so only one tile is lit; resting where the menu opened, it leaves the keyboard's start alone.
+      // The pointer takes the selection once it moves, so only one tile is lit; resting where the menu opened, it leaves the keyboard's start alone. Moving within the selected tile keeps what it armed.
       onPositionChanged: mouse => {
         const at = mapToItem(null, mouse.x, mouse.y);
-        if (root.pointer && (root.pointer.x !== at.x || root.pointer.y !== at.y)) root.current = root.indexOf(surface.action);
+        const index = root.indexOf(surface.action);
+        if (root.pointer && (root.pointer.x !== at.x || root.pointer.y !== at.y) && root.current !== index) root.select(index);
         root.pointer = at;
       }
       onClicked: root.trigger(surface.action)
