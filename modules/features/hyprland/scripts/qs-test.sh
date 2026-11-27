@@ -190,9 +190,21 @@ testqs() {
 
 # The regexes no case fails on: tests/known-warnings, and what this case expects (`expect`).
 allowed() {
-  # An empty one would join as an alternative matching every line, allowing all.
-  { grep -v '^#' "$tests/known-warnings" | cut -f1; [ -s "$T/expected" ] && cut -f2- "$T/expected"; } | grep -v '^$'
-  return 0
+  local pattern
+  while IFS= read -r pattern; do
+    valid_pattern "$pattern" || die "tests/known-warnings: $pattern is no regex grep -E reads, or matches an empty line and so every warning"
+  done < <(known_warnings)
+  known_warnings
+  [ ! -s "$T/expected" ] || cut -f2- "$T/expected"
+}
+
+known_warnings() { grep -v '^#' "$tests/known-warnings" | cut -f1 | grep -v '^$' || true; }
+
+# Joined into one, a regex grep cannot read would hide every warning, and one matching the empty string allow them all.
+valid_pattern() {
+  local status=0
+  grep -qE -- "$1" <<< "" 2> /dev/null || status=$?
+  [ $status = 1 ]
 }
 
 # The lines problems looks at: warnings, errors, a crash, and Qt's placeholder screen.
@@ -201,11 +213,11 @@ warnings() { tail -n +"${1:-1}" "$T/qs.log" | grep -aE 'WARN|ERROR|CRIT|FATAL|cr
 # qs's warnings from line $1 on that nothing allows, and whether it still runs.
 problems() {
   local patterns
-  patterns=$(allowed | paste -sd '|')
+  patterns=$(allowed | paste -sd '|') || exit 1
   # With no output at all, Qt moves windows to a placeholder screen for a moment, and each warns before it is gone or placed.
   warnings "${1:-1}" |
     awk '/creating placeholder screen/ { held = 1; next } held && /Layershell screen does not correspond/ { next } { held = 0; print }' |
-    grep -vE "${patterns:-^$}" || true
+    grep -vE "${patterns:-^$}" || [ $? = 1 ] || die "could not filter qs's warnings by the allowed ones: $patterns"
   # Unless a case killed it (`qst kill`), to start it again.
   if running && [ -s "$T/display" ] && [ ! -s "$T/killed" ] && ! alive; then echo "qs is not running: it crashed or failed to load"; fi
   [ -s "$T/ipc-missing" ] && cat "$T/ipc-missing"
@@ -2097,6 +2109,7 @@ case $cmd in
     kind=must
     [ "${1:-}" = --may ] && kind=may && shift
     [ $# -eq 1 ] && [ -n "$1" ] || die "expect [--may] REGEX"
+    valid_pattern "$1" || die "expect: $1 is no regex grep -E reads, or matches an empty line and so every warning"
     printf "%s\t%s\n" "$kind" "$1" >> "$T/expected"
     ;;
   census) need_up; enter; timeout 5 qs ipc -p "$T/shell" call probe census | jq -r ".[]" ;;
