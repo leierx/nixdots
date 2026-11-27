@@ -226,9 +226,10 @@ PanelWindow {
   Item {
     anchors.fill: parent
     focus: true
+    // Under follow_mouse a window takes the keyboard as the pointer only crosses it, so losing it leaves the pointer's second to decide.
     Window.onActiveChanged: {
       if (Window.active) root.focused = true;
-      else if (root.focused) root.dismissed();
+      else root.keyed = false;
     }
     Keys.onPressed: event => {
       event.accepted = root.key(event);

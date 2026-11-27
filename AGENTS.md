@@ -580,6 +580,10 @@ icon theme, hostname, uptime).
   (a process killed and run again, a watcher's state lost): a `ScriptModel`.
 - A notification replaced in place is soon gone, and calling it throws: compare
   it, never call it, once replaced.
+- Under `follow_mouse = 1` a window takes the keyboard from an `OnDemand`
+  layer as the pointer only crosses it (Hyprland's `mouseMoveUnified`), and
+  gives it back as the pointer comes onto the layer: a layer losing the
+  keyboard is not a click elsewhere. Only `Exclusive` keeps it, clicks too.
 - Qt opens a local file on the GUI thread, or with `asynchronous` on the
   engine's one pixmap reader thread, and `ColorQuantizer` waits for its last
   run on the GUI thread: a client's path (a FIFO, a hung mount) never reaches
@@ -670,10 +674,11 @@ icon theme, hostname, uptime).
   pointer is in `BarWindow`'s right-end zone, which is the buttons' parent (hover
   reaches ancestors, not siblings beneath).
   `TrayMenu` (panel `tray-menu:SCREEN`) cascades as GTK's, takes the keyboard
-  (Exclusive only until it has it, so a window clicked elsewhere gets it and
-  the menu goes), closes a second after the pointer leaves (GTK's
-  `MENU_POPDOWN_DELAY`; GTK itself waits for a click) unless keys drive it
-  or the pointer comes back; Escape in
+  (Exclusive only until it has it, so a window clicked elsewhere gets it),
+  closes a second after the pointer leaves (GTK's `MENU_POPDOWN_DELAY`; GTK
+  itself waits for a click) unless keys drive it or the pointer comes back;
+  losing the keyboard only lets go of the keys' hold, as a window the pointer
+  crosses takes it (the pointer back on a card brings it back); Escape in
   a submenu goes back; a card is at most the screen, scrolling, its labels
   plain and elided.
 - Caffeine (`controls/Caffeine.qml`, IPC `caffeine toggle|set|active`) is the
@@ -1102,7 +1107,7 @@ own `qst areas` filter: a missing name then says what is there.
 | `osd.sh` | what shows and what must not (a mic level moving, the volume key past 100 %) |
 | `privacy.sh` | mics real and virtual, casts, cameras via PipeWire and `/dev`, an app named over several lines |
 | `soak.sh` | one shell used for long: `fuzz`, every panel fifty times (memory, open files), idle CPU, the package list's memory given back |
-| `tray.sh` | the tray strip, its menus and keys, Escape in a submenu, an opener hovered back onto, a pointer slipping off and back, the keyboard back to a window, a tray menu named over IPC |
+| `tray.sh` | the tray strip, its menus and keys, Escape in a submenu, an opener hovered back onto, a pointer slipping off and back, onto a window too, the keyboard back to a window, a tray menu named over IPC |
 | `workspaces.sh` | windows opened while the shell starts, the wheel spun hard |
 
 Behaviour that broke once gets a case; check it fails without the fix:
