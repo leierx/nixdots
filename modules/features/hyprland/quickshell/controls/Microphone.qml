@@ -12,8 +12,8 @@ Singleton {
 
   readonly property PwNode source: Pipewire.defaultAudioSource
   // Quickshell types only plain sources; a virtual one is told by its media.class, which arrives only while tracked.
-  readonly property var untyped: Pipewire.nodes.values.filter(node => node.type === PwNodeType.Untracked && !node.isStream)
-  readonly property var inputs: Pipewire.nodes.values.filter(node => node.type === PwNodeType.AudioSource || node.type === PwNodeType.Untracked && !node.isStream && node.ready && /^Audio\/Source/.test(node.properties["media.class"] ?? ""))
+  readonly property var untyped: Pipewire.nodes.values.filter(node => node.type === PwNodeType.Untracked)
+  readonly property var inputs: Pipewire.nodes.values.filter(node => node.type === PwNodeType.AudioSource || node.type === PwNodeType.Untracked && node.ready && /^Audio\/Source/.test(node.properties["media.class"] ?? ""))
   readonly property bool present: source !== null || inputs.length > 0
   readonly property bool muted: source?.audio?.muted ?? false
   readonly property real volume: source?.audio?.volume ?? 0
