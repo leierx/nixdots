@@ -29,6 +29,9 @@ let
               destroyFormatMount
             ];
 
+            # installation-cd's base profile adds ZFS; both hosts install ext4
+            boot.supportedFilesystems.zfs = lib.mkForce false;
+
             nixpkgs.hostPlatform = targetSystem.config.nixpkgs.hostPlatform;
             nix.channel.enable = false;
             nix.settings.substituters = lib.mkForce [ ];
