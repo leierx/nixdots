@@ -32,7 +32,13 @@ Singleton {
     const rank = Number.isFinite(root.ranks[id]) ? root.ranks[id] : undefined;
     // log2(2^rank + 2^now), without computing either power.
     const sum = rank === undefined ? now : Math.max(rank, now) + Math.log2(1 + Math.pow(2, -Math.abs(rank - now)));
-    state.ranks = Object.assign({}, root.ranks, { [id]: sum });
+    // An id unused for about a year counts exactly nothing, so dropping it changes no order: apps and packages gone since go too.
+    const ranks = {};
+    for (const other in root.ranks) {
+      if (root.use(other) > 0) ranks[other] = root.ranks[other];
+    }
+    ranks[id] = sum;
+    state.ranks = ranks;
   }
 
   StateFile {

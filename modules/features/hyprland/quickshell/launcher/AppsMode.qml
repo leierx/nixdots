@@ -33,9 +33,11 @@ LauncherMode {
     .sort((a, b) => a.title.localeCompare(b.title))
 
   onActivated: row => {
-    AppUsage.launched(row.entry.id);
+    const id = row.entry.id;
     Detached.run(row.entry.runInTerminal ? [...root.terminal, ...row.entry.command] : row.entry.command, row.entry.workingDirectory);
     Panels.close();
+    // New ranks search again: a turn later the launch is on its way and the closed window gone.
+    Qt.callLater(() => AppUsage.launched(id));
   }
 
   // On a first open the entries arrived one by one, each rebuilding the list.
