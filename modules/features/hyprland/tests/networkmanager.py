@@ -61,6 +61,7 @@ state = {
     "profiles": {},  # uuid -> {path, id, type, ssid, psk, security, behaviour, iface, timestamp, hidden}
     "active": {},  # path -> {uuid, device}
     "delay": 400,
+    "lag": 0,
     "counter": 0,
 }
 
@@ -194,10 +195,12 @@ def profile_settings(p):
     return dbus.Dictionary({k: dbus.Dictionary(v, signature="sv") for k, v in s.items()}, signature="sa{sv}")
 
 
-def add_profile(kind, name, ssid="", psk="", security="open", behaviour="ok", iface="", uuid=None, timestamp=0, hidden=False):
+def add_profile(kind, name, ssid="", psk="", security="open", behaviour="ok", iface="", uuid=None, timestamp=0, hidden=False, late=0):
     path = nextpath("Settings")
     uuid = uuid or str(uuidlib.uuid4())
-    p = {"path": path, "uuid": uuid, "id": name, "type": kind, "ssid": ssid, "psk": psk, "security": security, "behaviour": behaviour, "iface": iface, "timestamp": timestamp, "hidden": hidden}
+    p = {"path": path, "uuid": uuid, "id": name, "type": kind, "ssid": ssid, "psk": psk, "security": security, "behaviour": behaviour, "iface": iface, "timestamp": timestamp, "hidden": hidden, "late": late > 0}
+    if late > 0:
+        GLib.timeout_add(late, offer, uuid)
     state["profiles"][uuid] = p
     methods = [
         ("GetSettings", "", "a{sa{sv}}", f"ret = self.nm_settings('{uuid}')"),
@@ -221,6 +224,14 @@ def add_profile(kind, name, ssid="", psk="", security="open", behaviour="ok", if
     obj(SETTINGS).EmitSignal(SETTINGS_IFACE, "NewConnection", "o", [path])
     refresh_available()
     return p
+
+
+def offer(uuid):
+    p = state["profiles"].get(uuid)
+    if p:
+        p["late"] = False
+        refresh_available()
+    return False
 
 
 def secrets(p, setting):
@@ -279,7 +290,7 @@ def settings_add(settings):
         verify_secrets(sec, sec.get("key-mgmt", ""))
     security = "open" if sec is None else {"sae": "wpa3", "wpa-eap": "enterprise", "none": "wep"}.get(str(sec.get("key-mgmt", "")), "wpa2")
     psk = str(sec.get("psk", "")) if sec is not None else ""
-    return add_profile(kind, str(c.get("id", ssid or kind)), ssid=ssid, psk=psk, security=security, hidden=bool(wireless.get("hidden", False)))["path"]
+    return add_profile(kind, str(c.get("id", ssid or kind)), ssid=ssid, psk=psk, security=security, hidden=bool(wireless.get("hidden", False)), late=state["lag"])["path"]
 
 
 def security_of(ssid):
@@ -292,7 +303,7 @@ def refresh_available():
         if dev["type"] == "wifi":
             seen = {a["ssid"] for a in dev["aps"].values()}
             # As NetworkManager's: a hidden one may be anywhere, so always.
-            paths = [p["path"] for p in state["profiles"].values() if p["type"] == "wifi" and (p["ssid"] in seen or p.get("hidden"))]
+            paths = [p["path"] for p in state["profiles"].values() if p["type"] == "wifi" and not p["late"] and (p["ssid"] in seen or p.get("hidden"))]
         elif dev["type"] == "ethernet":
             paths = [p["path"] for p in state["profiles"].values() if p["type"] == "ethernet" and p["iface"] in ("", iface)] if dev["carrier"] else []
         else:
@@ -828,6 +839,12 @@ def SetHardwareSwitch(self, on):
 @dbus.service.method(MOCK_IFACE, in_signature="u", out_signature="")
 def SetDelay(self, ms):
     state["delay"] = int(ms)
+
+
+# A profile added over D-Bus reaches the devices' AvailableConnections this late, as NetworkManager sends property changes from its idle loop.
+@dbus.service.method(MOCK_IFACE, in_signature="u", out_signature="")
+def SetLag(self, ms):
+    state["lag"] = int(ms)
 
 
 @dbus.service.method(MOCK_IFACE, in_signature="", out_signature="s")

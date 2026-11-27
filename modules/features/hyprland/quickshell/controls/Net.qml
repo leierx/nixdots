@@ -363,6 +363,11 @@ Singleton {
         root.failed(modelData, reason);
       }
 
+      // A profile for a name already in view only makes it known, leaving the list as it was.
+      function onKnownChanged(): void {
+        if (modelData.known && root.hidden?.busy && modelData.name === root.hidden.ssid && !addHidden.running) Qt.callLater(root.joinHidden);
+      }
+
       function onConnectedChanged(): void {
         if (!modelData.connected) return;
         // Done with: a later drop is no failure of this attempt.
