@@ -142,8 +142,8 @@ definitions merge. Don't redeclare `systems`.
   `flake.modules.nixos."nixosConfigurations/<name>"`.
 - **`offline-installer.nix`**: per host, `nixosConfigurations.offlineInstaller-<host>`:
   an install CD carrying the host's `toplevel` and disko `destroyFormatMount`,
-  substituters, channels and ZFS off, root autologin, keymap/locale/timezone from the
-  host, and `offline-installer` (disko asks `yes` before wiping, then
+  substituters, channels and ZFS off, root autologin, keymap/locale/timezone
+  from the host, and `offline-installer` (disko asks `yes` before wiping, then
   `nixos-install --no-root-passwd --no-channel-copy`).
 
 Aspect names are load-bearing: `"nixosConfigurations/<host>"` is the host's
@@ -221,9 +221,9 @@ session.
 
 In-tree Lua config. `xdg.configFile."nvim".source` is the module dir, or
 `neovim.outOfStorePath` (a checkout) for live editing. git, LSP servers,
-formatters, `gcc`, `go` (gopls' root detection), `tree-sitter`, `fzf`, `wl-clipboard` (Linux) are
-`extraPackages` (nvim's PATH only); ripgrep and fd come from `programs.ripgrep`
-/ `programs.fd`. LSP overrides in `after/lsp/`. HM's own `init.lua` is
+formatters, `gcc`, `go` (gopls' root detection), `tree-sitter`, `fzf`,
+`wl-clipboard` (Linux) are `extraPackages` (nvim's PATH only); ripgrep and fd
+come from `programs.ripgrep` / `programs.fd`. LSP overrides in `after/lsp/`. HM's own `init.lua` is
 sideloaded (`sideloadInitLua`). Plugins: `vim.pack` (0.12+), pinned by the
 committed `nvim-pack-lock.json`:
 
@@ -320,9 +320,9 @@ fprintd, NetworkManager), so it needs the NixOS half.
   never twice: a `flock` in `$XDG_RUNTIME_DIR` decides, let go before the
   final `idle unlocked` so a lock asked for meanwhile still comes, and `pidof`
   for one run by hand. It runs in a scope of its own (`systemd-run --user
-  --scope`), so a switch restarting hypridle leaves the lock up. Under an idle dim it asks the shell its darkness (`idle hold`,
-  which also freezes the dim) and starts hyprlock on a copy of its config
-  (`$XDG_RUNTIME_DIR`) with brightness 0.6 ÷ (1 − darkness), so every lock ends
+  --scope`), so a switch restarting hypridle leaves the lock up. Under an idle
+  dim it asks the shell its darkness (`idle hold`, which also freezes the dim)
+  and starts hyprlock on a copy of its config (`$XDG_RUNTIME_DIR`) with brightness 0.6 ÷ (1 − darkness), so every lock ends
   on the same picture. `on_lock_cmd` (`idle locked`) drops the dim and blocks
   new ones; `on_unlock_cmd` and `lock` exiting (`idle unlocked`) clear all.
   hyprlock dying by a signal is started again, three times at most
@@ -612,8 +612,8 @@ icon theme, hostname, uptime).
   `PrivateTmp`, tmpfs over `$HOME` and `$XDG_RUNTIME_DIR`, only PipeWire, X11
   and GTK/fontconfig/cursor settings bound back, no nix daemon, D-Bus or
   podman socket (the user is in `podman`, so rootful podman is root), and no
-  `/dev/input`, `/dev/uinput` or `/dev/uhid` (reading or typing keys); the GPU,
-  cameras and `/dev/fuse` stay.
+  `/dev/input`, `/dev/uinput` or `/dev/uhid` (reading or typing keys; a ZSA
+  keyboard's raw HID still is, TODO.md); the GPU, cameras and `/dev/fuse` stay.
   Wayland through its own `security-context` socket, so Hyprland hides
   protocols that type into or capture other windows (X11 apps still share
   Xwayland). Desktop-entry programs run alone, others in wezterm, held open on
@@ -1020,8 +1020,8 @@ past `QS_TEST_PEAK` MiB (1024, `VmHWM`); on two of a watcher (`camera-users`,
 case killed it (`qst kill`); on an `IpcHandler` in the source that isn't
 registered. An empty `expect` or known-warnings line is refused (it would allow
 every line), and so is a pattern grep cannot read or one matching an empty
-line; a failed filter fails `problems` rather than hiding every warning. A whole green `run` names the known warnings no case met, which
-can go.
+line; a failed filter fails `problems` rather than hiding every warning. A
+whole green `run` names the known warnings no case met, which can go.
 
 `tests/scenarios/*.sh` run under `set -euo pipefail` with `qst` on PATH. Each
 `qst case "what should happen"` resets; a file sets `QS_TEST_MONITORS`; lines
