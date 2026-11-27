@@ -209,7 +209,7 @@ LauncherMode {
       job.tab = tab;
       if (job.at < text.length) return;
       stop();
-      starts[job.count] = text.length + 1;
+      starts[job.count] = job.at;
       root.parsing = null;
       root.index = { rev: job.rev, text, lower: job.lower, starts: starts.subarray(0, job.count + 1), names: names.subarray(0, job.count), count: job.count };
     }
