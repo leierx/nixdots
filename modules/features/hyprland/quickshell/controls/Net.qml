@@ -37,7 +37,7 @@ Singleton {
   readonly property bool signInOffered: connected !== null && (portal || limited)
   // The Wi-Fi device whose connection takes the network's own DNS until it is online; NetworkManager drops that with the connection. Saved, as the change outlives a shell restarted mid-sign-in.
   property alias relaxed: saved.relaxed
-  // The network it was relaxed for: on another the flag is stale, as NetworkManager dropped the change.
+  // The network it was relaxed for: on another, or on none since, the flag is stale, as NetworkManager dropped the change with the connection.
   property alias relaxedFor: saved.relaxedFor
 
   // The network a password is asked for, on which card, why it is asked again, and those this shell saved a profile for that never connected.
@@ -480,7 +480,7 @@ Singleton {
 
   onOnlineChanged: restrict()
   onRelaxedChanged: restrict()
-  onConnectedChanged: if (root.relaxed !== "" && root.connected !== null && root.connected.name !== root.relaxedFor) root.relaxed = ""
+  onConnectedChanged: if (root.relaxed !== "" && (root.connected?.name ?? "") !== root.relaxedFor) root.relaxed = ""
 
   Command {
     id: strict

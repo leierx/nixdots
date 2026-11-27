@@ -334,6 +334,28 @@ qst network profile vpn Office
 qst wait 'any(.controls.vpns[]; .name == "Listed")'
 qst stays '.controls.vpns == [{ name: "Listed", active: false, busy: null }, { name: "wg0", active: true, busy: null }]' 2
 
+qst case "a network dropped mid-sign-in and joined again is signed in to afresh: its portal gets a card, and Sign In takes its own DNS again"
+qst network up Pixel_7128
+qst wait '.controls.network.connected == "Pixel_7128"'
+qst network connectivity limited
+open wifi
+qst wait '.controls.network.signIn'
+qst click ControlsPanel:sign-in
+qst wait '.panel == "" and .controls.network.relaxed != null'
+qst network switch off
+qst wait '.controls.network.connected == null and .controls.network.relaxed == null' 10
+qst network switch on
+qst network up Pixel_7128
+qst wait '.controls.network.connected == "Pixel_7128"' 10
+qst network connectivity portal
+qst wait 'any(.history[]; .summary == "Sign In to Network")'
+qst network connectivity limited
+open wifi
+qst wait '.controls.network.signIn'
+qst click ControlsPanel:sign-in
+qst wait '.panel == "" and .controls.network.relaxed != null'
+[ "$(qst actions | grep -c 'nmcli device modify')" = 2 ] || { qst actions; echo "the rejoined connection kept its DNS"; exit 1; }
+
 qst case "a WPA password NetworkManager would refuse is refused in the row, new or saved, and leaves no profile; a wrong one long enough is a wrong password"
 qst network wifi add Kafe 60 wpa2 kaffekopp
 open wifi
