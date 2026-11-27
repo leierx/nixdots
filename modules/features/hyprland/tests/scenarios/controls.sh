@@ -334,6 +334,17 @@ qst network profile vpn Office
 qst wait 'any(.controls.vpns[]; .name == "Listed")'
 qst stays '.controls.vpns == [{ name: "Listed", active: false, busy: null }, { name: "wg0", active: true, busy: null }]' 2
 
+qst case "a profile list that hangs is stopped, and the VPNs listed before it stay"
+open vpn
+qst wait '.controls.vpns == [{ name: "wg0", active: true, busy: null }]'
+qst fail nmcli hang '*UUID,TYPE,ACTIVE,STATE,NAME*'
+qst network profile vpn Office
+# Past its 10 s deadline.
+qst stays '.controls.vpns == [{ name: "wg0", active: true, busy: null }] and .controls.network.running' 12
+qst fail nmcli off
+qst network profile vpn Home
+qst wait '[.controls.vpns[].name] == ["Home", "Office", "wg0"]'
+
 qst case "a network dropped mid-sign-in and joined again is signed in to afresh: its portal gets a card, and Sign In takes its own DNS again"
 qst network up Pixel_7128
 qst wait '.controls.network.connected == "Pixel_7128"'

@@ -335,6 +335,24 @@ Singleton {
     return out;
   }
 
+  function vpnProfiles(text: string): var {
+    const records = [];
+    for (const line of text.replace(/\n$/, "").split("\n")) {
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:/.test(line) || records.length === 0) records.push(line);
+      else records[records.length - 1] += `\n${line}`;
+    }
+    const vpns = [];
+    for (const record of records) {
+      const fields = root.fields(record);
+      // A record cut short is no profile, and Qt 6.12 would leave its missing fields stale (TODO.md).
+      if (fields.length < 5) continue;
+      const [uuid, type, active, state, name] = fields;
+      if (type === "wireguard" || type === "vpn") vpns.push({ name, uuid, type, active: active === "yes", state });
+    }
+    // By name, so the list keeps still as they come and go.
+    return vpns.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  }
+
   Instantiator {
     model: ScriptModel {
       values: root.wifis
@@ -553,32 +571,21 @@ Singleton {
     }
 
     property bool again: false
+    // Stopped by its deadline, it said nothing of NetworkManager or the profiles (nmcli exits 143 of its own on the signal).
+    property bool stopped: false
 
     // The name last: -t escapes only its separator, so a name holding a newline runs on into lines that start with no UUID.
     command: ["nmcli", "-t", "-f", "UUID,TYPE,ACTIVE,STATE,NAME", "connection", "show"]
     environment: root.nmcliEnvironment
     stdout: StdioCollector {
-      onStreamFinished: {
-        const records = [];
-        for (const line of text.replace(/\n$/, "").split("\n")) {
-          if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:/.test(line) || records.length === 0) records.push(line);
-          else records[records.length - 1] += `\n${line}`;
-        }
-        const vpns = [];
-        for (const record of records) {
-          const fields = root.fields(record);
-          // A record cut short is no profile, and Qt 6.12 would leave its missing fields stale (TODO.md).
-          if (fields.length < 5) continue;
-          const [uuid, type, active, state, name] = fields;
-          if (type === "wireguard" || type === "vpn") vpns.push({ name, uuid, type, active: active === "yes", state });
-        }
-        // By name, so the list keeps still as they come and go.
-        root.vpns = vpns.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-      }
+      id: listed
     }
-    onExited: code => {
-      root.running = code === 0;
-      if (code !== 0) root.vpns = [];
+    onExited: (code, status) => {
+      if (!stopped && status === 0) {
+        root.running = code === 0;
+        root.vpns = code === 0 ? root.vpnProfiles(listed.text) : [];
+      }
+      stopped = false;
       if (again) {
         again = false;
         running = true;
@@ -588,6 +595,7 @@ Singleton {
 
   Deadline {
     process: vpnList
+    onExpired: vpnList.stopped = true
   }
 
   StateFile {
