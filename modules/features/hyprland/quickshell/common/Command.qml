@@ -21,7 +21,9 @@ Process {
     if (root.quiet) {
       console.warn(`${root.name}: ${message}`);
     } else {
-      Quickshell.execDetached(["notify-send", "-u", "critical", "-a", "Shell", "-i", "dialog-warning", root.name, message]);
+      // Its end, as text: the server reads markup, and one argument past 128 KiB never starts notify-send.
+      const end = message.length > 1000 ? `…${message.slice(-1000)}` : message;
+      Quickshell.execDetached(["notify-send", "-u", "critical", "-a", "Shell", "-i", "dialog-warning", "--", root.name, end.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")]);
       if (Panels.active === root.panel) Panels.close();
     }
     root.failed(message);

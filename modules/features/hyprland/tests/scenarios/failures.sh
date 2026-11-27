@@ -25,6 +25,16 @@ qst expect 'Process failed to start.*qst-missing'
 qst ipc probe chain true qst-missing > /dev/null
 qst wait '.notifications == 1 and .history[0].summary == "qst-missing"'
 
+qst case "a failing command's error shows as written, its end only when it runs past what one argument holds"
+fails=$(mktemp -p "$QS_TEST_DIR")
+printf '#!/bin/sh\necho "jq: error (at <stdin>:0): Cannot iterate over null" >&2\nexit 5\n' > "$fails"
+chmod +x "$fails"
+qst ipc probe chain "$fails" "" > /dev/null
+qst wait '.notifications == 1 and .history[0].body == "jq: error (at &lt;stdin&gt;:0): Cannot iterate over null"'
+printf '#!/bin/sh\nhead -c 300000 /dev/zero | tr "\\0" x >&2\necho "jq: error (at <stdin>:0): Cannot iterate over null" >&2\nexit 5\n' > "$fails"
+qst ipc probe chain "$fails" "" > /dev/null
+qst wait '.notifications == 2 and (.history[0].body | endswith("xjq: error (at &lt;stdin&gt;:0): Cannot iterate over null") and length < 1200)'
+
 qst case "monitor layouts outlive hyprmoncfg failing and writing garbage"
 qst fail hyprmoncfg exit
 qst expect 'hyprmoncfg status --json: hyprmoncfg: failed for qst'
