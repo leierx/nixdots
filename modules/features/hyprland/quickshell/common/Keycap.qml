@@ -23,6 +23,7 @@ Rectangle {
 
     anchors.centerIn: parent
     anchors.verticalCenterOffset: -1
+    textFormat: Text.PlainText
     color: Theme.fg
     font: Theme.caption
   }

@@ -68,6 +68,7 @@ Rectangle {
     verticalAlignment: Text.AlignVCenter
     visible: field.text === ""
     text: root.placeholder
+    textFormat: Text.PlainText
     elide: Text.ElideRight
     color: Theme.placeholder
     font: Theme.body
