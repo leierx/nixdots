@@ -26,7 +26,8 @@ ShellRoot {
     quiet: true
     timeout: 2000
     running: true
-    command: ["qs", "list", "--all", "--json"]
+    // This config's on this display: one on another display is no other's shell.
+    command: ["qs", "list", "-p", Quickshell.shellPath("shell.qml"), "--json"]
     environment: root.listing
     onDone: output => {
       let all = [];
