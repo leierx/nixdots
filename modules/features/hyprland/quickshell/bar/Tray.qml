@@ -90,6 +90,16 @@ Item {
     }
   }
 
+  // Only a press opens a menu: named over IPC it had nothing to show, or the last one again.
+  Connections {
+    target: Panels
+
+    function onActiveChanged(): void {
+      if (Panels.active !== root.menuPanel) root.menuItem = null;
+      else if (!root.menuItem) Panels.close();
+    }
+  }
+
   WheelSteps {
     id: notches
   }
