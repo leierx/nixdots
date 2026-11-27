@@ -116,6 +116,24 @@ qst key o
 for _ in $(seq 20); do qst actions | grep -q 'hl.dsp.exit()' && break; sleep 0.1; done # sleep: the action reaches the fake hyprctl, outside the probe
 qst actions | grep -q 'hl.dsp.exit()' || { qst actions; echo "O twice did not log out"; exit 1; }
 
+qst case "the pointer taking the selection to another tile disarms the action armed, and moving on the armed one keeps it"
+qst ipc panels open power > /dev/null
+qst wait '.panel == "power"'
+# The tiles come first, Lock leading.
+read -r x y < <(qst areas PowerMenu | awk -F'\t' '$6 == "true" { print $1, $2; exit }')
+qst key p
+qst pointer "$x" "$y"
+qst pointer $((x + 4)) $((y + 4))
+qst key p
+qst stays '.panel == "power"' 0.5
+qst actions | grep -q poweroff && { qst actions; echo "P after the pointer moved to Lock powered off"; exit 1; }
+read -r px py < <(qst areas PowerMenu | awk -F'\t' '$6 == "true" && ++n == 5 { print $1, $2; exit }')
+qst pointer "$px" "$py"
+qst pointer $((px + 4)) $((py + 4))
+qst key p
+qst wait '.panel == ""'
+qst actions | grep -q 'systemctl poweroff' || { qst actions; echo "moving on the armed tile disarmed it"; exit 1; }
+
 qst case "a tooltip shows half a second after the pointer rests on an icon button, under it, and goes as the pointer leaves or presses"
 qst ipc panels open controls:DP-1 > /dev/null
 qst wait '.panel == "controls:DP-1"'
