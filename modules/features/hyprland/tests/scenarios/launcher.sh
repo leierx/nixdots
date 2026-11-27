@@ -203,3 +203,23 @@ qst key Return Return
 qst wait '.panel == ""'
 qst stays '.panel == ""' 0.5
 [ "$(qst actions | grep -c '^systemd-run .*nixpkgs-run')" = 1 ] || { qst actions; echo "two Returns ran the package twice"; exit 1; }
+
+qst case "a launch counts in the app's rank, and ids unused for over a year leave the file"
+export QS_TEST_MONITORS="DP-1:1920x1080:1"
+qst reset > /dev/null
+# Qt, when the launcher closes while its list is still building rows (TODO.md).
+qst expect --may 'DelegateModel::cancel: index out range'
+: > "$QS_TEST_DIR/no-launch"
+state=$(dirname "$(qst state .historyFile | jq -r .)")
+mkdir -p "$state"
+week=$((7 * 24 * 3600))
+now=$(($(date +%s) / week))
+echo "{\"ranks\":{\"gone.desktop\":$((now - 60)),\"nixpkgs:gone\":$((now - 60)),\"kept.desktop\":$((now - 2))}}" > "$state/launcher.json"
+qst restart > /dev/null
+qst key super+d
+qst type firefox
+qst wait '.results[0] == "Firefox"'
+qst key Return
+qst wait '.panel == ""'
+for _ in $(seq 50); do jq -e '.ranks | keys | any(test("firefox"))' "$state/launcher.json" > /dev/null 2>&1 && break; qst stays true 0.1; done
+jq -e '.ranks | keys | length == 2 and any(test("firefox")) and index("kept.desktop") != null' "$state/launcher.json" > /dev/null || { cat "$state/launcher.json"; echo "the ranks are not the launch and the recent one"; exit 1; }

@@ -216,9 +216,11 @@ LauncherMode {
   }
 
   onActivated: row => {
-    AppUsage.launched(root.prefix + row.attr);
+    const id = root.prefix + row.attr;
     Detached.run(["nixpkgs-run", root.index.rev, row.attr, row.program], "");
     Panels.close();
+    // New ranks search again: a turn later the launch is on its way and the closed window gone.
+    Qt.callLater(() => AppUsage.launched(id));
   }
 
   // Its text goes with its path, so a released list leaves nothing behind.
