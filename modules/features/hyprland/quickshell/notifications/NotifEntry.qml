@@ -12,7 +12,7 @@ QtObject {
   readonly property bool restored: notification?.past === true
   // Names its saved pictures, and it in the saved history.
   property string uid: ""
-  // By role ("image", "appIcon"), the saved copies of pictures only the server held.
+  // By role ("image"), the saved copy of a picture only the server held.
   property var kept: ({})
   property date time: new Date()
   property bool popup: false
@@ -40,20 +40,20 @@ QtObject {
     return requested < 0 ? Notifs.defaultTimeout : requested;
   }
 
-  function source(role: string): string {
-    return String((role === "image" ? notification.image : notification.appIcon) ?? "");
+  function source(): string {
+    return String(notification.image ?? "");
   }
 
   // A picture only the server holds, and only while the notification lives, not saved yet.
-  function wants(role: string): bool {
-    return !root.restored && !root.kept[role] && Notifs.inMemory(root.source(role));
+  function wants(): bool {
+    return !root.restored && !root.kept.image && Notifs.inMemory(root.source());
   }
 
-  // A grab of the picture for ROLE, from the copy the popups' window drew.
-  function keep(role: string, result: var): void {
-    if (!root.wants(role)) return;
-    const path = `${History.images}/${root.uid}-${role}.png`;
-    if (result.saveToFile(path)) root.kept = Object.assign({}, root.kept, { [role]: `file://${path}` });
+  // A grab of the picture, from the copy the pictures' window drew.
+  function keep(result: var): void {
+    if (!root.wants()) return;
+    const path = `${History.images}/${root.uid}-image.png`;
+    if (result.saveToFile(path)) root.kept = { image: `file://${path}` };
   }
 
   function restartTimeout(): void {

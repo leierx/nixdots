@@ -9,7 +9,7 @@ import qs.common
 PanelWindow {
   id: window
 
-  readonly property var wanted: Notifs.entries.reduce((wanted, entry) => [...wanted, ...["image", "appIcon"].filter(role => entry.wants(role)).map(role => ({ key: `${entry.uid}-${role}`, entry, role }))], [])
+  readonly property var wanted: Notifs.entries.filter(entry => entry.wants()).map(entry => ({ key: entry.uid, entry }))
   // A copy goes only once its grab is back, never with what it copies.
   property var copies: []
 
@@ -55,24 +55,23 @@ PanelWindow {
         id: copy
 
         required property var modelData
-        readonly property int size: modelData.role === "image" ? 80 : 28
         property int grabbing: 0
 
         function settle(): void {
-          if (copy.grabbing === 0 && !(copy.modelData.entry?.wants(copy.modelData.role) && copy.status === Image.Loading)) window.copied(copy.modelData.key);
+          if (copy.grabbing === 0 && !(copy.modelData.entry?.wants() && copy.status === Image.Loading)) window.copied(copy.modelData.key);
         }
 
-        width: size
-        height: size
-        sourceSize: Qt.size(size, size)
+        width: 80
+        height: 80
+        sourceSize: Qt.size(80, 80)
         // Null once its notification is dismissed.
-        source: modelData.entry ? modelData.entry.source(modelData.role) : ""
-        fillMode: modelData.role === "image" ? Image.PreserveAspectCrop : Image.PreserveAspectFit
+        source: modelData.entry ? modelData.entry.source() : ""
+        fillMode: Image.PreserveAspectCrop
         // The image provider reuses URLs for different notifications.
         cache: false
         onStatusChanged: {
           if (status === Image.Loading) return;
-          if (status !== Image.Ready || !modelData.entry?.wants(modelData.role)) {
+          if (status !== Image.Ready || !modelData.entry?.wants()) {
             copy.settle();
             return;
           }
@@ -80,7 +79,7 @@ PanelWindow {
           const from = copy.source;
           copy.grabToImage(result => {
             // Kept only if it is still the picture the notification shows.
-            if (copy.source === from) copy.modelData.entry?.keep(copy.modelData.role, result);
+            if (copy.source === from) copy.modelData.entry?.keep(result);
             copy.grabbing--;
             copy.settle();
           }, Qt.size(copy.sourceSize.width, copy.sourceSize.height));
