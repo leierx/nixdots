@@ -1068,19 +1068,26 @@ up() {
   cat > "$T/run.sh" << EOF
 #!/bin/sh
 echo \$DBUS_SESSION_BUS_ADDRESS > "$T/bus"
-export XDG_RUNTIME_DIR="$runtime" XDG_CONFIG_HOME="$T/cfg" PATH="$T/bin:\$PATH" DBUS_SYSTEM_BUS_ADDRESS="unix:path=$runtime/system_bus_socket"
 export LIBSEAT_BACKEND=seatd SEATD_SOCK="$runtime/no-seatd"
-unset WAYLAND_DISPLAY DISPLAY HYPRLAND_INSTANCE_SIGNATURE SWAYSOCK
 WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 labwc -C "$T/labwc" > "$T/labwc.log" 2>&1 &
 echo \$! > "$T/labwc.pid"
 for _ in \$(seq 100); do [ -S "$runtime/wayland-0" ] && break; sleep 0.1; done
-export WAYLAND_DISPLAY=wayland-0 XDG_CURRENT_DESKTOP=Hyprland
+export WAYLAND_DISPLAY=wayland-0
 export HYPRLAND_NO_SD_VARS=1 HYPRLAND_NO_SD_NOTIFY=1 HYPRLAND_NO_SD_TARGET=1 HYPRLAND_NO_CRASHREPORTER=1
 echo \$\$ > "$T/hyprland.pid"
 exec "$build/hyprland/bin/Hyprland"
 EOF
   chmod +x "$T/run.sh"
-  setsid dbus-run-session -- "$T/run.sh" > "$T/hyprland.log" 2>&1 < /dev/null &
+  # The portal, a client of the session's PipeWire, asks its own Realtime interface for priority as it reconnects after
+  # each reset, and stalls 25 s per call: what the bus activates goes without realtime.
+  mkdir -p "$T/pw/client/client.conf.d"
+  install -m 644 "$(dirname "$(command -v pipewire)")/../share/pipewire/client.conf" "$T/pw/client/client.conf"
+  printf 'context.properties = {\n    module.rt = false\n}\n' > "$T/pw/client/client.conf.d/qs-test.conf"
+  # The bus too, as what it activates (portals, gvfs, dconf) gets its environment: never the live session's display or buses.
+  env -u WAYLAND_DISPLAY -u DISPLAY -u HYPRLAND_INSTANCE_SIGNATURE -u SWAYSOCK -u DBUS_SESSION_BUS_ADDRESS \
+    XDG_RUNTIME_DIR="$runtime" XDG_CONFIG_HOME="$T/cfg" XDG_CURRENT_DESKTOP=Hyprland PATH="$T/bin:$PATH" \
+    DBUS_SYSTEM_BUS_ADDRESS="unix:path=$runtime/system_bus_socket" PIPEWIRE_CONFIG_DIR="$T/pw/client" \
+    setsid dbus-run-session -- "$T/run.sh" > "$T/hyprland.log" 2>&1 < /dev/null &
   local instance=""
   for _ in $(seq 150); do
     instance=$(XDG_RUNTIME_DIR=$runtime "$build/hyprland/bin/hyprctl" instances -j 2> /dev/null | jq -r '.[0] | select(.) | "\(.instance) \(.wl_socket)"' 2> /dev/null || true)
@@ -1092,6 +1099,8 @@ EOF
   echo "${instance#* }" > "$T/display"
 
   enter
+  # So what the bus activates from now on reaches the test's Hyprland; never --systemd, which is the user's.
+  dbus-update-activation-environment WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE || die "could not hand the session bus Hyprland's display"
   monitors_reset
   sysbus_start
   services_reset
