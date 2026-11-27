@@ -33,10 +33,6 @@
           powersave = false;
           macAddress = "stable-ssid";
         };
-        connectionConfig = {
-          "ipv4.ignore-auto-dns" = true;
-          "ipv6.ignore-auto-dns" = true;
-        };
         settings = {
           main.no-auto-default = "*";
           # Off by default on NixOS; without it NetworkManager never reports a captive portal.
