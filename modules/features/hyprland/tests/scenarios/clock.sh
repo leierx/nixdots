@@ -44,6 +44,16 @@ qst ipc panels open center > /dev/null
 qst wait '.panel == "center:DP-1"'
 qst stays '.center[0].app == "Chat"' 1
 
+QS_TEST_CLOCK=1 qst case "the clock set two days on leaves the machine's uptime as the kernel counts it"
+qst wait '.machine.uptime != ""'
+# Its minutes left out, which may tick on meanwhile.
+hours='.machine.uptime | sub(" [0-9]+ min$"; "")'
+was=$(qst state "$hours")
+now=$(qst state .now)
+qst clock +48h
+qst wait ".now != $now"
+qst stays "($hours) == $was" 1
+
 TZ=Europe/Oslo QS_TEST_CLOCK=1 qst case "midnight and both of Oslo's clock changes pass under the open center"
 qst ipc panels open center > /dev/null
 qst wait '.panel == "center:DP-1"'
