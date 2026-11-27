@@ -66,6 +66,14 @@ wait_saved '(.notifications | length) == 0'
 for _ in $(seq 30); do [ -z "$(images)" ] && break; qst stays true 0.05; done
 [ -z "$(images)" ] || { echo "pictures left behind: $(images)"; exit 1; }
 
+qst case "a picture from memory that comes while no monitor is on is kept once one is back"
+qst monitor remove DP-1
+qst wait '(.screens | map(.name)) == ["FALLBACK"]'
+pixel Chat "in the dark"
+qst wait '.notifications == 1'
+qst monitor add DP-1 1920x1080 1
+qst wait '(.screens | map(.name)) == ["DP-1"] and (.history[0].kept | index("image")) != null'
+
 qst case "a picture sent as a file comes back from its copy after a restart, though the file has gone"
 picture=$(mktemp -p "$QS_TEST_DIR" --suffix .svg)
 cp "$QS_TEST_REPO/modules/features/hyprland/tests/tray-icon.svg" "$picture"

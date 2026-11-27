@@ -56,9 +56,32 @@ PanelWindow {
 
         required property var modelData
         property int grabbing: 0
+        // Counts the window's comings and goings: one torn down never answers the grabs it had.
+        property int generation: 0
 
         function settle(): void {
           if (copy.grabbing === 0 && !(copy.modelData.entry?.wants() && copy.status === Image.Loading)) window.copied(copy.modelData.key);
+        }
+
+        function grab(): void {
+          if (copy.status === Image.Loading) return;
+          if (copy.status !== Image.Ready || !copy.modelData.entry?.wants()) {
+            copy.settle();
+            return;
+          }
+          // With every monitor off the window is gone, and a grab would be refused; it comes again with one.
+          if (!window.backingWindowVisible) return;
+          copy.grabbing++;
+          const from = copy.source;
+          const generation = copy.generation;
+          const started = copy.grabToImage(result => {
+            if (copy.generation !== generation) return;
+            // Kept only if it is still the picture the notification shows.
+            if (copy.source === from) copy.modelData.entry?.keep(result);
+            copy.grabbing--;
+            copy.settle();
+          }, Qt.size(copy.sourceSize.width, copy.sourceSize.height));
+          if (!started) copy.grabbing--;
         }
 
         width: 80
@@ -69,20 +92,16 @@ PanelWindow {
         fillMode: Image.PreserveAspectCrop
         // The image provider reuses URLs for different notifications.
         cache: false
-        onStatusChanged: {
-          if (status === Image.Loading) return;
-          if (status !== Image.Ready || !modelData.entry?.wants()) {
-            copy.settle();
-            return;
+        onStatusChanged: copy.grab()
+
+        Connections {
+          target: window
+
+          function onBackingWindowVisibleChanged(): void {
+            copy.generation++;
+            copy.grabbing = 0;
+            copy.grab();
           }
-          copy.grabbing++;
-          const from = copy.source;
-          copy.grabToImage(result => {
-            // Kept only if it is still the picture the notification shows.
-            if (copy.source === from) copy.modelData.entry?.keep(result);
-            copy.grabbing--;
-            copy.settle();
-          }, Qt.size(copy.sourceSize.width, copy.sourceSize.height));
         }
       }
     }
