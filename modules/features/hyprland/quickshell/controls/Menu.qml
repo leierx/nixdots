@@ -41,15 +41,15 @@ Rectangle {
           const asking = ssid === Net.asking && (!several || card.name === Net.askingOn);
           const failure = Net.failures[ssid] ?? "";
           const state = network.state === ConnectionState.Connecting ? "Connecting…" : network.state === ConnectionState.Disconnecting ? "Disconnecting…" : network.connected ? "" : Net.enterprise(network) && !network.known ? "Enterprise" : network.known ? "Saved" : "";
-          return { key: several ? `${card.name}/${ssid}` : ssid, ssid, glyph: Net.signalGlyph(network.signalStrength), title: Net.name(network) || "Hidden Network", lock: Net.secured(network), current: network.connected, note: failure || (asking ? Net.askError : "") || state, bad: failure !== "" || asking && Net.askError !== "", asking, action: network.connected && Net.signInOffered ? "Sign In" : "", target: network };
+          return { key: several ? `net:${card.name}/${ssid}` : `net:${ssid}`, ssid, glyph: Net.signalGlyph(network.signalStrength), title: Net.name(network) || "Hidden Network", lock: Net.secured(network), current: network.connected, note: failure || (asking ? Net.askError : "") || state, bad: failure !== "" || asking && Net.askError !== "", asking, action: network.connected && Net.signInOffered ? "Sign In" : "", target: network };
         });
         if (several) list.push({ key: `heading:${card.name}`, heading: true, title: Names.clean(card.name), gap: list.length > 0 });
         list.push(...menuBox.stable(`wifi:${card.name}`, rows));
       }
       // Gone while its password is typed: kept, saying so, with what was typed.
-      if (Net.asking !== "" && !list.some(row => row.asking)) list.push({ key: Net.asking, ssid: Net.asking, glyph: Symbols.wifi0, title: Names.clean(Net.asking), lock: true, note: "Out of range", bad: true, asking: true, target: null });
+      if (Net.asking !== "" && !list.some(row => row.asking)) list.push({ key: `gone:${Net.asking}`, ssid: Net.asking, glyph: Symbols.wifi0, title: Names.clean(Net.asking), lock: true, note: "Out of range", bad: true, asking: true, target: null });
       const hidden = Net.hidden;
-      if (hidden) list.push({ key: "hidden", ssid: hidden.ssid, glyph: Symbols.visibilityOff, title: "Hidden Network", note: hidden.error || (hidden.busy ? "Connecting…" : ""), bad: hidden.error !== "", asking: true, hidden: true, target: null });
+      if (hidden) list.push({ key: "prompt:hidden", ssid: hidden.ssid, glyph: Symbols.visibilityOff, title: "Hidden Network", note: hidden.error || (hidden.busy ? "Connecting…" : ""), bad: hidden.error !== "", asking: true, hidden: true, target: null });
       return list;
     }
     if (key === "vpn") return Net.vpns.map(vpn => {
