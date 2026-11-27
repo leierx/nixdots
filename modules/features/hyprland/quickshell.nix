@@ -184,6 +184,8 @@ in
         pkgs.adwaita-fonts
         pkgs.papirus-icon-theme
         # run by name from the QML; hyprmoncfg and wezterm come with their own features
+        pkgs.findutils
+        pkgs.gawk
         pkgs.libnotify
         pkgs.pipewire
         pkgs.wireplumber
