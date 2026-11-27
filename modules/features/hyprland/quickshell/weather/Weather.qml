@@ -124,6 +124,8 @@ Singleton {
       const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`;
       // MET's terms: nothing asked again before its Expires, and asked again only if modified since.
       const same = cache.url === url;
+      // Another place's hours would show under this one's name.
+      if (!same) root.series = [];
       if (same && cache.expires > Date.now() && cache.series.length > 0) {
         root.series = root.revive(cache.series);
         root.later(cache.expires);
@@ -146,7 +148,7 @@ Singleton {
     timeout: 30000
     onFailed: {
       // The last forecast, however old, until it ages out by the clock.
-      if (root.series.length === 0) root.series = root.revive(cache.series);
+      if (root.series.length === 0 && cache.url === forecast.url) root.series = root.revive(cache.series);
       root.retrySoon();
     }
     onDone: output => {
