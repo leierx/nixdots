@@ -123,6 +123,22 @@ qst type char
 qst wait 'any(.marked[]; test("^<b>char</b>")) and any(.marked[]; test("characters"))'
 qst stays 'all(.marked[]; test("<b>char</b>acters") | not)' 0.3
 
+qst case "a clip whose count failed is counted once cliphist decodes it again"
+export QS_TEST_MONITORS="DP-1:1920x1080:1"
+qst reset > /dev/null
+echo "a clip" | cliphist store
+qst fail cliphist exit 'decode*'
+qst key super+v
+qst wait '.panel == "clipboard" and .results == ["a clip"]'
+for _ in $(seq 50); do qst actions | grep -q 'cliphist decode .*(failing)' && break; qst stays true 0.1; done
+qst key Escape
+qst wait '.panel == ""'
+qst fail cliphist off
+qst key super+v
+qst wait '.panel == "clipboard" and .results == ["a clip"]'
+qst type clip
+qst wait 'any(.marked[]; . == "6&nbsp;characters,&nbsp;1&nbsp;line")'
+
 qst case "clips deleted one after another while cliphist is slow to delete are all deleted"
 export QS_TEST_MONITORS="DP-1:1920x1080:1"
 qst reset > /dev/null

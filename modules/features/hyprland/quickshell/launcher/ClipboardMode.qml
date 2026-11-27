@@ -115,6 +115,7 @@ LauncherMode {
       list=$(cliphist list 2>&1) || case $list in *"store something first"*) list="" ;; *) printf '%s\\n' "$list" >&2; exit 1 ;; esac
       tab=$(printf '\\t')
       printf '%s\\n' "$list" | while IFS="$tab" read -r id text; do
+        [ -n "$id" ] || continue
         case $text in
           "[[ binary data "*)
             set -- $text
@@ -125,7 +126,7 @@ LauncherMode {
             [ -s "$id" ] || { cliphist decode "$id" > "$id.part" && mv "$id.part" "$id"; }
             ;;
           *)
-            [ -s "$id.stats" ] || cliphist decode "$id" | awk '{ count += length($0) + 1 } END { print NR, count - (NR > 0) }' > "$id.stats"
+            [ -s "$id.stats" ] || { cliphist decode "$id" > "$id.part" && awk '{ count += length($0) + 1 } END { print NR, count - (NR > 0) }' "$id.part" > "$id.stats"; rm -f "$id.part"; }
             ;;
         esac
       done
