@@ -29,6 +29,13 @@ TestCase {
     verify(start > word && word > inside && inside > loose && loose > slip && slip > 0, [start, word, inside, loose, slip]);
   }
 
+  function test_wide_loose_above_slip() {
+    // As long as each other, so only the kind of match tells them apart.
+    const loose = score("gh", `g${"x".repeat(600)}h`, true);
+    const slip = score("firfox", `firefox ${"x".repeat(594)}`);
+    verify(loose > slip && slip > 0, [loose, slip]);
+  }
+
   function test_shorter_wins_a_tie() {
     verify(score("firefox", "Firefox") > score("firefox", "Firefox Developer Edition"));
   }
