@@ -136,12 +136,13 @@ definitions merge. Don't redeclare `systems`.
 - **`nixos-hosts.nix`**: `nixosHosts.<name>` → `lib.nixosSystem`. `mkDefault`s:
   `networking.hostId` (first 8 chars of `sha256(hostname)`, so a rename changes
   it), `networking.hostName`, `nixpkgs.hostPlatform`, `system.stateVersion` =
-  `lib.trivial.release`, home-manager's too: a deliberate exception, so a
-  release bump also bumps both, migrations included. Imports
+  `lib.trivial.release` (`home-manager.nix` does the same for
+  `home.stateVersion`): a deliberate exception, so a release bump also bumps
+  both, migrations included. Imports
   `flake.modules.nixos."nixosConfigurations/<name>"`.
 - **`offline-installer.nix`**: per host, `nixosConfigurations.offlineInstaller-<host>`:
   an install CD carrying the host's `toplevel` and disko `destroyFormatMount`,
-  substituters and channels off, root autologin, keymap/locale/timezone from the
+  substituters, channels and ZFS off, root autologin, keymap/locale/timezone from the
   host, and `offline-installer` (disko asks `yes` before wiping, then
   `nixos-install --no-root-passwd --no-channel-copy`).
 
@@ -160,23 +161,23 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | `boot.nix` | nixos | `boot`, `systemd-boot` | GRUB on EFI (themed); `systemd-boot` `mkForce`s GRUB off, conflicts by design, unused |
 | `desktop-apps.nix` | HM | `desktop-apps` | GUI apps every workstation gets; Loupe, Celluloid and Papers the default image viewer, video player and PDF viewer through `~/.local/share/applications/mimeapps.list` (below the mutable `~/.config/mimeapps.list`, which apps write and "Open With" overrides); Celluloid on an mpv.conf (`hwdec=auto-safe`, its default is software; `profile=fast`) and graphics offload via dconf |
 | `display-manager.nix` | nixos | `display-manager` | ly |
-| `doas.nix` | nixos | `doas` | doas replaces sudo (`doas-sudo-shim`); wheel `noPass`, no `keepenv`, passes only `LANG`, `NIX_PATH`, `SUDO_*` |
+| `doas.nix` | nixos | `doas` | doas replaces sudo (`doas-sudo-shim`); wheel `noPass`, no `keepenv`, passes only `LANG`, `NIX_PATH`, `SUDO_*` (plus the module's own `SSH_AUTH_SOCK`, `TERMINFO`, `TERMINFO_DIRS`) |
 | `documentation.nix` | nixos | `documentation` | NixOS manual, info pages and `/share/doc` off; man pages kept |
 | `gaming.nix` | nixos | `gaming` | Steam + proton-ge |
 | `git.nix` | nixos, HM | `git` | git, identity from `identity` |
 | `home-manager.nix` | nixos | `home-manager` | HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<host>/home` |
-| `homelab.nix` | HM | `homelab` | just, helm, virtctl, kubelogin, `programs.gh`, ssh `loft01` forwarding 6443; both homes import it |
+| `homelab.nix` | HM | `homelab` | just, kubectl, helm, virtctl, kubelogin, `programs.gh`, ssh `loft01` forwarding 6443; both homes import it |
 | `hyprland/` | nixos, HM | `hyprland` (+ `hyprland.workspaces`, HM `hyprmoncfg.profiles`, `quickshell.scale`) | below |
 | `journald.nix` | nixos | `journald` | 90-day retention |
 | `locale.nix` | nixos | `locale` | `no`/`nodeadkeys`, `en_DK.UTF-8`, Europe/Oslo, timesyncd; hyprland reads xkb via `osConfig` |
 | `moonshine/` | nixos | `moonshine` | below |
 | `nautilus.nix` | nixos, HM | `nautilus` | Nautilus, Sushi (Space) and LocalSearch (full-text search; its `ConditionEnvironment=XDG_SESSION_CLASS=user` reset, as only gnome-session imports it) from `pkgs.unstable` until NixOS 26.11: GNOME 51's Sushi is GTK4, which attaches to Nautilus over xdg-foreign v2 and floats by itself (50's GTK3 wants v1, which Hyprland lacks); the GNOME module's thumbnailers (glycin, GStreamer, EPUB; PDF from desktop-apps' Papers); gvfs; `inode/directory`; xdg-desktop-portal-gnome for FileChooser alone, so GTK4's file dialogs are Nautilus (floating over a parent, tiled without one). HM: Create Link and Delete Permanently in its menus; Sushi never takes the focus, not even as it asks on each file, so Nautilus' keys move it and Space closes it |
 | `neovim/` | nixos, HM | `neovim` (+ HM `neovim.outOfStorePath`) | below |
-| `network.nix` | nixos | `network` | resolved with DNS-over-TLS to Quad9, no plaintext fallback; NetworkManager (DHCP DNS ignored, stable MACs, wifi powersave off, no auto wired profile; connectivity checked against Arch's plaintext `nm-check.txt`, without which no captive portal is ever reported); nftables; no ping; rp-filter `loose` (WireGuard full tunnels) |
+| `network.nix` | nixos | `network` | resolved with DNS-over-TLS to Quad9, no plaintext fallback; NetworkManager (stable MACs, wifi powersave off, no auto wired profile; connectivity checked against Arch's plaintext `nm-check.txt`, without which no captive portal is ever reported); nftables; no ping; rp-filter `loose` (WireGuard full tunnels) |
 | `nix.nix` | nixos | `nix` | GC, `auto-optimise-store`, flakes, cache, no global registry; `nixpkgs` registry/`NIX_PATH` from `nixpkgs.flake.source` |
 | `nix-index.nix` | HM | `nix-index` | small prebuilt DB + wrapped comma |
 | `nixpkgs.nix` | nixos | `nixpkgs`, `unstable-nixpkgs` | `allowUnfree`; overlay `pkgs.unstable`. Prefer default `pkgs` unless a package needs unstable |
-| `packages.nix` | nixos | `packages` | jq, fzf, fastfetch, tree, kubectl; NixOS' `defaultPackages` (perl, rsync, strace) off |
+| `packages.nix` | nixos | `packages` | jq, fzf, fastfetch, tree; NixOS' `defaultPackages` (perl, rsync, strace) off |
 | `pi-agent/` | HM | `pi-agent` (imports `programs.pi-coding-agent`) | below |
 | `plymouth.nix` | nixos | `plymouth` | plymouth + quiet boot |
 | `podman.nix` | nixos | `podman` | docker compat, DNS on `podman0` |
@@ -190,14 +191,15 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 ### `moonshine/`
 
 [Moonshine](https://github.com/hgaiser/moonshine) from its flake (upstream
-`main`), via its NixOS module (which disables nixpkgs'). The package is built
-against our nixpkgs, since its implicit Vulkan layer loads into every Vulkan
-app (ferriscope's source passed from moonshine's own input). Each Moonlight
+`main`), via its NixOS module (which disables nixpkgs' and builds the package
+against our nixpkgs, so its glibc matches the host's drivers). Each Moonlight
 stream gets its own headless compositor at the client's mode. One app: Steam
 `-gamepadui` in gamescope, `DISABLE_FERRISCOPE_WSI`, `--xwayland-count 2` (on
 one Xwayland a game loses X focus to the overlay and never comes back), Deck UI
-(Big Picture `-tenfoot` froze the stream). User joins `input` (virtual pads) and
-`moonshine` (sleep-inhibit polkit rule). A desktop Steam is shut down first
+(Big Picture `-tenfoot` froze the stream). User joins `input` (virtual pads);
+the service itself runs in `moonshine`, the group its sleep-inhibit polkit rule
+allows, so `moonshine healthcheck` from a terminal fails that check while the
+service passes it. A desktop Steam is shut down first
 (single instance). Logs: `journalctl --user -u moonshine-session`. The host sets
 `services.moonshine.openFirewall` and `uid` (allocated, not declared;
 `hosts/desktop/streaming.nix`).
@@ -219,7 +221,7 @@ session.
 
 In-tree Lua config. `xdg.configFile."nvim".source` is the module dir, or
 `neovim.outOfStorePath` (a checkout) for live editing. git, LSP servers,
-formatters, `gcc`, `tree-sitter`, `fzf`, `wl-clipboard` (Linux) are
+formatters, `gcc`, `go` (gopls' root detection), `tree-sitter`, `fzf`, `wl-clipboard` (Linux) are
 `extraPackages` (nvim's PATH only); ripgrep and fd come from `programs.ripgrep`
 / `programs.fd`. LSP overrides in `after/lsp/`. HM's own `init.lua` is
 sideloaded (`sideloadInitLua`). Plugins: `vim.pack` (0.12+), pinned by the
@@ -263,12 +265,14 @@ hand. pi themes cannot paint the background (no global token); it is wezterm's.
 The bridge spends Claude Code's login, not pi's: `claude auth login` per
 machine, then `claude-bridge/...` models (never `anthropic/...`, which is pi's
 own provider and does not use the subscription). Skill boards are plain
-`file://` pages in `~/.local/share/design-board/`, so Copy falls back to
-selecting the textarea there (`navigator.clipboard` needs a secure context).
+`file://` pages in `~/.local/share/design-board/`; Copy uses
+`navigator.clipboard` and, if the browser refuses it, selects the textarea
+instead (Ctrl+C). The engine's own chips use `data-scen`/`data-next`, so a
+board's `data-act` verbs (all but `noop`) reach its `onAct`.
 A board is scaffolded by `new-board.sh` (the engine copied, only `board.js` and
 `board.css` written per round) and checked by `check.mjs`: headless Chromium
 over the DevTools protocol in real time, `nix shell nixpkgs#chromium` when none
-is on PATH.
+is on PATH; a page without `BOARD` or questions fails.
 
 ### `hyprland/`
 
@@ -313,7 +317,10 @@ fprintd, NetworkManager), so it needs the NixOS half.
   screenshot, then cuts).
 - **Locking**: everything goes through `loginctl lock-session`; hypridle's
   `lock_cmd` (`lock`, in `hypridle.nix`) is the only thing that runs hyprlock,
-  never twice. Under an idle dim it asks the shell its darkness (`idle hold`,
+  never twice: a `flock` in `$XDG_RUNTIME_DIR` decides, let go before the
+  final `idle unlocked` so a lock asked for meanwhile still comes, and `pidof`
+  for one run by hand. It runs in a scope of its own (`systemd-run --user
+  --scope`), so a switch restarting hypridle leaves the lock up. Under an idle dim it asks the shell its darkness (`idle hold`,
   which also freezes the dim) and starts hyprlock on a copy of its config
   (`$XDG_RUNTIME_DIR`) with brightness 0.6 ÷ (1 − darkness), so every lock ends
   on the same picture. `on_lock_cmd` (`idle locked`) drops the dim and blocks
@@ -603,7 +610,10 @@ icon theme, hostname, uptime).
   (`nixpkgs-progress.jq` over nix's internal-json), then runs it in a transient
   `systemd-run --user` service sandboxed by systemd: `ProtectSystem=strict`,
   `PrivateTmp`, tmpfs over `$HOME` and `$XDG_RUNTIME_DIR`, only PipeWire, X11
-  and GTK/fontconfig/cursor settings bound back, no nix daemon or D-Bus.
+  and GTK/fontconfig/cursor settings bound back, no nix daemon, D-Bus or
+  podman socket (the user is in `podman`, so rootful podman is root), and no
+  `/dev/input`, `/dev/uinput` or `/dev/uhid` (reading or typing keys); the GPU,
+  cameras and `/dev/fuse` stay.
   Wayland through its own `security-context` socket, so Hyprland hides
   protocols that type into or capture other windows (X11 apps still share
   Xwayland). Desktop-entry programs run alone, others in wezterm, held open on
@@ -922,8 +932,10 @@ qst down                       # kill and delete the session(s) and the test she
   take the default away, destroy a test mic (`pw-cli destroy test-headset-mic`).
 - `backlight-watch` and `camera-users` are real, on `$QS_TEST_DIR/backlight` and
   `$QS_TEST_DIR/dev`; `udevadm monitor` replays what `qst backlight` appends.
-  The brightness keys run the host's brightnessctl, which reaches the real
-  backlight: drive `quickshell:osd-brightness` and `qst backlight` instead.
+  The brightness keys run the host's brightnessctl, which cannot write the
+  real backlight's sysfs and asks the mock logind, which has no
+  `SetBrightness`, so they change nothing: drive `quickshell:osd-brightness`
+  and `qst backlight` instead.
   The volume keys reach the session's PipeWire.
 - hyprsunset runs in the session.
 
@@ -942,7 +954,20 @@ qst down                       # kill and delete the session(s) and the test she
   its file; the probe labels items `File/Type`.
 - Never `pgrep -f <pattern> | xargs kill`: the pattern matches your own shell.
   `down` finds processes by runtime dir and D-Bus address; `stop_qs` kills qs's
-  process group (its inotify watchers outlive it otherwise).
+  process group (its inotify watchers outlive it otherwise). A pid from a file
+  is signalled only while `/proc/PID/environ` carries this session's
+  `XDG_RUNTIME_DIR`, and `up` after a session whose Hyprland died sweeps what
+  is left of it as `down` does.
+- The session bus starts with the session's environment, never the live
+  display, signature or buses; once Hyprland is up, `up` hands it Hyprland's
+  display and signature (`dbus-update-activation-environment`, never
+  `--systemd`), so the portals, gvfs and dconf it activates reach the test
+  compositor. They run without PipeWire realtime (`PIPEWIRE_CONFIG_DIR` with
+  `module.rt = false`): the portal asks its own Realtime interface as it
+  reconnects after each reset, and stalled 25 s per call.
+- `reset` clears qs-input's locked modifiers, so a Caps Lock never carries
+  into the next case; a session up from before a harness change to qs-input
+  needs `down`.
 - Each `qst` is a `writeShellApplication` whose PATH puts real tools ahead;
   `enter` puts the session's `bin/` back in front.
 - Shots: the cursor a surface asked for shows only after the pointer moves over
@@ -994,7 +1019,8 @@ past `QS_TEST_PEAK` MiB (1024, `VmHWM`); on two of a watcher (`camera-users`,
 `nmcli monitor`, backlight-watch's `udevadm`) at once; on qs gone unless the
 case killed it (`qst kill`); on an `IpcHandler` in the source that isn't
 registered. An empty `expect` or known-warnings line is refused (it would allow
-every line). A whole green `run` names the known warnings no case met, which
+every line), and so is a pattern grep cannot read or one matching an empty
+line; a failed filter fails `problems` rather than hiding every warning. A whole green `run` names the known warnings no case met, which
 can go.
 
 `tests/scenarios/*.sh` run under `set -euo pipefail` with `qst` on PATH. Each
