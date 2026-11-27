@@ -160,7 +160,8 @@ qst wait '.panel == "center:DP-1" and (.center | length) == 16'
 qst click NotificationCenter:action:Clear
 qst wait '.notifications == 0 and (.center | length) == 0' 2
 qst stays '.panel == "center:DP-1" and .notifications == 0' 1
-! qst areas 'NotificationCenter' | grep -q 'action:Undo' || { echo "Clear still offers Undo"; exit 1; }
+areas=$(qst areas 'NotificationCenter')
+grep -q 'switch:dnd' <<< "$areas" && ! grep -q 'action:Undo' <<< "$areas" || { echo "$areas"; echo "the center is gone, or Clear still offers Undo"; exit 1; }
 
 qst case "Clear while stack-tagged notifications replace themselves mid-slide: every card ends in place or gone"
 tagged() { for n in 1 2 3 4; do notify-send -a "Level $n" -h "string:x-dunst-stack-tag:level$n" "level $n" "$1" & done; wait; }
@@ -204,7 +205,7 @@ qst wait '.center[0].expanded'
 qst click NotificationCenter:action:More
 qst wait '.centerMore == 1'
 qst click 'NotificationCenter:action:Collapse All'
-qst wait '(.center[0].expanded | not) and .centerMore == 0'
+qst wait '.center[0].expanded == false and .centerMore == 0'
 qst click left "$cx" "$cy"
 qst wait '.center[0].expanded'
 qst stays '.centerMore == 0' 0.5

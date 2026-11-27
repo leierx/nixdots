@@ -62,11 +62,18 @@ state = {
     "active": {},  # path -> {uuid, device}
     "delay": 400,
     "counter": 0,
+    "bssids": 0,
 }
 
 
 def boottime_ms():
     return int(time.clock_gettime(time.CLOCK_BOOTTIME) * 1000)
+
+
+# Never reused: refresh_aps keys access points by BSSID, so a removed network's would hide the new one.
+def new_bssid():
+    n = state["bssids"] = state["bssids"] + 1
+    return "02:%02x:%02x:%02x:%02x:00" % ((n >> 24) & 255, (n >> 16) & 255, (n >> 8) & 255, n & 255)
 
 
 def nextpath(kind):
@@ -605,6 +612,7 @@ def dump():
         "profiles": [{**{k: p[k] for k in ("uuid", "id", "type", "ssid", "psk", "security", "behaviour", "iface", "timestamp")}, "hidden": p.get("hidden", False)} for p in state["profiles"].values()],
         "active": [a["uuid"] for a in state["active"].values() if a["state"] == AC_ACTIVATED],
         "delay": state["delay"],
+        "bssids": state["bssids"],
     })
 
 
@@ -680,6 +688,7 @@ def load(mock_obj, parameters):
     mock_obj.object_manager_emit_added(f"{NM}/AgentManager")
 
     state["delay"] = saved.get("delay", 400)
+    state["bssids"] = saved.get("bssids", len(saved.get("air", [])))
     for a in saved.get("air", []):
         state["air"].append(a)
     for d in saved.get("devices", []):
@@ -724,9 +733,7 @@ def SetCarrier(self, iface, carrier):
 
 @dbus.service.method(MOCK_IFACE, in_signature="sysss", out_signature="")
 def AddNetwork(self, ssid, strength, security, password, iface):
-    count = sum(1 for a in state["air"] if a["ssid"] == str(ssid))
-    bssid = "02:%02x:%02x:%02x:%02x:%02x" % ((len(state["air"]) >> 24) & 255, (len(state["air"]) >> 16) & 255, (len(state["air"]) >> 8) & 255, len(state["air"]) & 255, count)
-    state["air"].append({"ssid": str(ssid), "bssid": bssid, "strength": int(strength), "security": str(security), "password": str(password), "iface": str(iface)})
+    state["air"].append({"ssid": str(ssid), "bssid": new_bssid(), "strength": int(strength), "security": str(security), "password": str(password), "iface": str(iface)})
     for i in [i for i, d in state["devices"].items() if d["type"] == "wifi"]:
         refresh_aps(i)
 
@@ -734,7 +741,7 @@ def AddNetwork(self, ssid, strength, security, password, iface):
 @dbus.service.method(MOCK_IFACE, in_signature="a(sysss)", out_signature="")
 def AddNetworks(self, networks):
     for ssid, strength, security, password, iface in networks:
-        state["air"].append({"ssid": str(ssid), "bssid": "02:%02x:%02x:%02x:%02x:00" % ((len(state["air"]) >> 24) & 255, (len(state["air"]) >> 16) & 255, (len(state["air"]) >> 8) & 255, len(state["air"]) & 255), "strength": int(strength), "security": str(security), "password": str(password), "iface": str(iface)})
+        state["air"].append({"ssid": str(ssid), "bssid": new_bssid(), "strength": int(strength), "security": str(security), "password": str(password), "iface": str(iface)})
     for i in [i for i, d in state["devices"].items() if d["type"] == "wifi"]:
         refresh_aps(i)
 
@@ -825,7 +832,6 @@ def Dump(self):
 @dbus.service.method(MOCK_IFACE, in_signature="s", out_signature="")
 def AddNetworksJson(self, networks):
     for ssid, strength, security, password in json.loads(str(networks)):
-        n = len(state["air"])
-        state["air"].append({"ssid": ssid, "bssid": "02:%02x:%02x:%02x:%02x:00" % ((n >> 24) & 255, (n >> 16) & 255, (n >> 8) & 255, n & 255), "strength": int(strength), "security": security, "password": password, "iface": ""})
+        state["air"].append({"ssid": ssid, "bssid": new_bssid(), "strength": int(strength), "security": security, "password": password, "iface": ""})
     for i in [i for i, d in state["devices"].items() if d["type"] == "wifi"]:
         refresh_aps(i)

@@ -207,7 +207,7 @@ qst wait '.controls.network.networks | index("Kaffebrenneriet Gjest")'
 qst click "ControlsPanel:row:Kaffebrenneriet Gjest"
 qst wait '.controls.network.connected == "Kaffebrenneriet Gjest"'
 qst click ControlsPanel:pill:wifi
-qst wait '(.controls.network.wifiOn | not) and .controls.network.networks == [] and (.controls.toggles | map(select(.key == "wifi"))[0].on | not)'
+qst wait '(.controls.network.wifiOn | not) and .controls.network.networks == [] and (.controls.toggles | map(select(.key == "wifi"))[0].on) == false'
 qst click ControlsPanel:pill:wifi
 qst wait '.controls.network.wifiOn and (.controls.network.networks | length) == 3' 10
 
@@ -274,7 +274,7 @@ qst wait '.controls.vpns == [{ name: "wg0", active: false, busy: null }]'
 qst click ControlsPanel:row:wg0
 qst wait '.controls.vpns == [{ name: "wg0", active: true, busy: null }]' 10
 qst click ControlsPanel:pill:vpn
-qst wait '.controls.vpns[0].active | not'
+qst wait '.controls.vpns == [{ name: "wg0", active: false, busy: null }]'
 
 qst case "a VPN clicked while another comes up leaves that one's nmcli running"
 qst network profile vpn Office
@@ -291,9 +291,9 @@ qst case "the pill takes two VPNs down at once"
 qst network profile vpn Office
 qst network up Office
 open vpn
-qst wait '.controls.vpns | all(.active)'
+qst wait '(.controls.vpns | length) == 2 and (.controls.vpns | all(.active))'
 qst click ControlsPanel:pill:vpn
-qst wait '.controls.vpns | all((.active | not) and .busy == null)' 10
+qst wait '(.controls.vpns | length) == 2 and (.controls.vpns | all(.active == false and .busy == null))' 10
 
 qst case "a VPN wanting a password asks in its row, and comes up with it"
 qst network profile vpn Office
@@ -314,7 +314,7 @@ open vpn
 qst wait '(.controls.vpns | length) == 2'
 qst click ControlsPanel:row:Broken
 qst wait 'any(.history[]; .summary == "Broken Failed to Connect")' 10
-qst wait '.controls.vpns | map(select(.name == "Broken"))[0] | (.active | not) and .busy == null'
+qst wait '.controls.vpns | map(select(.name == "Broken"))[0] | .active == false and .busy == null'
 
 qst case "a VPN action whose nmcli cannot start fails instead of staying Connecting…"
 qst network profile vpn Office
@@ -346,7 +346,7 @@ qst wait '.controls.bluetooth.devices | map(select(.name == "WH-1000XM4"))[0] | 
 qst click "ControlsPanel:row:Keychron K3"
 qst wait '.controls.bluetooth.devices | map(select(.name == "Keychron K3"))[0].note == "Couldn'"'"'t pair: use Bluetooth Settings"'
 qst click ControlsPanel:row:WH-1000XM4
-qst wait '.controls.bluetooth.devices | map(select(.name == "WH-1000XM4"))[0].connected | not'
+qst wait '(.controls.bluetooth.devices | map(select(.name == "WH-1000XM4"))[0].connected) == false'
 qst ipc panels close > /dev/null
 qst wait '(.controls.bluetooth.scanning | not)'
 
@@ -429,7 +429,8 @@ qst ipc controls menu sound > /dev/null
 qst wait '.controls.menu == "sound" and (.controls.open.sound | length) == 8'
 qst wait '.controls.open.sound[0:2] == ["# Output", "Speakers (speaker)"] and .controls.open.sound[4:6] == ["# Input", "Microphone (microphone)"]'
 qst wait '(.controls.open.sound | sort) == (["# Output", "Speakers (speaker)", "Headphones (headphones)", "HDMI / DisplayPort (display)", "# Input", "Microphone (microphone)", "Headset Microphone (headset)", "Noise Cancelling (virtual)"] | sort)'
-! qst areas 'ControlsPanel' | grep -q 'mute:input' || { echo "the sound menu still mutes the microphone"; exit 1; }
+areas=$(qst areas 'ControlsPanel')
+grep -q 'row:Microphone' <<< "$areas" && ! grep -q 'mute:input' <<< "$areas" || { echo "$areas"; echo "the sound menu lists no microphone, or still mutes it"; exit 1; }
 qst click 'ControlsPanel:action:Audio Settings'
 qst wait '.panel == ""'
 for _ in $(seq 20); do qst actions | grep -q 'systemd-run --user --scope --quiet pwvucontrol' && break; sleep 0.1; done # sleep: the launch is logged by a process the shell detached
