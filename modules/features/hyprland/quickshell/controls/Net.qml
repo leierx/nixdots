@@ -81,6 +81,17 @@ Singleton {
     return [WifiSecurityType.Wpa2Eap, WifiSecurityType.WpaEap, WifiSecurityType.Wpa3SuiteB192, WifiSecurityType.Leap, WifiSecurityType.DynamicWep].includes(network.security);
   }
 
+  function bytes(text: string): int {
+    return encodeURIComponent(text).replace(/%[0-9A-F]{2}/g, "x").length;
+  }
+
+  // NetworkManager's rule for a WPA key, which it refuses on a saved profile without a word reaching the shell; SAE takes any.
+  function pskProblem(password: string, security: int): string {
+    if (security === WifiSecurityType.Sae) return "";
+    if (root.bytes(password) < 8) return "Password too short";
+    return root.bytes(password) > 63 && !/^[0-9a-fA-F]{64}$/.test(password) ? "Password too long" : "";
+  }
+
   // On the card named, if it sees it.
   function find(ssid: string, card: string): var {
     const all = root.networks.filter(network => network.name === ssid);
@@ -127,6 +138,11 @@ Singleton {
       root.askError = "Out of range";
       return;
     }
+    const problem = root.pskProblem(password, network.security);
+    if (problem) {
+      root.askError = problem;
+      return;
+    }
     if (!network.known && !root.created.includes(ssid)) root.created = [...root.created, ssid];
     root.attempt = ssid;
     root.trying = ssid;
@@ -159,12 +175,19 @@ Singleton {
     if (!root.hidden || root.hidden.busy) return;
     root.setFailure(ssid, "");
     // 802.11's limit, in bytes.
-    if (encodeURIComponent(ssid).replace(/%[0-9A-F]{2}/g, "x").length > 32) {
+    if (root.bytes(ssid) > 32) {
       root.hidden = { ssid, password, error: "Name too long", busy: false };
       return;
     }
+    const network = root.find(ssid, "");
+    // A profile made here is WPA-PSK's.
+    const problem = password === "" ? "" : root.pskProblem(password, network?.known ? network.security : WifiSecurityType.Wpa2Psk);
+    if (problem) {
+      root.hidden = { ssid, password, error: problem, busy: false };
+      return;
+    }
     root.hidden = { ssid, password, error: "", busy: true };
-    if (root.find(ssid, "")?.known) {
+    if (network?.known) {
       root.joinHidden();
     } else {
       addHidden.ssid = ssid;

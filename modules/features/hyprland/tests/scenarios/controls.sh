@@ -148,9 +148,9 @@ qst click "ControlsPanel:action:Connect to Hidden Network…"
 qst wait '.controls.network.hidden == { ssid: "", error: null, busy: false }'
 qst type Skjult
 qst key Return
-qst type feil
+qst type feilpassord
 qst key Return
-qst wait '.controls.network.hidden == { ssid: "Skjult", error: "Wrong password", busy: false } and .field == "feil"' 10
+qst wait '.controls.network.hidden == { ssid: "Skjult", error: "Wrong password", busy: false } and .field == "feilpassord"' 10
 qst wait '(.controls.network.known | index("Skjult") | not) and .controls.network.created == []'
 qst key ctrl+a
 qst type hemmelig
@@ -333,6 +333,52 @@ qst fail nmcli "say=$(printf '00000000-0000-4000-8000-00000000000a:vpn:no::Liste
 qst network profile vpn Office
 qst wait 'any(.controls.vpns[]; .name == "Listed")'
 qst stays '.controls.vpns == [{ name: "Listed", active: false, busy: null }, { name: "wg0", active: true, busy: null }]' 2
+
+qst case "a WPA password NetworkManager would refuse is refused in the row, new or saved, and leaves no profile; a wrong one long enough is a wrong password"
+qst network wifi add Kafe 60 wpa2 kaffekopp
+open wifi
+qst wait '.controls.network.networks | index("Kafe")'
+qst click ControlsPanel:row:Kafe
+qst wait '.controls.network.asking == "Kafe"'
+qst type kaffe
+qst key Return
+qst wait '.controls.network.askError == "Password too short" and .field == "kaffe" and .controls.network.created == []'
+qst stays '.controls.network.known | index("Kafe") | not' 0.5
+qst key ctrl+a
+qst type feilpassord
+qst key Return
+qst wait '.controls.network.askError == "Wrong password" and (.controls.network.known | index("Kafe"))'
+# Saved now: NetworkManager's Update would refuse these.
+qst key ctrl+a
+qst type kaffe
+qst key Return
+qst wait '.controls.network.askError == "Password too short"'
+qst key ctrl+a
+qst type "$(printf 'k%.0s' $(seq 64))"
+qst key Return
+qst wait '.controls.network.askError == "Password too long"'
+qst key ctrl+a
+qst type kaffekopp
+qst key Return
+qst wait '.controls.network.connected == "Kafe" and .controls.network.asking == null and .controls.network.created == []'
+
+qst case "a hidden network's password NetworkManager would refuse is refused in the prompt before any profile is made"
+qst network wifi add Skjult 70 wpa2 hemmelig
+qst network wifi hide Skjult
+open wifi
+qst click "ControlsPanel:action:Connect to Hidden Network…"
+qst wait '.controls.network.hidden == { ssid: "", error: null, busy: false }'
+qst type Skjult
+qst key Return
+qst type feil
+qst key Return
+qst wait '.controls.network.hidden == { ssid: "Skjult", error: "Password too short", busy: false } and .field == "feil"'
+qst stays '(.controls.network.known | index("Skjult") | not) and .controls.network.created == []' 0.5
+qst x nmcli -t -f NAME connection show | grep -qx Skjult && { echo "a profile was made"; exit 1; }
+qst key ctrl+a
+qst type hemmelig
+qst key Return
+qst wait '.controls.network.connected == "Skjult" and .controls.network.hidden == null' 10
 
 qst case "a new headset pairs, is trusted and connects in one click; a keyboard wanting a PIN says where to go"
 qst bluetooth add 11:22:33:44:55:01 "WH-1000XM4" audio-headset ok
