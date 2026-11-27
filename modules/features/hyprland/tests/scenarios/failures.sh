@@ -144,7 +144,7 @@ qst wait '.notifications == 2' 10
 qst camera open zoom
 qst backlight intel_backlight 40
 qst network cable enp8s0 off
-qst wait '.privacy.camera == ["zoom"] and (.controls.network.wired | map(select(.name == "enp8s0"))[0].link | not)'
+qst wait '.privacy.camera == ["zoom"] and (.controls.network.wired | map(select(.name == "enp8s0"))[0].link) == false'
 
 qst case "the shell killed outright as it saves comes back with its history whole"
 for n in $(seq 20); do notify-send -a "App $n" "note $n"; done

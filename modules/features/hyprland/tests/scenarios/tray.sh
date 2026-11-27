@@ -68,7 +68,7 @@ qst pointer 900 600
 qst stays '.trayMenu != null and .trays[0].shown' 1
 qst key Escape
 qst wait '.panel == "" and .trayMenu == null'
-qst wait '.trays[0].expanded | not' 2
+qst wait '.trays[0].expanded == false' 2
 
 qst case "a key a tray menu leaves alone does not hold it open once the pointer leaves"
 qst tray
