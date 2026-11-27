@@ -38,14 +38,13 @@ BarButton {
   }
 
   onGlyphsChanged: {
-    const names = new Set(root.glyphs.map(glyph => glyph.name));
     const result = root.glyphs.map(glyph => root.entry(glyph.name));
     let after = -1;
     for (const old of root.drawn) {
       const at = result.findIndex(glyph => glyph.name === old.name);
       if (at >= 0) {
         after = at;
-      } else if (!names.has(old.name)) {
+      } else {
         // Drawn as it last was while it fades.
         const last = root.shown[old.name] ?? {};
         result.splice(after + 1, 0, old.leaving ? old : { name: old.name, leaving: true, path: last.path, color: last.color });
