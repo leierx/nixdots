@@ -474,6 +474,8 @@ Scope {
           }
         })(),
         historyImages: History.images,
+        // What the popups and the center draw, by source, loaded.
+        notificationPictures: probe.windows().filter(entry => ["NotificationPopups", "NotificationCenter"].includes(entry.type)).reduce((found, entry) => [...found, ...entry.items.filter(({ item }) => probe.isImage(item) && item.status === Image.Ready).map(({ item }) => String(item.source))], []),
         // The shell's minute, as the bar's clock and the calendar take it, and its cache dir.
         now: Qt.formatDateTime(Time.now, "yyyy-MM-dd HH:mm"),
         cache: Quickshell.cachePath(""),

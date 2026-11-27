@@ -216,9 +216,10 @@ Singleton {
     return source.startsWith("image://") && !source.startsWith("image://icon/");
   }
 
+  // An icon by name or a file; a client's image:// URL would draw another notification's picture.
   function iconSource(icon) {
     if (!icon) return "";
-    if (icon.startsWith("file://") || icon.startsWith("image://")) return icon;
+    if (icon.startsWith("file://")) return icon;
     if (icon.startsWith("/")) return `file://${icon}`;
     return Quickshell.iconPath(icon, true);
   }
@@ -267,17 +268,16 @@ Singleton {
   // The history as saved: no transient ones, and pictures only the server held by their saved copies.
   function record(entry) {
     const notification = entry.notification;
-    const lasting = (role, source) => entry.kept[role] ?? (root.inMemory(source ?? "") ? "" : source ?? "");
     return {
       uid: entry.uid,
       time: entry.time.getTime(),
       checked: entry.checked,
       appName: root.clip(notification.appName, root.maxApp),
-      appIcon: lasting("appIcon", notification.appIcon),
+      appIcon: root.inMemory(notification.appIcon ?? "") ? "" : notification.appIcon ?? "",
       desktopEntry: root.clip(notification.desktopEntry, root.maxApp),
       summary: root.clip(notification.summary, root.maxSummary),
       body: root.clip(notification.body, root.maxBody),
-      image: lasting("image", notification.image),
+      image: entry.kept.image ?? (root.inMemory(notification.image ?? "") ? "" : notification.image ?? ""),
       urgency: notification.urgency,
       tag: root.clip(root.tag(notification), root.maxApp)
     };

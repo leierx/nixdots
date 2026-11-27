@@ -100,6 +100,18 @@ picture=$QS_TEST_REPO/modules/features/hyprland/tests/tray-icon.svg
 notify-send -a Screenshot -n accessories-screenshot -i "$picture" "Screenshot Saved"
 qst wait "(.popups | length) == 1 and .history[0].image == \"file://$picture\""
 
+qst case "an app icon naming another notification's picture in memory draws nothing of it, nor keeps it"
+send() {
+  gdbus call --session --dest org.freedesktop.Notifications --object-path /org/freedesktop/Notifications \
+    --method org.freedesktop.Notifications.Notify "'$1'" "uint32 0" "'$2'" "'$1'" "'a body'" "@as []" "$3" "int32 -1" > /dev/null
+}
+send Chat '' "{'image-data': <(2, 2, 8, true, 8, 4, [byte 255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255])>}"
+qst wait '.notifications == 1 and (.history[0].image | startswith("image://qsimage/"))'
+victim=$(qst state '.history[0].image' | jq -r .)
+send Spoof "$victim" '@a{sv} {}'
+qst wait '.notifications == 2 and (.popups | length) == 2'
+qst stays "(.notificationPictures | map(select(. == \"$victim\")) | length) == 1 and .history[0].kept == []" 1
+
 qst case "a burst created in one millisecond names each notification's saved pictures apart"
 qst flood 30 --apps 30 &
 qst flood 30 --apps 30 --app Urgent --urgency 2 &
