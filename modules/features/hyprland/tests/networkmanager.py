@@ -236,9 +236,21 @@ def secrets(p, setting):
     return dbus.Dictionary({}, signature="sa{sv}")
 
 
+# NetworkManager's nm_connection_verify_secrets, which Update and AddConnection run (AddAndActivateConnection does not): a WPA key is 8 to 63 bytes, or 64 hex digits; SAE takes any.
+def verify_secrets(sec, key_mgmt):
+    psk = sec.get("psk")
+    if psk is None or str(key_mgmt) == "sae":
+        return
+    raw = str(psk).encode()
+    if not 8 <= len(raw) <= 64 or (len(raw) == 64 and any(c not in b"0123456789abcdefABCDEF" for c in raw)):
+        raise dbus.exceptions.DBusException("802-11-wireless-security.psk: property is invalid", name="org.freedesktop.NetworkManager.Settings.Connection.InvalidProperty")
+
+
 def update_profile(uuid, settings):
     p = state["profiles"][uuid]
-    psk = settings.get("802-11-wireless-security", {}).get("psk")
+    sec = settings.get("802-11-wireless-security", {})
+    verify_secrets(sec, sec.get("key-mgmt", "sae" if p["security"] == "wpa3" else "wpa-psk"))
+    psk = sec.get("psk")
     if psk is not None:
         p["psk"] = str(psk)
     name = settings.get("connection", {}).get("id")
@@ -270,6 +282,8 @@ def settings_add(settings):
     wireless = settings.get("802-11-wireless", {})
     ssid = bytes(wireless.get("ssid", b"")).decode(errors="replace")
     sec = settings.get("802-11-wireless-security")
+    if sec is not None:
+        verify_secrets(sec, sec.get("key-mgmt", ""))
     security = "open" if sec is None else {"sae": "wpa3", "wpa-eap": "enterprise", "none": "wep"}.get(str(sec.get("key-mgmt", "")), "wpa2")
     psk = str(sec.get("psk", "")) if sec is not None else ""
     return add_profile(kind, str(c.get("id", ssid or kind)), ssid=ssid, psk=psk, security=security, hidden=bool(wireless.get("hidden", False)))["path"]
