@@ -28,6 +28,17 @@ Scope {
   property bool recording: false
   property var tracks: null
   property real started: 0
+  // Each flip, so a key held on its switch shows how often it acted; from the first state read, as reading Notifs creates it, and a shell that is to quit never may.
+  property int dndFlips: 0
+  property bool read: false
+
+  Connections {
+    target: probe.read ? Notifs : null
+
+    function onDndChanged(): void {
+      probe.dndFlips++;
+    }
+  }
 
   function typeOf(object: var): string {
     return String(object).replace(/\([^]*$/, "").replace(/_QML.*$/, "").split("::").pop();
@@ -441,6 +452,7 @@ Scope {
     }
 
     function state(): string {
+      probe.read = true;
       return JSON.stringify({
         panel: Panels.active,
         screens: Quickshell.screens.map(s => ({
@@ -502,6 +514,7 @@ Scope {
         now: Qt.formatDateTime(Time.now, "yyyy-MM-dd HH:mm"),
         cache: Quickshell.cachePath(""),
         dnd: Notifs.dnd,
+        dndFlips: probe.dndFlips,
         unchecked: Notifs.unchecked,
         volume: { percent: Volume.percent, muted: Volume.muted, output: Volume.devices.find(d => d.current)?.name ?? null },
         input: Microphone.name,

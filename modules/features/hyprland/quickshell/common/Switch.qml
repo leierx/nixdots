@@ -24,8 +24,12 @@ Rectangle {
   }
 
   activeFocusOnTab: focusable && enabled || activeFocus
-  Keys.onReturnPressed: toggle.clicked()
-  Keys.onSpacePressed: toggle.clicked()
+  Keys.onReturnPressed: event => {
+    if (!event.isAutoRepeat) toggle.clicked();
+  }
+  Keys.onSpacePressed: event => {
+    if (!event.isAutoRepeat) toggle.clicked();
+  }
   color: {
     if (checked) return hovered ? Theme.accentHover : Theme.accentBg;
     return hovered ? Theme.switchHoverBg : Theme.switchBg;

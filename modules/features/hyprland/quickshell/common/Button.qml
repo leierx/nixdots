@@ -125,8 +125,12 @@ Rectangle {
   }
 
   activeFocusOnTab: true
-  Keys.onReturnPressed: root.clicked(Qt.LeftButton)
-  Keys.onSpacePressed: root.clicked(Qt.LeftButton)
+  Keys.onReturnPressed: event => {
+    if (!event.isAutoRepeat) root.clicked(Qt.LeftButton);
+  }
+  Keys.onSpacePressed: event => {
+    if (!event.isAutoRepeat) root.clicked(Qt.LeftButton);
+  }
 
   FocusRing {
     corner: root.radius

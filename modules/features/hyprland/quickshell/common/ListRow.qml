@@ -32,8 +32,12 @@ Rectangle {
 
   // Kept while it has the keyboard: Qt refuses to take it back from the focused item, and warns.
   activeFocusOnTab: acts || activeFocus
-  Keys.onReturnPressed: root.clicked()
-  Keys.onSpacePressed: root.clicked()
+  Keys.onReturnPressed: event => {
+    if (!event.isAutoRepeat) root.clicked();
+  }
+  Keys.onSpacePressed: event => {
+    if (!event.isAutoRepeat) root.clicked();
+  }
   // The keyboard's row snaps, as keyboard selection never animates; hover and a press ease over it.
   color: acts && enabled && selected ? Theme.selectedBg : "transparent"
 
