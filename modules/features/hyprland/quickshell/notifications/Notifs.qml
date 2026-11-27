@@ -6,6 +6,7 @@ import Quickshell.Io
 import Quickshell.Services.Notifications
 import Quickshell.Wayland
 import qs.common
+import "history.js" as Saved
 import "markup.js" as Markup
 
 Singleton {
@@ -204,11 +205,18 @@ Singleton {
     return iconSource(notification.appIcon) || (notification.appName ? iconSource(DesktopEntries.heuristicLookup(root.clip(notification.appName, root.maxApp))?.icon) : "");
   }
 
-  // A theme icon the theme lacks would draw nothing where the app's icon or initial should be; a bare path (notify-send -i /file) comes as one.
+  // A theme icon the theme lacks would draw nothing where the app's icon or initial should be; a bare path (notify-send -i /file) comes as one, and a name with a slash could reach any file.
   function picture(source) {
+    if (source.startsWith("file:")) return root.fileSource(source);
     const icon = /^image:\/\/icon\/(.+)$/.exec(source);
-    if (icon && icon[1].startsWith("/")) return `file://${icon[1]}`;
-    return icon && !Quickshell.hasThemeIcon(icon[1]) ? "" : source;
+    if (icon && icon[1].startsWith("/")) return Saved.fileUrl(icon[1]);
+    return icon && (icon[1].includes("/") || !Quickshell.hasThemeIcon(icon[1])) ? "" : source;
+  }
+
+  // One URL for one file; a file: URL that names none is no picture.
+  function fileSource(url) {
+    const path = Saved.localPath(url);
+    return path === "" ? "" : Saved.fileUrl(path);
   }
 
   // A picture only the server holds goes when the notification does; a theme icon or a file outlives it.
@@ -219,9 +227,9 @@ Singleton {
   // An icon by name or a file; a client's image:// URL would draw another notification's picture.
   function iconSource(icon) {
     if (!icon) return "";
-    if (icon.startsWith("file://")) return icon;
-    if (icon.startsWith("/")) return `file://${icon}`;
-    return Quickshell.iconPath(icon, true);
+    if (icon.startsWith("file:")) return root.fileSource(icon);
+    if (icon.startsWith("/")) return Saved.fileUrl(icon);
+    return icon.includes("/") ? "" : Quickshell.iconPath(icon, true);
   }
 
   function openUrl(url) {
@@ -241,7 +249,8 @@ Singleton {
     else root.soundAt = now;
     const ours = Quickshell.shellPath(`notifications/sounds/${critical ? "critical.ogg" : "notification.oga"}`);
     // A path, never an option for pw-play.
-    const file = String(hints["sound-file"] ?? "").replace(/^file:\/\//, "");
+    const sound = String(hints["sound-file"] ?? "");
+    const file = sound.startsWith("file:") ? Saved.localPath(sound) : sound;
     const name = hints["sound-name"] ?? "";
     // A client's file only if it is a plain one of a sound's size, never a device or a pipe, and nothing plays past 30 s.
     if (file.startsWith("/")) {
@@ -265,7 +274,7 @@ Singleton {
     });
   }
 
-  // The history as saved: no transient ones, and pictures only the server held by their saved copies.
+  // The history as saved: no transient ones, and pictures only the server or a client held by their copies.
   function record(entry) {
     const notification = entry.notification;
     return {
@@ -273,11 +282,11 @@ Singleton {
       time: entry.time.getTime(),
       checked: entry.checked,
       appName: root.clip(notification.appName, root.maxApp),
-      appIcon: root.inMemory(notification.appIcon ?? "") ? "" : notification.appIcon ?? "",
+      appIcon: entry.lasting("appIcon", notification.appIcon ?? ""),
       desktopEntry: root.clip(notification.desktopEntry, root.maxApp),
       summary: root.clip(notification.summary, root.maxSummary),
       body: root.clip(notification.body, root.maxBody),
-      image: entry.kept.image ?? (root.inMemory(notification.image ?? "") ? "" : notification.image ?? ""),
+      image: entry.kept.image ?? entry.lasting("image", notification.image ?? ""),
       urgency: notification.urgency,
       tag: root.clip(root.tag(notification), root.maxApp)
     };
@@ -294,7 +303,7 @@ Singleton {
     id: saving
 
     interval: 500
-    onTriggered: History.save(root.entries.filter(entry => !entry.notification.transient).map(entry => root.record(entry)))
+    onTriggered: History.save(root.entries.filter(entry => !entry.notification.transient).map(entry => root.record(entry)), root.entries.map(entry => entry.uid))
   }
 
   function key(notification) {

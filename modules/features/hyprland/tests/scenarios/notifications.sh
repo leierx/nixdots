@@ -95,10 +95,36 @@ took=$((($(date +%s%N) - start) / 1000000))
 sounds=$(qst actions | grep -c '^pw-play' || true)
 [ "$sounds" -le $((took / 300 + 1)) ] || { echo "$sounds sounds in $took ms"; exit 1; }
 
-qst case "a picture sent as a bare path, as notify-send -i /file sends it, draws as that file"
+qst case "a picture sent as a bare path, as notify-send -i /file sends it, draws as its copy in the cache"
 picture=$QS_TEST_REPO/modules/features/hyprland/tests/tray-icon.svg
 notify-send -a Screenshot -n accessories-screenshot -i "$picture" "Screenshot Saved"
-qst wait "(.popups | length) == 1 and .history[0].image == \"file://$picture\""
+qst wait '.historyImages as $dir | .history[0].image as $image | (.popups | length) == 1 and ($image | startswith("file://" + $dir + "/")) and (.notificationPictures | index($image)) != null'
+copy=$(qst state '.history[0].image' | jq -r 'ltrimstr("file://")')
+cmp "$copy" "$picture"
+
+qst case "a picture or an app icon that is a pipe never holds the shell"
+fifo=$QS_TEST_DIR/picture.fifo
+rm -f "$fifo" && mkfifo "$fifo"
+notify-send -a Bare -i "$fifo" "a pipe as a bare path"
+notify-send -a Url -h "string:image-path:file://$fifo" "a pipe as a file URL"
+qst flood 1 --app Icon --icon "$fifo" > /dev/null
+qst wait '.notifications == 3 and (.popups | length) == 3 and all(.history[]; .image == null)'
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center:DP-1"'
+qst stays '.panel == "center:DP-1" and all(.notificationPictures[]; contains(".fifo") | not)' 1
+
+qst case "a picture and a sound whose paths hold a space, a # and a % draw and play"
+dir=$(mktemp -d -p "$QS_TEST_DIR")
+cp "$QS_TEST_REPO/modules/features/hyprland/tests/tray-icon.svg" "$dir/Shot #2 %41.svg"
+cp "$QS_TEST_REPO/modules/features/hyprland/quickshell/notifications/sounds/notification.oga" "$dir/a b%.oga"
+url() { jq -rn --arg path "$1" '"file://" + ($path | split("/") | map(@uri) | join("/"))'; }
+notify-send -a Sound -h "string:sound-file:$(url "$dir/a b%.oga")" "a sound"
+notify-send -a Bare -i "$dir/Shot #2 %41.svg" "a bare path"
+notify-send -a Url -h "string:image-path:$(url "$dir/Shot #2 %41.svg")" "a file URL"
+qst wait '.notificationPictures as $drawn | [.history[].image | select(. != null)] as $images | .notifications == 3 and ($images | length) == 2 and all($images[]; . as $image | $drawn | index($image) != null)'
+played() { qst actions | grep -qxF "pw-play $dir/a b%.oga"; }
+for _ in $(seq 20); do played && break; qst stays true 0.05; done
+played || { qst actions | grep pw-play; echo "the sound was not played from its path"; exit 1; }
 
 qst case "an app icon naming another notification's picture in memory draws nothing of it, nor keeps it"
 send() {

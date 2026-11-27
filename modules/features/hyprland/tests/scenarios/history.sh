@@ -66,6 +66,33 @@ wait_saved '(.notifications | length) == 0'
 for _ in $(seq 30); do [ -z "$(images)" ] && break; qst stays true 0.05; done
 [ -z "$(images)" ] || { echo "pictures left behind: $(images)"; exit 1; }
 
+qst case "a picture sent as a file comes back from its copy after a restart, though the file has gone"
+picture=$(mktemp -p "$QS_TEST_DIR" --suffix .svg)
+cp "$QS_TEST_REPO/modules/features/hyprland/tests/tray-icon.svg" "$picture"
+notify-send -a Shot -i "$picture" "a file"
+qst wait '.notifications == 1 and .history[0].image != null'
+copy=$(qst state '.history[0].image' | jq -r .)
+wait_saved ".notifications[0].image == \"$copy\""
+rm "$picture"
+qst restart > /dev/null
+qst wait ".history[0].restored and .history[0].image == \"$copy\""
+qst ipc panels open center > /dev/null
+qst wait ".panel == \"center:DP-1\" and (.notificationPictures | index(\"$copy\")) != null"
+
+qst case "a saved picture or app icon that is a pipe never holds the shell once read back"
+fifo=$QS_TEST_DIR/saved.fifo
+rm -f "$fifo" && mkfifo "$fifo"
+file=$(qst state .historyFile | jq -r .)
+now=$(($(date +%s) * 1000))
+# Each its own app, so each is its group's icon in the center.
+record() { jq -cn --arg uid "$1" --arg icon "$2" --arg image "$3" --argjson time "$now" '{ uid: $uid, time: $time, checked: false, appName: $uid, appIcon: $icon, desktopEntry: "", summary: $uid, body: "", image: $image, urgency: 1 }'; }
+jq -n --argjson a "$(record icon "" "image://icon/$fifo")" --argjson b "$(record url "" "file://$fifo")" --argjson c "$(record bare "$fifo" "")" '{ version: 1, notifications: [$a, $b, $c] }' > "$file"
+qst restart > /dev/null
+qst wait '.historyLoaded and .notifications == 3'
+qst ipc panels open center > /dev/null
+qst wait '.panel == "center:DP-1"'
+qst stays '.panel == "center:DP-1" and all(.notificationPictures[]; contains(".fifo") | not)' 1
+
 qst case "a damaged history file starts the shell empty, with one warning"
 file=$(qst state .historyFile | jq -r .)
 printf '{"version": 1, "notifications": [' > "$file"

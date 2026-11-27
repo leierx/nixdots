@@ -42,4 +42,32 @@ TestCase {
     const text = JSON.stringify({ notifications: [record("soon", -30 * 1000), record("ahead", -3600 * 1000)] });
     compare(Saved.parse(text, now).records.map(r => r.uid), ["soon"]);
   }
+
+  function test_file_urls_data() {
+    return [
+      { tag: "plain", path: "/tmp/a.png", url: "file:///tmp/a.png" },
+      { tag: "a space, a hash, a percent and a question mark", path: "/tmp/Shot #2 100%?.png", url: "file:///tmp/Shot%20%232%20100%25%3F.png" },
+    ];
+  }
+
+  function test_file_urls(data) {
+    compare(Saved.fileUrl(data.path), data.url);
+    compare(Saved.localPath(data.url), data.path);
+  }
+
+  function test_local_path_data() {
+    return [
+      { tag: "localhost", url: "file://localhost/tmp/a", path: "/tmp/a" },
+      { tag: "one slash", url: "file:/tmp/a", path: "/tmp/a" },
+      { tag: "fragment and query", url: "file:///tmp/a%20b#c?d", path: "/tmp/a b" },
+      { tag: "a broken escape", url: "file:///tmp/%E0%A4%A", path: "" },
+      { tag: "relative", url: "file:a", path: "" },
+      { tag: "a bare path", url: "/tmp/a", path: "" },
+      { tag: "an icon", url: "image://icon//tmp/a", path: "" },
+    ];
+  }
+
+  function test_local_path(data) {
+    compare(Saved.localPath(data.url), data.path);
+  }
 }
