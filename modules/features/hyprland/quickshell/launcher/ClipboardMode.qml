@@ -47,32 +47,41 @@ LauncherMode {
   Component.onCompleted: cacheCommand.running = true
   onOpened: listCommand.running = true
   onOpenChanged: if (!open) entries = []
+  // Decoded first, so a clip that fails to decode says so rather than emptying the clipboard; each into a file of its own, which its wl-copy removes.
   onActivated: row => {
-    decodeCommand.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")" && cliphist decode "$1" > "$2"', "sh", row.id, root.picked];
-    decodeCommand.running = true;
+    decoding.createObject(root, { command: ["sh", "-c", 'mkdir -p "$(dirname "$2")" && file=$(mktemp "$2.XXXXXX") && { cliphist decode "$1" > "$file" || { rm -f "$file"; exit 1; }; } && printf %s "$file"', "sh", row.id, Quickshell.cachePath("clipboard-picked")] });
     Panels.close();
   }
   onRemoved: row => {
-    deleteCommand.command = ["sh", "-c", 'printf "%s\\n" "$1" | cliphist delete', "sh", row.line];
-    deleteCommand.running = true;
+    deletion.createObject(root, { command: ["sh", "-c", 'printf "%s\\n" "$1" | cliphist delete', "sh", row.line] });
     root.entries = root.entries.filter(entry => entry.id !== row.id);
   }
 
-  // Decoded first, so a clip that fails to decode says so rather than emptying the clipboard.
-  readonly property string picked: Quickshell.cachePath("clipboard-picked")
+  // One per action: a Process given a new command while it runs starts only the last one it was given.
+  Component {
+    id: decoding
 
-  Command {
-    id: decodeCommand
-
-    name: "Copying the clip"
-    // wl-copy stays behind to serve the clip, in a scope of its own; it has read the file before it forks.
-    onDone: Detached.run(["sh", "-c", 'wl-copy < "$1"; rm -f "$1"', "sh", root.picked], "")
+    Command {
+      name: "Copying the clip"
+      running: true
+      // wl-copy stays behind to serve the clip, in a scope of its own; it has read the file before it forks.
+      onDone: output => {
+        Detached.run(["sh", "-c", 'wl-copy < "$1"; rm -f "$1"', "sh", output], "");
+        destroy();
+      }
+      onFailed: destroy()
+    }
   }
 
-  Command {
-    id: deleteCommand
+  Component {
+    id: deletion
 
-    name: "Deleting the clip"
+    Command {
+      name: "Deleting the clip"
+      running: true
+      onDone: destroy()
+      onFailed: destroy()
+    }
   }
 
   // The rows show at once; what needs a clip decoded follows from the cache.
