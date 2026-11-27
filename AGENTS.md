@@ -726,7 +726,7 @@ icon theme, hostname, uptime).
   runs a lone card's default action; its arrow (a button) expands it; a right
   click dismisses a card or group. The list's wheel glides, but over the media
   card the card's own wheel goes first. Do Not Disturb is a switch in its
-  footer.
+  footer, or a right click on the clock.
 - `controls/` (SUPER+A): GNOME's quick settings: `Header` (the battery, or
   without one the machine), `Levels` (the volume, its arrow
   opening Sound: Output and Input, a symbol per device from its PipeWire
@@ -1103,7 +1103,7 @@ own `qst areas` filter: a missing name then says what is there.
 | `interactions.sh` | fixes that had no case: popups, wheel past 100 %, clip scope, 1024x600 and 1080p at scale 3, power keys (held, rearmed, firmware), a banner's click, hover after a panel closes, a drag let go outside the centre, Space held on a switch, a long menu by keys, a process run again from its exit, a status glyph back mid-fade |
 | `launcher.sh` | typing as it opens, open time, clicks on another monitor, nixpkgs search at full size and on a broken list, the selection under a retitling window, the clipboard's counts, Return twice |
 | `motion.sh` | center groups expanding, the OSD fading, toggle menus handed between and within rows |
-| `notifications.sh` | per-app limits, five popups, stack tags, DND, the bell, flood sounds, bare-path pictures, Clear, groups holding their places, Collapse All shutting More, a hovered banner, updates by id (closed at once, past the flood limit), markup in labels, hostile hints, pictures and app icons that are pipes, paths with a space, # and %, an app icon naming another's picture |
+| `notifications.sh` | per-app limits, five popups, stack tags, DND, the bell, flood sounds, bare-path pictures, Clear, groups holding their places, Collapse All shutting More, a right click on the clock, a hovered banner, updates by id (closed at once, past the flood limit), markup in labels, hostile hints, pictures and app icons that are pipes, paths with a space, # and %, an app icon naming another's picture |
 | `osd.sh` | what shows and what must not (a mic level moving, the volume key past 100 %) |
 | `privacy.sh` | mics real and virtual, casts, cameras via PipeWire and `/dev`, an app named over several lines |
 | `soak.sh` | one shell used for long: `fuzz`, every panel fifty times (memory, open files), idle CPU, the package list's memory given back |

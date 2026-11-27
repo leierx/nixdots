@@ -33,6 +33,16 @@ qst wait '.dnd'
 notify-send -u critical -a Battery "battery low"
 qst wait '(.popups | map(.summary)) == ["battery low"]'
 
+qst case "a right click on the clock turns Do Not Disturb on and off, opening nothing, and a left click still opens the center"
+qst wait '.dnd == false and .dndFlips == 0 and .panel == ""'
+qst click right 960 17
+qst wait '.dnd and .dndFlips == 1 and (.status[0].glyphs | index("dnd")) != null'
+qst stays '.panel == "" and .dnd' 0.3
+qst click right 960 17
+qst wait '.dnd == false and .dndFlips == 2 and (.status[0].glyphs | type == "array" and index("dnd") == null)'
+qst click left 960 17
+qst wait '.panel == "center:DP-1" and .dnd == false'
+
 qst case "the status button rings the bell for notifications not yet looked at, and the center from the clock checks them"
 qst wait '.unchecked == 0 and (.status[0].glyphs | index("bell") | not)'
 notify-send -a Chat "one"
