@@ -4,6 +4,7 @@ root: {
     {
       home.packages = with pkgs; [
         just
+        kubectl
         kubernetes-helm
         kubevirt
         # `kubectl oidc-login`: the homelab kubeconfig logs in through Authentik
