@@ -96,6 +96,11 @@ QtObject {
             text: "Library"
             onTriggered: console.info("triggered Library")
           }
+          // Past the opener's own index, so a row read against the wrong card lands on one.
+          MenuItem {
+            text: "Airport"
+            onTriggered: console.info("triggered Airport")
+          }
         }
       }
       Menu {
