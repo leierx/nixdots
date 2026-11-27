@@ -37,21 +37,70 @@ Rectangle {
       else if (bottom > list.contentY + list.height) list.contentY = Math.min(lowest, bottom - list.height);
     }
   }
-  // Tab goes on as Qt takes it; the arrows step through the same order, where nothing nearer takes them.
-  Keys.onPressed: event => {
-    const steps = { [Qt.Key_Down]: true, [Qt.Key_Right]: true, [Qt.Key_Up]: false, [Qt.Key_Left]: false };
-    if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
-      Panels.keyboard = true;
-      event.accepted = false;
-    } else if (event.key in steps) {
-      const from = root.Window.activeFocusItem ?? root;
-      // A text field passes on Left at its start and Right at its end, which are still its own.
-      if (from instanceof TextInput && (event.key === Qt.Key_Left || event.key === Qt.Key_Right)) return;
-      const next = from.nextItemInFocusChain(steps[event.key]);
-      Panels.keyboard = true;
-      if (next) next.forceActiveFocus(Qt.TabFocusReason);
-      event.accepted = true;
+  function within(item: Item, ancestor: Item): bool {
+    for (let at = item; at; at = at.parent) {
+      if (at === ancestor) return true;
     }
+    return false;
+  }
+
+  // The ListView rows an item is in, the innermost first.
+  function rowsOf(item: Item): var {
+    const rows = [];
+    for (let at = item; at && at !== root; at = at.parent) {
+      const view = at.parent?.parent;
+      if (view instanceof ListView && at.parent === view.contentItem) rows.push(at);
+    }
+    return rows;
+  }
+
+  function focusables(item: Item): var {
+    if (!item.visible || !item.enabled) return [];
+    const own = item.activeFocusOnTab ? [item] : [];
+    return own.concat(...Array.from(item.children, child => root.focusables(child)));
+  }
+
+  // The first or last control in row INDEX on, made if it is out of view.
+  function rowControl(view: ListView, index: int, forward: bool): Item {
+    for (let i = index; i >= 0 && i < view.count; i += forward ? 1 : -1) {
+      if (!view.itemAtIndex(i)) view.positionViewAtIndex(i, ListView.Contain);
+      const controls = root.focusables(view.itemAtIndex(i));
+      if (controls.length > 0) return controls[forward ? 0 : controls.length - 1];
+    }
+    return null;
+  }
+
+  // Qt's focus chain, but by index through a ListView, whose rows made while it scrolls back are last in the chain.
+  function step(from: Item, forward: bool): Item {
+    let next = from.nextItemInFocusChain(forward);
+    for (const row of root.rowsOf(from)) {
+      if (next && root.within(next, row)) return next;
+      const view = row.parent.parent;
+      let index = 0;
+      while (index < view.count && view.itemAtIndex(index) !== row) index++;
+      const near = root.rowControl(view, index + (forward ? 1 : -1), forward);
+      if (near) return near;
+      const start = next;
+      while (next && root.within(next, view.contentItem)) {
+        next = next.nextItemInFocusChain(forward);
+        if (next === start) return null;
+      }
+    }
+    const into = next ? root.rowsOf(next).filter(row => !root.within(from, row.parent.parent)).pop() : undefined;
+    return into ? root.rowControl(into.parent.parent, forward ? 0 : into.parent.parent.count - 1, forward) ?? next : next;
+  }
+
+  // Tab and the arrows step through the same order, where nothing nearer takes them.
+  Keys.onPressed: event => {
+    const steps = { [Qt.Key_Tab]: true, [Qt.Key_Down]: true, [Qt.Key_Right]: true, [Qt.Key_Backtab]: false, [Qt.Key_Up]: false, [Qt.Key_Left]: false };
+    if (!(event.key in steps)) return;
+    const from = root.Window.activeFocusItem ?? root;
+    // A text field passes on Left at its start and Right at its end, which are still its own.
+    if (from instanceof TextInput && (event.key === Qt.Key_Left || event.key === Qt.Key_Right)) return;
+    const next = root.step(from, steps[event.key]);
+    Panels.keyboard = true;
+    if (next) next.forceActiveFocus(Qt.TabFocusReason);
+    event.accepted = true;
   }
 
   Shadow {

@@ -260,3 +260,22 @@ qst key Tab
 qst wait '.focused == "NotificationCenter/Switch:switch:dnd"'
 qst hold space 2000
 qst wait '.dnd and .dndFlips == 1'
+
+qst case "the arrows reach every row of a long menu, down and back up through the rows it makes again as it scrolls"
+qst network wifi many 40
+qst ipc panels open controls:DP-1 > /dev/null
+qst wait '.panel == "controls:DP-1"'
+qst ipc controls menu wifi > /dev/null
+qst wait '.controls.menu == "wifi" and .controls.open.rows > 40' 10
+top=$(qst state '.controls.open.first[0]')
+for _ in $(seq 15); do [ "$(qst state .focused)" = '"ControlsPanel/QQuickTextInput"' ] && break; qst key Tab; done
+qst key Down
+qst wait ".focusedTitle == $top"
+mapfile -t downs < <(yes Down | head -30)
+mapfile -t ups < <(yes Up | head -30)
+qst key "${downs[@]}"
+qst wait ".focusedTitle != $top and .focused == \"ControlsPanel/ListRow\""
+qst key "${ups[@]}"
+qst wait ".focusedTitle == $top"
+qst key Up
+qst wait '.focused == "ControlsPanel/QQuickTextInput"'

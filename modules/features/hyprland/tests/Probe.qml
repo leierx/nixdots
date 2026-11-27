@@ -497,6 +497,8 @@ Scope {
         notifications: Notifs.entries.length,
         // What the keyboard is on in a window that has it, by label, and whether its ring shows.
         focused: (() => { let found = null; for (const entry of probe.windows()) for (const { item } of entry.items) if (item.activeFocus && "activeFocusOnTab" in item && item.activeFocusOnTab) found = probe.label(entry, item); return found; })(),
+        // A focused row's title, which its label leaves out.
+        focusedTitle: (() => { let found = null; for (const entry of probe.windows()) for (const { item } of entry.items) if (item.activeFocus && item.activeFocusOnTab && typeof item.title === "string") found = item.title; return found; })(),
         ring: Panels.keyboard,
         // Every piece showing its hover, by label: one left lit after the pointer has gone is the stuck grey.
         hovered: (() => { const found = []; for (const entry of probe.windows()) for (const { item } of entry.items) if (item.hovered === true && "color" in item) found.push(probe.label(entry, item)); return found; })(),
