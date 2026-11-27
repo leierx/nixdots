@@ -27,17 +27,11 @@ root@{ inputs, ... }:
       programs.steam.enable = true;
       programs.gamescope.enable = true;
 
-      # input: virtual pads without a logged-in seat; moonshine: its sleep-inhibit polkit rule
-      users.users.${root.config.identity.username}.extraGroups = [
-        "input"
-        "moonshine"
-      ];
+      # virtual pads without a logged-in seat
+      users.users.${root.config.identity.username}.extraGroups = [ "input" ];
 
       services.moonshine = {
         enable = true;
-        package = pkgs.callPackage "${inputs.moonshine}/nix/package.nix" {
-          ferriscopeSrc = inputs.moonshine.inputs.ferriscope;
-        };
         user = root.config.identity.username;
         settings = {
           name = config.networking.hostName;
