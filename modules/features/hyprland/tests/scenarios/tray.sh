@@ -202,3 +202,17 @@ qst pointer "$x" "$y"
 qst wait '.trayMenu.selected != "Network 0"'
 qst key Down
 qst wait '.trayMenu.path == ["Networks"] and .trayMenu.selected == "Network 0"'
+
+qst case "a tray menu named over IPC opens nothing on a fresh shell"
+qst tray
+qst wait '.tray | length > 0'
+qst ipc panels open tray-menu:DP-1 > /dev/null
+qst stays '.panel == "" and .trayMenu == null' 0.5
+
+qst case "a tray menu named over IPC once a menu has closed does not open that menu again"
+open_menu
+qst key Down Return
+qst wait '.panel == "" and .trayMenu == null'
+qst pointer 900 600
+qst ipc panels open tray-menu:DP-1 > /dev/null
+qst stays '.panel == "" and .trayMenu == null' 0.5
