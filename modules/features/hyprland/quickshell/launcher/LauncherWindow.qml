@@ -121,6 +121,10 @@ Overlay {
     function settle(): void {
       settling.stop();
       list.query = list.typed;
+      // The same rows as before raise no valuesChanged, yet the search is new.
+      if (list.selectedFor === list.query) return;
+      list.selectedFor = list.query;
+      list.select(0);
     }
 
     onTypedChanged: list.mode.find && list.typed !== "" ? settling.restart() : list.settle()

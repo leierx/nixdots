@@ -82,6 +82,26 @@ qst key Down
 picked=$(qst state .selected)
 qst stays ".selected == $picked" 1.5
 
+qst case "a new search in the window switcher starts at its best match, also when it matches the same windows, and stays there as one retitles"
+export QS_TEST_MONITORS="DP-1:1920x1080:1"
+qst reset > /dev/null
+retitle=$(mktemp -u)
+qst spawn foot -a one sleep 600
+qst spawn foot -a two sh -c 'printf "\033]2;before\007"; while [ ! -e "$1" ]; do sleep 0.1; done; printf "\033]2;after\007"; sleep 600' sh "$retitle" # sleep: the window retitles once it is told to
+qst spawn foot -a three sleep 600
+qst wait '(.windows | length) == 3' 10
+qst key super+Tab
+qst wait '.panel == "windows" and (.results | length) == 3 and (.results | index("before")) != null'
+first=$(qst state .selected)
+qst key Down
+qst stays ".selected != $first" 0.2
+# Every window is on DP-1, so each matches through where it is, and the rows are the same as before.
+qst type dp
+qst wait ".field == \"dp\" and (.results | length) == 3 and .selected == $first"
+touch "$retitle"
+qst wait '(.results | index("after")) != null' 10
+qst stays ".selected == $first" 0.5
+
 qst case "the clipboard searches a clip's own text, never the counts under it"
 export QS_TEST_MONITORS="DP-1:1920x1080:1"
 qst reset > /dev/null
