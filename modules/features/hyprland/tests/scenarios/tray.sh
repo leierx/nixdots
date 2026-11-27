@@ -97,38 +97,41 @@ qst key q
 qst pointer 900 600
 qst wait '.panel == "" and .trayMenu == null' 2
 
-qst case "a pointer slipping off a tray menu has a second to come back, and the menu goes a second after it leaves for good"
-open_menu
-read -r x y < <(row 1 1)
-qst pointer "$x" "$y"
-qst pointer 900 600
-qst stays '.trayMenu != null and .panel == "tray-menu:DP-1"' 0.3
-qst pointer "$x" "$y"
-qst stays '.trayMenu != null and .panel == "tray-menu:DP-1"' 1.5
-qst pointer 900 600
-qst wait '.panel == "" and .trayMenu == null' 2
-
-qst case "a pointer slipping off a tray menu onto a window, which takes the keyboard as it passes, has a second to come back, and the keyboard comes back with it"
+qst case "a pointer overshooting a tray menu by less than a row keeps it, over a window too, and the keyboard with it; a press there closes it"
 qst spawn foot -a target sleep 600
 qst wait '(.windows | length) == 1' 10
 open_menu
 read -r x y < <(row 1 1)
-read -r x2 y2 < <(row 1 2)
 qst pointer "$x" "$y"
-qst pointer "$x2" "$y2"
-for _ in 1 2 3; do
-  qst pointer 400 600
-  qst stays '.trayMenu != null and .panel == "tray-menu:DP-1"' 0.3
-  qst pointer "$x2" "$y2"
-  qst stays '.trayMenu != null and .panel == "tray-menu:DP-1"' 0.3
-done
-qst stays '.trayMenu != null and .panel == "tray-menu:DP-1"' 1.2
+left=$(qst state '.trayMenu.cards[0].x')
+bottom=$(qst state '.trayMenu.cards[0] | .y + .height')
+qst pointer "$x" $((bottom + 20))
+qst stays '.trayMenu != null and .panel == "tray-menu:DP-1"' 1.5
+qst pointer $((left - 20)) "$y"
+qst stays '.trayMenu != null and .panel == "tray-menu:DP-1"' 0.3
 qst key Down
 qst wait '.trayMenu.keyed'
-# Keys drove it, but the keyboard goes with the pointer onto the window, so the menu goes a second later.
-qst pointer 400 600
-qst wait '.panel == "" and .trayMenu == null' 2
-[ "$(hyprctl activewindow -j | jq -r .class)" = target ] || { hyprctl activewindow -j; echo "the window under the pointer did not get the keyboard"; exit 1; }
+qst click left $((left - 20)) "$y"
+qst wait '.panel == "" and .trayMenu == null'
+
+qst case "a pointer past a tray menu's slack closes it at once"
+open_menu
+read -r x y < <(row 1 1)
+qst pointer "$x" "$y"
+bottom=$(qst state '.trayMenu.cards[0] | .y + .height')
+qst pointer "$x" $((bottom + 60))
+qst wait '.panel == "" and .trayMenu == null' 1
+
+qst case "the slack beside an open submenu keeps it open"
+open_menu
+read -r x y < <(row 1 9)
+qst pointer "$x" "$y"
+qst wait '.trayMenu.path == ["Networks"] and (.trayMenu.cards | length) == 2'
+read -r x y < <(row 2 1)
+qst pointer "$x" "$y"
+left=$(qst state '.trayMenu.cards[1].x')
+qst pointer $((left - 20)) "$y"
+qst stays '.trayMenu.path == ["Networks"] and .panel == "tray-menu:DP-1"' 1
 
 qst case "Return on a tray menu's row triggers it and closes the menu"
 qst tray

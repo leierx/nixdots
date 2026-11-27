@@ -32,6 +32,14 @@ PanelWindow {
   // The next card to open takes its first row once its entries come.
   property bool pickFirst: false
   readonly property int padding: 6
+  // A row's height around the cards still counts as on the menu, so overshooting a row keeps it; past that it goes at once.
+  readonly property int slack: Theme.menuRowHeight
+  // The bar stays the bar's, so the tray icon still holds and closes the menu.
+  readonly property Region barStrip: Region {
+    width: root.width
+    height: Theme.barHeight
+    intersection: Intersection.Subtract
+  }
 
   // The pointer gone from it, the app's menu gone, or Escape: the tray closes it.
   signal dismissed
@@ -191,7 +199,7 @@ PanelWindow {
   }
   exclusionMode: ExclusionMode.Ignore
   mask: Region {
-    regions: root.cards.map(card => card.region)
+    regions: [...root.cards.map(card => card.near), root.barStrip, ...root.cards.map(card => card.region)]
   }
 
   WlrLayershell.layer: WlrLayer.Overlay
@@ -215,21 +223,19 @@ PanelWindow {
     onTriggered: if (root.pending) root.apply(root.pending.level, root.pending.label)
   }
 
-  // GTK's MENU_POPDOWN_DELAY, so a pointer that slips off has time to come back.
   Timer {
     running: !inside.hovered && !root.held && !root.keyed
-    interval: 1000
+    interval: 100
     onTriggered: root.dismissed()
   }
 
-  // Only the cards take input, so this is hovered exactly while the pointer is on one; hover reaches ancestors, not siblings beneath.
+  // Only the cards and the slack around them take input, so this is hovered exactly while the pointer is on or near one; hover reaches ancestors, not siblings beneath.
   Item {
     anchors.fill: parent
     focus: true
-    // Under follow_mouse a window takes the keyboard as the pointer only crosses it, so losing it leaves the pointer's second to decide.
     Window.onActiveChanged: {
       if (Window.active) root.focused = true;
-      else root.keyed = false;
+      else if (root.focused) root.dismissed();
     }
     Keys.onPressed: event => {
       event.accepted = root.key(event);
@@ -240,6 +246,19 @@ PanelWindow {
       id: inside
 
       onHoveredChanged: if (hovered) root.keyed = false
+    }
+
+    // A press in the slack is one outside the menu, as on bare desktop; the cards take none of their own, so one on a card's padding passes.
+    MouseArea {
+      id: slackArea
+
+      anchors.fill: parent
+      cursorShape: Qt.ArrowCursor
+      acceptedButtons: Qt.AllButtons
+      onPressed: mouse => {
+        if (root.cards.some(card => card.contains(card.mapFromItem(slackArea, mouse.x, mouse.y)))) mouse.accepted = false;
+        else root.dismissed();
+      }
     }
 
     Repeater {
@@ -262,6 +281,12 @@ PanelWindow {
 
         readonly property Region region: Region {
           item: card
+        }
+        readonly property Region near: Region {
+          x: Math.floor(card.x) - root.slack
+          y: Math.floor(card.y) - root.slack
+          width: Math.ceil(card.width) + 2 * root.slack
+          height: Math.ceil(card.height) + 2 * root.slack
         }
         readonly property var parentCard: index > 0 ? root.level(index - 1) : null
         readonly property int direction: {

@@ -591,7 +591,7 @@ Scope {
           return { screen: entry.screen, shown: tray?.visible ?? false, expanded: tray?.expanded ?? false, more: tray?.more ?? 0, width: Math.round(tray?.implicitWidth ?? 0), scrolls: tray?.scrolls ?? false, offset: Math.round(tray?.offset ?? 0), items: tray ? tray.items.map(item => item.id) : [] };
         }),
         // The tray menu up: its open submenus by label and the row the keyboard is on.
-        trayMenu: (menu => menu ? { path: menu.path, keyed: menu.keyed, selected: menu.level(menu.path.length)?.entries[menu.row]?.text ?? null, scrolled: Math.round(menu.level(menu.path.length)?.offset ?? 0) } : null)(probe.windows().find(entry => entry.type === "TrayMenu")?.window ?? null),
+        trayMenu: (menu => menu ? { path: menu.path, keyed: menu.keyed, selected: menu.level(menu.path.length)?.entries[menu.row]?.text ?? null, scrolled: Math.round(menu.level(menu.path.length)?.offset ?? 0), cards: Array.from({ length: menu.path.length + 1 }, (_, depth) => menu.level(depth)).filter(card => card).map(card => ({ x: Math.round(card.x), y: Math.round(card.y), width: Math.round(card.width), height: Math.round(card.height) })) } : null)(probe.windows().find(entry => entry.type === "TrayMenu")?.window ?? null),
         // The launcher's first ten results by title, best first.
         results: (probe.windows().map(entry => entry.items.find(({ item }) => "results" in item && "query" in item && "mode" in item)).find(found => found)?.item.results ?? []).slice(0, 10).map(row => row.title ?? row.key ?? null),
         // The launcher's selected row by key, which a retitled window keeps.
