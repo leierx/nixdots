@@ -45,6 +45,24 @@ qst ipc panels open center > /dev/null
 qst wait '.panel == "center:DP-1"'
 qst stays '.panel == "center:DP-1"' 1
 
+qst case "apps named __proto__ and constructor keep three each, sounds still play, and a flood from one is counted"
+for n in 1 2 3 4; do
+  notify-send -a __proto__ "proto $n"
+  notify-send -a constructor "constructor $n"
+done
+qst ipc notifications hidePopups
+qst wait '(.history | map(select(.app == "__proto__")) | length) == 3 and (.history | map(select(.app == "constructor")) | length) == 3'
+# Past the 300 ms between sounds.
+qst stays true 0.4
+before=$(qst actions | grep -c '^pw-play' || true)
+notify-send -a Chat "after"
+qst wait '(.popups | length) == 1'
+played() { [ "$(qst actions | grep -c '^pw-play' || true)" -gt "$before" ]; }
+for _ in $(seq 20); do played && break; qst stays true 0.05; done
+played || { echo "no sound after __proto__"; exit 1; }
+qst flood 100 --app __proto__ > /dev/null
+qst wait 'any(.history[]; .app == "Notifications" and (.summary | test("Notifications Dropped$")))' 10
+
 qst case "an icon that is no picture gives way to the app's initial"
 junk=$(mktemp -p "$QS_TEST_DIR")
 head -c 4096 /dev/urandom > "$junk"

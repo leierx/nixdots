@@ -39,7 +39,7 @@ Singleton {
   readonly property int maxBody: 5000
   readonly property int maxApp: 100
   // Plain, since it changes with every notification: the second counted, what it let in, and what it turned away by app.
-  property var flood: ({ second: 0, normal: 0, critical: 0, total: 0, dropped: {} })
+  property var flood: ({ second: 0, normal: 0, critical: 0, total: 0, dropped: new Map() })
 
   // Like GNOME: over a fullscreen window only critical notifications pop up, and going fullscreen puts the others away.
   readonly property bool fullscreen: ToplevelManager.activeToplevel?.fullscreen ?? false
@@ -86,9 +86,8 @@ Singleton {
     }
     if (merging) return false;
     const app = root.clip(notification.appName, root.maxApp) || "An app";
-    const apps = Object.keys(flood.dropped);
-    const key = app in flood.dropped || apps.length < 20 ? app : "others";
-    flood.dropped[key] = (flood.dropped[key] ?? 0) + 1;
+    const key = flood.dropped.has(app) || flood.dropped.size < 20 ? app : "others";
+    flood.dropped.set(key, (flood.dropped.get(key) ?? 0) + 1);
     flood.total++;
     floodOver.restart();
     return false;
@@ -100,12 +99,12 @@ Singleton {
 
     interval: 2000
     onTriggered: {
-      const counts = Object.entries(root.flood.dropped).sort((a, b) => b[1] - a[1]);
+      const counts = [...root.flood.dropped].sort((a, b) => b[1] - a[1]);
       const named = counts.filter(([app]) => app !== "others").slice(0, 3).map(([app]) => app);
       const from = counts.length > named.length ? `${named.join(", ")} and others` : named.length > 1 ? `${named.slice(0, -1).join(", ")} and ${named[named.length - 1]}` : named[0];
       const total = root.flood.total;
       root.flood.total = 0;
-      root.flood.dropped = {};
+      root.flood.dropped = new Map();
       Quickshell.execDetached(["notify-send", "-a", "Notifications", "-i", "dialog-warning", `${total.toLocaleString(Qt.locale(), "f", 0)} ${total === 1 ? "Notification" : "Notifications"} Dropped`, `${from} sent more than ${root.floodLimit} a second`]);
     }
   }
@@ -144,12 +143,13 @@ Singleton {
 
   // One still popped up is kept until its popup goes.
   function trimHistory() {
-    const counts = {};
+    // A Map, as an app may be named __proto__.
+    const counts = new Map();
     let kept = 0;
     for (const entry of root.entries.slice()) {
       const key = root.appKey(entry);
-      counts[key] = (counts[key] ?? 0) + 1;
-      if (!entry.popup && (counts[key] > root.perApp || kept >= root.maxEntries)) entry.notification.expire();
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+      if (!entry.popup && (counts.get(key) > root.perApp || kept >= root.maxEntries)) entry.notification.expire();
       else kept++;
     }
   }
