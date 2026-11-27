@@ -787,6 +787,16 @@ qst wait '.controls.media.title == "Kid A"'
 qst stays '.controls.media.length == 284' 1
 qst area NotificationCenter:slider:media > /dev/null
 
+qst case "a cover that is a FIFO nobody writes holds nothing up: the shell answers, and the next player's cover shows"
+rm -f "$QS_TEST_DIR/cover.fifo"
+mkfifo "$QS_TEST_DIR/cover.fifo"
+printf '%s' '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="#1d6fd6"/></svg>' > "$QS_TEST_DIR/square.svg"
+qst player add stuck Stuck Playing "$QS_TEST_DIR/cover.fifo"
+center
+qst wait '.controls.media.identity == "Stuck"'
+qst player add spotify Spotify Playing "$QS_TEST_DIR/square.svg"
+qst wait '.controls.media.identity == "Spotify" and .controls.media.art == 84 and .controls.media.tint.accent != null and .controls.media.tint.accent != ""' 10
+
 qst case "past 100 % the output's slider reaches as far as the level, marks 100 %, and a click sets a share of that range"
 wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.3
 qst wait '.volume.percent == 130'

@@ -33,7 +33,7 @@ Singleton {
   property bool watched: false
 
   readonly property string art: player?.trackArtUrl ?? ""
-  // The art as a local file, a remote one downloaded in the background and cached: ColorQuantizer reads only files, and the card would fetch it again on each open. A track's stays while the next one's downloads.
+  // The art as a file in the cache, a remote one downloaded in the background, a local one copied (a player's file may be a FIFO, which holds whatever opens it): ColorQuantizer reads only files, and the card would fetch it again on each open. A track's stays while the next one's downloads.
   property string artFile: ""
   // What the card shows: the local file, or art Qt loads itself (data:) that has none.
   readonly property string artShown: artFile !== "" || /^(https?:|file:|\/)/.test(art) ? artFile : art
@@ -104,9 +104,9 @@ Singleton {
   function cover(): void {
     const art = root.art;
     const local = art.startsWith("file://") ? art : art.startsWith("/") ? `file://${art}` : "";
-    present.wanted = local;
+    copy.wanted = local;
     if (local !== "") {
-      if (!present.running) present.check(local);
+      if (!copy.running) copy.get(local);
     } else if (/^https?:\/\//.test(art)) {
       if (!download.running) download.get(art);
     } else root.artFile = "";
@@ -205,27 +205,30 @@ Singleton {
     }
   }
 
-  // A local cover only once it is there: a player naming a file since deleted would have Qt warn wherever it is drawn.
+  // A local cover only once it is there, as a copy cut off in time and size: a player naming a file since deleted would have Qt warn wherever it is drawn, and a FIFO or a device would hold the thread reading it.
   Process {
-    id: present
+    id: copy
 
     property string url: ""
     property string wanted: ""
     property string path: ""
+    property string file: ""
 
-    function check(url: string): void {
-      present.url = url;
-      present.path = url.slice("file://".length);
+    function get(url: string): void {
+      copy.url = url;
+      copy.file = Quickshell.cachePath(`covers/${Qt.md5(url)}`);
+      copy.path = url.slice("file://".length);
       // A player's own percent-encoding, which may not decode.
       try {
-        present.path = decodeURIComponent(present.path);
+        copy.path = decodeURIComponent(copy.path);
       } catch (error) {}
-      present.running = true;
+      copy.running = true;
     }
 
-    command: ["test", "-r", present.path]
+    // Copied anew each time, as a player may write each track's cover to the same file; written aside and moved in, as the download's.
+    command: ["sh", "-c", 'f=$1; dir=${f%/*}; mkdir -p "$dir" && timeout 5 head -c 20000001 -- "$2" > "$f.part" && [ "$(wc -c < "$f.part")" -le 20000000 ] && mv "$f.part" "$f" || { rm -f "$f.part"; exit 1; }; ls -1t "$dir" | tail -n +33 | while read -r name; do rm -f "$dir/$name"; done', "sh", copy.file, copy.path]
     onExited: code => {
-      if (present.url === present.wanted) root.artFile = code === 0 ? present.url : "";
+      if (copy.url === copy.wanted) root.artFile = code === 0 ? `file://${copy.file}` : "";
       // Once it has stopped: started from its own exit, the next check would be dropped.
       else Qt.callLater(root.cover);
     }
