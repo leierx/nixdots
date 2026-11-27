@@ -373,8 +373,15 @@ read -r x y < <(qst areas 'ControlsPanel' | awk -F'\t' '$3 ~ /:row:/ { print $1,
 qst click left "$x" $((y - 38))
 qst type "Altibox 17"
 qst wait '.field == "Altibox 17"'
-rows=$(qst areas 'ControlsPanel' | grep -c ':row:Altibox 17' || true)
-[ "$rows" -ge 1 ] && [ "$rows" -le 11 ] || { echo "$rows rows match"; exit 1; }
+# The rows the filter dropped fade and shrink away first, the matches moving up under them.
+for _ in $(seq 20); do
+  areas=$(qst areas 'ControlsPanel')
+  rows=$(grep -c ':row:' <<< "$areas" || true)
+  matches=$(grep -c ':row:Altibox 17' <<< "$areas" || true)
+  [ "$matches" -ge 1 ] && [ "$rows" = "$matches" ] && break
+  qst stays true 0.05
+done
+[ "$matches" -ge 1 ] && [ "$matches" -le 11 ] && [ "$rows" = "$matches" ] || { echo "$matches of $rows rows match"; exit 1; }
 qst stays '.panel == "controls:DP-1" and .controls.menu == "wifi"' 1
 
 qst case "a thousand outputs: the one in use first, the rest behind a filter, and the centre still fits"
