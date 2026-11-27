@@ -113,6 +113,34 @@ qst stays '.panel == "clipboard"' 0.5
 qst type character
 qst stays '.panel == "clipboard" and all(.results[]; test("character"; "i"))' 0.5
 
+qst case "clips deleted one after another while cliphist is slow to delete are all deleted"
+export QS_TEST_MONITORS="DP-1:1920x1080:1"
+qst reset > /dev/null
+for clip in one two three four; do echo "clip $clip" | cliphist store; done
+qst fail cliphist slow 'delete*'
+qst key super+v
+qst wait '.panel == "clipboard" and (.results | length) == 4'
+qst key shift+Delete shift+Delete shift+Delete
+qst wait '.results == ["clip one"]'
+for _ in $(seq 100); do [ "$(cliphist list | wc -l)" = 1 ] && break; qst stays true 0.1; done
+[ "$(cliphist list | cut -f2)" = "clip one" ] || { cliphist list; echo "not every deleted clip left the history"; exit 1; }
+
+qst case "a clip picked while the one picked before is still decoding lands on the clipboard, after it"
+export QS_TEST_MONITORS="DP-1:1920x1080:1"
+qst reset > /dev/null
+for clip in first second; do echo "$clip" | cliphist store; done
+qst fail cliphist slow 'decode*'
+qst key super+v
+qst wait '.panel == "clipboard" and .results == ["second", "first"]'
+qst key Return
+qst wait '.panel == ""'
+qst key super+v
+qst wait '.panel == "clipboard" and .results == ["second", "first"]'
+qst key Down Return
+qst wait '.panel == ""'
+for _ in $(seq 100); do [ "$(qst x wl-paste -n)" = first ] && break; qst stays true 0.1; done
+[ "$(qst x wl-paste -n)" = first ] || { qst actions; echo "the clipboard holds '$(qst x wl-paste -n)', not the clip picked last"; exit 1; }
+
 qst case "the package list at its real size is read without holding the keys, and cut short or binary it still opens"
 export QS_TEST_MONITORS="DP-1:1920x1080:1"
 qst reset > /dev/null
