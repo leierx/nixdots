@@ -393,7 +393,7 @@ install_probe() {
   done < <(grep -rlE '(PanelWindow|PopupWindow|FloatingWindow|^Overlay|^Popover) \{$' "$T/shell" --include='*.qml')
   # Register each Behavior on color so the census validates its target while a ColorAnimation is running.
   while IFS= read -r file; do
-    sed -i -E -e 's#^(\s*)Behavior on color \{$#\1Behavior on color {\n\1  Component.onCompleted: ProbeWindows.trackColor(parent, this)\n\1  Component.onDestruction: ProbeWindows.untrackColor(parent, this)#' "$file"
+    sed -i -E -e 's#^(\s*)Behavior on color \{$#\1Behavior on color {\n\1  Component.onCompleted: ProbeWindows.trackColor(targetProperty.object, this)\n\1  Component.onDestruction: ProbeWindows.untrackColor(targetProperty.object, this)#' "$file"
     grep -q '^import qs\.probe$' "$file" || sed -i -E '0,/^import /s/^import /import qs.probe\nimport /' "$file"
   done < <(grep -rlE '^\s*Behavior on color \{$' "$T/shell" --include='*.qml')
 }
