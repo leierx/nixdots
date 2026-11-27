@@ -501,6 +501,8 @@ in
       checks.sound-devices = qmlTest "sound-devices" "controls/devices.js" "tst_devices.qml";
       # Rebuilt rows kept the same objects where unchanged, which a ScriptModel needs to diff them.
       checks.keep = qmlTest "keep" "common/keep.js" "tst_keep.qml";
+      # Wheel notches, a touchpad's part ones adding up but never eating one the other way.
+      checks.wheel-steps = qmlTest "wheel-steps" "common/WheelSteps.qml" "tst_wheel.qml";
       # The media card's colour, which must read white on any cover.
       checks.cover = qmlTest "cover" "common/cover.js" "tst_cover.qml";
     };
