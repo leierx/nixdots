@@ -2,6 +2,7 @@
   flake.modules.homeManager.hyprland =
     {
       config,
+      osConfig,
       pkgs,
       lib,
       ...
@@ -27,9 +28,12 @@
           pkgs.gawk
           pkgs.gnused
           pkgs.coreutils
+          pkgs.util-linux
         ];
         text = ''
-          # one locker even when the idle timer and before_sleep_cmd race
+          # one locker even when the idle timer and before_sleep_cmd race; pidof for a hyprlock run by hand
+          exec {held}> "$XDG_RUNTIME_DIR/hyprlock.flock"
+          flock -n "$held" || exit 0
           pidof hyprlock > /dev/null && exit 0
 
           # hyprlock's screenshot takes in the shell's dim, so the shell holds it still and the lock's brightness makes up for it
@@ -42,11 +46,14 @@
           fi
 
           # a crash leaves Hyprland locked with no client; allow_session_lock_restore lets a new hyprlock take over
-          for _ in 1 2 3; do
+          for _ in 1 2 3 4; do
             status=0
-            hyprlock -c "$config" || status=$?
+            # hyprlock's cmd[] children must not hold the flock past it
+            hyprlock -c "$config" {held}>&- || status=$?
             [ "$status" -gt 128 ] || break
           done
+          # released first, so a lock asked for while the shell is told is not dropped
+          exec {held}>&-
           # also when hyprlock never got the lock
           timeout 2 qs ipc -c shell call idle unlocked > /dev/null 2>&1 || true
         '';
@@ -62,7 +69,8 @@
             before_sleep_cmd = "loginctl lock-session";
             after_sleep_cmd = dpms "on";
             ignore_dbus_inhibit = false;
-            lock_cmd = lib.getExe lock;
+            # its own scope, so restarting hypridle (any switch changing the lock's store paths) leaves hyprlock running
+            lock_cmd = "${lib.getExe' osConfig.systemd.package "systemd-run"} --user --scope --collect --quiet ${lib.getExe lock}";
             inhibit_sleep = 3;
             # under the lock, so unlocking shows the desktop undimmed
             on_lock_cmd = idle "locked";
