@@ -97,6 +97,17 @@ qst key q
 qst pointer 900 600
 qst wait '.panel == "" and .trayMenu == null' 2
 
+qst case "a pointer slipping off a tray menu has a second to come back, and the menu goes a second after it leaves for good"
+open_menu
+read -r x y < <(row 1 1)
+qst pointer "$x" "$y"
+qst pointer 900 600
+qst stays '.trayMenu != null and .panel == "tray-menu:DP-1"' 0.3
+qst pointer "$x" "$y"
+qst stays '.trayMenu != null and .panel == "tray-menu:DP-1"' 1.5
+qst pointer 900 600
+qst wait '.panel == "" and .trayMenu == null' 2
+
 qst case "Return on a tray menu's row triggers it and closes the menu"
 qst tray
 qst wait '.tray | length > 0'

@@ -671,7 +671,9 @@ icon theme, hostname, uptime).
   reaches ancestors, not siblings beneath).
   `TrayMenu` (panel `tray-menu:SCREEN`) cascades as GTK's, takes the keyboard
   (Exclusive only until it has it, so a window clicked elsewhere gets it and
-  the menu goes), closes as the pointer leaves unless keys drive it; Escape in
+  the menu goes), closes a second after the pointer leaves (GTK's
+  `MENU_POPDOWN_DELAY`; GTK itself waits for a click) unless keys drive it
+  or the pointer comes back; Escape in
   a submenu goes back; a card is at most the screen, scrolling, its labels
   plain and elided.
 - Caffeine (`controls/Caffeine.qml`, IPC `caffeine toggle|set|active`) is the
@@ -1100,7 +1102,7 @@ own `qst areas` filter: a missing name then says what is there.
 | `osd.sh` | what shows and what must not (a mic level moving, the volume key past 100 %) |
 | `privacy.sh` | mics real and virtual, casts, cameras via PipeWire and `/dev`, an app named over several lines |
 | `soak.sh` | one shell used for long: `fuzz`, every panel fifty times (memory, open files), idle CPU, the package list's memory given back |
-| `tray.sh` | the tray strip, its menus and keys, Escape in a submenu, an opener hovered back onto, the keyboard back to a window, a tray menu named over IPC |
+| `tray.sh` | the tray strip, its menus and keys, Escape in a submenu, an opener hovered back onto, a pointer slipping off and back, the keyboard back to a window, a tray menu named over IPC |
 | `workspaces.sh` | windows opened while the shell starts, the wheel spun hard |
 
 Behaviour that broke once gets a case; check it fails without the fix:

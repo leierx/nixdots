@@ -215,9 +215,10 @@ PanelWindow {
     onTriggered: if (root.pending) root.apply(root.pending.level, root.pending.label)
   }
 
+  // GTK's MENU_POPDOWN_DELAY, so a pointer that slips off has time to come back.
   Timer {
     running: !inside.hovered && !root.held && !root.keyed
-    interval: 100
+    interval: 1000
     onTriggered: root.dismissed()
   }
 
