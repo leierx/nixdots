@@ -541,7 +541,7 @@ done
 echo "Error: Timeout expired." >&2
 exit 3
 EOF2
-  # The real one reaches this machine's backlight: this one sets the fake ones and announces it as udev does.
+  # The real one would set this machine's backlight wherever its sysfs is writable: this one sets the fake ones and announces it as udev does.
   cat > "$T/bin/brightnessctl" << EOF2
 #!/bin/sh
 echo "brightnessctl \$*" >> "$T/actions.log"
@@ -1102,8 +1102,7 @@ echo \$\$ > "$T/hyprland.pid"
 exec "$build/hyprland/bin/Hyprland"
 EOF
   chmod +x "$T/run.sh"
-  # The portal, a client of the session's PipeWire, asks its own Realtime interface for priority as it reconnects after
-  # each reset, and stalls 25 s per call: what the bus activates goes without realtime.
+  # The portal asks its own Realtime interface for priority as it reconnects after each reset, 25 s a call: no realtime for what the bus starts.
   mkdir -p "$T/pw/client/client.conf.d"
   install -m 644 "$(dirname "$(command -v pipewire)")/../share/pipewire/client.conf" "$T/pw/client/client.conf"
   printf 'context.properties = {\n    module.rt = false\n}\n' > "$T/pw/client/client.conf.d/qs-test.conf"
@@ -1350,7 +1349,10 @@ holes_reset() {
 disk() {
   local dir
   [ -s "$T/disk" ] || die "the shell writes to the session's disk: start the case with QS_TEST_DISK=SIZE"
-  inside() { nsenter -t "$(cat "$T/qs.pid")" -U -m --preserve-credentials -- "$@"; }
+  inside() {
+    ours "$T/qs.pid" || die "qs is not running"
+    nsenter -t "$REPLY" -U -m --preserve-credentials -- "$@"
+  }
   case ${1:-} in
     fill)
       # Every block, so a file can still be made but nothing written into it.
