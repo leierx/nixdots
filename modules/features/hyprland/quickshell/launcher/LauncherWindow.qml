@@ -31,12 +31,11 @@ Overlay {
   component Marked: Text {
     id: marked
 
-    required property string query
+    required property ResultRow result
     required property string plain
-    property bool loose: false
-    readonly property bool marking: marked.query.trim() !== ""
+    readonly property bool marking: marked.result.list.query.trim() !== ""
 
-    text: marked.marking ? Search.mark(marked.query, marked.plain, marked.loose) : marked.plain
+    text: marked.marking ? marked.result.mark(marked.plain) : marked.plain
     textFormat: marked.marking ? Text.StyledText : Text.PlainText
     elide: Text.ElideRight
     maximumLineCount: 1
@@ -256,9 +255,23 @@ Overlay {
     readonly property bool current: ListView.isCurrentItem
     readonly property var fields: row.list.mode.fieldsOf(row.modelData)
 
-    // Letters in order are marked only where search.js matches them so.
-    function loose(text: string): bool {
-      return row.fields.some(field => field[1] === text && field[2]);
+    // Only what was searched is marked, as search.js matched it: a field shown whole or as a part between " · " (a window's app and place), never a clip's counts.
+    function mark(text: string): string {
+      const joint = " · ";
+      let styled = "";
+      let done = 0;
+      for (let at = 0; at >= 0;) {
+        const field = row.fields
+          .filter(field => field[1] && text.startsWith(field[1], at) && [text.length, text.indexOf(joint, at + field[1].length)].includes(at + field[1].length))
+          .sort((a, b) => b[1].length - a[1].length)[0];
+        if (field) {
+          styled += Search.escape(text.slice(done, at)) + Search.mark(row.list.query, field[1], !!field[2]);
+          done = at + field[1].length;
+        }
+        const next = text.indexOf(joint, Math.max(at, done));
+        at = next < 0 ? -1 : next + joint.length;
+      }
+      return styled + Search.escape(text.slice(done));
     }
 
     width: ListView.view.width
@@ -335,9 +348,8 @@ Overlay {
 
         Marked {
           Layout.fillWidth: true
-          query: row.list.query
+          result: row
           plain: row.modelData.title
-          loose: row.loose(row.modelData.title)
           color: Theme.fg
           font: Theme.body
         }
@@ -345,9 +357,8 @@ Overlay {
         Marked {
           Layout.fillWidth: true
           visible: plain !== ""
-          query: row.list.query
+          result: row
           plain: row.modelData.subtitle ?? ""
-          loose: row.loose(row.modelData.subtitle ?? "")
           color: Theme.fgDim
           font: Theme.caption
         }
