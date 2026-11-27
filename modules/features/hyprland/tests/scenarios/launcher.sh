@@ -113,6 +113,16 @@ qst stays '.panel == "clipboard"' 0.5
 qst type character
 qst stays '.panel == "clipboard" and all(.results[]; test("character"; "i"))' 0.5
 
+qst case "only a clip's text is marked for the search, never the counts under it"
+export QS_TEST_MONITORS="DP-1:1920x1080:1"
+qst reset > /dev/null
+echo "char dump" | cliphist store
+qst key super+v
+qst wait '.panel == "clipboard" and .results == ["char dump"]'
+qst type char
+qst wait 'any(.marked[]; test("^<b>char</b>")) and any(.marked[]; test("characters"))'
+qst stays 'all(.marked[]; test("<b>char</b>acters") | not)' 0.3
+
 qst case "clips deleted one after another while cliphist is slow to delete are all deleted"
 export QS_TEST_MONITORS="DP-1:1920x1080:1"
 qst reset > /dev/null

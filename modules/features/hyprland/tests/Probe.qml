@@ -571,6 +571,8 @@ Scope {
         results: (probe.windows().map(entry => entry.items.find(({ item }) => "results" in item && "query" in item && "mode" in item)).find(found => found)?.item.results ?? []).slice(0, 10).map(row => row.title ?? row.key ?? null),
         // The launcher's selected row by key, which a retitled window keeps.
         selected: (probe.windows().map(entry => entry.items.find(({ item }) => "results" in item && "query" in item && "mode" in item)).find(found => found)?.item.current?.key ?? null),
+        // The launcher's titles and subtitles marked for what is typed, as styled text, in no order.
+        marked: [].concat(...probe.windows().map(entry => entry.items.filter(({ item }) => "marking" in item && "plain" in item && item.marking && item.plain !== "").map(({ item }) => item.text))),
         // The text field being typed into, or else the first one up: the launcher's search.
         field: (probe.windows().map(entry => entry.items.find(({ item }) => "cursorPosition" in item && "echoMode" in item && item.activeFocus)).find(found => found) ?? probe.windows().map(entry => entry.items.find(({ item }) => "cursorPosition" in item && "echoMode" in item)).find(found => found))?.item.text ?? null,
         // The forecast the center shows: how many hours, the first symbol, and the place.
