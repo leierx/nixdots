@@ -402,6 +402,16 @@ qst type hemmelig
 qst key Return
 qst wait '.controls.network.connected == "Skjult" and .controls.network.hidden == null' 10
 
+qst case "a hidden network named as one in view joins once NetworkManager offers its new profile, however late"
+qst network lag 1000
+open wifi
+qst wait '.controls.network.networks | index("Kaffebrenneriet Gjest")'
+qst click "ControlsPanel:action:Connect to Hidden Network…"
+qst wait '.controls.network.hidden != null'
+qst type "Kaffebrenneriet Gjest"
+qst key Return Return
+qst wait '.controls.network.connected == "Kaffebrenneriet Gjest" and .controls.network.hidden == null' 10
+
 qst case "a WEP network goes to Network Settings, as the row can only ask for WPA's key"
 qst network wifi add Gammel 50 wep ""
 open wifi

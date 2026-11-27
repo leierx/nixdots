@@ -67,7 +67,7 @@ usage: qs-test COMMAND
   network SUB ...       the session's NetworkManager (tests/networkmanager.py): start|stop|restart|kill (mid-call, back fresh), wifi add SSID [STRENGTH] [SECURITY] [PASSWORD],
                         wifi remove|hide|strength|clear|many COUNT [PREFIX]|json JSON, device add|remove NAME [wifi|ethernet], cable NAME on|off,
                         profile wifi|ethernet|wireguard|vpn NAME [SSID PSK], vpn NAME ok|fail|secrets, up NAME,
-                        connectivity none|portal|limited|full, switch on|off, delay MS, dump
+                        connectivity none|portal|limited|full, switch on|off, delay MS, lag MS (a profile added over D-Bus offered to the devices that late), dump
   player add NAME [IDENTITY] [STATUS] [ART] [JSON]   an MPRIS player (tests/mpris.py), ART an image file for its cover, JSON more of its parameters; status NAME Playing|Paused|Stopped, remove NAME, clear
   battery PERCENT [STATE [SECONDS]]   the session's UPower battery (charging, discharging, full, pending), or remove
   bluetooth SUB ...     the session's BlueZ (tests/bluez.py): start|stop|kill (mid-call), adapter add|remove, remove ADDRESS,
@@ -831,8 +831,9 @@ network() {
       ;;
     switch) nm SetHardwareSwitch "boolean:$([ "${1:-on}" = on ] && echo true || echo false)" > /dev/null ;;
     delay) nm SetDelay "uint32:$1" > /dev/null ;;
+    lag) nm SetLag "uint32:$1" > /dev/null ;;
     dump) nm Dump | sed 's/^ *//' | jq . ;;
-    *) die "network start|stop|restart|kill|wifi|device|cable|profile|vpn|up|connectivity|switch|delay|dump" ;;
+    *) die "network start|stop|restart|kill|wifi|device|cable|profile|vpn|up|connectivity|switch|delay|lag|dump" ;;
   esac
 }
 
