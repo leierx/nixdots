@@ -157,7 +157,24 @@ phase() {
   phase_at=$REPLY
 }
 
-running() { [ -s "$T/hyprland.pid" ] && kill -0 "$(cat "$T/hyprland.pid")" 2> /dev/null; }
+# The pids in FILE still this session's processes, into REPLY: once one is gone, or after a reboot, its number may be another's.
+ours() {
+  local runtime pid entry
+  REPLY=""
+  read -r runtime 2> /dev/null < "$T/runtime" || return 1
+  while read -r pid; do
+    [[ $pid =~ ^[0-9]+$ ]] || continue
+    while IFS= read -r -d '' entry; do
+      if [ "$entry" = "XDG_RUNTIME_DIR=$runtime" ]; then
+        REPLY+="${REPLY:+ }$pid"
+        break
+      fi
+    done 2> /dev/null < "/proc/$pid/environ" || true
+  done 2> /dev/null < "$1" || true
+  [ -n "$REPLY" ]
+}
+
+running() { ours "$T/hyprland.pid"; }
 need_up() { running || die "no session in $T; run qs-test up"; }
 
 enter() {
@@ -342,11 +359,8 @@ start_qs() {
 # backlight-watch) wait on inotify with nobody reading them, and each would scan /proc for every case after.
 stop_qs() {
   local pids="" pid left
-  if [ -s "$T/qs.pid" ]; then
-    read -r pid < "$T/qs.pid"
-    kill -0 "$pid" 2> /dev/null && pids=$pid
-    rm -f "$T/qs.pid"
-  fi
+  if ours "$T/qs.pid"; then pids=$REPLY; fi
+  rm -f "$T/qs.pid"
   [ -n "$pids" ] || pids=$(testqs)
   for pid in $pids; do kill -- "-$pid" 2> /dev/null || kill "$pid" 2> /dev/null || true; done
   for _ in $(seq 250); do
@@ -603,13 +617,14 @@ wp_start() {
 pw_stop() {
   local name pid
   for name in ${1:-wireplumber pipewire}; do
-    [ -s "$T/$name.pid" ] || continue
-    pid=$(cat "$T/$name.pid")
-    kill "$pid" 2> /dev/null || true
-    for _ in $(seq 250); do
-      kill -0 "$pid" 2> /dev/null || break
-      sleep 0.02
-    done
+    if ours "$T/$name.pid"; then
+      pid=$REPLY
+      kill "$pid" 2> /dev/null || true
+      for _ in $(seq 250); do
+        kill -0 "$pid" 2> /dev/null || break
+        sleep 0.02
+      done
+    fi
     rm -f "$T/$name.pid"
   done
 }
@@ -661,13 +676,14 @@ mock_start() {
 # NAME [SIGNAL]: KILL takes it mid-call, its replies never sent.
 mock_stop() {
   local pid
-  [ -s "$T/$1.pid" ] || return 0
-  pid=$(cat "$T/$1.pid")
-  kill "-${2:-TERM}" "$pid" 2> /dev/null || true
-  for _ in $(seq 125); do
-    kill -0 "$pid" 2> /dev/null || break
-    sleep 0.02
-  done
+  if ours "$T/$1.pid"; then
+    pid=$REPLY
+    kill "-${2:-TERM}" "$pid" 2> /dev/null || true
+    for _ in $(seq 125); do
+      kill -0 "$pid" 2> /dev/null || break
+      sleep 0.02
+    done
+  fi
   rm -f "$T/$1.pid"
 }
 
@@ -822,23 +838,27 @@ network() {
 
 # MPRIS players on the session bus (tests/mpris.py), each a mock of its own: add NAME [IDENTITY] [Playing|Paused|Stopped].
 player() {
-  local sub=${1:-} name=${2:-}
+  local sub=${1:-} name=${2:-} pid
   mkdir -p "$T/players"
   case $sub in
     add)
       [ -n "$name" ] || die "player add NAME [IDENTITY] [STATUS] [ART] [JSON]"
       QS_MPRIS_NAME=$name setsid qs-dbusmock --session --template "$tests/mpris.py" -p "$(jq -cn --arg identity "${3:-$name}" --arg status "${4:-Playing}" --arg art "$(case ${5:-} in "") ;; http://* | https://* | file://*) echo "$5" ;; *) echo "file://$(realpath "$5")" ;; esac)" --argjson more "${6:-"{}"}" '{ identity: $identity, status: $status, art: $art } + $more')" > "$T/players/$name.log" 2>&1 < /dev/null &
-      echo $! > "$T/players/$name.pid"
+      pid=$!
+      echo "$pid" > "$T/players/$name.pid"
       for _ in $(seq 250); do
         dbus-send --session --print-reply --dest=org.freedesktop.DBus / org.freedesktop.DBus.NameHasOwner "string:org.mpris.MediaPlayer2.$name" 2> /dev/null | grep -q 'boolean true' && return
+        kill -0 "$pid" 2> /dev/null || break
         sleep 0.02
       done
+      kill "$pid" 2> /dev/null || true
+      rm -f "$T/players/$name.pid"
       die "the fake player $name did not start, see $T/players/$name.log"
       ;;
     status) dbus-send --session --print-reply --dest="org.mpris.MediaPlayer2.$name" /org/mpris/MediaPlayer2 org.freedesktop.DBus.Mock.SetStatus "string:$3" > /dev/null ;;
     track) dbus-send --session --print-reply --dest="org.mpris.MediaPlayer2.$name" /org/mpris/MediaPlayer2 org.freedesktop.DBus.Mock.SetTrack "string:$3" "string:${4:-}" > /dev/null ;;
     remove)
-      [ -s "$T/players/$name.pid" ] && kill "$(cat "$T/players/$name.pid")" 2> /dev/null
+      ours "$T/players/$name.pid" && kill "$REPLY" 2> /dev/null || true
       rm -f "$T/players/$name.pid"
       ;;
     clear) players_reset ;;
@@ -849,10 +869,9 @@ player() {
 players_reset() {
   local pid
   for pid in "$T"/players/*.pid; do
-    [ -s "$pid" ] && kill "$(cat "$pid")" 2> /dev/null
+    ours "$pid" && kill "$REPLY" 2> /dev/null || true
     rm -f "$pid"
   done
-  return 0
 }
 
 # A backlight's level, as the kernel would set it and announce it.
@@ -896,7 +915,7 @@ camera() {
       ;;
     close)
       [ -s "$T/holders/$name" ] || die "no $name holds a camera"
-      kill -- -"$(cat "$T/holders/$name")" 2> /dev/null || true
+      ours "$T/holders/$name" && kill -- "-$REPLY" 2> /dev/null || true
       rm -f "$T/holders/$name"
       ;;
     add)
@@ -918,7 +937,7 @@ camera() {
 camera_reset() {
   local holder
   for holder in "$T"/holders/*; do
-    [ -s "$holder" ] && kill -- -"$(cat "$holder")" 2> /dev/null
+    ours "$holder" && kill -- "-$REPLY" 2> /dev/null || true
     rm -f "$holder"
   done
   find "$T/dev" -name 'video*' ! -name video0 -delete
@@ -1048,6 +1067,11 @@ up() {
     echo "up in $T"
     return
   fi
+  # What a session whose Hyprland died left running, before its files are overwritten.
+  if [ -s "$T/runtime" ]; then
+    sweep
+    rm -rf "$T"/*.pid "$T/launched" "$T/players" "$T/holes" "$T/trays" "$T/holders"
+  fi
   local build runtime
   build=${QS_TEST_BUILD:-$(build)}
   mkdir -p "$T/shots" "$T/labwc"
@@ -1120,27 +1144,32 @@ EOF
 }
 
 down() {
-  local bus="" runtime="" pid worker
+  local worker
   for worker in "$T"/w[0-9]*/; do
     [ -d "$worker" ] && QS_TEST_DIR=${worker%/} "$self" down > /dev/null &
   done
   wait
+  [ -s "$T/runtime" ] && [ -s "$T/display" ] && stop_qs
+  if running; then kill "$REPLY" 2> /dev/null || true; fi
+  sweep
+  chmod -R u+w "$T" 2> /dev/null || true
+  rm -rf "$T"
+  echo down
+}
+
+# Whatever the session started outlives it, portals reparented to pid 1 among them, and its runtime dir.
+sweep() {
+  local bus="" runtime="" pid
   [ -s "$T/runtime" ] && runtime=$(cat "$T/runtime")
   [ -s "$T/bus" ] && bus=$(cat "$T/bus")
-  [ -s "$T/runtime" ] && [ -s "$T/display" ] && stop_qs
-  if running; then kill "$(cat "$T/hyprland.pid")"; fi
-  # Whatever the session started outlives it, portals reparented to pid 1 among them.
   for pid in /proc/[0-9]*; do
     pid=${pid#/proc/}
     [ "$pid" = $$ ] && continue
     # No pipe: grep -q leaving early would kill tr, and pipefail would read the match as none.
     grep -qzxF -e "DBUS_SESSION_BUS_ADDRESS=${bus:-none}" -e "XDG_RUNTIME_DIR=${runtime:-none}" "/proc/$pid/environ" 2> /dev/null &&
-      kill "$pid" 2> /dev/null
+      kill "$pid" 2> /dev/null || true
   done
-  [ -n "$runtime" ] && rm -rf "$runtime"
-  chmod -R u+w "$T" 2> /dev/null || true
-  rm -rf "$T"
-  echo down
+  [ -z "$runtime" ] || rm -rf "$runtime"
 }
 
 input() {
@@ -1290,7 +1319,7 @@ hole() {
   case ${2:-} in
     off)
       [ -s "$T/holes/$name.pid" ] || die "no hole holds $name"
-      kill "$(cat "$T/holes/$name.pid")" 2> /dev/null || true
+      ours "$T/holes/$name.pid" && kill "$REPLY" 2> /dev/null || true
       rm -f "$T/holes/$name.pid"
       return
       ;;
@@ -1312,7 +1341,7 @@ hole() {
 holes_reset() {
   local pid
   for pid in "$T"/holes/*.pid; do
-    [ -s "$pid" ] && kill "$(cat "$pid")" 2> /dev/null || true
+    ours "$pid" && kill "$REPLY" 2> /dev/null || true
   done
   rm -rf "$T/holes"
 }
@@ -1437,7 +1466,7 @@ fuzz() {
 trays_reset() {
   local pid
   for pid in "$T/tray.pid" "$T"/trays/*.pid; do
-    [ -s "$pid" ] && kill "$(cat "$pid")" 2> /dev/null || true
+    ours "$pid" && kill "$REPLY" 2> /dev/null || true
   done
   rm -rf "$T/tray.pid" "$T/trays"
 }
@@ -1453,10 +1482,10 @@ reset() {
   holes_reset
   rm -f "$T/no-launch"
   for pid in $("$HC" clients -j | jq -r '.[].pid'); do kill "$pid" 2> /dev/null || true; done
-  if [ -s "$T/launched" ]; then
-    while read -r pid; do kill -- "-$pid" 2> /dev/null || kill "$pid" 2> /dev/null || true; done < "$T/launched"
-    rm -f "$T/launched"
+  if ours "$T/launched"; then
+    for pid in $REPLY; do kill -- "-$pid" 2> /dev/null || kill "$pid" 2> /dev/null || true; done
   fi
+  rm -f "$T/launched"
   phase clients
   stop_qs
   phase stop_qs
@@ -2292,13 +2321,13 @@ case $cmd in
         ;;
       remove)
         [ $# -eq 2 ] && [ -s "$T/trays/$2.pid" ] || die "tray remove NAME, one added"
-        kill "$(cat "$T/trays/$2.pid")" 2> /dev/null || true
+        ours "$T/trays/$2.pid" && kill "$REPLY" 2> /dev/null || true
         rm -f "$T/trays/$2.pid"
         ;;
       clear) trays_reset ;;
       "")
         enter
-        [ -s "$T/tray.pid" ] && kill "$(cat "$T/tray.pid")" 2> /dev/null || true
+        ours "$T/tray.pid" && kill "$REPLY" 2> /dev/null || true
         qs-tray > "$T/tray.log" 2>&1 < /dev/null &
         echo $! > "$T/tray.pid"
         ;;
