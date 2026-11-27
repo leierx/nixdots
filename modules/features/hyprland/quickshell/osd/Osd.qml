@@ -7,9 +7,6 @@ import Quickshell.Hyprland
 import qs.controls
 import qs.common
 
-// Changes as they are made, not states as they are found: the first value of anything, and any
-// that arrive while what it belongs to has just changed (another output, PipeWire back), are only
-// taken in.
 Singleton {
   id: root
 
