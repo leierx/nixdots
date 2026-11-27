@@ -422,9 +422,9 @@ Scope {
       return "done";
     }
 
-    // FIRST, then from its exit THEN, one Command.
+    // FIRST, then from its exit THEN if any, one Command.
     function chain(first: string, then: string): string {
-      chained.next = [then];
+      chained.next = then === "" ? [] : [then];
       chained.command = [first];
       chained.running = true;
       return "started";
@@ -496,7 +496,7 @@ Scope {
         hovered: (() => { const found = []; for (const entry of probe.windows()) for (const { item } of entry.items) if (item.hovered === true && "color" in item) found.push(probe.label(entry, item)); return found; })(),
         tooltip: Tooltips.shown ? { text: Tooltips.text, screen: Tooltips.screen, at: [Math.round(Tooltips.target.x + Tooltips.target.width / 2), Math.round(Tooltips.target.y + Tooltips.target.height / 2)] } : null,
         tooltipPending: Tooltips.pending ? Tooltips.pendingText : null,
-        history: Notifs.entries.map(e => ({ uid: e.uid, time: e.time.getTime(), app: Notifs.appKey(e), summary: e.summary ?? null, popup: e.popup, checked: e.checked, restored: e.restored ?? false, image: e.image || null, kept: Object.keys(e.kept ?? {}) })),
+        history: Notifs.entries.map(e => ({ uid: e.uid, time: e.time.getTime(), app: Notifs.appKey(e), summary: e.summary ?? null, body: e.body, popup: e.popup, checked: e.checked, restored: e.restored ?? false, image: e.image || null, kept: Object.keys(e.kept ?? {}) })),
         historyFile: Quickshell.statePath("notification-history.json"),
         historyLoaded: History.loaded,
         // What the shell takes the file to hold, by count; null once a save failed, -1 for a file it could not read.
