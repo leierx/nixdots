@@ -35,6 +35,13 @@ printf '#!/bin/sh\nhead -c 300000 /dev/zero | tr "\\0" x >&2\necho "jq: error (a
 qst ipc probe chain "$fails" "" > /dev/null
 qst wait '.notifications == 2 and (.history[0].body | endswith("xjq: error (at &lt;stdin&gt;:0): Cannot iterate over null") and length < 1200)'
 
+qst case "an app that is not installed says so, and one that is starts in a scope of its own"
+qst ipc probe launch qst-absent > /dev/null
+qst wait '.notifications == 1 and .history[0].summary == "qst-absent"'
+qst ipc probe launch true > /dev/null
+qst stays '.notifications == 1' 1
+qst actions | grep -q 'systemd-run --user --scope --quiet true' || { qst actions; echo "the app was not started in a scope"; exit 1; }
+
 qst case "monitor layouts outlive hyprmoncfg failing and writing garbage"
 qst fail hyprmoncfg exit
 qst expect 'hyprmoncfg status --json: hyprmoncfg: failed for qst'

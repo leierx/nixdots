@@ -430,6 +430,12 @@ Scope {
       return "started";
     }
 
+    // PROGRAM launched as the shell launches apps.
+    function launch(program: string): string {
+      Detached.run([program], "");
+      return "launched";
+    }
+
     function areas(): string {
       return JSON.stringify({ scale: probe.scale, areas: probe.areas() });
     }
