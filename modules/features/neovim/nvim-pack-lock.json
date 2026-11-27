@@ -66,10 +66,6 @@
     "treesj": {
       "rev": "9f349ba62c524f065d6f43254d731ddf8319b9bf",
       "src": "https://github.com/wansmer/treesj"
-    },
-    "workspace-diagnostics.nvim": {
-      "rev": "ea93521c0344fa2530c6f6da8b059d1b944ca550",
-      "src": "https://github.com/artemave/workspace-diagnostics.nvim"
     }
   }
 }

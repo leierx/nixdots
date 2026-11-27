@@ -15,5 +15,4 @@ vim.pack.add({
   "https://github.com/stevearc/conform.nvim",
   "https://github.com/neovim/nvim-lspconfig",
   "https://github.com/b0o/SchemaStore.nvim",
-  "https://github.com/artemave/workspace-diagnostics.nvim",
 })
