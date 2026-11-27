@@ -54,6 +54,8 @@
               tofu-ls
               qt6.qtdeclarative # qmlls
               gopls
+              # gopls' root_dir runs `go env`
+              go
               fzf # fzf-lua
               # conform formatters
               nixfmt
