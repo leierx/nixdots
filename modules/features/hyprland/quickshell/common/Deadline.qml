@@ -13,6 +13,7 @@ Timer {
   onTriggered: {
     root.expired();
     root.process.running = false;
+    root.grace.start();
   }
 
   // Counted from each start: a run started from the last one's exit handler reads running throughout, so a binding would keep the first run's count.
@@ -22,8 +23,17 @@ Timer {
     function onStarted(): void {
       if (root.interval > 0) root.restart();
     }
+    function onExited(): void {
+      root.grace.stop();
+    }
     function onRunningChanged(): void {
       if (!root.process.running) root.stop();
     }
+  }
+
+  // Stopping sends SIGTERM, which a child may ignore.
+  property Timer grace: Timer {
+    interval: 2000
+    onTriggered: root.process.signal(9)
   }
 }
