@@ -25,6 +25,8 @@ PanelWindow {
   property var pending: null
   // The keyboard's row in the deepest open card.
   property int row: -1
+  // The card the row is in: the deepest, but for the pointer on the opener of a submenu still open.
+  property int rowLevel: 0
   // Keys have driven it since the pointer was last on it, so it stays without the pointer.
   property bool keyed: false
   // The next card to open takes its first row once its entries come.
@@ -86,8 +88,13 @@ PanelWindow {
     const shut = root.path[next.length] ?? "";
     root.path = next;
     // The keyboard starts afresh in a submenu just opened, or stays on the row whose submenu just shut.
-    if (opened) root.row = -1;
-    else if (shut) root.row = (root.level(next.length)?.entries ?? []).findIndex(entry => entry.hasChildren && entry.text === shut);
+    if (opened) root.select(-1);
+    else if (shut) root.select((root.level(next.length)?.entries ?? []).findIndex(entry => entry.hasChildren && entry.text === shut));
+  }
+
+  function select(row: int): void {
+    root.rowLevel = root.path.length;
+    root.row = row;
   }
 
   function selectable(entry: var): bool {
@@ -108,17 +115,19 @@ PanelWindow {
   function key(event: var): bool {
     const depth = root.path.length;
     const entries = root.level(depth)?.entries ?? [];
-    const entry = entries[root.row] ?? null;
+    const entry = root.level(root.rowLevel)?.entries[root.row] ?? null;
+    // A row in a card above, or past the end of a menu the app shortened, steps from the start.
+    const from = root.rowLevel === depth && root.row < entries.length ? root.row : -1;
     switch (event.key) {
     case Qt.Key_Down:
     case Qt.Key_Up:
-      root.row = root.step(entries, Math.min(root.row, entries.length), event.key === Qt.Key_Down ? 1 : -1);
+      root.select(root.step(entries, from, event.key === Qt.Key_Down ? 1 : -1));
       return true;
     case Qt.Key_Home:
-      root.row = root.step(entries, -1, 1);
+      root.select(root.step(entries, -1, 1));
       return true;
     case Qt.Key_End:
-      root.row = root.step(entries, -1, -1);
+      root.select(root.step(entries, -1, -1));
       return true;
     case Qt.Key_Right:
     case Qt.Key_Return:
@@ -126,13 +135,12 @@ PanelWindow {
     case Qt.Key_Space:
       if (!root.selectable(entry)) return true;
       if (entry.hasChildren) {
+        const at = root.rowLevel;
         root.pickFirst = true;
-        root.apply(depth, entry.text);
-        const opened = root.level(depth + 1)?.entries ?? [];
-        if (opened.length > 0) {
-          root.pickFirst = false;
-          root.row = root.step(opened, -1, 1);
-        }
+        root.apply(at, entry.text);
+        const opened = root.level(at + 1)?.entries ?? [];
+        root.select(root.step(opened, -1, 1));
+        if (opened.length > 0) root.pickFirst = false;
       } else if (event.key !== Qt.Key_Right) {
         entry.triggered();
         Panels.close();
@@ -305,7 +313,7 @@ PanelWindow {
         onEntriesChanged: {
           if (root.pickFirst && card.index === root.path.length && entries.length > 0) {
             root.pickFirst = false;
-            root.row = root.step(entries, -1, 1);
+            root.select(root.step(entries, -1, 1));
           }
         }
 
@@ -461,6 +469,7 @@ PanelWindow {
                     onHoveredChanged: {
                       if (!hovered || !entry.modelData || entry.modelData.isSeparator) return;
                       if (!entry.modelData.enabled || !entry.modelData.hasChildren) root.apply(card.index, "");
+                      root.rowLevel = card.index;
                       root.row = entry.modelData.enabled ? entry.index : -1;
                       if (!entry.modelData.enabled || !entry.modelData.hasChildren) return;
                       root.pending = { level: card.index, label: entry.modelData.text };

@@ -13,6 +13,21 @@ cell() {
   qst areas BarWindow | awk -F'\t' '$1 > 1000 && $1 < 1840 && $5 == "true" && $6 == "false" && $2 < 32' | sort -n | sed -n "${1}p" | awk -F'\t' '{ print $1, $2 }'
 }
 
+# The Nth row of the menu's Kth card, as "x y": its cards cascade leftwards from the bar's right end, separators taking no row.
+row() {
+  qst areas TrayMenu | awk -F'\t' '$3 ~ /MouseArea/' | sort -t$'\t' -k1,1nr -k2,2n | awk -F'\t' -v card="$1" -v n="$2" '$1 != x { x = $1; k++; i = 0 } k == card && ++i == n { print $1, $2 }'
+}
+
+open_menu() {
+  qst tray
+  qst wait '.tray | length > 0'
+  reveal
+  read -r x y < <(cell 1)
+  qst pointer "$x" "$y"
+  qst click right "$x" "$y"
+  qst wait '.panel == "tray-menu:DP-1" and .trayMenu != null'
+}
+
 qst case "three tray icons show always with a count of the rest, which come as the pointer reaches the bar's right end and linger a moment after it leaves; an empty tray is gone"
 qst tray add first 5
 qst wait '(.tray | length) == 5 and .trays[0].shown and .trays[0].more == 2 and (.trays[0].expanded | not)'
@@ -153,3 +168,37 @@ qst key End
 qst wait '.trayMenu.selected == "Quit" and .trayMenu.scrolled > 0'
 qst key Home
 qst wait '.trayMenu.selected == "Open long" and .trayMenu.scrolled == 0'
+
+qst case "Return on a submenu's opener, the pointer back on it from that submenu, goes into it rather than triggering one of its rows"
+open_menu
+read -r x y < <(row 1 9)
+qst pointer "$x" "$y"
+qst wait '.trayMenu.path == ["Networks"]'
+read -r x y < <(row 2 3)
+qst pointer "$x" "$y"
+qst wait '.trayMenu.path == ["Networks", "More networks"]'
+read -r cx cy < <(row 3 1)
+qst pointer "$cx" "$cy"
+qst wait '.trayMenu.selected == "Cafe"'
+qst pointer "$x" "$y"
+qst wait '.trayMenu.selected != "Cafe"'
+qst key Return
+qst wait '.trayMenu.path == ["Networks", "More networks"] and .trayMenu.keyed and .trayMenu.selected == "Cafe"'
+if qst tray log | grep -q 'triggered'; then
+  qst tray log
+  echo "Return triggered a row"
+  exit 1
+fi
+
+qst case "Down on a submenu's opener, the pointer back on it from that submenu, takes the submenu's first row"
+open_menu
+read -r x y < <(row 1 9)
+qst pointer "$x" "$y"
+qst wait '.trayMenu.path == ["Networks"]'
+read -r cx cy < <(row 2 1)
+qst pointer "$cx" "$cy"
+qst wait '.trayMenu.selected == "Network 0"'
+qst pointer "$x" "$y"
+qst wait '.trayMenu.selected != "Network 0"'
+qst key Down
+qst wait '.trayMenu.path == ["Networks"] and .trayMenu.selected == "Network 0"'
