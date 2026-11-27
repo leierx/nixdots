@@ -44,7 +44,7 @@ LauncherMode {
   loading: listCommand.running
 
   // At the start too, so pictures from a history wiped at login leave the cache.
-  Component.onCompleted: cacheCommand.running = true
+  Component.onCompleted: listCommand.running = true
   onOpened: listCommand.running = true
   onOpenChanged: if (!open) entries = []
   // Decoded first, so a clip that fails to decode says so rather than emptying the clipboard; each into a file of its own, which its wl-copy removes.
@@ -89,13 +89,17 @@ LauncherMode {
     id: listCommand
 
     name: "cliphist list"
+    // The pass at the start has nobody waiting on it.
+    quiet: !root.open
     // cliphist has no database until the first copy, and says so as an error: an empty history, not a failure.
     command: ["sh", "-c", 'out=$(cliphist list 2>&1) && { printf "%s\\n" "$out"; exit; }; case $out in *"store something first"*) exit 0 ;; esac; printf "%s\\n" "$out" >&2; exit 1']
     onDone: output => {
-      root.entries = output.split("\n").filter(line => line !== "").map(line => {
+      if (root.open) root.entries = output.split("\n").filter(line => line !== "").map(line => {
         const tab = line.indexOf("\t");
         return { id: line.slice(0, tab), text: line.slice(tab + 1), line: line };
       });
+      cacheCommand.listing = output;
+      cacheCommand.stdinEnabled = true;
       cacheCommand.running = true;
     }
   }
@@ -104,15 +108,22 @@ LauncherMode {
   Command {
     id: cacheCommand
 
+    // What cliphist listed for the rows, handed in on stdin and closed once written, so one listing serves both.
+    property string listing: ""
+
     name: "cliphist"
     // Nobody waits on the thumbnails and counts: a failure only reaches the log.
     quiet: true
     // Every picture decoded once, on a first pass over a long history.
     timeout: 120000
+    onStarted: {
+      cacheCommand.write(cacheCommand.listing);
+      cacheCommand.stdinEnabled = false;
+    }
     command: ["sh", "-c", `
       set -f
+      list=$(cat)
       mkdir -p "$1" && cd "$1" || exit
-      list=$(cliphist list 2>&1) || case $list in *"store something first"*) list="" ;; *) printf '%s\\n' "$list" >&2; exit 1 ;; esac
       tab=$(printf '\\t')
       printf '%s\\n' "$list" | while IFS="$tab" read -r id text; do
         [ -n "$id" ] || continue
