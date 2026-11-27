@@ -75,7 +75,8 @@ in
         };
 
         gtk4 = {
-          inherit extraConfig;
+          # libadwaita below GTK 4.23.1 warns on it; GTK4 takes the dark scheme from the portal
+          extraConfig = removeAttrs extraConfig [ "gtk-application-prefer-dark-theme" ];
           extraCss = ''
             @media (prefers-color-scheme: dark) {
               :root {
