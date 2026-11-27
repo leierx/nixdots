@@ -3,7 +3,8 @@
 // Only the markup the spec allows without body-images; StyledText would also load <img> and obey <font> and the rest.
 function markup(body) {
   const anchors = [];
-  return body.split(/(<\/?[a-zA-Z][^>]*>)/).map(part => {
+  // A tag ends at the next <, or every unclosed one would scan to the end of the body.
+  return body.split(/(<\/?[a-zA-Z][^<>]*>)/).map(part => {
     const tag = /^<\s*(\/?)\s*([a-zA-Z]+)(\s[^>]*|\/)?>$/.exec(part);
     if (!tag) {
       return text(part);

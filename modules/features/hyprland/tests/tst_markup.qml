@@ -24,10 +24,19 @@ TestCase {
       { tag: "escapes a bare ampersand", body: "Q&A", expected: "Q&amp;A" },
       { tag: "escapes an ampersand reading as an unknown entity", body: "a&b; c", expected: "a&amp;b; c" },
       { tag: "keeps entities", body: "&lt;&amp;&#233;&#xe9;", expected: "&lt;&amp;&#233;&#xe9;" },
+      { tag: "escapes a tag left open before another", body: "<a <b>x", expected: "&lt;a <b>x" },
     ];
   }
 
   function test_markup(data) {
     compare(Markup.markup(data.body), data.expected);
+  }
+
+  // Each unclosed tag once scanned to the end of the body: this took most of a second.
+  function test_unclosed_tags_linear() {
+    const body = "<a".repeat(25000);
+    const start = Date.now();
+    compare(Markup.markup(body), "&lt;a".repeat(25000));
+    verify(Date.now() - start < 100, `took ${Date.now() - start} ms`);
   }
 }
