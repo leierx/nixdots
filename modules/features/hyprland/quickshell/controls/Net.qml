@@ -81,6 +81,11 @@ Singleton {
     return [WifiSecurityType.Wpa2Eap, WifiSecurityType.WpaEap, WifiSecurityType.Wpa3SuiteB192, WifiSecurityType.Leap, WifiSecurityType.DynamicWep].includes(network.security);
   }
 
+  // The only key Quickshell's connectWithPsk sends; WEP's goes elsewhere in a profile.
+  function takesPsk(network: var): bool {
+    return [WifiSecurityType.WpaPsk, WifiSecurityType.Wpa2Psk, WifiSecurityType.Sae].includes(network.security);
+  }
+
   function bytes(text: string): int {
     return encodeURIComponent(text).replace(/%[0-9A-F]{2}/g, "x").length;
   }
@@ -115,13 +120,13 @@ Singleton {
       } else {
         network.disconnect();
       }
-    } else if (root.enterprise(network) && !network.known) {
-      root.settings(["--create", "--type=802-11-wireless"]);
     } else if (network.known || !root.secured(network)) {
       root.attempt = ssid;
       network.connect();
-    } else {
+    } else if (root.takesPsk(network)) {
       root.ask(ssid, network.device?.name ?? "");
+    } else {
+      root.settings(["--create", "--type=802-11-wireless"]);
     }
   }
 
@@ -226,7 +231,7 @@ Singleton {
     if (ssid !== root.attempt && ssid !== root.asking) return;
     if (root.attempt === ssid) root.attempt = "";
     if (root.trying === ssid) root.trying = "";
-    const noSecrets = reason === ConnectionFailReason.NoSecrets && root.secured(network) && !root.enterprise(network);
+    const noSecrets = reason === ConnectionFailReason.NoSecrets && root.takesPsk(network);
     // Asked for by name: the prompt says why, with what was typed, and the profile goes until it works.
     if (root.hidden?.ssid === ssid) {
       if (root.created.includes(ssid)) {

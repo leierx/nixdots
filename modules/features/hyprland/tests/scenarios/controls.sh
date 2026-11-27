@@ -380,6 +380,15 @@ qst type hemmelig
 qst key Return
 qst wait '.controls.network.connected == "Skjult" and .controls.network.hidden == null' 10
 
+qst case "a WEP network goes to Network Settings, as the row can only ask for WPA's key"
+qst network wifi add Gammel 50 wep ""
+open wifi
+qst wait '.controls.network.networks | index("Gammel")'
+qst click ControlsPanel:row:Gammel
+qst wait '.panel == "" and .controls.network.asking == null'
+for _ in $(seq 20); do qst actions | grep -q 'nm-connection-editor --create --type=802-11-wireless' && break; sleep 0.1; done # sleep: the launch is logged by a process the shell detached
+qst actions | grep -q 'nm-connection-editor --create --type=802-11-wireless' || { qst actions; echo "Network Settings was not opened"; exit 1; }
+
 qst case "a new headset pairs, is trusted and connects in one click; a keyboard wanting a PIN says where to go"
 qst bluetooth add 11:22:33:44:55:01 "WH-1000XM4" audio-headset ok
 qst bluetooth add 11:22:33:44:55:02 "Keychron K3" input-keyboard pin
