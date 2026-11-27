@@ -177,6 +177,26 @@ Scope {
     return false;
   }
 
+  // How much of a text's lines a clipping ancestor hides for good, and which: a list hides only what lies past both its view and its content, as scrolling shows the rest.
+  function cutOff(item: var): var {
+    const line = item.paintedHeight / Math.max(1, item.lineCount);
+    const y = item.verticalAlignment === Text.AlignBottom ? item.height - item.paintedHeight : item.verticalAlignment === Text.AlignVCenter ? (item.height - item.paintedHeight) / 2 : 0;
+    // A line's ascent and leading, as in inked.
+    const top = y + line * 0.2;
+    const height = item.paintedHeight - line * 0.4;
+    let worst = null;
+    for (let clip = item.parent; clip; clip = clip.parent) {
+      if (!clip.clip) continue;
+      const flickable = "contentItem" in clip && "originY" in clip;
+      const box = item.mapToItem(flickable ? clip.contentItem : clip, 0, top, 1, height);
+      const low = flickable ? Math.min(clip.originY, clip.contentY) : 0;
+      const high = flickable ? Math.max(clip.originY + clip.contentHeight, clip.contentY + clip.height) : clip.height;
+      const hidden = Math.max(0, low - box.y) + Math.max(0, box.y + box.height - high);
+      if (hidden > (worst?.px ?? 1)) worst = { by: clip, px: hidden };
+    }
+    return worst;
+  }
+
   // Images loading, by item, since when: one that never finishes is a picture that never comes.
   property var loading: new Map()
 
@@ -204,6 +224,11 @@ Scope {
         const own = entry.type in ownShapes || ancestorTypes(item).some(name => name in ownShapes);
         if (isText(item) && String(item.text).trim() !== "") {
           if (item.width < 1 || item.height < 1) problems.push(`${label(entry, item)} has no room: its text vanished`);
+          const line = item.paintedHeight / Math.max(1, item.lineCount);
+          if (item.wrapMode === Text.NoWrap && item.elide !== Text.ElideNone && item.lineCount > 1) problems.push(`${label(entry, item)} is a one-line label broken onto ${item.lineCount} lines`);
+          else if (item.height >= 1 && item.paintedHeight - item.height > line * 0.4) problems.push(`${label(entry, item)} has no room for its ${item.lineCount} lines: they run ${Math.round(item.paintedHeight - item.height)} px past its box`);
+          const cut = cutOff(item);
+          if (cut) problems.push(`${label(entry, item)} is cut ${Math.round(cut.px)} px short by the ${typeOf(cut.by)} clipping it`);
           const size = item.font.pointSize > 0 ? item.font.pointSize : item.font.pixelSize * 0.75;
           if (!own && size > 0 && size < 8) problems.push(`${label(entry, item)} is ${size} pt, too small to read`);
           if (opacity > 0.99 && key(item.color) !== key(Theme.fgFaint)) {
