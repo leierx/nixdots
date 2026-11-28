@@ -9,6 +9,12 @@ root: {
         user.email = root.config.identity.email;
         credential.helper = "cache --timeout=36000";
         safe.directory = "*";
+        init.defaultBranch = "main";
+        pull.rebase = true;
+        push.autoSetupRemote = true;
+        merge.conflictStyle = "zdiff3";
+        diff.algorithm = "histogram";
+        fetch.prune = true;
       };
     };
   };

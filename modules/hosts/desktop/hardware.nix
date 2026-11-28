@@ -1,6 +1,8 @@
 {
   flake.modules.nixos."nixosConfigurations/desktop" = {
     hardware = {
+      # the boot splash on amdgpu at the panel's mode from the start
+      amdgpu.initrd.enable = true;
       cpu.amd.updateMicrocode = true;
       enableRedistributableFirmware = true;
 
@@ -13,14 +15,17 @@
       };
     };
 
-    services = {
-      fstrim.enable = true;
-      fwupd.enable = true;
-    };
+    services.fwupd.enable = true;
 
     zramSwap = {
       enable = true;
       memoryPercent = 20;
+    };
+    # tuned for zram, not a disk: swapping is cheap, and read-ahead buys nothing
+    boot.kernel.sysctl = {
+      "vm.swappiness" = 180;
+      "vm.page-cluster" = 0;
+      "vm.watermark_boost_factor" = 0;
     };
   };
 }

@@ -107,7 +107,6 @@ root: {
         baseIndex = 1;
         keyMode = "vi";
         mouse = true;
-        escapeTime = 10;
         focusEvents = true;
         historyLimit = 50000;
         clock24 = true;
@@ -186,7 +185,6 @@ root: {
           # wezterm's word boundary, so a double-click takes paths, URLs and flags whole
           set -g word-separators "\"'\`()[]{}<>|,;"
           bind -T copy-mode-vi v send -X begin-selection
-          bind -T copy-mode-vi C-v send -X rectangle-toggle
           bind -T copy-mode-vi y send -X copy-selection-and-cancel
           bind -T copy-mode-vi Escape send -X cancel
           # tmux has no selection-changed event, so every copy-mode command sends the selection over OSC 52, without a paste buffer
@@ -205,7 +203,6 @@ root: {
           bind -n M-MouseDown3Pane { ${paneMenu} }
 
           set -g status-position top
-          set -g status-justify left
           set -g status-style "bg=default,fg=${c.color7}"
           set -g status-left-length 40
           set -g status-left "#[fg=${c.foreground},bold] #S #[fg=${c.color8},nobold]│"

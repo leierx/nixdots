@@ -1,7 +1,11 @@
 {
   flake.modules.nixos."nixosConfigurations/thonkpad" = { pkgs, ... }: {
     hardware = {
-      bluetooth.enable = true;
+      bluetooth = {
+        enable = true;
+        # the control centre powers it when wanted
+        powerOnBoot = false;
+      };
       cpu.intel.updateMicrocode = true;
       enableRedistributableFirmware = true;
 
@@ -17,7 +21,6 @@
     };
 
     services = {
-      fstrim.enable = true;
       fwupd.enable = true;
       thermald.enable = true;
       # the bar's battery
@@ -45,5 +48,14 @@
       enable = true;
       memoryPercent = 20;
     };
+    # tuned for zram, not a disk: swapping is cheap, and read-ahead buys nothing
+    boot.kernel.sysctl = {
+      "vm.swappiness" = 180;
+      "vm.page-cluster" = 0;
+      "vm.watermark_boost_factor" = 0;
+    };
+
+    # the boot splash on i915 at the panel's mode from the start
+    boot.initrd.kernelModules = [ "i915" ];
   };
 }

@@ -7,8 +7,6 @@
         size = 24;
         package = pkgs.adwaita-icon-theme;
 
-        x11.enable = true;
-        x11.defaultCursor = "left_ptr";
         gtk.enable = true;
       };
     };

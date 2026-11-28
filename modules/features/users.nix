@@ -10,8 +10,6 @@ in
 
       users.users.${username} = {
         isNormalUser = true;
-        home = "/home/${username}";
-        createHome = true;
         homeMode = "0770";
         group = username;
         shell = pkgs.zsh;

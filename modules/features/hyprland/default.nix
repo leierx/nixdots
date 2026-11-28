@@ -14,7 +14,8 @@ in
           inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
       };
 
-      hardware.graphics.enable = true;
+      # graphical-desktop's default, ~700 MB of voices for text-to-speech nothing here uses
+      services.speechd.enable = false;
 
       nix.settings = {
         substituters = [ "https://hyprland.cachix.org" ];
@@ -39,10 +40,7 @@ in
       # session services run under Hyprland only
       wayland.systemd.target = "hyprland-session.target";
 
-      services.cliphist = {
-        enable = true;
-        allowImages = true;
-      };
+      services.cliphist.enable = true;
       # the history persists in the cache dir; each Hyprland session starts with it empty
       systemd.user.services.cliphist.Service.ExecStartPre =
         "${lib.getExe config.services.cliphist.package} wipe";
@@ -118,9 +116,8 @@ in
             misc = {
               disable_hyprland_logo = true;
               disable_splash_rendering = true;
-              force_default_wallpaper = 0;
               focus_on_activate = true;
-              background_color = "0x${hex adw.window_bg_color}";
+              background_color = "rgb(${hex adw.window_bg_color})";
               on_focus_under_fullscreen = 0;
               middle_click_paste = false;
               disable_autoreload = true;
@@ -131,7 +128,6 @@ in
             ecosystem = {
               no_update_news = true;
               no_donation_nag = true;
-              enforce_permissions = false;
             };
 
             dwindle.force_split = 2;

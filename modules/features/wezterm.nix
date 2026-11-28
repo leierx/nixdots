@@ -12,35 +12,31 @@ root: {
         enableBashIntegration = false;
         enableZshIntegration = false;
         extraConfig = ''
-          local wezterm = require "wezterm"
           local act = wezterm.action
 
           local config = {}
 
           config.check_for_updates = false
           config.automatically_reload_config = false -- perf
-          config.quit_when_all_windows_are_closed = true
-          config.exit_behavior = "Close"
           config.window_close_confirmation = "NeverPrompt"
           config.mux_enable_ssh_agent = false
           config.alternate_buffer_wheel_scroll_speed = 1
           config.enable_kitty_graphics = false
 
           config.enable_tab_bar = false
-          config.enable_scroll_bar = false
           config.adjust_window_size_when_changing_font_size = false
           config.hide_mouse_cursor_when_typing = false
           config.audible_bell = "Disabled"
           config.notification_handling = "SuppressFromFocusedWindow"
           config.window_padding = { left = "0.5cell", right = "0.5cell", top = "0.25cell", bottom = "0.25cell" }
 
-          config.default_cursor_style = "SteadyBlock"
           config.cursor_blink_rate = 0
+          -- the desktop's monitors run at 144 Hz
+          config.max_fps = 144
 
           config.disable_default_mouse_bindings = true
           config.disable_default_key_bindings = true
           config.disable_default_quick_select_patterns = true
-          config.bypass_mouse_reporting_modifiers = "SHIFT"
 
           config.scrollback_lines = 10000
 
@@ -79,12 +75,6 @@ root: {
             { event = { Drag = { streak = 1, button = "Left" } }, mods = "CTRL|SHIFT", action = act.ExtendSelectionToMouseCursor("Block") },
             { event = { Up = { streak = 1, button = "Left" } }, mods = "CTRL|SHIFT", action = act.CompleteSelection("PrimarySelection") },
           }
-
-          -- macOS-only; ignored elsewhere
-          config.native_macos_fullscreen_mode = false
-          config.macos_fullscreen_extend_behind_notch = false
-          config.macos_window_background_blur = 0
-          config.macos_forward_to_ime_modifier_mask = "SHIFT" -- Ctrl/Alt combos reach wezterm and nvim, not the IME
 
           config.color_schemes = {
             ["Adwaita Darker"] = {

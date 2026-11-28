@@ -162,9 +162,9 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | `desktop-apps.nix` | HM | `desktop-apps` | GUI apps every workstation gets; Loupe, Celluloid and Papers the default image viewer, video player and PDF viewer through `~/.local/share/applications/mimeapps.list` (below the mutable `~/.config/mimeapps.list`, which apps write and "Open With" overrides); Celluloid on an mpv.conf (`hwdec=auto-safe`, its default is software; `profile=fast`) and graphics offload via dconf |
 | `display-manager.nix` | nixos | `display-manager` | ly |
 | `doas.nix` | nixos | `doas` | doas replaces sudo (`doas-sudo-shim`); wheel `noPass`, no `keepenv`, passes only `LANG`, `NIX_PATH`, `SUDO_*` (plus the module's own `SSH_AUTH_SOCK`, `TERMINFO`, `TERMINFO_DIRS`) |
-| `documentation.nix` | nixos | `documentation` | NixOS manual, info pages and `/share/doc` off; man pages kept |
+| `documentation.nix` | nixos, HM | `documentation` | NixOS manual, info pages and `/share/doc` off; man pages kept, with `apropos` caches (the system's built by a `mandb` service, the home's with each generation) |
 | `gaming.nix` | nixos | `gaming` | Steam + proton-ge |
-| `git.nix` | nixos, HM | `git` | git, identity from `identity` |
+| `git.nix` | nixos, HM | `git` | git, identity from `identity`; `main`, pull rebases, push sets upstream, fetch prunes, zdiff3 conflicts, histogram diffs |
 | `home-manager.nix` | nixos | `home-manager` | HM for `identity.username`, `useGlobalPkgs`/`useUserPackages`, `backupFileExtension = "hm-bak"`; pulls `nixosConfigurations/<host>/home` |
 | `homelab.nix` | HM | `homelab` | just, kubectl, helm, virtctl, kubelogin, `programs.gh`, ssh `loft01` forwarding 6443; both homes import it |
 | `hyprland/` | nixos, HM | `hyprland` (+ `hyprland.workspaces`, HM `hyprmoncfg.profiles`, `quickshell.scale`) | below |
@@ -174,19 +174,21 @@ take `root@{ inputs, lib, ... }:` and read `root.config.<option>`.
 | `nautilus.nix` | nixos, HM | `nautilus` | Nautilus, Sushi (Space) and LocalSearch (full-text search; its `ConditionEnvironment=XDG_SESSION_CLASS=user` reset, as only gnome-session imports it) from `pkgs.unstable` until NixOS 26.11: GNOME 51's Sushi is GTK4, which attaches to Nautilus over xdg-foreign v2 and floats by itself (50's GTK3 wants v1, which Hyprland lacks); the GNOME module's thumbnailers (glycin, GStreamer, EPUB; PDF from desktop-apps' Papers); gvfs; `inode/directory`; xdg-desktop-portal-gnome for FileChooser alone, so GTK4's file dialogs are Nautilus (floating over a parent, tiled without one). HM: Create Link and Delete Permanently in its menus; Sushi never takes the focus, not even as it asks on each file, so Nautilus' keys move it and Space closes it |
 | `neovim/` | nixos, HM | `neovim` (+ HM `neovim.outOfStorePath`) | below |
 | `network.nix` | nixos | `network` | resolved with DNS-over-TLS to Quad9, no plaintext fallback; NetworkManager (stable MACs, wifi powersave off, no auto wired profile; connectivity checked against Arch's plaintext `nm-check.txt`, without which no captive portal is ever reported); nftables; no ping; rp-filter `loose` (WireGuard full tunnels) |
-| `nix.nix` | nixos | `nix` | GC, `auto-optimise-store`, flakes, cache, no global registry; `nixpkgs` registry/`NIX_PATH` from `nixpkgs.flake.source` |
+| `nix.nix` | nixos | `nix` | weekly GC, and one under 10 GiB free up to 50; store optimised daily (`nix.optimise`, not on every write); daemon at batch CPU and idle IO; 256 MiB download buffer; `@wheel` trusted; flakes, cache, no global registry; `nixpkgs` registry/`NIX_PATH` from `nixpkgs.flake.source` |
 | `nix-index.nix` | HM | `nix-index` | small prebuilt DB + wrapped comma |
 | `nixpkgs.nix` | nixos | `nixpkgs`, `unstable-nixpkgs` | `allowUnfree`; overlay `pkgs.unstable`. Prefer default `pkgs` unless a package needs unstable |
+| `oomd.nix` | nixos | `oomd` | systemd-oomd on the root and user slices (Fedora's), so a runaway is killed before the machine thrashes |
 | `packages.nix` | nixos | `packages` | jq, fzf, fastfetch, tree; NixOS' `defaultPackages` (perl, rsync, strace) off |
 | `pi-agent/` | HM | `pi-agent` (imports `programs.pi-coding-agent`) | below |
 | `plymouth.nix` | nixos | `plymouth` | plymouth + quiet boot |
 | `podman.nix` | nixos | `podman` | docker compat, DNS on `podman0` |
 | `sound.nix` | nixos | `sound` | pipewire + rtkit |
+| `ssh.nix` | HM | `ssh` | the ssh client (no HM default block), ssh-agent (systemd on Linux, launchd on macOS), keys added on first use, `git@github.com`; `homelab` imports it |
 | `tmux/` | HM | `tmux` | below |
 | `users.nix` | nixos, HM | `users` | user, groups, hashed password, zsh + starship (oh-my-zsh runs compinit), root locked |
 | `wezterm.nix` | HM | `wezterm` | "Adwaita Darker" from the palette, Hack, notifications only while unfocused |
 | `xdg.nix` | HM | `xdg-user-dirs` | XDG user dirs, created |
-| `zsh.nix` | HM | `zsh` | oh-my-zsh, autosuggestions, highlighting, 100k history, fzf keys |
+| `zsh.nix` | HM | `zsh` | oh-my-zsh (its completion audit off: only the store), autosuggestions, highlighting, 100k history with timestamps and no duplicates, fzf keys over `fd` |
 
 ### `moonshine/`
 
@@ -299,7 +301,7 @@ fprintd, NetworkManager), so it needs the NixOS half.
   nm-applet. A service for another compositor needs its own target.
 - **Monitors**: [hyprmoncfg](https://github.com/crmne/hyprmoncfg) (unstable,
   built against the pinned Hyprland). Profiles are declared only
-  (`hyprmoncfg.profiles`, outputs by EDID, workspace planning off) into one
+  (`hyprmoncfg.profiles`, outputs by EDID, each its own VRR mode, workspace planning off) into one
   read-only store dir, so the TUI cannot save. SUPER+P applies one through the
   launcher's `monitors` mode. A catch-all `monitor` rule (preferred, auto, 1)
   covers the rest. `hyprland.lua` is read-only, so the module appends
@@ -1141,14 +1143,16 @@ What Hyprland does that tests run into:
   `…/home`. Hardware stays per host (`hardware.nix`) even when repeated. Both
   homes import `homelab`.
   - `thonkpad`: `base workstation gaming`; Intel laptop, `thermald`, TLP
-    thresholds, UPower, disko (ext4, LVM off), `treefmt`; for Chromecast 5353 and, for 10 s, the
+    thresholds, UPower, i915 in the initrd, Bluetooth off at boot, suspend
+    after 15 min idle, three-finger workspace swipe (round the monitor's own), disko (ext4, LVM off), `treefmt`; for Chromecast 5353 and, for 10 s, the
     port an outgoing mDNS or SSDP query left from (nftables set `discovery`).
-  - `desktop`: `base workstation gaming moonshine`; AMD, RX 6700 XT, ZSA udev
-    rules, disko (ext4, LVM off), hyprmoncfg profiles `default`/`left-only`/`right-only`,
+  - `desktop`: `base workstation gaming moonshine`; AMD, RX 6700 XT (amdgpu in
+    the initrd), ZSA udev rules, VRR and direct scanout for fullscreen games, disko (ext4, LVM off), hyprmoncfg profiles `default`/`left-only`/`right-only`,
     nix-index, startup apps pinned to monitors, `quickshell.scale = 1.2`.
 - **Profiles**: `base` (nixos: `boot doas documentation git home-manager
-  journald locale network neovim nix nixpkgs packages podman unstable-nixpkgs
-  users`; HM: `git pi-agent tmux users xdg-user-dirs zsh`), `workstation`
+  journald locale network neovim nix nixpkgs oomd packages podman
+  unstable-nixpkgs users`; HM: `documentation git pi-agent ssh tmux users
+  xdg-user-dirs zsh`), `workstation`
   (nixos: `display-manager fonts gtk hyprland nautilus plymouth sound`; HM:
   `bluetooth cursor desktop-apps gtk hyprland nautilus neovim qt wezterm`). The NixOS half pulls in
   the HM half.

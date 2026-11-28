@@ -2,6 +2,8 @@ root: {
   flake.modules.homeManager.homelab =
     { pkgs, ... }:
     {
+      imports = [ root.config.flake.modules.homeManager.ssh ];
+
       home.packages = with pkgs; [
         just
         kubectl
@@ -15,16 +17,12 @@ root: {
         enable = true;
         settings.aliases.co = "pr checkout";
       };
-      programs.ssh = {
-        enable = true;
-        enableDefaultConfig = false;
-        settings.loft01 = {
-          HostName = "10.0.0.1";
-          User = root.config.identity.username;
-          ServerAliveInterval = 30;
-          # k3s API, for kubectl and helm
-          LocalForward = "6443 127.0.0.1:6443";
-        };
+      programs.ssh.settings.loft01 = {
+        HostName = "10.0.0.1";
+        User = root.config.identity.username;
+        ServerAliveInterval = 30;
+        # k3s API, for kubectl and helm
+        LocalForward = "6443 127.0.0.1:6443";
       };
     };
 }

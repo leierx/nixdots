@@ -33,8 +33,6 @@ in
       };
     in
     {
-      dconf.enable = true;
-
       dconf.settings = {
         "org/gnome/desktop/interface".color-scheme = "prefer-dark";
         # on Wayland GTK takes gtk-recent-files-enabled from here, over settings.ini
@@ -47,7 +45,6 @@ in
         font = {
           name = "Adwaita Sans";
           package = pkgs.adwaita-fonts;
-          size = null;
         };
 
         theme = {
@@ -61,7 +58,6 @@ in
         };
 
         gtk3 = {
-          bookmarks = [ ];
           inherit extraConfig;
           # adw-gtk3 takes libadwaita's named colours, less those it never reads
           extraCss = lib.concatMapStrings (name: "@define-color ${name} ${adw.${name}};\n") (

@@ -1,4 +1,3 @@
-{ inputs, ... }:
 {
   flake.modules.homeManager.hyprland =
     {
@@ -11,9 +10,9 @@
       inherit (lib) types;
 
       # its hyprctl must match the running compositor
-      hyprmoncfg =
-        inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.hyprmoncfg.override
-          { hyprland = config.wayland.windowManager.hyprland.package; };
+      hyprmoncfg = pkgs.unstable.hyprmoncfg.override {
+        hyprland = config.wayland.windowManager.hyprland.package;
+      };
 
       outputModule = types.submodule {
         options = {
@@ -40,6 +39,11 @@
           scale = lib.mkOption {
             type = types.number;
             default = 1;
+          };
+          vrr = lib.mkOption {
+            type = types.ints.between 0 2;
+            default = 0;
+            description = "Hyprland's VRR mode: 0 off, 1 always, 2 fullscreen only.";
           };
         };
       };
@@ -69,6 +73,7 @@
                 x
                 y
                 scale
+                vrr
                 ;
               transform = 0;
             }

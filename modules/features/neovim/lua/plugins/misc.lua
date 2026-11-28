@@ -14,7 +14,7 @@ require("lualine").setup({
 require("conform").setup({
   formatters_by_ft = {
     nix = { "nixfmt" },
-    go = { "goimports", "gofumpt" },
+    go = { "gofumpt" },
     qml = { "qmlformat" },
   },
   format_on_save = function(buf)

@@ -6,12 +6,14 @@
         model = "Q27G2G4";
         serial = "0x000023BD";
         mode = "2560x1440@143.91";
+        vrr = 2;
       }
       {
         make = "AOC";
         model = "Q27G2G4";
         serial = "0x000021BD";
         mode = "2560x1440@143.91";
+        vrr = 2;
         x = 2560;
       }
     ];
@@ -21,6 +23,7 @@
         model = "Q27G2G4";
         serial = "0x000023BD";
         mode = "2560x1440@143.91";
+        vrr = 2;
       }
       {
         make = "AOC";
@@ -41,6 +44,7 @@
         model = "Q27G2G4";
         serial = "0x000021BD";
         mode = "2560x1440@143.91";
+        vrr = 2;
       }
     ];
   };

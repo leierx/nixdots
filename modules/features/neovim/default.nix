@@ -52,14 +52,14 @@
               vscode-langservers-extracted
               yaml-language-server
               tofu-ls
-              qt6.qtdeclarative # qmlls
+              # qmlls, qmlformat: the Qt Quickshell runs on, where there is one
+              (if stdenv.hostPlatform.isLinux then unstable.qt6.qtdeclarative else qt6.qtdeclarative)
               gopls
               # gopls' root_dir runs `go env`
               go
               fzf # fzf-lua
               # conform formatters
               nixfmt
-              gotools # goimports
               gofumpt
             ]
             # clipboard = "unnamedplus"; macOS has pbcopy built in

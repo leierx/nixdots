@@ -68,7 +68,6 @@
           general = {
             before_sleep_cmd = "loginctl lock-session";
             after_sleep_cmd = dpms "on";
-            ignore_dbus_inhibit = false;
             # its own scope, so restarting hypridle (any switch changing the lock's store paths) leaves hyprlock running
             lock_cmd = "${lib.getExe' osConfig.systemd.package "systemd-run"} --user --scope --collect --quiet ${lib.getExe lock}";
             inhibit_sleep = 3;

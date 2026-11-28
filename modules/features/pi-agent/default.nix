@@ -73,7 +73,6 @@
           hideThinkingBlock = true;
           modelThinkingLevels."github-copilot/claude-opus-5.5" = "high";
           tuiMode = "regular";
-          fullscreenScrollbar = "hidden";
 
           npmCommand = [ (lib.getExe' pkgs.nodejs "npm") ];
 

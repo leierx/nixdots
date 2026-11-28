@@ -8,18 +8,13 @@ root: {
       ];
       # the shell a size up on the 27" 1440p monitors, which run at scale 1
       quickshell.scale = 1.2;
-      programs.ssh.settings = {
-        "github.com" = {
-          HostName = "github.com";
-          User = "git";
-          IdentityFile = [ "~/.ssh/id_ed25519" ];
-        };
-        "*.rsync.net" = {
-          IdentityFile = [ "~/.ssh/id_rsync_net" ];
-          IdentitiesOnly = true;
-        };
+      programs.ssh.settings."*.rsync.net" = {
+        IdentityFile = [ "~/.ssh/id_rsync_net" ];
+        IdentitiesOnly = true;
       };
       wayland.windowManager.hyprland.settings = {
+        # fullscreen games straight to the display, skipping a compositing pass
+        config.render.direct_scanout = 2;
         window_rule = [
           {
             match.class = "^(discord-canary)$";
